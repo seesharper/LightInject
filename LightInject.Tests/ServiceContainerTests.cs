@@ -573,9 +573,9 @@ namespace DependencyInjector.Tests
 
 
         #endregion
-        private static TddContainer CreateContainer()
+        private static ServiceContainer CreateContainer()
         {
-            return new TddContainer();
+            return new ServiceContainer();
         }
     }
 
