@@ -1,0 +1,1 @@
+nuget pack LightInject.nuspec
