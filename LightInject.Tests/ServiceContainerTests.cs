@@ -148,7 +148,7 @@ namespace DependencyInjector.Tests
             container.RegisterAsSingleton(typeof(ISingleton), typeof(Singleton));
             var instance1 = container.GetInstance(typeof(ISingleton));
             var instance2 = container.GetInstance(typeof(ISingleton));
-            Assert.AreEqual(instance1,instance2);
+            Assert.AreSame(instance1,instance2);
         }
 
         [TestMethod]
@@ -179,7 +179,7 @@ namespace DependencyInjector.Tests
             var container = CreateContainer();
             container.Register(typeof(IService), typeof(Service));
             var factory = container.GetInstance(typeof(Func<IService>));
-            Assert.IsInstanceOfType(factory, typeof(Func<object>));
+            Assert.IsInstanceOfType(factory, typeof(Func<IService>));
         }
 
         [TestMethod]
@@ -513,7 +513,7 @@ namespace DependencyInjector.Tests
             container.Register(typeof(IFoo),typeof(Foo));
             container.Register(typeof(IFoo), typeof(Foo2),"Foo2");
             var instances = container.GetAllInstances(typeof (IFoo));
-            Assert.IsInstanceOfType(instances,typeof(IEnumerable<object>));            
+            Assert.IsInstanceOfType(instances,typeof(IEnumerable<IFoo>));            
         }
 
         [TestMethod]
@@ -577,6 +577,14 @@ namespace DependencyInjector.Tests
         {
             return new ServiceContainer();
         }
+    
+    
+        public void GetInstance_NoConfig_ReturnsInstance()
+        {
+            var container = new ServiceContainer();
+            IService service = container.GetInstance<IService>();
+        }
+    
     }
 
     

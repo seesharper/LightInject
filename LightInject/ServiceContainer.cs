@@ -477,7 +477,7 @@ namespace LightInject
         {
             if (IsFactory(serviceType) || (IsEnumerableOfT(serviceType) && IsFactory(serviceType.GetGenericArguments().First())))
                 return null;
-            return GetInstance<IEnumerable<IFactory>>().Where(f => f.CanCreateInstance(serviceType, serviceName)).FirstOrDefault();
+            return GetInstance<IEnumerable<IFactory>>().Where(f => f.CanGetInstance(serviceType, serviceName)).FirstOrDefault();
         }
 
         private ImplementationInfo CreateFuncImplementationInfo(Type serviceType, string serviceName)
@@ -707,14 +707,14 @@ namespace LightInject
         /// Returns an instance of the given type indicated by the <paramref name="serviceRequest"/> 
         /// </summary>        
         /// <returns>An object instance corresponding to the <param name="serviceRequest"/></returns>
-        object CreateInstance(ServiceRequest serviceRequest);
+        object GetInstance(ServiceRequest serviceRequest);
 
         /// <summary>
-        /// Determines if this factory can create an instance of the given <paramref name="serviceType"/>
+        /// Determines if this factory can return an instance of the given <paramref name="serviceType"/> and <paramref name="serviceName"/>/>
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
         /// <param name="serviceName">The name of the requested service.</param>
         /// <returns><b>true</b>, if the instance can be created, otherwise <b>false</b></returns>
-        bool CanCreateInstance(Type serviceType, string serviceName);
+        bool CanGetInstance(Type serviceType, string serviceName);
     }
 }
