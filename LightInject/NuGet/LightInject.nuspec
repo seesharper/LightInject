@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>LightInject</id>
-        <version>1.0.0.6</version>
+        <version>1.0.0.7</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>      
         <description>A zero config Inversion Of Control Container.</description>
