@@ -9,14 +9,14 @@ namespace DependencyInjector.Tests
 {
     public class SingletonFactory : IFactory
     {
-        public object CreateInstance(ServiceRequest serviceRequest)
+        public object GetInstance(ServiceRequest serviceRequest)
         {
             CallCount++;
             return new Service();
 
         }
        
-        public bool CanCreateInstance(Type serviceType, string serviceName)
+        public bool CanGetInstance(Type serviceType, string serviceName)
         {
             return serviceType == typeof (IService);
         }

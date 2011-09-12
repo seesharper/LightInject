@@ -8,14 +8,14 @@ namespace DependencyInjector.Tests
 {    
     public class FooFactory : IFactory
     {
-        public object CreateInstance(ServiceRequest serviceRequest)
+        public object GetInstance(ServiceRequest serviceRequest)
         {
             ServiceName = serviceRequest.ServiceName;
             return new Foo();
 
         }
 
-        public bool CanCreateInstance(Type serviceType, string serviceName)
+        public bool CanGetInstance(Type serviceType, string serviceName)
         {
             return typeof (IFoo).IsAssignableFrom(serviceType);
         }

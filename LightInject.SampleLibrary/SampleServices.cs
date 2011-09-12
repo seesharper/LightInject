@@ -6,12 +6,7 @@ namespace LightInject.SampleLibrary
 {
     public interface IService {}
 
-    public interface IFoo
-    {
-
-    }
-
-    public class Service : IService {}
+    public class Service : IService { }
 
     public class AnotherService : IService { }
 
@@ -51,6 +46,9 @@ namespace LightInject.SampleLibrary
     }
 
 
+
+    
+
     public class ServiceWithLazyDependency : IService
     {
         public ServiceWithLazyDependency(Lazy<IFoo> lazyService)
@@ -61,95 +59,32 @@ namespace LightInject.SampleLibrary
         public Lazy<IFoo> LazyService { get; private set; }
     }
 
-
+    public interface IFoo {}
     
-
-    public interface IAbstractService {}
-
-    public abstract class AbstractService : IAbstractService
+    public class Foo : IFoo {}
+    
+    public class Foo1 : IFoo {}
+    
+    public class Foo2 : IFoo {}
+    
+    public class Foo3 : IFoo {}
+    
+    public class FooWithDependency : IFoo
     {
-        
+        public FooWithDependency(IService service) {}        
     }
 
-    public class ServiceWithAbstractBaseClass : AbstractService
-    {
-        
-    }
-
-
-    
-    
-    
-
-
-    
-
-
-    
-
-
-    
-
-
-
-
-
-
-
-  
-
-    public class Foo : IFoo
-    {
-    }
-
-    public class Foo1 : IFoo
-    {
-    }
-
-    public class Foo2 : IFoo
-    {
-    }
-
-    public class Foo3 : IFoo
-    {
-    }
 
     public interface ISingleton {}
 
     public class Singleton : ISingleton {} 
 
-    
-        
-    
-
-    
-
-    
-
     public class  ServiceWithRecursiveDependency : IService
     {
-        public ServiceWithRecursiveDependency(IFoo foo)
-        {
-        }
+        public ServiceWithRecursiveDependency(IFoo foo) {}        
     }
-
-
-    public class FooWithDependency : IFoo
-    {
-        public FooWithDependency(IService service)
-        {
-        }
-    }
-
-
-
-
 
     
-
-
-
-
     public class CloneableClass : ICloneable
     {
         public object Clone()
@@ -158,8 +93,6 @@ namespace LightInject.SampleLibrary
         }
     }
     
-
-
     public interface IService<T> {}
 
     public class Service<T> : IService<T> { }    

@@ -11,7 +11,7 @@ namespace DependencyInjector.Tests
     public class ClonableFactory : IFactory
     {
         
-        public object CreateInstance(ServiceRequest serviceRequest)
+        public object GetInstance(ServiceRequest serviceRequest)
         {
             ServiceName = serviceRequest.ServiceName;
             if (serviceRequest.CanProceed)
@@ -24,7 +24,7 @@ namespace DependencyInjector.Tests
             return "string";
         }
 
-        public bool CanCreateInstance(Type serviceType, string serviceName)
+        public bool CanGetInstance(Type serviceType, string serviceName)
         {
             return serviceType == typeof (ICloneable);                        
         }
