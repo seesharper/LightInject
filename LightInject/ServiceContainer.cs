@@ -34,7 +34,7 @@ namespace LightInject
 
         static ServiceContainer()
         {
-            CreateInstanceMethod = typeof(IFactory).GetMethod("CreateInstance");
+            CreateInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
         }
 
         /// <summary>

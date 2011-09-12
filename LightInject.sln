@@ -18,21 +18,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Tests", "LightInject.Tests\LightInject.Tests.csproj", "{195CC92D-3792-4326-938C-E51AC26A8973}"
 EndProject
 Global
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 4
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs22
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = LightInject\\LightInject.csproj
-		SccProjectName1 = LightInject
-		SccLocalPath1 = LightInject
-		SccProjectUniqueName2 = LightInject.SampleLibrary\\LightInject.SampleLibrary.csproj
-		SccProjectName2 = LightInject.SampleLibrary
-		SccLocalPath2 = LightInject.SampleLibrary
-		SccProjectUniqueName3 = LightInject.Tests\\LightInject.Tests.csproj
-		SccProjectName3 = LightInject.Tests
-		SccLocalPath3 = LightInject.Tests
-	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = LightInject.vsmdi
 	EndGlobalSection
