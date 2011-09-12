@@ -21,35 +21,29 @@ namespace LightInject
     /// </summary>
     public interface IServiceContainer
     {
-        /// <summary>
-        /// Register services from the given <paramref name="assembly"/>
-        /// </summary>
-        /// <param name="assembly">The <see cref="Assembly"/> for which to scan for services.</param>        
-        void Register(Assembly assembly);
-
+       
         /// <summary>
         /// Register services from the given <paramref name="assembly"/>
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> for which to scan for services.</param>
-        /// <param name="shouldLoad">Determines if the current to should be registered.</param>        
+        /// <param name="shouldLoad">A function delegate that determines if the current type should 
+        /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(Assembly assembly, Func<Type, bool> shouldLoad);
 
         /// <summary>
         /// Registers services from assemblies currently in the <see cref="AppDomain"/>.        
         /// </summary>
-        /// <param name="shouldLoad">Determines if the current to should be registered.</param>     
+        /// <param name="shouldLoad">A function delegate that determines if the current type should 
+        /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(Func<Type, bool> shouldLoad);
 
         /// <summary>
         /// Loads service from the current directory.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void Register(string searchPattern);
-
-        /// <summary>
-        /// Registers services from assemblies currently in the <see cref="AppDomain"/>.        
-        /// </summary>
-        void Register();
+        /// /// <param name="shouldLoad">A function delegate that determines if the current type should 
+        /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
+        void Register(string searchPattern, Func<Type, bool> shouldLoad);
 
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
@@ -184,15 +178,7 @@ namespace LightInject
         {
             GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
         }
-
-        /// <summary>
-        /// Register services from the given <paramref name="assembly"/>
-        /// </summary>
-        /// <param name="assembly">The <see cref="Assembly"/> for which to scan for services.</param>        
-        public void Register(Assembly assembly)
-        {
-            Register(assembly, t => true);
-        }
+        
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible 
@@ -205,7 +191,8 @@ namespace LightInject
         /// Register services from the given <paramref name="assembly"/>
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> for which to scan for services.</param>
-        /// <param name="shouldLoad">Determines if the current to should be registered.</param>        
+        /// <param name="shouldLoad">A function delegate that determines if the current type should 
+        /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         public void Register(Assembly assembly, Func<Type, bool> shouldLoad)
         {
             AssemblyScanner.Scan(assembly,shouldLoad);
@@ -214,7 +201,8 @@ namespace LightInject
         /// <summary>
         /// Registers services from assemblies currently in the <see cref="AppDomain"/>.        
         /// </summary>
-        /// <param name="shouldLoad">Determines if the current to should be registered.</param>     
+        /// <param name="shouldLoad">A function delegate that determines if the current type should 
+        /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         public void Register(Func<Type, bool> shouldLoad)
         {
             foreach (Assembly assembly in GetAssemblies())
@@ -224,30 +212,26 @@ namespace LightInject
         }
 #if !SILVERLIGHT
 
+
         /// <summary>
         /// Loads service from the current directory.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        public void Register(string searchPattern)
+        /// /// <param name="shouldLoad">A function delegate that determines if the current type should 
+        /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
+        public void Register(string searchPattern, Func<Type, bool> shouldLoad)
         {
             var directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');
                 foreach (var file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)))
-                    Register(Assembly.LoadFrom(file));
+                    Register(Assembly.LoadFrom(file), shouldLoad);
             }
         }
 #endif
 
-        /// <summary>
-        /// Registers services from assemblies currently in the <see cref="AppDomain"/>.        
-        /// </summary>
-        public void Register()
-        {
-            Register(t => true);
-        }
-
+      
 #if SILVERLIGHT
         private IEnumerable<Assembly> GetAssemblies()
         {
@@ -389,11 +373,6 @@ namespace LightInject
             return typeof(IFactory).IsAssignableFrom(type);
         }
 
-        private static bool TypeNameStartsOrEndsWithSingleton(Type concreteType)
-        {
-            return concreteType.Name.EndsWith("Singleton", StringComparison.InvariantCultureIgnoreCase) ||
-                   concreteType.Name.StartsWith("Singleton", StringComparison.InvariantCultureIgnoreCase);
-        }
         private Expression CreateSingletonExpression(Type serviceType, Type implementingType, string serviceName)
         {
             var newExpression = CreateNewExpression(serviceType, implementingType, serviceName);
@@ -410,14 +389,10 @@ namespace LightInject
         private NewArrayExpression CreateNewArrayExpression(Type enumerableType)
         {
             Type serviceType = enumerableType.GetGenericArguments().First();
-            ThreadSafeDictionary<string, ImplementationInfo> implementations = GetImplementations(serviceType);
-            List<Expression> newExpressions;
-            if (implementations != null)
-                newExpressions = implementations
-                    .Select(implementation => GetBodyExpression(serviceType, implementation.Key)).ToList();
-            else
-                newExpressions = new List<Expression>();
-
+            
+            List<Expression> newExpressions = GetImplementations(serviceType)
+                .Select(implementation => GetBodyExpression(serviceType, implementation.Key)).ToList();
+            
             NewArrayExpression newArrayExpression = Expression.NewArrayInit(serviceType, newExpressions);
             return newArrayExpression;
         }
@@ -676,7 +651,7 @@ namespace LightInject
         private void EnsureServiceContainerIsConfigured()
         {
             if (_availableServices.Count == 0)
-                Register();
+                Register(t => true);
         }
 
 
@@ -882,6 +857,8 @@ namespace LightInject
 
         private void RegisterInternal(Type serviceType, Type implementingType)
         {
+            if (serviceType.IsGenericType && serviceType.ContainsGenericParameters)
+                serviceType = serviceType.GetGenericTypeDefinition();
             if (ShouldCreateSingletonExpression(implementingType))
                 _serviceContainer.RegisterAsSingleton(serviceType, implementingType, GetServiceName(serviceType, implementingType));
             _serviceContainer.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
@@ -889,15 +866,17 @@ namespace LightInject
 
         private static string GetServiceName(Type serviceType, Type implementingType)
         {
-            string serviceName = implementingType.Name;
+            string implementingTypeName = implementingType.Name;
+            string serviceTypeName = serviceType.Name;
             if (implementingType.IsGenericTypeDefinition)
             {
-                var regex = new Regex("([a-z])", RegexOptions.IgnoreCase);
-                serviceName = regex.Match(implementingType.Name).Groups[1].Value;
+                var regex = new Regex("((?:[a-z][a-z]+))", RegexOptions.IgnoreCase);
+                implementingTypeName = regex.Match(implementingTypeName).Groups[1].Value;
+                serviceTypeName = regex.Match(serviceTypeName).Groups[1].Value;
             }
-            if (serviceName.Substring(1) == serviceType.Name)
-                serviceName = "";
-            return serviceName;
+            if (serviceTypeName.Substring(1) == implementingTypeName)
+                implementingTypeName = "";
+            return implementingTypeName;
         }
 
         private static IEnumerable<Type> GetBaseTypes(Type concreteType)
@@ -932,7 +911,4 @@ namespace LightInject
                    concreteType.Name.StartsWith("Singleton", StringComparison.InvariantCultureIgnoreCase);
         }
     }
-
-
-
 }

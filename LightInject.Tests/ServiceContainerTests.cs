@@ -85,6 +85,7 @@ namespace DependencyInjector.Tests
         public void GetInstance_UnknownOpenGenericType_ThrowsException()
         {
             var container = CreateContainer();
+            container.Register(typeof(IService),typeof(Service));
             container.GetInstance<IService<int>>();
         }
 
@@ -535,6 +536,16 @@ namespace DependencyInjector.Tests
             container.Register(typeof(IFoo), typeof(Foo2), "Foo2");
             var instances = container.GetAllInstances<IFoo>();
             Assert.IsInstanceOfType(instances, typeof(IEnumerable<IFoo>));
+        }
+
+        [TestMethod]
+        public void GenericGetAllInstances_UnknownService_ReturnsEmptyIEnumerable()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(Foo2), "Foo2");
+            var instances = container.GetAllInstances<IService>();
+            Assert.IsInstanceOfType(instances, typeof(IEnumerable<IService>));
         }
 
         [TestMethod]
