@@ -20,8 +20,7 @@ namespace LightInject
     /// Represents a service container
     /// </summary>
     public interface IServiceContainer
-    {
-       
+    {       
         /// <summary>
         /// Register services from the given <paramref name="assembly"/>
         /// </summary>
@@ -36,7 +35,7 @@ namespace LightInject
         /// <param name="shouldLoad">A function delegate that determines if the current type should 
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(Func<Type, bool> shouldLoad);
-
+       
         /// <summary>
         /// Loads service from the current directory.
         /// </summary>
