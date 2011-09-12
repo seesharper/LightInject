@@ -46,6 +46,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConventionTests.cs" />
     <Compile Include="DocumentationSamples.cs" />
     <Compile Include="FooFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

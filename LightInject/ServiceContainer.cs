@@ -17,9 +17,149 @@ using System.Text.RegularExpressions;
 namespace LightInject
 {
     /// <summary>
+    /// Represents a service container
+    /// </summary>
+    public interface IServiceContainer
+    {
+        /// <summary>
+        /// Register services from the given <paramref name="assembly"/>
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> for which to scan for services.</param>        
+        void Register(Assembly assembly);
+
+        /// <summary>
+        /// Register services from the given <paramref name="assembly"/>
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> for which to scan for services.</param>
+        /// <param name="shouldLoad">Determines if the current to should be registered.</param>        
+        void Register(Assembly assembly, Func<Type, bool> shouldLoad);
+
+        /// <summary>
+        /// Registers services from assemblies currently in the <see cref="AppDomain"/>.        
+        /// </summary>
+        /// <param name="shouldLoad">Determines if the current to should be registered.</param>     
+        void Register(Func<Type, bool> shouldLoad);
+
+        /// <summary>
+        /// Loads service from the current directory.
+        /// </summary>
+        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
+        void Register(string searchPattern);
+
+        /// <summary>
+        /// Registers services from assemblies currently in the <see cref="AppDomain"/>.        
+        /// </summary>
+        void Register();
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingType">The implementing type.</param>
+        void Register(Type serviceType, Type implementingType);
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/> as a singleton service.
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingType">The implementing type.</param>
+        void RegisterAsSingleton(Type serviceType, Type implementingType);
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/> as a singleton service.
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingType">The implementing type.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        void RegisterAsSingleton(Type serviceType, Type implementingType, string serviceName);
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingType">The implementing type.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        void Register(Type serviceType, Type implementingType, string serviceName);
+
+        /// <summary>
+        /// Registers a factory delegate used to create an instance of <typeparamref name="TService"/> 
+        /// </summary>
+        /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
+        /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/></param>
+        void Register<TService>(Expression<Func<TService>> factory);
+
+        /// <summary>
+        /// Registers a factory delegate used to create an instance of <typeparamref name="TService"/> 
+        /// </summary>
+        /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
+        /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/></param>
+        void RegisterAsSingleton<TService>(Expression<Func<TService>> factory);
+
+        /// <summary>
+        /// Registers a factory delegate used to create an instance of <typeparamref name="TService"/> 
+        /// </summary>
+        /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
+        /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/></param>
+        /// <param name="serviceName">The name of the service.</param>
+        void Register<TService>(Expression<Func<TService>> factory, string serviceName);
+
+        /// <summary>
+        /// Registers a factory delegate used to create an instance of <typeparamref name="TService"/> 
+        /// </summary>
+        /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
+        /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/></param>
+        /// <param name="serviceName">The name of the service.</param>
+        void RegisterAsSingleton<TService>(Expression<Func<TService>> factory, string serviceName);
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        object GetInstance(Type serviceType);
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <returns>The requested service instance.</returns>
+        TService GetInstance<TService>();
+
+        /// <summary>
+        /// Gets a named instance of the given <typeparamref name="TService"/>
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
+        TService GetInstance<TService>(string serviceName);
+
+        /// <summary>
+        /// Gets a named instance of the given <paramref name="serviceType"/>
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        object GetInstance(Type serviceType, string serviceName);
+
+        /// <summary>
+        /// Gets all instances of the given <paramref name="serviceType"/>
+        /// </summary>
+        /// <param name="serviceType">The type of services to resolve.</param>
+        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/></returns>
+        IEnumerable<object> GetAllInstances(Type serviceType);
+
+        /// <summary>
+        /// Gets all instances of type <typeparamref name="TService"/>
+        /// </summary>
+        /// <typeparam name="TService">The type of services to resolve.</typeparam>
+        /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
+        IEnumerable<TService> GetAllInstances<TService>();
+    }
+
+    /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
-    public class ServiceContainer
+    public class ServiceContainer : IServiceContainer
     {
         private readonly ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>> _availableServices =
            new ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>>();
@@ -30,11 +170,19 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Tuple<Type, string>, Func<object>> _namedFactories =
             new ThreadSafeDictionary<Tuple<Type, string>, Func<object>>();
 
-        private static readonly MethodInfo CreateInstanceMethod;
+        private static readonly MethodInfo GetInstanceMethod;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
+        /// </summary>
+        public ServiceContainer()
+        {
+            AssemblyScanner = new AssemblyScanner(this);
+        }
 
         static ServiceContainer()
         {
-            CreateInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
+            GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
         }
 
         /// <summary>
@@ -47,15 +195,20 @@ namespace LightInject
         }
 
         /// <summary>
+        /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible 
+        /// for registration of services based on types contained with an <see cref="Assembly"/>.
+        /// </summary>
+        public IAssemblyScanner AssemblyScanner { get; set; }
+
+
+        /// <summary>
         /// Register services from the given <paramref name="assembly"/>
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> for which to scan for services.</param>
         /// <param name="shouldLoad">Determines if the current to should be registered.</param>        
         public void Register(Assembly assembly, Func<Type, bool> shouldLoad)
         {
-            IEnumerable<Type> types = GetConcreteTypes(assembly);
-            foreach (var type in types.Where(shouldLoad))
-                BuildImplementationMap(type);
+            AssemblyScanner.Scan(assembly,shouldLoad);
         }
 
         /// <summary>
@@ -95,34 +248,6 @@ namespace LightInject
             Register(t => true);
         }
 
-        private void BuildImplementationMap(Type implementingType)
-        {
-            Type[] interfaces = implementingType.GetInterfaces();
-            foreach (var interfaceType in interfaces)
-                RegisterInternal(interfaceType, implementingType);
-            foreach (var baseType in GetBaseTypes(implementingType))
-                RegisterInternal(baseType, implementingType);
-        }
-
-        private void RegisterInternal(Type serviceType, Type implementingType)
-        {
-            if (ShouldCreateSingletonExpression(implementingType))
-                RegisterAsSingleton(serviceType, implementingType, GetServiceName(serviceType, implementingType));
-            Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
-        }
-
-        private static string GetServiceName(Type serviceType, Type implementingType)
-        {
-            string serviceName = implementingType.Name;
-            if (implementingType.IsGenericTypeDefinition)
-            {
-                var regex = new Regex("([a-z])", RegexOptions.IgnoreCase);
-                serviceName = regex.Match(implementingType.Name).Groups[1].Value;
-            }
-            if (serviceName.Substring(1) == serviceType.Name)
-                serviceName = "";
-            return serviceName;
-        }
 #if SILVERLIGHT
         private IEnumerable<Assembly> GetAssemblies()
         {
@@ -143,20 +268,6 @@ namespace LightInject
             return AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.GlobalAssemblyCache);
         }
 #endif
-        private static IEnumerable<Type> GetBaseTypes(Type concreteType)
-        {
-            Type baseType = concreteType;
-            while (baseType != typeof(object) && baseType != null)
-            {
-                yield return baseType;
-                baseType = baseType.BaseType;
-            }
-        }
-
-        private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
-        {
-            return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && t.IsPublic);
-        }
 
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
@@ -271,12 +382,6 @@ namespace LightInject
         private static bool IsEnumerableOfT(Type serviceType)
         {
             return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
-        }
-
-        private static bool ShouldCreateSingletonExpression(Type implementingType)
-        {
-            return (TypeNameStartsOrEndsWithSingleton(implementingType)
-                    || IsFactory(implementingType));
         }
 
         private static bool IsFactory(Type type)
@@ -469,7 +574,7 @@ namespace LightInject
         private static Expression CreateCustomFactoryExpression(IFactory customFactory, Type serviceType, string serviceName, Expression proceedExpression)
         {
             ServiceRequest serviceRequest = CreateServiceRequest(serviceType, serviceName, proceedExpression);
-            return Expression.Convert(Expression.Call(Expression.Constant(customFactory), CreateInstanceMethod,
+            return Expression.Convert(Expression.Call(Expression.Constant(customFactory), GetInstanceMethod,
                                    new Expression[] { Expression.Constant(serviceRequest) }), serviceType);
         }
 
@@ -563,8 +668,15 @@ namespace LightInject
 
         private Func<object> CreateDelegate(Type serviceType, string serviceName)
         {
+            EnsureServiceContainerIsConfigured();
             var expression = GetBodyExpression(serviceType, serviceName);
             return Expression.Lambda<Func<object>>(expression).Compile();
+        }
+
+        private void EnsureServiceContainerIsConfigured()
+        {
+            if (_availableServices.Count == 0)
+                Register();
         }
 
 
@@ -717,4 +829,110 @@ namespace LightInject
         /// <returns><b>true</b>, if the instance can be created, otherwise <b>false</b></returns>
         bool CanGetInstance(Type serviceType, string serviceName);
     }
+
+    /// <summary>
+    /// Represents a class that is capable of scanning an assembly and register services into an <see cref="IServiceContainer"/> instance.
+    /// </summary>
+    public interface IAssemblyScanner
+    {
+        /// <summary>
+        /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>
+        /// <param name="shouldLoad">A function delegate that determines if the current type should be loaded into the <see cref="IServiceContainer"/>.</param>
+        void Scan(Assembly assembly, Func<Type, bool> shouldLoad);
+    }
+    
+    /// <summary>
+    /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
+    /// </summary>
+    public class AssemblyScanner : IAssemblyScanner
+    {
+        private readonly IServiceContainer _serviceContainer;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AssemblyScanner"/> class.
+        /// </summary>
+        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/> instance.</param>
+        public AssemblyScanner(IServiceContainer serviceContainer)
+        {
+            _serviceContainer = serviceContainer;
+        }
+
+        /// <summary>
+        /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>
+        /// <param name="shouldLoad">A function delegate that determines if the current type should be loaded into the <see cref="IServiceContainer"/>.</param>
+        public void Scan(Assembly assembly, Func<Type,bool> shouldLoad)
+        {
+            IEnumerable<Type> types = GetConcreteTypes(assembly);
+            foreach (var type in types.Where(shouldLoad))
+                BuildImplementationMap(type);
+        }
+
+        private void BuildImplementationMap(Type implementingType)
+        {
+            Type[] interfaces = implementingType.GetInterfaces();
+            foreach (var interfaceType in interfaces)
+                RegisterInternal(interfaceType, implementingType);
+            foreach (var baseType in GetBaseTypes(implementingType))
+                RegisterInternal(baseType, implementingType);
+        }
+
+        private void RegisterInternal(Type serviceType, Type implementingType)
+        {
+            if (ShouldCreateSingletonExpression(implementingType))
+                _serviceContainer.RegisterAsSingleton(serviceType, implementingType, GetServiceName(serviceType, implementingType));
+            _serviceContainer.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
+        }
+
+        private static string GetServiceName(Type serviceType, Type implementingType)
+        {
+            string serviceName = implementingType.Name;
+            if (implementingType.IsGenericTypeDefinition)
+            {
+                var regex = new Regex("([a-z])", RegexOptions.IgnoreCase);
+                serviceName = regex.Match(implementingType.Name).Groups[1].Value;
+            }
+            if (serviceName.Substring(1) == serviceType.Name)
+                serviceName = "";
+            return serviceName;
+        }
+
+        private static IEnumerable<Type> GetBaseTypes(Type concreteType)
+        {
+            Type baseType = concreteType;
+            while (baseType != typeof(object) && baseType != null)
+            {
+                yield return baseType;
+                baseType = baseType.BaseType;
+            }
+        }
+
+        private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
+        {
+            return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && t.IsPublic);
+        }
+
+        private static bool ShouldCreateSingletonExpression(Type implementingType)
+        {
+            return (TypeNameStartsOrEndsWithSingleton(implementingType)
+                    || IsFactory(implementingType));
+        }
+
+        private static bool IsFactory(Type type)
+        {
+            return typeof(IFactory).IsAssignableFrom(type);
+        }
+
+        private static bool TypeNameStartsOrEndsWithSingleton(Type concreteType)
+        {
+            return concreteType.Name.EndsWith("Singleton", StringComparison.InvariantCultureIgnoreCase) ||
+                   concreteType.Name.StartsWith("Singleton", StringComparison.InvariantCultureIgnoreCase);
+        }
+    }
+
+
+
 }
