@@ -157,11 +157,11 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>> _availableServices =
            new ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>>();
 
-        private readonly ThreadSafeDictionary<Type, Func<object>> _defaultFactories =
-            new ThreadSafeDictionary<Type, Func<object>>();
+        private readonly ThreadSafeDictionary<Type, Lazy<Func<object>>> _defaultFactories =
+            new ThreadSafeDictionary<Type, Lazy<Func<object>>>();
 
-        private readonly ThreadSafeDictionary<Tuple<Type, string>, Func<object>> _namedFactories =
-            new ThreadSafeDictionary<Tuple<Type, string>, Func<object>>();
+        private readonly ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<object>>> _namedFactories =
+            new ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<object>>>();
 
         private static readonly MethodInfo GetInstanceMethod;
 
@@ -605,7 +605,8 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
         {
-            return _defaultFactories.GetOrAdd(serviceType, s => CreateDelegate(serviceType, string.Empty))();
+            return _defaultFactories.GetOrAdd(serviceType,
+                                              new Lazy<Func<object>>(() => CreateDelegate(serviceType, string.Empty))).Value();                
         }
 
         /// <summary>
@@ -637,7 +638,9 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName)
         {
-            return _namedFactories.GetOrAdd(Tuple.Create(serviceType, serviceName), s => CreateDelegate(serviceType, serviceName))();
+            return
+                _namedFactories.GetOrAdd(Tuple.Create(serviceType, serviceName),
+                                    s => new Lazy<Func<object>>(() => CreateDelegate(serviceType, serviceName))).Value();                    
         }
 
         private Func<object> CreateDelegate(Type serviceType, string serviceName)
