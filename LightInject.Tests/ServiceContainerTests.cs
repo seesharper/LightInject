@@ -6,12 +6,9 @@ using LightInject.SampleLibrary;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DependencyInjector.Tests
-{
-    /// <summary>
-    /// Summary description for TddContainerTests
-    /// </summary>
+{    
     [TestClass]
-    public class TddContainerTests
+    public class ServiceContainerTests
     {                                    
         [TestMethod]
         public void GetInstance_OneService_ReturnsInstance()

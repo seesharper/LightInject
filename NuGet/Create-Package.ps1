@@ -8,7 +8,7 @@ pushd $scriptPath
 
 
 
-$sourcePath = Join-Path $scriptPath "/../ExpressionTools/ExpressionExtensions.cs"
+$sourcePath = Join-Path $scriptPath "/../LightInject/ServiceContainer.cs"
 
 $nugetPath = Join-Path $scriptPath "/NuGet.exe"
 
@@ -19,11 +19,11 @@ $toolsPath =  Join-Path $scriptPath "/Package/Tools"
 
 $nugetPath = Join-Path $scriptPath "/NuGet.exe"
 
-$destinationPath = Join-Path $toolsPath "/ExpressionExtensions.cs_"
+$destinationPath = Join-Path $toolsPath "/ServiceContainer.cs_"
 
 
 copy $sourcePath $destinationPath
 
-.\NuGet.exe pack package\ExpressionTools.nuspec 
+.\NuGet.exe pack package\LightInject.nuspec 
 
 popd

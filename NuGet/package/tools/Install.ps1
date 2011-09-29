@@ -1,7 +1,7 @@
 ﻿param($rootPath, $toolsPath, $package, $project)
 
-$source = Join-Path $toolsPath "/ExpressionExtensions.cs_"
-$destination = Join-Path $toolsPath "/ExpressionExtensions.cs"
+$source = Join-Path $toolsPath "/ServiceContainer.cs_"
+$destination = Join-Path $toolsPath "/ServiceContainer.cs"
 
 
 function PreProcess([string] $framework, [string] $nameSpace, [string]$sourceFile, [string]$destinationFile )
@@ -14,9 +14,9 @@ function PreProcess([string] $framework, [string] $nameSpace, [string]$sourceFil
 	
 	while (([string]$line = $reader.ReadLine()) -ne $null )
 	{
-		if($line.Contains("namespace ExpressionTools"))
+		if($line.Contains("namespace LightInject"))
 		{
-			$line = $line.Replace('ExpressionTools', $nameSpace)
+			$line = $line.Replace('LightInject', $nameSpace)
 		}		
 		if($line.StartsWith("#if") -or $line.StartsWith("#endif"))
 		{		
@@ -113,9 +113,12 @@ $frameworkName = new-object System.Runtime.Versioning.FrameworkName($moniker)
 
 if ($frameworkName -eq "Silverlight")
 {
-	$directive = "SL"
+	$directive = "SILVERLIGHT"
 }
-$directive = $directive + $frameworkName.Version.Major.ToString() + $frameworkName.Version.Minor.ToString()
+else
+{
+	$directive = $directive + $frameworkName.Version.Major.ToString() + $frameworkName.Version.Minor.ToString()
+}
 
 
 
@@ -132,4 +135,4 @@ $project.ProjectItems.AddFromFileCopy($destination)
 
 Remove-Item $destination
 
-$project.DTE.ItemOperations.Navigate('https://github.com/seesharper/ExpressionTools/wiki/Documentation')
+#$project.DTE.ItemOperations.Navigate('https://github.com/seesharper/ExpressionTools/wiki/Documentation')

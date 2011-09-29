@@ -2,10 +2,10 @@
 
 $projectPath = Split-Path $project.FullName
 
-$filePath = Join-Path $projectPath "ExpressionExtensions.cs"
+$filePath = Join-Path $projectPath "ServiceContainer.cs"
 
 if (Test-Path $filePath)
 {
-	$project.ProjectItems.Item("ExpressionExtensions.cs").Delete()
+	$project.ProjectItems.Item("ServiceContainer.cs").Delete()
 }
 
