@@ -9,6 +9,6 @@
         <tags>Ioc</tags>
     </metadata>
     <files>
-        <file src="ServiceContainer.cs.pp" target="content" />
+        <file src="ServiceContainer.cs.pp" target="content" />      
     </files>
 </package>

@@ -237,6 +237,16 @@ namespace DependencyInjector.Tests
         }
 
         [TestMethod]
+        public void GetInstance_Funcfactory_ReturnsInstanceWithDependencies()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(() => new Foo());
+            container.Register<IService>(() => new ServiceWithDependency(container.GetInstance<IFoo>()));
+            var instance = container.GetInstance(typeof(IService));
+            Assert.IsInstanceOfType(instance, typeof(ServiceWithDependency));
+        }
+
+        [TestMethod]
         public void GetInstance_SingletonFuncFactory_ReturnsSingleInstance()
         {
             var container = CreateContainer();

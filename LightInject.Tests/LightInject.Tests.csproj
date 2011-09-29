@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dynamo.Ioc">
+      <HintPath>..\..\..\..\Users\Bernhard.Richter\Downloads\MartinF-DynamoIOC-d31590c\MartinF-DynamoIOC-d31590c\Dynamo.Ioc\bin\Debug\Dynamo.Ioc.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Moq">
       <HintPath>..\Tools\Moq\Moq.dll</HintPath>
@@ -51,6 +54,7 @@
   <ItemGroup>
     <Compile Include="AssemblyScannerTests.cs" />
     <Compile Include="FooFactory.cs" />
+    <Compile Include="PerformanceTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceContainerTests.cs" />
     <Compile Include="ClonableFactory.cs" />

@@ -606,7 +606,7 @@ namespace LightInject
         public object GetInstance(Type serviceType)
         {
             return _defaultFactories.GetOrAdd(serviceType,
-                                              new Lazy<Func<object>>(() => CreateDelegate(serviceType, string.Empty))).Value();                
+                                              t => new Lazy<Func<object>>(() => CreateDelegate(serviceType, string.Empty))).Value();                
         }
 
         /// <summary>
