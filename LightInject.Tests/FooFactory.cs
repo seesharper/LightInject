@@ -11,8 +11,7 @@ namespace DependencyInjector.Tests
         public object GetInstance(ServiceRequest serviceRequest)
         {
             ServiceName = serviceRequest.ServiceName;
-            return new Foo();
-
+            return serviceRequest.CanProceed ? serviceRequest.Proceed() : new Foo();
         }
 
         public bool CanGetInstance(Type serviceType, string serviceName)

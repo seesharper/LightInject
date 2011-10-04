@@ -42,13 +42,6 @@
     <Compile Include="ServiceContainer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="NuGet\LightInject.nuspec">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="NuGet\Pack.bat" />
-    <None Include="NuGet\ServiceContainer.cs.pp" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

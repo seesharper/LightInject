@@ -1,12 +1,11 @@
-﻿//#define SILVERLIGHT
-//#define NET35
-//Uncomment the line above to have the container working in a SilverLight or CLR 3.5 environment
+﻿#define NET40
 using System;
-#if !SILVERLIGHT && !NET35
+#if NET40
 using System.Collections.Concurrent;
-#else
-    using System.Collections;
 #endif
+#if !NET40
+using System.Collections;
+#endif    
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -35,7 +34,7 @@ namespace LightInject
         /// <param name="shouldLoad">A function delegate that determines if the current type should 
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(Func<Type, bool> shouldLoad);
-       
+#if !SILVERLIGHT
         /// <summary>
         /// Loads service from the current directory.
         /// </summary>
@@ -43,7 +42,7 @@ namespace LightInject
         /// /// <param name="shouldLoad">A function delegate that determines if the current type should 
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(string searchPattern, Func<Type, bool> shouldLoad);
-
+#endif
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -165,12 +164,16 @@ namespace LightInject
 
         private static readonly MethodInfo GetInstanceMethod;
 
+        private MethodCallRewriter _methodCallRewriter;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
         public ServiceContainer()
         {
             AssemblyScanner = new AssemblyScanner(this);
+            _methodCallRewriter = new MethodCallRewriter(GetBodyExpression);
+
         }
 
         static ServiceContainer()
@@ -211,7 +214,6 @@ namespace LightInject
         }
 #if !SILVERLIGHT
 
-
         /// <summary>
         /// Loads service from the current directory.
         /// </summary>
@@ -229,7 +231,6 @@ namespace LightInject
             }
         }
 #endif
-
       
 #if SILVERLIGHT
         private IEnumerable<Assembly> GetAssemblies()
@@ -245,7 +246,8 @@ namespace LightInject
                 }
             }
         }
-#else
+#endif
+#if !SILVERLIGHT
         private static IEnumerable<Assembly> GetAssemblies()
         {
             return AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.GlobalAssemblyCache);
@@ -446,7 +448,7 @@ namespace LightInject
         {
             try
             {
-                return GetImplementationInfo(serviceType, serviceName).FactoryExpression.Value;
+                return _methodCallRewriter.Visit(GetImplementationInfo(serviceType, serviceName).FactoryExpression.Value);
             }
             catch (InvalidOperationException)
             {
@@ -646,16 +648,15 @@ namespace LightInject
         private Func<object> CreateDelegate(Type serviceType, string serviceName)
         {
             EnsureServiceContainerIsConfigured();
-            var expression = GetBodyExpression(serviceType, serviceName);
+            var expression = GetBodyExpression(serviceType, serviceName);            
             return Expression.Lambda<Func<object>>(expression).Compile();
         }
-
+        
         private void EnsureServiceContainerIsConfigured()
         {
             if (_availableServices.Count == 0)
                 Register(t => true);
         }
-
 
         private class ImplementationInfo
         {
@@ -669,13 +670,94 @@ namespace LightInject
             public bool IsSingleton { get; set; }
         }
 
-#if !SILVERLIGHT && !NET35
+        public class MethodCallRewriter : ExpressionVisitor
+        {
+            private readonly Func<Type, string, Expression> _getBodyExpression;
+
+            public MethodCallRewriter(Func<Type, string, Expression> getBodyExpression)
+            {
+                _getBodyExpression = getBodyExpression;
+            }
+
+            protected override Expression VisitMethodCall(MethodCallExpression node)
+            {
+                if (RepresentsGetInstanceMethod(node))
+                    return RewriteGetInstanceMethod(node);
+                if (RepresentsGetNamedInstanceMethod(node))
+                    return RewriteGetNamedInstanceMethod(node);
+                if (RepresentsGetAllInstancesMethod(node))
+                    return RewriteGetAllInstancesMethod(node);
+                return base.VisitMethodCall(node);
+            }
+
+            private static bool RepresentsGetAllInstancesMethod(MethodCallExpression node)
+            {
+                return IsGetAllInstancesMethod(node.Method);
+            }
+
+            private static bool RepresentsGetNamedInstanceMethod(MethodCallExpression node)
+            {
+                return (IsGetInstanceMethod(node.Method) && HasOneArgumentRepresentingServiceName(node));
+            }
+
+            private static bool HasOneArgumentRepresentingServiceName(MethodCallExpression node)
+            {
+                return (HasOneArgument(node) && IsStringConstantExpression(node.Arguments[0]));
+            }
+
+            private static bool IsStringConstantExpression(Expression argument)
+            {
+                return argument.NodeType == ExpressionType.Constant && argument.Type == typeof(string);
+            }
+
+            private static bool HasOneArgument(MethodCallExpression node)
+            {
+                return node.Arguments.Count == 1;
+            }
+
+            private static bool IsGetInstanceMethod(MethodInfo methodInfo)
+            {
+                return methodInfo.DeclaringType == typeof(IServiceContainer) && methodInfo.Name == "GetInstance";
+            }
+
+            private static bool IsGetAllInstancesMethod(MethodInfo methodInfo)
+            {
+                return methodInfo.DeclaringType == typeof(IServiceContainer) && methodInfo.Name == "GetAllInstances";
+            }
+
+            private static bool RepresentsGetInstanceMethod(MethodCallExpression node)
+            {
+                return (IsGetInstanceMethod(node.Method) && node.Arguments.Count == 0);
+            }
+
+            private Expression RewriteGetInstanceMethod(MethodCallExpression methodCallExpression)
+            {
+                return _getBodyExpression(methodCallExpression.Method.GetGenericArguments().First(), string.Empty);
+            }
+
+            private Expression RewriteGetNamedInstanceMethod(MethodCallExpression methodCallExpression)
+            {
+                return _getBodyExpression(methodCallExpression.Method.GetGenericArguments().First(),
+                                          (string)((ConstantExpression)methodCallExpression.Arguments[0]).Value);
+            }
+
+            private Expression RewriteGetAllInstancesMethod(MethodCallExpression methodCallExpression)
+            {
+                Type enumerableType =
+                    typeof(IEnumerable<>).MakeGenericType(methodCallExpression.Method.GetGenericArguments().First());
+                return _getBodyExpression(enumerableType, string.Empty);
+            }
+        }
+#if NET40
+        
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
         {
             public ThreadSafeDictionary() { }
             public ThreadSafeDictionary(IEqualityComparer<TKey> comparer) : base(comparer) { }
         }
-#else
+#endif
+#if !NET40
+
         private class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         {
 
@@ -819,7 +901,15 @@ namespace LightInject
         /// <param name="shouldLoad">A function delegate that determines if the current type should be loaded into the <see cref="IServiceContainer"/>.</param>
         void Scan(Assembly assembly, Func<Type, bool> shouldLoad);
     }
+
     
+    
+
+
+    
+
+
+
     /// <summary>
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
     /// </summary>
