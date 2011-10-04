@@ -163,11 +163,13 @@ namespace DependencyInjector.Tests
         [TestMethod]
         public void GetInstance_SingletonWithCustomFactory_CallsFactoryOnlyOnce()
         {
+                                    
             var container = CreateContainer();
             container.RegisterAsSingleton(typeof(IService), typeof(Service));
             container.Register(typeof(IFactory),typeof(SingletonFactory));
             var singletonFactory = (SingletonFactory)container.GetInstance<IFactory>();
             container.GetInstance(typeof (IService));
+            container.GetInstance(typeof(IService));
             Assert.AreEqual(1,singletonFactory.CallCount);
         }
 
