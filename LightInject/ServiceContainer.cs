@@ -1,11 +1,6 @@
 ﻿#define NET40
 using System;
-#if NET40
 using System.Collections.Concurrent;
-#endif
-#if !NET40
-using System.Collections;
-#endif    
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,13 +8,19 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
+#if NET40
+#endif
+#if !NET40
+using System.Collections;
+#endif
+
 namespace LightInject
 {
     /// <summary>
     /// Represents a service container
     /// </summary>
     public interface IServiceContainer
-    {       
+    {
         /// <summary>
         /// Register services from the given <paramref name="assembly"/>
         /// </summary>
@@ -34,6 +35,7 @@ namespace LightInject
         /// <param name="shouldLoad">A function delegate that determines if the current type should 
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(Func<Type, bool> shouldLoad);
+
 #if !SILVERLIGHT
         /// <summary>
         /// Loads service from the current directory.
@@ -43,6 +45,7 @@ namespace LightInject
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(string searchPattern, Func<Type, bool> shouldLoad);
 #endif
+
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -153,8 +156,9 @@ namespace LightInject
     /// </summary>
     public class ServiceContainer : IServiceContainer
     {
-        private readonly ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>> _availableServices =
-           new ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>>();
+        private readonly ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>> _availableServices
+            =
+            new ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>>();
 
         private readonly ThreadSafeDictionary<Type, Lazy<Func<object>>> _defaultFactories =
             new ThreadSafeDictionary<Type, Lazy<Func<object>>>();
@@ -164,7 +168,7 @@ namespace LightInject
 
         private static readonly MethodInfo GetInstanceMethod;
 
-        private MethodCallRewriter _methodCallRewriter;
+        private readonly MethodCallRewriter _methodCallRewriter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
@@ -173,14 +177,13 @@ namespace LightInject
         {
             AssemblyScanner = new AssemblyScanner(this);
             _methodCallRewriter = new MethodCallRewriter(GetBodyExpression);
-
         }
 
         static ServiceContainer()
         {
-            GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
+            GetInstanceMethod = typeof (IFactory).GetMethod("GetInstance");
         }
-        
+
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible 
@@ -197,7 +200,7 @@ namespace LightInject
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         public void Register(Assembly assembly, Func<Type, bool> shouldLoad)
         {
-            AssemblyScanner.Scan(assembly,shouldLoad);
+            AssemblyScanner.Scan(assembly, shouldLoad);
         }
 
         /// <summary>
@@ -212,6 +215,7 @@ namespace LightInject
                 Register(assembly, shouldLoad);
             }
         }
+
 #if !SILVERLIGHT
 
         /// <summary>
@@ -222,16 +226,16 @@ namespace LightInject
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         public void Register(string searchPattern, Func<Type, bool> shouldLoad)
         {
-            var directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
+            string directory = Path.GetDirectoryName(new Uri(typeof (ServiceContainer).Assembly.CodeBase).LocalPath);
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');
-                foreach (var file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)))
+                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)))
                     Register(Assembly.LoadFrom(file), shouldLoad);
             }
         }
 #endif
-      
+
 #if SILVERLIGHT
         private IEnumerable<Assembly> GetAssemblies()
         {
@@ -294,8 +298,8 @@ namespace LightInject
                 Register(serviceType, serviceName, singletonImplementationInfo);
             }
             else
-                Register(serviceType, serviceName, CreateSingletonImplementationInfo(serviceType, implementingType, serviceName));
-
+                Register(serviceType, serviceName,
+                         CreateSingletonImplementationInfo(serviceType, implementingType, serviceName));
         }
 
         /// <summary>
@@ -310,7 +314,8 @@ namespace LightInject
                 RegisterAsSingleton(serviceType, implementingType, serviceName);
             else
             {
-                var implementationInfo = CreateImplementationInfo(serviceType, implementingType, serviceName);
+                ImplementationInfo implementationInfo = CreateImplementationInfo(serviceType, implementingType,
+                                                                                 serviceName);
                 Register(serviceType, serviceName, implementationInfo);
             }
         }
@@ -343,8 +348,8 @@ namespace LightInject
         /// <param name="serviceName">The name of the service.</param>
         public void Register<TService>(Expression<Func<TService>> factory, string serviceName)
         {
-            var implementationInfo = new ImplementationInfo(typeof(Func<TService>), () => factory.Body);
-            Register(typeof(TService), serviceName, implementationInfo);
+            var implementationInfo = new ImplementationInfo(typeof (Func<TService>), () => factory.Body);
+            Register(typeof (TService), serviceName, implementationInfo);
         }
 
         /// <summary>
@@ -355,45 +360,47 @@ namespace LightInject
         /// <param name="serviceName">The name of the service.</param>
         public void RegisterAsSingleton<TService>(Expression<Func<TService>> factory, string serviceName)
         {
-            var implementationInfo = new ImplementationInfo(typeof(Func<TService>), () => CreateSingletonExpression(() => factory.Body));
-            Register(typeof(TService), serviceName, implementationInfo);
+            var implementationInfo = new ImplementationInfo(typeof (Func<TService>),
+                                                            () => CreateSingletonExpression(() => factory.Body));
+            Register(typeof (TService), serviceName, implementationInfo);
         }
 
         private void Register(Type serviceType, string serviceName, ImplementationInfo implementationInfo)
         {
-            GetImplementations(serviceType).AddOrUpdate(serviceName, s => implementationInfo, (s, i) => implementationInfo);
+            GetImplementations(serviceType).AddOrUpdate(serviceName, s => implementationInfo,
+                                                        (s, i) => implementationInfo);
         }
 
         private static bool IsEnumerableOfT(Type serviceType)
         {
-            return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
+            return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof (IEnumerable<>);
         }
 
         private static bool IsFactory(Type type)
         {
-            return typeof(IFactory).IsAssignableFrom(type);
+            return typeof (IFactory).IsAssignableFrom(type);
         }
 
         private Expression CreateSingletonExpression(Type serviceType, Type implementingType, string serviceName)
         {
-            var newExpression = CreateNewExpression(serviceType, implementingType, serviceName);
-            var singletonInstance = Expression.Lambda<Func<object>>(newExpression).Compile()();
+            Expression newExpression = CreateNewExpression(serviceType, implementingType, serviceName);
+            object singletonInstance = Expression.Lambda<Func<object>>(newExpression).Compile()();
             return Expression.Constant(singletonInstance);
         }
 
         private static Expression CreateSingletonExpression(Func<Expression> expressionFactory)
         {
-            var singletonInstance = Expression.Lambda<Func<object>>(expressionFactory()).Compile()();
+            object singletonInstance = Expression.Lambda<Func<object>>(expressionFactory()).Compile()();
             return Expression.Constant(singletonInstance);
         }
 
         private NewArrayExpression CreateNewArrayExpression(Type enumerableType)
         {
             Type serviceType = enumerableType.GetGenericArguments().First();
-            
+
             List<Expression> newExpressions = GetImplementations(serviceType)
                 .Select(implementation => GetBodyExpression(serviceType, implementation.Key)).ToList();
-            
+
             NewArrayExpression newArrayExpression = Expression.NewArrayInit(serviceType, newExpressions);
             return newArrayExpression;
         }
@@ -402,17 +409,18 @@ namespace LightInject
         {
             return _availableServices.GetOrAdd(serviceType,
                                                s =>
-                                               new ThreadSafeDictionary<string, ImplementationInfo>(StringComparer.InvariantCultureIgnoreCase));
+                                               new ThreadSafeDictionary<string, ImplementationInfo>(
+                                                   StringComparer.InvariantCultureIgnoreCase));
         }
 
         private static bool IsLazy(Type serviceType)
         {
-            return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(Lazy<>);
+            return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof (Lazy<>);
         }
 
         private static bool IsFunc(Type serviceType)
         {
-            return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(Func<>);
+            return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof (Func<>);
         }
 
         private Expression CreateNewExpression(Type serviceType, Type implementingType, string serviceName)
@@ -421,7 +429,9 @@ namespace LightInject
             IEnumerable<Expression> parameterExpressions = GetParameterExpressions(constructorInfo);
             NewExpression newExpression = Expression.New(constructorInfo, parameterExpressions);
             IFactory factory = GetCustomFactory(serviceType, serviceName);
-            return factory != null ? CreateCustomFactoryExpression(factory, serviceType, serviceName, newExpression) : newExpression;
+            return factory != null
+                       ? CreateCustomFactoryExpression(factory, serviceType, serviceName, newExpression)
+                       : newExpression;
         }
 
         private static ConstructorInfo GetConstructorInfo(Type concreteType)
@@ -434,9 +444,9 @@ namespace LightInject
             return constructorInfo.GetParameters().Select(
                 parameterInfo =>
                 GetBodyExpression(parameterInfo.ParameterType,
-                HasMultipleImplementations(parameterInfo.ParameterType) ? parameterInfo.Name : string.Empty)).
-                ToList();
-
+                                  HasMultipleImplementations(parameterInfo.ParameterType)
+                                      ? parameterInfo.Name
+                                      : string.Empty)).ToList();
         }
 
         private bool HasMultipleImplementations(Type serviceType)
@@ -452,7 +462,9 @@ namespace LightInject
             }
             catch (InvalidOperationException)
             {
-                throw new InvalidOperationException(string.Format("An recursive dependency has been detected while resolving (Type = {0}, Name = {1}", serviceType, serviceName));
+                throw new InvalidOperationException(
+                    string.Format("An recursive dependency has been detected while resolving (Type = {0}, Name = {1}",
+                                  serviceType, serviceName));
             }
         }
 
@@ -460,16 +472,17 @@ namespace LightInject
         {
             Type actualServiceType = serviceType.GetGenericArguments().First();
             Expression bodyExression = GetBodyExpression(actualServiceType, serviceName);
-            Type funcType = typeof(Func<>).MakeGenericType(actualServiceType);
-            var funcInstance = Expression.Lambda(funcType, bodyExression, null).Compile();
+            Type funcType = typeof (Func<>).MakeGenericType(actualServiceType);
+            Delegate funcInstance = Expression.Lambda(funcType, bodyExression, null).Compile();
             return Expression.Constant(funcInstance);
         }
 
         private ImplementationInfo GetImplementationInfo(Type serviceType, string serviceName)
         {
             return GetImplementations(serviceType).GetOrAdd(serviceName,
-                                                     s => TryResolveImplementationForUnknownService(serviceType, serviceName));
-
+                                                            s =>
+                                                            TryResolveImplementationForUnknownService(serviceType,
+                                                                                                      serviceName));
         }
 
         private ImplementationInfo CreateImplementationInfo(Type serviceType, Type implementingType, string serviceName)
@@ -478,10 +491,12 @@ namespace LightInject
                                           () => CreateNewExpression(serviceType, implementingType, serviceName));
         }
 
-        private ImplementationInfo CreateSingletonImplementationInfo(Type serviceType, Type implementingType, string serviceName)
+        private ImplementationInfo CreateSingletonImplementationInfo(Type serviceType, Type implementingType,
+                                                                     string serviceName)
         {
             return new ImplementationInfo(implementingType,
-                                          () => CreateSingletonExpression(serviceType, implementingType, serviceName)) { IsSingleton = true };
+                                          () => CreateSingletonExpression(serviceType, implementingType, serviceName))
+                       {IsSingleton = true};
         }
 
         private ImplementationInfo TryResolveImplementationForUnknownService(Type serviceType, string serviceName)
@@ -502,7 +517,9 @@ namespace LightInject
             if (!string.IsNullOrEmpty(serviceName))
                 return CreateImplementationInfoThatRedirectsToDefaultService(serviceType);
 
-            throw new InvalidOperationException(string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}", serviceType, serviceName));
+            throw new InvalidOperationException(
+                string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}",
+                              serviceType, serviceName));
         }
 
         private static bool IsClosedGeneric(Type serviceType)
@@ -526,14 +543,15 @@ namespace LightInject
         }
 
 
-        private static ServiceRequest CreateServiceRequest(Type serviceType, string serviceName, Expression proceedExpression)
+        private static ServiceRequest CreateServiceRequest(Type serviceType, string serviceName,
+                                                           Expression proceedExpression)
         {
             var serviceRequest = new ServiceRequest
-            {
-                ServiceType = serviceType,
-                ServiceName = serviceName,
-                Proceed = CreateProceedFunctionDelegate(proceedExpression)
-            };
+                                     {
+                                         ServiceType = serviceType,
+                                         ServiceName = serviceName,
+                                         Proceed = CreateProceedFunctionDelegate(proceedExpression)
+                                     };
             return serviceRequest;
         }
 
@@ -542,23 +560,30 @@ namespace LightInject
             return proceedExpression != null ? Expression.Lambda<Func<object>>(proceedExpression).Compile() : null;
         }
 
-        private static ImplementationInfo CreateCustomFactoryImplementationInfo(Type serviceType, string serviceName, IFactory factory)
+        private static ImplementationInfo CreateCustomFactoryImplementationInfo(Type serviceType, string serviceName,
+                                                                                IFactory factory)
         {
-            return new ImplementationInfo(null, () => CreateCustomFactoryExpression(factory, serviceType, serviceName, null));
+            return new ImplementationInfo(null,
+                                          () => CreateCustomFactoryExpression(factory, serviceType, serviceName, null));
         }
 
-        private static Expression CreateCustomFactoryExpression(IFactory customFactory, Type serviceType, string serviceName, Expression proceedExpression)
+        private static Expression CreateCustomFactoryExpression(IFactory customFactory, Type serviceType,
+                                                                string serviceName, Expression proceedExpression)
         {
             ServiceRequest serviceRequest = CreateServiceRequest(serviceType, serviceName, proceedExpression);
             return Expression.Convert(Expression.Call(Expression.Constant(customFactory), GetInstanceMethod,
-                                   new Expression[] { Expression.Constant(serviceRequest) }), serviceType);
+                                                      new Expression[] {Expression.Constant(serviceRequest)}),
+                                      serviceType);
         }
 
         private IFactory GetCustomFactory(Type serviceType, string serviceName)
         {
-            if (IsFactory(serviceType) || (IsEnumerableOfT(serviceType) && IsFactory(serviceType.GetGenericArguments().First())))
+            if (IsFactory(serviceType) ||
+                (IsEnumerableOfT(serviceType) && IsFactory(serviceType.GetGenericArguments().First())))
                 return null;
-            return GetInstance<IEnumerable<IFactory>>().Where(f => f.CanGetInstance(serviceType, serviceName)).FirstOrDefault();
+            return
+                GetInstance<IEnumerable<IFactory>>().Where(f => f.CanGetInstance(serviceType, serviceName)).
+                    FirstOrDefault();
         }
 
         private ImplementationInfo CreateFuncImplementationInfo(Type serviceType, string serviceName)
@@ -579,10 +604,10 @@ namespace LightInject
         private Expression CreateLazyExpression(Type serviceType, string serviceName)
         {
             Type actualServiceType = serviceType.GetGenericArguments().First();
-            Type lazyType = typeof(Lazy<>).MakeGenericType(actualServiceType);
-            ConstructorInfo ctor = lazyType.GetConstructor(new[] { typeof(Func<>).MakeGenericType(actualServiceType) });
+            Type lazyType = typeof (Lazy<>).MakeGenericType(actualServiceType);
+            ConstructorInfo ctor = lazyType.GetConstructor(new[] {typeof (Func<>).MakeGenericType(actualServiceType)});
             Expression bodyExression = GetBodyExpression(actualServiceType, serviceName);
-            Type funcType = typeof(Func<>).MakeGenericType(actualServiceType);
+            Type funcType = typeof (Func<>).MakeGenericType(actualServiceType);
             LambdaExpression lambdaExpression = Expression.Lambda(funcType, bodyExression, null);
             Expression newExpression = Expression.New(ctor, lambdaExpression);
             return newExpression;
@@ -608,7 +633,9 @@ namespace LightInject
         public object GetInstance(Type serviceType)
         {
             return _defaultFactories.GetOrAdd(serviceType,
-                                              t => new Lazy<Func<object>>(() => CreateDelegate(serviceType, string.Empty))).Value();                
+                                              t =>
+                                              new Lazy<Func<object>>(() => CreateDelegate(serviceType, string.Empty))).
+                Value();
         }
 
         /// <summary>
@@ -618,7 +645,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public TService GetInstance<TService>()
         {
-            return (TService)GetInstance(typeof(TService));
+            return (TService) GetInstance(typeof (TService));
         }
 
         /// <summary>
@@ -629,7 +656,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>    
         public TService GetInstance<TService>(string serviceName)
         {
-            return (TService)GetInstance(typeof(TService), serviceName);
+            return (TService) GetInstance(typeof (TService), serviceName);
         }
 
         /// <summary>
@@ -642,16 +669,37 @@ namespace LightInject
         {
             return
                 _namedFactories.GetOrAdd(Tuple.Create(serviceType, serviceName),
-                                    s => new Lazy<Func<object>>(() => CreateDelegate(serviceType, serviceName))).Value();                    
+                                         s => new Lazy<Func<object>>(() => CreateDelegate(serviceType, serviceName))).
+                    Value();
+        }
+
+        /// <summary>
+        /// Gets all instances of the given <paramref name="serviceType"/>
+        /// </summary>
+        /// <param name="serviceType">The type of services to resolve.</param>
+        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/></returns>
+        public IEnumerable<object> GetAllInstances(Type serviceType)
+        {
+            return (IEnumerable<object>) GetInstance(typeof (IEnumerable<>).MakeGenericType(serviceType));
+        }
+
+        /// <summary>
+        /// Gets all instances of type <typeparamref name="TService"/>
+        /// </summary>
+        /// <typeparam name="TService">The type of services to resolve.</typeparam>
+        /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
+        public IEnumerable<TService> GetAllInstances<TService>()
+        {
+            return GetInstance<IEnumerable<TService>>();
         }
 
         private Func<object> CreateDelegate(Type serviceType, string serviceName)
         {
             EnsureServiceContainerIsConfigured();
-            var expression = GetBodyExpression(serviceType, serviceName);            
+            Expression expression = GetBodyExpression(serviceType, serviceName);
             return Expression.Lambda<Func<object>>(expression).Compile();
         }
-        
+
         private void EnsureServiceContainerIsConfigured()
         {
             if (_availableServices.Count == 0)
@@ -665,6 +713,7 @@ namespace LightInject
                 ImplementingType = implementingType;
                 FactoryExpression = new Lazy<Expression>(factory);
             }
+
             public Type ImplementingType { get; private set; }
             public Lazy<Expression> FactoryExpression { get; private set; }
             public bool IsSingleton { get; set; }
@@ -707,7 +756,7 @@ namespace LightInject
 
             private static bool IsStringConstantExpression(Expression argument)
             {
-                return argument.NodeType == ExpressionType.Constant && argument.Type == typeof(string);
+                return argument.NodeType == ExpressionType.Constant && argument.Type == typeof (string);
             }
 
             private static bool HasOneArgument(MethodCallExpression node)
@@ -717,12 +766,12 @@ namespace LightInject
 
             private static bool IsGetInstanceMethod(MethodInfo methodInfo)
             {
-                return methodInfo.DeclaringType == typeof(IServiceContainer) && methodInfo.Name == "GetInstance";
+                return methodInfo.DeclaringType == typeof (IServiceContainer) && methodInfo.Name == "GetInstance";
             }
 
             private static bool IsGetAllInstancesMethod(MethodInfo methodInfo)
             {
-                return methodInfo.DeclaringType == typeof(IServiceContainer) && methodInfo.Name == "GetAllInstances";
+                return methodInfo.DeclaringType == typeof (IServiceContainer) && methodInfo.Name == "GetAllInstances";
             }
 
             private static bool RepresentsGetInstanceMethod(MethodCallExpression node)
@@ -738,22 +787,28 @@ namespace LightInject
             private Expression RewriteGetNamedInstanceMethod(MethodCallExpression methodCallExpression)
             {
                 return _getBodyExpression(methodCallExpression.Method.GetGenericArguments().First(),
-                                          (string)((ConstantExpression)methodCallExpression.Arguments[0]).Value);
+                                          (string) ((ConstantExpression) methodCallExpression.Arguments[0]).Value);
             }
 
             private Expression RewriteGetAllInstancesMethod(MethodCallExpression methodCallExpression)
             {
                 Type enumerableType =
-                    typeof(IEnumerable<>).MakeGenericType(methodCallExpression.Method.GetGenericArguments().First());
+                    typeof (IEnumerable<>).MakeGenericType(methodCallExpression.Method.GetGenericArguments().First());
                 return _getBodyExpression(enumerableType, string.Empty);
             }
         }
+
 #if NET40
-        
+
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
         {
-            public ThreadSafeDictionary() { }
-            public ThreadSafeDictionary(IEqualityComparer<TKey> comparer) : base(comparer) { }
+            public ThreadSafeDictionary()
+            {
+            }
+
+            public ThreadSafeDictionary(IEqualityComparer<TKey> comparer) : base(comparer)
+            {
+            }
         }
 #endif
 #if !NET40
@@ -820,27 +875,366 @@ namespace LightInject
                 return GetEnumerator();
             }
         }
+
+        public abstract class ExpressionVisitor
+    {
+        protected ExpressionVisitor()
+        {
+        }
+
+        public virtual Expression Visit(Expression exp)
+        {
+            if (exp == null)
+                return exp;
+            switch (exp.NodeType)
+            {
+                case ExpressionType.Negate:
+                case ExpressionType.NegateChecked:
+                case ExpressionType.Not:
+                case ExpressionType.Convert:
+                case ExpressionType.ConvertChecked:
+                case ExpressionType.ArrayLength:
+                case ExpressionType.Quote:
+                case ExpressionType.TypeAs:
+                    return this.VisitUnary((UnaryExpression)exp);
+                case ExpressionType.Add:
+                case ExpressionType.AddChecked:
+                case ExpressionType.Subtract:
+                case ExpressionType.SubtractChecked:
+                case ExpressionType.Multiply:
+                case ExpressionType.MultiplyChecked:
+                case ExpressionType.Divide:
+                case ExpressionType.Modulo:
+                case ExpressionType.And:
+                case ExpressionType.AndAlso:
+                case ExpressionType.Or:
+                case ExpressionType.OrElse:
+                case ExpressionType.LessThan:
+                case ExpressionType.LessThanOrEqual:
+                case ExpressionType.GreaterThan:
+                case ExpressionType.GreaterThanOrEqual:
+                case ExpressionType.Equal:
+                case ExpressionType.NotEqual:
+                case ExpressionType.Coalesce:
+                case ExpressionType.ArrayIndex:
+                case ExpressionType.RightShift:
+                case ExpressionType.LeftShift:
+                case ExpressionType.ExclusiveOr:
+                    return this.VisitBinary((BinaryExpression)exp);
+                case ExpressionType.TypeIs:
+                    return this.VisitTypeIs((TypeBinaryExpression)exp);
+                case ExpressionType.Conditional:
+                    return this.VisitConditional((ConditionalExpression)exp);
+                case ExpressionType.Constant:
+                    return this.VisitConstant((ConstantExpression)exp);
+                case ExpressionType.Parameter:
+                    return this.VisitParameter((ParameterExpression)exp);
+                case ExpressionType.MemberAccess:
+                    return this.VisitMemberAccess((MemberExpression)exp);
+                case ExpressionType.Call:
+                    return this.VisitMethodCall((MethodCallExpression)exp);
+                case ExpressionType.Lambda:
+                    return this.VisitLambda((LambdaExpression)exp);
+                case ExpressionType.New:
+                    return this.VisitNew((NewExpression)exp);
+                case ExpressionType.NewArrayInit:
+                case ExpressionType.NewArrayBounds:
+                    return this.VisitNewArray((NewArrayExpression)exp);
+                case ExpressionType.Invoke:
+                    return this.VisitInvocation((InvocationExpression)exp);
+                case ExpressionType.MemberInit:
+                    return this.VisitMemberInit((MemberInitExpression)exp);
+                case ExpressionType.ListInit:
+                    return this.VisitListInit((ListInitExpression)exp);
+                default:
+                    throw new Exception(string.Format("Unhandled expression type: '{0}'", exp.NodeType));
+            }
+        }
+
+        protected virtual MemberBinding VisitBinding(MemberBinding binding)
+        {
+            switch (binding.BindingType)
+            {
+                case MemberBindingType.Assignment:
+                    return this.VisitMemberAssignment((MemberAssignment)binding);
+                case MemberBindingType.MemberBinding:
+                    return this.VisitMemberMemberBinding((MemberMemberBinding)binding);
+                case MemberBindingType.ListBinding:
+                    return this.VisitMemberListBinding((MemberListBinding)binding);
+                default:
+                    throw new Exception(string.Format("Unhandled binding type '{0}'", binding.BindingType));
+            }
+        }
+
+        protected virtual ElementInit VisitElementInitializer(ElementInit initializer)
+        {
+            ReadOnlyCollection<Expression> arguments = this.VisitExpressionList(initializer.Arguments);
+            if (arguments != initializer.Arguments)
+            {
+                return Expression.ElementInit(initializer.AddMethod, arguments);
+            }
+            return initializer;
+        }
+
+        protected virtual Expression VisitUnary(UnaryExpression u)
+        {
+            Expression operand = this.Visit(u.Operand);
+            if (operand != u.Operand)
+            {
+                return Expression.MakeUnary(u.NodeType, operand, u.Type, u.Method);
+            }
+            return u;
+        }
+
+        protected virtual Expression VisitBinary(BinaryExpression b)
+        {
+            Expression left = this.Visit(b.Left);
+            Expression right = this.Visit(b.Right);
+            Expression conversion = this.Visit(b.Conversion);
+            if (left != b.Left || right != b.Right || conversion != b.Conversion)
+            {
+                if (b.NodeType == ExpressionType.Coalesce && b.Conversion != null)
+                    return Expression.Coalesce(left, right, conversion as LambdaExpression);
+                else
+                    return Expression.MakeBinary(b.NodeType, left, right, b.IsLiftedToNull, b.Method);
+            }
+            return b;
+        }
+
+        protected virtual Expression VisitTypeIs(TypeBinaryExpression b)
+        {
+            Expression expr = this.Visit(b.Expression);
+            if (expr != b.Expression)
+            {
+                return Expression.TypeIs(expr, b.TypeOperand);
+            }
+            return b;
+        }
+
+        protected virtual Expression VisitConstant(ConstantExpression c)
+        {
+            return c;
+        }
+
+        protected virtual Expression VisitConditional(ConditionalExpression c)
+        {
+            Expression test = this.Visit(c.Test);
+            Expression ifTrue = this.Visit(c.IfTrue);
+            Expression ifFalse = this.Visit(c.IfFalse);
+            if (test != c.Test || ifTrue != c.IfTrue || ifFalse != c.IfFalse)
+            {
+                return Expression.Condition(test, ifTrue, ifFalse);
+            }
+            return c;
+        }
+
+        protected virtual Expression VisitParameter(ParameterExpression p)
+        {
+            return p;
+        }
+
+        protected virtual Expression VisitMemberAccess(MemberExpression m)
+        {
+            Expression exp = this.Visit(m.Expression);
+            if (exp != m.Expression)
+            {
+                return Expression.MakeMemberAccess(exp, m.Member);
+            }
+            return m;
+        }
+
+        protected virtual Expression VisitMethodCall(MethodCallExpression m)
+        {
+            Expression obj = this.Visit(m.Object);
+            IEnumerable<Expression> args = this.VisitExpressionList(m.Arguments);
+            if (obj != m.Object || args != m.Arguments)
+            {
+                return Expression.Call(obj, m.Method, args);
+            }
+            return m;
+        }
+
+        protected virtual ReadOnlyCollection<Expression> VisitExpressionList(ReadOnlyCollection<Expression> original)
+        {
+            List<Expression> list = null;
+            for (int i = 0, n = original.Count; i < n; i++)
+            {
+                Expression p = this.Visit(original[i]);
+                if (list != null)
+                {
+                    list.Add(p);
+                }
+                else if (p != original[i])
+                {
+                    list = new List<Expression>(n);
+                    for (int j = 0; j < i; j++)
+                    {
+                        list.Add(original[j]);
+                    }
+                    list.Add(p);
+                }
+            }
+            if (list != null)
+            {
+                return list.AsReadOnly();
+            }
+            return original;
+        }
+
+        protected virtual MemberAssignment VisitMemberAssignment(MemberAssignment assignment)
+        {
+            Expression e = this.Visit(assignment.Expression);
+            if (e != assignment.Expression)
+            {
+                return Expression.Bind(assignment.Member, e);
+            }
+            return assignment;
+        }
+
+        protected virtual MemberMemberBinding VisitMemberMemberBinding(MemberMemberBinding binding)
+        {
+            IEnumerable<MemberBinding> bindings = this.VisitBindingList(binding.Bindings);
+            if (bindings != binding.Bindings)
+            {
+                return Expression.MemberBind(binding.Member, bindings);
+            }
+            return binding;
+        }
+
+        protected virtual MemberListBinding VisitMemberListBinding(MemberListBinding binding)
+        {
+            IEnumerable<ElementInit> initializers = this.VisitElementInitializerList(binding.Initializers);
+            if (initializers != binding.Initializers)
+            {
+                return Expression.ListBind(binding.Member, initializers);
+            }
+            return binding;
+        }
+
+        protected virtual IEnumerable<MemberBinding> VisitBindingList(ReadOnlyCollection<MemberBinding> original)
+        {
+            List<MemberBinding> list = null;
+            for (int i = 0, n = original.Count; i < n; i++)
+            {
+                MemberBinding b = this.VisitBinding(original[i]);
+                if (list != null)
+                {
+                    list.Add(b);
+                }
+                else if (b != original[i])
+                {
+                    list = new List<MemberBinding>(n);
+                    for (int j = 0; j < i; j++)
+                    {
+                        list.Add(original[j]);
+                    }
+                    list.Add(b);
+                }
+            }
+            if (list != null)
+                return list;
+            return original;
+        }
+
+        protected virtual IEnumerable<ElementInit> VisitElementInitializerList(ReadOnlyCollection<ElementInit> original)
+        {
+            List<ElementInit> list = null;
+            for (int i = 0, n = original.Count; i < n; i++)
+            {
+                ElementInit init = this.VisitElementInitializer(original[i]);
+                if (list != null)
+                {
+                    list.Add(init);
+                }
+                else if (init != original[i])
+                {
+                    list = new List<ElementInit>(n);
+                    for (int j = 0; j < i; j++)
+                    {
+                        list.Add(original[j]);
+                    }
+                    list.Add(init);
+                }
+            }
+            if (list != null)
+                return list;
+            return original;
+        }
+
+        protected virtual Expression VisitLambda(LambdaExpression lambda)
+        {
+            Expression body = this.Visit(lambda.Body);
+            if (body != lambda.Body)
+            {
+                return Expression.Lambda(lambda.Type, body, lambda.Parameters);
+            }
+            return lambda;
+        }
+
+        protected virtual NewExpression VisitNew(NewExpression nex)
+        {
+            IEnumerable<Expression> args = this.VisitExpressionList(nex.Arguments);
+            if (args != nex.Arguments)
+            {
+                if (nex.Members != null)
+                    return Expression.New(nex.Constructor, args, nex.Members);
+                else
+                    return Expression.New(nex.Constructor, args);
+            }
+            return nex;
+        }
+
+        protected virtual Expression VisitMemberInit(MemberInitExpression init)
+        {
+            NewExpression n = this.VisitNew(init.NewExpression);
+            IEnumerable<MemberBinding> bindings = this.VisitBindingList(init.Bindings);
+            if (n != init.NewExpression || bindings != init.Bindings)
+            {
+                return Expression.MemberInit(n, bindings);
+            }
+            return init;
+        }
+
+        protected virtual Expression VisitListInit(ListInitExpression init)
+        {
+            NewExpression n = this.VisitNew(init.NewExpression);
+            IEnumerable<ElementInit> initializers = this.VisitElementInitializerList(init.Initializers);
+            if (n != init.NewExpression || initializers != init.Initializers)
+            {
+                return Expression.ListInit(n, initializers);
+            }
+            return init;
+        }
+
+        protected virtual Expression VisitNewArray(NewArrayExpression na)
+        {
+            IEnumerable<Expression> exprs = this.VisitExpressionList(na.Expressions);
+            if (exprs != na.Expressions)
+            {
+                if (na.NodeType == ExpressionType.NewArrayInit)
+                {
+                    return Expression.NewArrayInit(na.Type.GetElementType(), exprs);
+                }
+                else
+                {
+                    return Expression.NewArrayBounds(na.Type.GetElementType(), exprs);
+                }
+            }
+            return na;
+        }
+
+        protected virtual Expression VisitInvocation(InvocationExpression iv)
+        {
+            IEnumerable<Expression> args = this.VisitExpressionList(iv.Arguments);
+            Expression expr = this.Visit(iv.Expression);
+            if (args != iv.Arguments || expr != iv.Expression)
+            {
+                return Expression.Invoke(expr, args);
+            }
+            return iv;
+        }
+    }
 #endif
-
-        /// <summary>
-        /// Gets all instances of the given <paramref name="serviceType"/>
-        /// </summary>
-        /// <param name="serviceType">The type of services to resolve.</param>
-        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/></returns>
-        public IEnumerable<object> GetAllInstances(Type serviceType)
-        {
-            return (IEnumerable<object>)GetInstance(typeof(IEnumerable<>).MakeGenericType(serviceType));
-        }
-
-        /// <summary>
-        /// Gets all instances of type <typeparamref name="TService"/>
-        /// </summary>
-        /// <typeparam name="TService">The type of services to resolve.</typeparam>
-        /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
-        public IEnumerable<TService> GetAllInstances<TService>()
-        {
-            return GetInstance<IEnumerable<TService>>();
-        }
     }
 
     /// <summary>
@@ -851,7 +1245,10 @@ namespace LightInject
         /// <summary>
         /// Determines if the service request can be resolved by the underlying container.  
         /// </summary>
-        public bool CanProceed { get { return Proceed != null; } }
+        public bool CanProceed
+        {
+            get { return Proceed != null; }
+        }
 
         /// <summary>
         /// Gets the requested service type.
@@ -902,13 +1299,6 @@ namespace LightInject
         void Scan(Assembly assembly, Func<Type, bool> shouldLoad);
     }
 
-    
-    
-
-
-    
-
-
 
     /// <summary>
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
@@ -931,19 +1321,19 @@ namespace LightInject
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>
         /// <param name="shouldLoad">A function delegate that determines if the current type should be loaded into the <see cref="IServiceContainer"/>.</param>
-        public void Scan(Assembly assembly, Func<Type,bool> shouldLoad)
+        public void Scan(Assembly assembly, Func<Type, bool> shouldLoad)
         {
             IEnumerable<Type> types = GetConcreteTypes(assembly);
-            foreach (var type in types.Where(shouldLoad))
+            foreach (Type type in types.Where(shouldLoad))
                 BuildImplementationMap(type);
         }
 
         private void BuildImplementationMap(Type implementingType)
         {
             Type[] interfaces = implementingType.GetInterfaces();
-            foreach (var interfaceType in interfaces)
+            foreach (Type interfaceType in interfaces)
                 RegisterInternal(interfaceType, implementingType);
-            foreach (var baseType in GetBaseTypes(implementingType))
+            foreach (Type baseType in GetBaseTypes(implementingType))
                 RegisterInternal(baseType, implementingType);
         }
 
@@ -952,7 +1342,8 @@ namespace LightInject
             if (serviceType.IsGenericType && serviceType.ContainsGenericParameters)
                 serviceType = serviceType.GetGenericTypeDefinition();
             if (ShouldCreateSingletonExpression(implementingType))
-                _serviceContainer.RegisterAsSingleton(serviceType, implementingType, GetServiceName(serviceType, implementingType));
+                _serviceContainer.RegisterAsSingleton(serviceType, implementingType,
+                                                      GetServiceName(serviceType, implementingType));
             _serviceContainer.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
         }
 
@@ -974,7 +1365,7 @@ namespace LightInject
         private static IEnumerable<Type> GetBaseTypes(Type concreteType)
         {
             Type baseType = concreteType;
-            while (baseType != typeof(object) && baseType != null)
+            while (baseType != typeof (object) && baseType != null)
             {
                 yield return baseType;
                 baseType = baseType.BaseType;
@@ -994,7 +1385,7 @@ namespace LightInject
 
         private static bool IsFactory(Type type)
         {
-            return typeof(IFactory).IsAssignableFrom(type);
+            return typeof (IFactory).IsAssignableFrom(type);
         }
 
         private static bool TypeNameStartsOrEndsWithSingleton(Type concreteType)
