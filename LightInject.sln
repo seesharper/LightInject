@@ -3,9 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9D3C97D2-A1C7-487E-85B1-FCBD93057BA4}"
 	ProjectSection(SolutionItems) = preProject
-		Article.htm = Article.htm
-		Debug1.jpg = Debug1.jpg
-		Debug2.jpg = Debug2.jpg
 		LightInject.vsmdi = LightInject.vsmdi
 		Local.testsettings = Local.testsettings
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
