@@ -61,14 +61,28 @@ function EvaluateExpression([string] $stringExpression, [string] $framework)
 
 
 function CreateBooleanConstantExpression([string] $directive,[string]$framework )
-{		
-	if($framework -eq $directive)
+{				
+	if(($framework -eq $directive) -or  ($framework -eq $directive.SubString(1)))
 	{
-		return [System.Linq.Expressions.Expression][System.Linq.Expressions.Expression]::Constant($true)
+		if($directive.StartsWith("!"))
+		{
+			return [System.Linq.Expressions.Expression][System.Linq.Expressions.Expression]::Constant($false)
+		}
+		else
+		{
+			return [System.Linq.Expressions.Expression][System.Linq.Expressions.Expression]::Constant($true)
+		}
 	}
 	else
 	{
-		return [System.Linq.Expressions.Expression][System.Linq.Expressions.Expression]::Constant($false)
+		if($directive.StartsWith("!"))
+		{
+			return [System.Linq.Expressions.Expression][System.Linq.Expressions.Expression]::Constant($true)
+		}
+		else
+		{
+			return [System.Linq.Expressions.Expression][System.Linq.Expressions.Expression]::Constant($false)
+		}
 	}
 }
 
