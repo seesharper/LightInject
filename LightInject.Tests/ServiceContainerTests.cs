@@ -47,7 +47,18 @@ namespace DependencyInjector.Tests
             object instance = container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-       
+
+        [TestMethod]
+        public void Instance_OneNamedClosedGenericService_ReturnsDefaultService()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<int>), typeof(Foo<int>), "SomeFoo");
+            object instance = container.GetInstance(typeof(IFoo<int>));
+            Assert.IsInstanceOfType(instance, typeof(Foo<int>));
+        }
+
+
+
         [TestMethod]
         public void GetInstance_NamedService_ReturnsNamedInstance()
         {

@@ -16,7 +16,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-
 namespace LightInject
 {
     /// <summary>
@@ -514,10 +513,10 @@ namespace LightInject
                 return CreateFuncImplementationInfo(serviceType, serviceName);
             if (IsLazy(serviceType))
                 return CreateLazyImplementationInfo(serviceType, serviceName);
-            if (IsClosedGeneric(serviceType))
-                return CreateClosedGenericImplementationInfo(serviceType, serviceName);
             if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
                 return CreateImplementationInfoBasedOnFirstNamedInstance(serviceType);
+            if (IsClosedGeneric(serviceType))
+                return CreateClosedGenericImplementationInfo(serviceType, serviceName);           
             if (!string.IsNullOrEmpty(serviceName))
                 return CreateImplementationInfoThatRedirectsToDefaultService(serviceType);
 
