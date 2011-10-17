@@ -9,7 +9,8 @@ namespace DependencyInjector.Tests
 {    
     [TestClass]
     public class ServiceContainerTests
-    {                                    
+    {
+        
         [TestMethod]
         public void GetInstance_OneService_ReturnsInstance()
         {

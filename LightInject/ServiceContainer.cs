@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 
 namespace LightInject
@@ -162,15 +163,17 @@ namespace LightInject
             =
             new ThreadSafeDictionary<Type, ThreadSafeDictionary<string, ImplementationInfo>>();
 
-        private readonly ThreadSafeDictionary<Type, Lazy<Func<object>>> _defaultFactories =
-            new ThreadSafeDictionary<Type, Lazy<Func<object>>>();
+        private readonly ThreadSafeDictionary<Type, Lazy<Func<List<object>,object>>> _defaultFactories =
+            new ThreadSafeDictionary<Type, Lazy<Func<List<object>, object>>>();
 
-        private readonly ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<object>>> _namedFactories =
-            new ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<object>>>();
+        private readonly ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<List<object>, object>>> _namedFactories =
+            new ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<List<object>, object>>>();
 
         private static readonly MethodInfo GetInstanceMethod;
 
         private readonly MethodCallRewriter _methodCallRewriter;
+
+        private readonly List<object> _constants = new List<object>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
@@ -387,14 +390,20 @@ namespace LightInject
         private Expression CreateSingletonExpression(Type serviceType, Type implementingType, string serviceName)
         {
             Expression newExpression = CreateNewExpression(serviceType, implementingType, serviceName);
-            object singletonInstance = Expression.Lambda<Func<object>>(newExpression).Compile()();
-            return Expression.Constant(singletonInstance);
+            object singletonInstance = Expression.Lambda<Func<List<object>,object>>(newExpression,Expression.Parameter(typeof(List<object>),"c")).Compile()(_constants);     
+            _constants.Add(singletonInstance);
+            int index = _constants.IndexOf(singletonInstance);
+            MethodInfo method = typeof (List<object>).GetMethod("get_Item");
+            return Expression.Convert(Expression.Call(Expression.Parameter(typeof (List<object>), "c"), method,Expression.Constant(index)),serviceType);            
         }
 
-        private static Expression CreateSingletonExpression(Func<Expression> expressionFactory)
+        private Expression CreateSingletonExpression(Func<Expression> expressionFactory)
         {
             object singletonInstance = Expression.Lambda<Func<object>>(expressionFactory()).Compile()();
-            return Expression.Constant(singletonInstance);
+            _constants.Add(singletonInstance);
+            int index = _constants.IndexOf(singletonInstance);
+            MethodInfo method = typeof(List<object>).GetMethod("get_Item");
+            return Expression.Call(Expression.Parameter(typeof(List<object>), "c"), method, Expression.Constant(index));          
         }
 
         private NewArrayExpression CreateNewArrayExpression(Type enumerableType)
@@ -443,13 +452,13 @@ namespace LightInject
         }
 
         private IEnumerable<Expression> GetParameterExpressions(ConstructorInfo constructorInfo)
-        {
+        {            
             return constructorInfo.GetParameters().Select(
                 parameterInfo =>
-                GetBodyExpression(parameterInfo.ParameterType,
+                Expression.Convert(GetBodyExpression(parameterInfo.ParameterType,
                                   HasMultipleImplementations(parameterInfo.ParameterType)
                                       ? parameterInfo.Name
-                                      : string.Empty)).ToList();
+                                      : string.Empty),parameterInfo.ParameterType)).ToList();
         }
 
         private bool HasMultipleImplementations(Type serviceType)
@@ -477,7 +486,10 @@ namespace LightInject
             Expression bodyExression = GetBodyExpression(actualServiceType, serviceName);
             Type funcType = typeof (Func<>).MakeGenericType(actualServiceType);
             Delegate funcInstance = Expression.Lambda(funcType, bodyExression, null).Compile();
-            return Expression.Constant(funcInstance);
+            _constants.Add(funcInstance);
+            var index = _constants.IndexOf(funcInstance);
+            MethodInfo method = typeof(List<object>).GetMethod("get_Item");
+            return Expression.Call(Expression.Parameter(typeof(List<object>), "c"), method, Expression.Constant(index));  
         }
 
         private ImplementationInfo GetImplementationInfo(Type serviceType, string serviceName)
@@ -636,9 +648,9 @@ namespace LightInject
         public object GetInstance(Type serviceType)
         {
             return _defaultFactories.GetOrAdd(serviceType,
-                                              t =>
-                                              new Lazy<Func<object>>(() => CreateDelegate(serviceType, string.Empty))).
-                Value();
+                                              t => 
+                                              new Lazy<Func<List<object>,object>>(() => CreateDelegate(serviceType, string.Empty))).
+                Value(_constants);
         }
 
         /// <summary>
@@ -672,8 +684,8 @@ namespace LightInject
         {
             return
                 _namedFactories.GetOrAdd(Tuple.Create(serviceType, serviceName),
-                                         s => new Lazy<Func<object>>(() => CreateDelegate(serviceType, serviceName))).
-                    Value();
+                                         s => new Lazy<Func<List<object>,object>>(() => CreateDelegate(serviceType, serviceName))).
+                    Value(_constants);
         }
 
         /// <summary>
@@ -696,11 +708,15 @@ namespace LightInject
             return GetInstance<IEnumerable<TService>>();
         }
 
-        private Func<object> CreateDelegate(Type serviceType, string serviceName)
+        private Func<List<object>,object> CreateDelegate(Type serviceType, string serviceName)
         {
             EnsureServiceContainerIsConfigured();
             Expression expression = GetBodyExpression(serviceType, serviceName);
-            return Expression.Lambda<Func<object>>(expression).Compile();
+            ParameterExpression parameterExpression = Expression.Parameter(typeof (List<object>), "c");
+            expression = expression.Replace<ParameterExpression>(p => true, p => parameterExpression);
+            //return Expression.Lambda<Func<List<object>, object>>(expression,parameterExpression).Compile();
+            return Expression.Lambda<Func<List<object>, object>>(expression, parameterExpression).CompileToMethod();
+            //return Expression.Lambda<Func<List<object>,object>>(expression,Expression.Parameter(typeof(List<object>),"c")).CompileToMethod();
         }
 
         private void EnsureServiceContainerIsConfigured()
@@ -1038,6 +1054,19 @@ namespace LightInject
         {
             return concreteType.Name.EndsWith("Singleton", StringComparison.InvariantCultureIgnoreCase) ||
                    concreteType.Name.StartsWith("Singleton", StringComparison.InvariantCultureIgnoreCase);
+        }
+    }
+    public static class ExpressionExtensions2
+    {
+        public static T CompileToMethod<T>(this Expression<T> expression)
+        {
+            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicAssembly"), AssemblyBuilderAccess.Run);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public);
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod("MethodDelegate", MethodAttributes.Public | MethodAttributes.Static);
+            expression.CompileToMethod(methodBuilder);
+            Type type = typeBuilder.CreateType();
+            return (T)(object)Delegate.CreateDelegate(typeof(T), type.GetMethod("MethodDelegate"), true);
         }
     }
 }
