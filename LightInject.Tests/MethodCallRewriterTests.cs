@@ -50,6 +50,8 @@ namespace DependencyInjector.Tests
             Assert.IsTrue(result.Contains<MethodCallExpression>(me => true));
         }
 
+
+
         private IFoo GetFoo()
         {
             return null;

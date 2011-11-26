@@ -87,4 +87,15 @@ namespace LightInject.SampleLibrary
 
         public int CallCount { get; private set; }
     }
+
+    public class FooWithMultipleConstructors
+    {
+        public FooWithMultipleConstructors()
+        {
+        }
+
+        public FooWithMultipleConstructors(IBar bar)
+        {
+        }
+    }
 }
