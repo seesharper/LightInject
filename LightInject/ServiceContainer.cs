@@ -32,13 +32,6 @@ namespace LightInject
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(Assembly assembly, Func<Type, bool> shouldLoad);
 
-        /// <summary>
-        /// Registers services from assemblies currently in the <see cref="AppDomain"/>.        
-        /// </summary>
-        /// <param name="shouldLoad">A function delegate that determines if the current type should 
-        /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
-        void Register(Func<Type, bool> shouldLoad);
-
 #if !SILVERLIGHT
         /// <summary>
         /// Loads service from the current directory.
@@ -84,7 +77,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
         /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/>.</param>
-        void Register<TService>(Expression<Func<TService>> factory);
+        void Register<TService>(Expression<Func<IServiceContainer, TService>> factory);
 
         /// <summary>
         /// Registers a factory delegate used to create an instance of <typeparamref name="TService"/>. 
@@ -99,7 +92,7 @@ namespace LightInject
         /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
         /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/>.</param>
         /// <param name="serviceName">The name of the service.</param>
-        void Register<TService>(Expression<Func<TService>> factory, string serviceName);
+        void Register<TService>(Expression<Func<IServiceContainer, TService>> factory, string serviceName);
 
         /// <summary>
         /// Registers a factory delegate used to create an instance of <typeparamref name="TService"/>. 
@@ -203,7 +196,7 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<List<object>, object>>> _namedFactories =
             new ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<List<object>, object>>>();
 
-        private static readonly MethodInfo GetInstanceMethod;
+        private static readonly MethodInfo getInstanceMethod;
 
         private readonly MethodCallRewriter _methodCallRewriter;
 
@@ -213,7 +206,7 @@ namespace LightInject
 
         static ServiceContainer()
         {
-            GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
+            getInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
         }
         
         /// <summary>
@@ -293,20 +286,7 @@ namespace LightInject
         {
             AssemblyScanner.Scan(assembly, shouldLoad);
         }
-
-        /// <summary>
-        /// Registers services from assemblies currently in the <see cref="AppDomain"/>.        
-        /// </summary>
-        /// <param name="shouldLoad">A function delegate that determines if the current type should 
-        /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
-        public void Register(Func<Type, bool> shouldLoad)
-        {
-            foreach (Assembly assembly in GetAssemblies())
-            {
-                Register(assembly, shouldLoad);
-            }
-        }
-
+              
 #if !SILVERLIGHT
 
         /// <summary>
@@ -394,7 +374,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
         /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/>.</param>
-        public void Register<TService>(Expression<Func<TService>> factory)
+        public void Register<TService>(Expression<Func<IServiceContainer, TService>> factory)
         {
             Register(factory, string.Empty);
         }
@@ -415,7 +395,7 @@ namespace LightInject
         /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
         /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/>.</param>
         /// <param name="serviceName">The name of the service.</param>
-        public void Register<TService>(Expression<Func<TService>> factory, string serviceName)
+        public void Register<TService>(Expression<Func<IServiceContainer, TService>> factory, string serviceName)
         {
             var implementationInfo = new ImplementationInfo(typeof(Func<TService>), () => factory.Body);
             Register(typeof(TService), serviceName, implementationInfo);
@@ -446,6 +426,25 @@ namespace LightInject
                 serviceType,
                 t =>
                 new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, string.Empty))).Value(_constants);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="bool"/> value.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns><b>true</b>, if the container can create the instance, otherwise <b>false</b>.</returns>
+        public bool CanCreateInstance(Type serviceType, string serviceName)
+        {
+            //Needs to check the following
+            return _availableServices.ContainsKey(serviceType) || ResolvableByCustomFactory(serviceType, serviceName);
+
+            //Open generics?
+        }
+
+        private bool ResolvableByCustomFactory(Type serviceType, string serviceName)
+        {
+            return GetAllInstances<IFactory>().Any(f => f.CanGetInstance(serviceType, serviceName));
         }
 
         private static bool IsLazy(Type serviceType)
@@ -528,7 +527,15 @@ namespace LightInject
         {
             GetImplementations(serviceType).AddOrUpdate(serviceName, s => implementationInfo, (s, i) => implementationInfo);                                                        
         }
-                
+
+        private void RegisterFromAppDomain()
+        {
+            foreach (Assembly assembly in GetAssemblies())
+            {
+                Register(assembly, t => true);
+            }
+        }
+        
         private Expression CreateSingletonExpression(Type serviceType, Type implementingType, string serviceName)
         {
             Expression newExpression = CreateNewExpression(serviceType, implementingType, serviceName);
@@ -551,14 +558,7 @@ namespace LightInject
             MethodInfo method = typeof(List<object>).GetMethod("get_Item");
             return Expression.Convert(Expression.Call(_constantsParameterExpression, method, Expression.Constant(index)), serviceType);
         }
-
-        private Expression CreateConstantExpression(object value)
-        {
-            int index = GetConstantIndex(value);
-            MethodInfo method = typeof(List<object>).GetMethod("get_Item");
-            return Expression.Call(_constantsParameterExpression, method, Expression.Constant(index));
-        }
-        
+               
         private NewArrayExpression CreateNewArrayExpression(Type enumerableType)
         {
             Type serviceType = enumerableType.GetGenericArguments().First();
@@ -579,7 +579,7 @@ namespace LightInject
         {
             ConstructorInfo constructorInfo = GetConstructorInfo(implementingType);
             IEnumerable<Expression> parameterExpressions = GetParameterExpressions(constructorInfo);
-            NewExpression newExpression = Expression.New(constructorInfo, parameterExpressions);
+            NewExpression newExpression = Expression.New(constructorInfo, parameterExpressions);            
             IFactory factory = GetCustomFactory(serviceType, serviceName);
             return factory != null
                        ? CreateCustomFactoryExpression(factory, serviceType, serviceName, newExpression)
@@ -590,7 +590,7 @@ namespace LightInject
         {
             return GetImplementations(serviceType).Count > 1;
         }
-
+        
         private Expression GetBodyExpression(Type serviceType, string serviceName)
         {
             try
@@ -604,40 +604,25 @@ namespace LightInject
             }
         }
 
-        private Expression CreateFuncExpression_works(Type serviceType, string serviceName)
-        {
-            Type actualServiceType = serviceType.GetGenericArguments().First();
-            Expression bodyExression = GetBodyExpression(actualServiceType, serviceName);
-            Type funcType = typeof(Func<,>).MakeGenericType(typeof(List<object>), actualServiceType);
-
-            Delegate funcInstance = Expression.Lambda(funcType, bodyExression, _constantsParameterExpression).Compile();
-
-            LambdaExpression lambdaExpression = Expression.Lambda(funcType, bodyExression, _constantsParameterExpression);
-
-            var test = Expression.Invoke(lambdaExpression, _constantsParameterExpression);
-            var test2 = Expression.Lambda(test);
-            return test2;
-            var constantExpression = CreateConstantExpression(typeof(Delegate), test2);
-            return constantExpression;
-
-            //return constantExpression;
-            //MethodInfo invokeMethod = funcType.GetMethod("Invoke");
-            //return Expression.Call(Expression.Convert(constantExpression,funcType), invokeMethod, _constantsParameterExpression);
-            //return constantExpression;
-        }
-
         private Expression CreateFuncExpression(Type serviceType, string serviceName)
         {
             Type actualServiceType = serviceType.GetGenericArguments().First();
             Expression bodyExression = GetBodyExpression(actualServiceType, serviceName);
-            Type funcType = typeof(Func<,>).MakeGenericType(typeof(List<object>), actualServiceType);
-                        
+            Type funcType = typeof(Func<,>).MakeGenericType(typeof(List<object>), actualServiceType);         
             LambdaExpression lambdaExpression = Expression.Lambda(funcType, bodyExression, _constantsParameterExpression);
-            
-            var test = Expression.Invoke(lambdaExpression, _constantsParameterExpression);
-            var test2 = Expression.Lambda(test);
-          
-            return test2;                        
+            return Expression.Lambda(Expression.Invoke(lambdaExpression, _constantsParameterExpression));            
+        }
+
+        private Delegate Compile(LambdaExpression lambdaExpression)
+        {
+            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicAssembly"), AssemblyBuilderAccess.Run);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public);
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod("MethodDelegate", MethodAttributes.Public | MethodAttributes.Static);
+            lambdaExpression.CompileToMethod(methodBuilder);
+            Type type = typeBuilder.CreateType();
+            var test = Delegate.CreateDelegate(lambdaExpression.Type, type.GetMethod("MethodDelegate"), true);
+            return test;
         }
 
         private ImplementationInfo GetImplementationInfo(Type serviceType, string serviceName)
@@ -705,15 +690,15 @@ namespace LightInject
 
         private Expression CreateCustomFactoryExpression(IFactory customFactory, Type serviceType, string serviceName, Expression proceedExpression)                                                                
         {
-            ServiceRequest serviceRequest = CreateServiceRequest(serviceType, serviceName, proceedExpression);            
-            
-            return Expression.Convert(Expression.Call(CreateConstantExpression(typeof(IFactory),customFactory), GetInstanceMethod,
-                                                      new[] {CreateConstantExpression(typeof(ServiceRequest),serviceRequest)}),
-                                      serviceType);
+            ServiceRequest serviceRequest = CreateServiceRequest(serviceType, serviceName, proceedExpression);
+            var getFactoryExpression = CreateConstantExpression(typeof(IFactory), customFactory);
+            var getServiceRequestExpression = CreateConstantExpression(typeof(ServiceRequest), serviceRequest);
+            return Expression.Convert(Expression.Call(getFactoryExpression, getInstanceMethod, new[] { getServiceRequestExpression }), serviceType);
         }
 
         private int GetConstantIndex(object value)
         {                        
+            //TODO Make this thread safe
             if (!_constants.Contains(value))
                 _constants.Add(value);
             return _constants.IndexOf(value);
@@ -769,17 +754,18 @@ namespace LightInject
         {
             EnsureServiceContainerIsConfigured();
             Expression expression = GetBodyExpression(serviceType, serviceName);
-            //return Expression.Lambda<Func<List<object>, object>>(expression,parameterExpression).Compile();
-            return Expression.Lambda<Func<List<object>, object>>(expression, _constantsParameterExpression).CompileToMethod();
-            //return Expression.Lambda<Func<List<object>,object>>(expression,Expression.Parameter(typeof(List<object>),"c")).CompileToMethod();
+            //IFactory factory = GetCustomFactory(serviceType, serviceName);
+            //if (factory != null)
+            //    expression = CreateCustomFactoryExpression(factory, serviceType, serviceName, expression);                       
+            return Expression.Lambda<Func<List<object>, object>>(expression, _constantsParameterExpression).CompileToMethod();            
         }
 
         private void EnsureServiceContainerIsConfigured()
         {
             if (_availableServices.Count == 0)
-                Register(t => true);
+                RegisterFromAppDomain();            
         }
-
+       
         /// <summary>
         /// Replaces a <see cref="MethodCallExpression"/> that represents the GetInstance/GetAllInstances method 
         /// with their resolved body expression.        
@@ -797,6 +783,13 @@ namespace LightInject
                 _getBodyExpression = getBodyExpression;
             }
 
+            /// <summary>
+            /// Visits the children of the <see cref="T:System.Linq.Expressions.MethodCallExpression"/>.
+            /// </summary>
+            /// <returns>
+            /// The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.
+            /// </returns>
+            /// <param name="node">The expression to visit.</param>
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
                 if (RepresentsGetInstanceMethod(node))
@@ -1090,5 +1083,8 @@ namespace LightInject
             Type type = typeBuilder.CreateType();
             return (T)(object)Delegate.CreateDelegate(typeof(T), type.GetMethod("MethodDelegate"), true);
         }
+
+
+        
     }
 }

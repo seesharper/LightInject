@@ -88,6 +88,20 @@ namespace LightInject.SampleLibrary
         public int CallCount { get; private set; }
     }
 
+    public class GenericFooFactory : IFactory 
+    {        
+        public object GetInstance(ServiceRequest serviceRequest)
+        {
+            return serviceRequest.CanProceed ? serviceRequest.Proceed() : new Foo<int>();
+        }
+
+        public bool CanGetInstance(Type serviceType, string serviceName)
+        {
+            return serviceType.IsGenericType;
+        }
+    }
+
+
     public class FooWithMultipleConstructors
     {
         public FooWithMultipleConstructors()
