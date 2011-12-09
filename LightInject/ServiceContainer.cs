@@ -15,7 +15,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace LightInject
 {
@@ -196,11 +198,15 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<List<object>, object>>> _namedFactories =
             new ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<List<object>, object>>>();
 
+        private readonly ThreadSafeDictionary<object, int> _constantCache = new ThreadSafeDictionary<object, int>();
+
         private static readonly MethodInfo getInstanceMethod;
 
         private readonly MethodCallRewriter _methodCallRewriter;
 
         private readonly List<object> _constants = new List<object>();
+
+        private volatile int _constantIndex;
 
         private readonly ParameterExpression _constantsParameterExpression = Expression.Parameter(typeof(List<object>), "c");
 
@@ -438,7 +444,6 @@ namespace LightInject
         {
             //Needs to check the following
             return _availableServices.ContainsKey(serviceType) || ResolvableByCustomFactory(serviceType, serviceName);
-
             //Open generics?
         }
 
@@ -477,7 +482,7 @@ namespace LightInject
             return concreteType.GetConstructors().Single();
         }
 
-        private static ServiceRequest CreateServiceRequest(Type serviceType, string serviceName, Expression proceedExpression)
+        private ServiceRequest CreateServiceRequest(Type serviceType, string serviceName, Expression proceedExpression)
         {
             var serviceRequest = new ServiceRequest
             {
@@ -488,8 +493,12 @@ namespace LightInject
             return serviceRequest;
         }
 
-        private static Func<object> CreateProceedFunctionDelegate(Expression proceedExpression)
+        private Func<object> CreateProceedFunctionDelegate(Expression proceedExpression)
         {
+            if (proceedExpression == null)
+                return null;                        
+            var func = Expression.Lambda<Func<List<Object>, object>>(proceedExpression, _constantsParameterExpression).CompileToMethod();
+            return () => func(_constants);
             return proceedExpression != null ? Expression.Lambda<Func<object>>(proceedExpression).CompileToMethod() : null;
         }
 
@@ -579,7 +588,8 @@ namespace LightInject
         {
             ConstructorInfo constructorInfo = GetConstructorInfo(implementingType);
             IEnumerable<Expression> parameterExpressions = GetParameterExpressions(constructorInfo);
-            NewExpression newExpression = Expression.New(constructorInfo, parameterExpressions);            
+            NewExpression newExpression = Expression.New(constructorInfo, parameterExpressions);
+            return newExpression;
             IFactory factory = GetCustomFactory(serviceType, serviceName);
             return factory != null
                        ? CreateCustomFactoryExpression(factory, serviceType, serviceName, newExpression)
@@ -595,9 +605,18 @@ namespace LightInject
         {
             try
             {
-                return _methodCallRewriter.Visit(GetImplementationInfo(serviceType, serviceName).FactoryExpression.Value);
+                ImplementationInfo implementationInfo = GetImplementationInfo(serviceType, serviceName);
+                Expression expression = implementationInfo.FactoryExpression.Value;
+                
+                if (!implementationInfo.IsCustomFactory)
+                {                    
+                    IFactory factory = GetCustomFactory(serviceType, serviceName);
+                    if (factory != null)
+                        expression = CreateCustomFactoryExpression(factory, serviceType, serviceName, expression);            
+                }
+                return _methodCallRewriter.Visit(expression);
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
                 throw new InvalidOperationException(
                     string.Format("An recursive dependency has been detected while resolving (Type = {0}, Name = {1}", serviceType, serviceName));                                  
@@ -607,11 +626,44 @@ namespace LightInject
         private Expression CreateFuncExpression(Type serviceType, string serviceName)
         {
             Type actualServiceType = serviceType.GetGenericArguments().First();
+
+            var methodInfo = typeof(ServiceContainer).GetMethod("CreateFuncExpression",BindingFlags.Instance |  BindingFlags.NonPublic,null, new Type[] { typeof(string) },null);
+
+            return (Expression)methodInfo.MakeGenericMethod(actualServiceType).Invoke(this, new object[] { serviceName });
+
             Expression bodyExression = GetBodyExpression(actualServiceType, serviceName);
             Type funcType = typeof(Func<,>).MakeGenericType(typeof(List<object>), actualServiceType);         
             LambdaExpression lambdaExpression = Expression.Lambda(funcType, bodyExression, _constantsParameterExpression);
+
+            var compiled = Compile(lambdaExpression);
+
+            var compiledConstantExpression = CreateConstantExpression(funcType, compiled);
+
+            var invokeMethod = funcType.GetMethod("Invoke");
+
+
+            var funcType2 = typeof(Func<>).MakeGenericType(actualServiceType);
+
+            Func<string> s = () => (string)invokeMethod.Invoke(compiled,new object[]{_constants});
+            
+
+
             return Expression.Lambda(Expression.Invoke(lambdaExpression, _constantsParameterExpression));            
         }
+
+
+        private Expression CreateFuncExpression<TServiceType>(string serviceName)
+        {
+            
+            Expression bodyExression = GetBodyExpression(typeof(TServiceType), serviceName);
+            var lambda = Expression.Lambda<Func<List<object>, TServiceType>>(bodyExression, _constantsParameterExpression);
+            var compiled = (Func<List<object>, TServiceType>)Compile(lambda);
+            Func<TServiceType> func = () => compiled(_constants);
+
+            return CreateConstantExpression(typeof(Func<TServiceType>), func);
+
+        }
+
 
         private Delegate Compile(LambdaExpression lambdaExpression)
         {
@@ -648,21 +700,23 @@ namespace LightInject
 
         private ImplementationInfo TryResolveImplementationForUnknownService(Type serviceType, string serviceName)
         {
-            IFactory factory = GetCustomFactory(serviceType, serviceName);
-            if (factory != null)
-                return CreateCustomFactoryImplementationInfo(serviceType, serviceName, factory);
+            
             if (IsEnumerableOfT(serviceType))
                 return CreateEnumerableImplementationInfo(serviceType);
             if (IsFunc(serviceType))
                 return CreateFuncImplementationInfo(serviceType, serviceName);
             if (IsLazy(serviceType))
                 return CreateLazyImplementationInfo(serviceType, serviceName);
+                                
             if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
                 return CreateImplementationInfoBasedOnFirstNamedInstance(serviceType);
+         
             if (IsClosedGeneric(serviceType))
-                return CreateClosedGenericImplementationInfo(serviceType, serviceName);           
-            if (!string.IsNullOrEmpty(serviceName))
-                return CreateImplementationInfoThatRedirectsToDefaultService(serviceType);
+                return CreateClosedGenericImplementationInfo(serviceType, serviceName);
+
+            IFactory factory = GetCustomFactory(serviceType, serviceName);
+            if (factory != null)
+                return CreateCustomFactoryImplementationInfo(serviceType, serviceName, factory);
 
             throw new InvalidOperationException(
                 string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}", serviceType, serviceName));                              
@@ -671,6 +725,14 @@ namespace LightInject
         private ImplementationInfo CreateImplementationInfoThatRedirectsToDefaultService(Type serviceType)
         {
             return GetImplementationInfo(serviceType, string.Empty);
+        }
+
+        private bool CanRedirectRequestForNamedServiceToDefaultService(Type serviceType, string serviceName)
+        {
+            //This is wrong. 
+            //return !string.IsNullOrEmpty(serviceName) && GetImplementations(serviceType).Count == 1;
+            return !string.IsNullOrEmpty(serviceName) && GetImplementations(serviceType).ContainsKey(string.Empty);
+            
         }
 
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
@@ -683,9 +745,12 @@ namespace LightInject
             return GetImplementationInfo(serviceType, GetImplementations(serviceType).First().Key);
         }
                
-        private ImplementationInfo CreateCustomFactoryImplementationInfo(Type serviceType, string serviceName, IFactory factory)                                                                                
+        private ImplementationInfo CreateCustomFactoryImplementationInfo(Type serviceType, string serviceName, IFactory factory)
         {
-            return new ImplementationInfo(null, () => CreateCustomFactoryExpression(factory, serviceType, serviceName, null));                                         
+            return new ImplementationInfo(null, () => CreateCustomFactoryExpression(factory, serviceType, serviceName, null))
+                   {
+                       IsCustomFactory = true 
+                   };
         }
 
         private Expression CreateCustomFactoryExpression(IFactory customFactory, Type serviceType, string serviceName, Expression proceedExpression)                                                                
@@ -696,9 +761,9 @@ namespace LightInject
             return Expression.Convert(Expression.Call(getFactoryExpression, getInstanceMethod, new[] { getServiceRequestExpression }), serviceType);
         }
 
+        [MethodImpl(MethodImplOptions.Synchronized)]
         private int GetConstantIndex(object value)
-        {                        
-            //TODO Make this thread safe
+        {                                    
             if (!_constants.Contains(value))
                 _constants.Add(value);
             return _constants.IndexOf(value);
@@ -753,10 +818,7 @@ namespace LightInject
         private Func<List<object>, object> CreateDelegate(Type serviceType, string serviceName)
         {
             EnsureServiceContainerIsConfigured();
-            Expression expression = GetBodyExpression(serviceType, serviceName);
-            //IFactory factory = GetCustomFactory(serviceType, serviceName);
-            //if (factory != null)
-            //    expression = CreateCustomFactoryExpression(factory, serviceType, serviceName, expression);                       
+            Expression expression = GetBodyExpression(serviceType, serviceName);                      
             return Expression.Lambda<Func<List<object>, object>>(expression, _constantsParameterExpression).CompileToMethod();            
         }
 
@@ -871,6 +933,8 @@ namespace LightInject
             public Lazy<Expression> FactoryExpression { get; private set; }
 
             public bool IsSingleton { get; set; }
+
+            public bool IsCustomFactory { get; set; }
         }
 
 #if NET
@@ -1082,9 +1146,9 @@ namespace LightInject
             expression.CompileToMethod(methodBuilder);
             Type type = typeBuilder.CreateType();
             return (T)(object)Delegate.CreateDelegate(typeof(T), type.GetMethod("MethodDelegate"), true);
-        }
-
-
-        
+        }        
     }
+
+    
+
 }

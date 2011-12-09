@@ -9,8 +9,7 @@ namespace DependencyInjector.Tests
 {    
     [TestClass]
     public class ServiceContainerTests
-    {
-        
+    {        
         [TestMethod]
         public void GetInstance_OneService_ReturnsInstance()
         {
@@ -156,17 +155,7 @@ namespace DependencyInjector.Tests
             Assert.AreSame(instance1,instance2);
         }
                         
-        [TestMethod]
-        public void GetInstance_SingletonWithCustomFactory_CallsFactoryOnlyOnce()
-        {                                    
-            var container = CreateContainer();
-            container.RegisterAsSingleton(typeof(IFoo), typeof(Foo));
-            container.Register(typeof(IFactory),typeof(FooFactory));
-            var singletonFactory = (FooFactory)container.GetInstance<IFactory>();
-            container.GetInstance(typeof (IFoo));
-            container.GetInstance(typeof (IFoo));
-            Assert.AreEqual(1,singletonFactory.CallCount);
-        }
+       
 
         [TestMethod]
         public void GetInstance_Func_ReturnsFuncInstance()
@@ -187,7 +176,7 @@ namespace DependencyInjector.Tests
             Assert.IsInstanceOfType(instance,typeof(Foo));
         }
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void GetInstance_Func_ReturnsSameInstance()
         {
             var container = CreateContainer();
@@ -351,8 +340,9 @@ namespace DependencyInjector.Tests
             container.GetInstance<IFoo>();
         }
 
-        [TestMethod]        
-        public void GetInstance_InvalidServiceName_ReturnsResolvedDefaultInstance()
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void GetInstance_InvalidServiceName_ThrowsInvalidOperationException()
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo),"SomeFoo");
@@ -361,7 +351,8 @@ namespace DependencyInjector.Tests
         }
 
         [TestMethod]
-        public void GetInstance_InvalidServiceName_ReturnsDefaultServiceIfAvailable()
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void GetInstance_InvalidServiceName_ThrowsInvalidOperationExceptionWhenDefaultServiceIfAvailable()
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo));
@@ -586,12 +577,38 @@ namespace DependencyInjector.Tests
         }
 
         [TestMethod]
+        public void GetInstance_SingletonWithCustomFactory_CanProceed()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFactory), typeof(FooFactory));
+            container.RegisterAsSingleton(typeof(IFoo),typeof(Foo));
+            var factory = (FooFactory)container.GetInstance<IFactory>();
+            container.GetInstance(typeof(IFoo));
+            Assert.IsTrue(factory.ServiceRequest.CanProceed);            
+        }
+
+        [TestMethod]
+        public void GetInstance_SingletonWithCustomFactory_CallsFactoryTwice()
+        {
+            var container = CreateContainer();
+            container.RegisterAsSingleton(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFactory), typeof(FooFactory));
+            var singletonFactory = (FooFactory)container.GetInstance<IFactory>();
+            container.GetInstance(typeof(IFoo));
+            container.GetInstance(typeof(IFoo));
+            Assert.AreEqual(2, singletonFactory.CallCount);
+        }
+
+
+        [TestMethod]
         public void GetInstance_OpenGenericTypeWithCustomFactory_CanProceed()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFactory),typeof(GenericFooFactory));
+            container.Register(typeof(IFactory), typeof(GenericFooFactory));
+            var factory = (GenericFooFactory)container.GetInstance<IFactory>();
             container.Register(typeof(IFoo<>),typeof(Foo<>));
-            var instance = container.GetInstance<IFoo<int>>();            
+            container.GetInstance<IFoo<int>>();
+            Assert.IsTrue(factory.ServiceRequest.CanProceed);
         }
 
 

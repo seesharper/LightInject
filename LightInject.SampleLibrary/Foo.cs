@@ -73,6 +73,7 @@ namespace LightInject.SampleLibrary
     {
         public object GetInstance(ServiceRequest serviceRequest)
         {
+            ServiceRequest = serviceRequest;
             CallCount++;
             ServiceName = serviceRequest.ServiceName;
             return serviceRequest.CanProceed ? serviceRequest.Proceed() : new Foo();
@@ -83,6 +84,8 @@ namespace LightInject.SampleLibrary
             return typeof(IFoo).IsAssignableFrom(serviceType);
         }
 
+        public ServiceRequest ServiceRequest { get; private set; }
+
         public string ServiceName { get; set; }
 
         public int CallCount { get; private set; }
@@ -90,15 +93,20 @@ namespace LightInject.SampleLibrary
 
     public class GenericFooFactory : IFactory 
     {        
+        
+        
         public object GetInstance(ServiceRequest serviceRequest)
         {
-            return serviceRequest.CanProceed ? serviceRequest.Proceed() : new Foo<int>();
+            ServiceRequest = serviceRequest;
+            return serviceRequest.CanProceed ? serviceRequest.Proceed() : new AnotherFoo<int>();
         }
 
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
             return serviceType.IsGenericType;
         }
+
+        public ServiceRequest ServiceRequest { get; private set; }
     }
 
 
