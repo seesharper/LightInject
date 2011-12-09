@@ -198,17 +198,13 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<List<object>, object>>> _namedFactories =
             new ThreadSafeDictionary<Tuple<Type, string>, Lazy<Func<List<object>, object>>>();
 
-        private readonly ThreadSafeDictionary<object, int> _constantCache = new ThreadSafeDictionary<object, int>();
+        private readonly ParameterExpression _constantsParameterExpression = Expression.Parameter(typeof(List<object>), "c");
 
         private static readonly MethodInfo getInstanceMethod;
 
         private readonly MethodCallRewriter _methodCallRewriter;
 
         private readonly List<object> _constants = new List<object>();
-
-        private volatile int _constantIndex;
-
-        private readonly ParameterExpression _constantsParameterExpression = Expression.Parameter(typeof(List<object>), "c");
 
         static ServiceContainer()
         {
@@ -433,20 +429,7 @@ namespace LightInject
                 t =>
                 new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, string.Empty))).Value(_constants);
         }
-
-        /// <summary>
-        /// Gets a <see cref="bool"/> value.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns><b>true</b>, if the container can create the instance, otherwise <b>false</b>.</returns>
-        public bool CanCreateInstance(Type serviceType, string serviceName)
-        {
-            //Needs to check the following
-            return _availableServices.ContainsKey(serviceType) || ResolvableByCustomFactory(serviceType, serviceName);
-            //Open generics?
-        }
-
+    
         private bool ResolvableByCustomFactory(Type serviceType, string serviceName)
         {
             return GetAllInstances<IFactory>().Any(f => f.CanGetInstance(serviceType, serviceName));
@@ -479,7 +462,7 @@ namespace LightInject
 
         private static ConstructorInfo GetConstructorInfo(Type concreteType)
         {
-            return concreteType.GetConstructors().Single();
+            return concreteType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
         }
 
         private ServiceRequest CreateServiceRequest(Type serviceType, string serviceName, Expression proceedExpression)
@@ -603,11 +586,10 @@ namespace LightInject
         
         private Expression GetBodyExpression(Type serviceType, string serviceName)
         {
+            ImplementationInfo implementationInfo = GetImplementationInfo(serviceType, serviceName);
             try
-            {
-                ImplementationInfo implementationInfo = GetImplementationInfo(serviceType, serviceName);
-                Expression expression = implementationInfo.FactoryExpression.Value;
-                
+            {                
+                Expression expression = implementationInfo.FactoryExpression.Value;                
                 if (!implementationInfo.IsCustomFactory)
                 {                    
                     IFactory factory = GetCustomFactory(serviceType, serviceName);
@@ -627,30 +609,11 @@ namespace LightInject
         {
             Type actualServiceType = serviceType.GetGenericArguments().First();
 
-            var methodInfo = typeof(ServiceContainer).GetMethod("CreateFuncExpression",BindingFlags.Instance |  BindingFlags.NonPublic,null, new Type[] { typeof(string) },null);
+            var methodInfo = typeof(ServiceContainer).GetMethod(
+                "CreateFuncExpression", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(string) }, null);
 
-            return (Expression)methodInfo.MakeGenericMethod(actualServiceType).Invoke(this, new object[] { serviceName });
-
-            Expression bodyExression = GetBodyExpression(actualServiceType, serviceName);
-            Type funcType = typeof(Func<,>).MakeGenericType(typeof(List<object>), actualServiceType);         
-            LambdaExpression lambdaExpression = Expression.Lambda(funcType, bodyExression, _constantsParameterExpression);
-
-            var compiled = Compile(lambdaExpression);
-
-            var compiledConstantExpression = CreateConstantExpression(funcType, compiled);
-
-            var invokeMethod = funcType.GetMethod("Invoke");
-
-
-            var funcType2 = typeof(Func<>).MakeGenericType(actualServiceType);
-
-            Func<string> s = () => (string)invokeMethod.Invoke(compiled,new object[]{_constants});
-            
-
-
-            return Expression.Lambda(Expression.Invoke(lambdaExpression, _constantsParameterExpression));            
+            return (Expression)methodInfo.MakeGenericMethod(actualServiceType).Invoke(this, new object[] { serviceName });            
         }
-
 
         private Expression CreateFuncExpression<TServiceType>(string serviceName)
         {
@@ -659,9 +622,7 @@ namespace LightInject
             var lambda = Expression.Lambda<Func<List<object>, TServiceType>>(bodyExression, _constantsParameterExpression);
             var compiled = (Func<List<object>, TServiceType>)Compile(lambda);
             Func<TServiceType> func = () => compiled(_constants);
-
             return CreateConstantExpression(typeof(Func<TServiceType>), func);
-
         }
 
 

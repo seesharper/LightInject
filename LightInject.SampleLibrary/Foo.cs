@@ -110,7 +110,7 @@ namespace LightInject.SampleLibrary
     }
 
 
-    public class FooWithMultipleConstructors
+    public class FooWithMultipleConstructors : IFoo
     {
         public FooWithMultipleConstructors()
         {
@@ -118,6 +118,9 @@ namespace LightInject.SampleLibrary
 
         public FooWithMultipleConstructors(IBar bar)
         {
+            Bar = bar;
         }
+
+        public IBar Bar { get; private set; }
     }
 }

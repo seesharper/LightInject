@@ -611,7 +611,15 @@ namespace DependencyInjector.Tests
             Assert.IsTrue(factory.ServiceRequest.CanProceed);
         }
 
-
+        [TestMethod]
+        public void GetInstance_MultipleContructors_UsesConstructorWithMostParameters()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo),typeof(FooWithMultipleConstructors));
+            container.Register(typeof(IBar),typeof(Bar));
+            var foo = (FooWithMultipleConstructors)container.GetInstance<IFoo>();
+            Assert.IsNotNull(foo.Bar);
+        }
 
 
 
