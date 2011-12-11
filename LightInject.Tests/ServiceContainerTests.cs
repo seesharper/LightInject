@@ -621,6 +621,15 @@ namespace DependencyInjector.Tests
             Assert.IsNotNull(foo.Bar);
         }
 
+        [TestMethod]
+        public void GetInstance_ServiceWithPropertyDependency_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(FooWithProperyDependency));
+            container.Register(typeof(IBar), typeof(Bar));
+            var foo = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            Assert.IsNotNull(foo.Bar);
+        }
 
 
         #endregion

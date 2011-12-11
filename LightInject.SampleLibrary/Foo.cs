@@ -123,4 +123,10 @@ namespace LightInject.SampleLibrary
 
         public IBar Bar { get; private set; }
     }
+
+    public class FooWithProperyDependency : IFoo
+    {
+        public IBar Bar { get; set; }
+    }
+
 }

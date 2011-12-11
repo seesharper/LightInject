@@ -572,13 +572,29 @@ namespace LightInject
             ConstructorInfo constructorInfo = GetConstructorInfo(implementingType);
             IEnumerable<Expression> parameterExpressions = GetParameterExpressions(constructorInfo);
             NewExpression newExpression = Expression.New(constructorInfo, parameterExpressions);
+            if (HasInjectableProperties(implementingType))
+                return Expression.MemberInit(newExpression, GetMemberBindingExpressions(GetInjectableProperties(implementingType)));
             return newExpression;
-            IFactory factory = GetCustomFactory(serviceType, serviceName);
-            return factory != null
-                       ? CreateCustomFactoryExpression(factory, serviceType, serviceName, newExpression)
-                       : newExpression;
         }
       
+        private IEnumerable<MemberBinding> GetMemberBindingExpressions(IEnumerable<PropertyInfo> properties)
+        {
+            return properties.Select(p => Expression.Bind(p, GetBodyExpression(p.PropertyType, string.Empty)));                        
+        }
+
+        private static bool HasInjectableProperties(Type implementingType)
+        {
+            return implementingType.GetProperties().Any(p => p.CanRead && p.CanWrite);
+        }
+
+        private IEnumerable<PropertyInfo> GetInjectableProperties(Type implementingType)
+        {
+            var properties = implementingType.GetProperties().Where(p => p.CanRead && p.CanWrite).ToList();
+            return properties;
+
+        }
+
+
         private bool HasMultipleImplementations(Type serviceType)
         {
             return GetImplementations(serviceType).Count > 1;
