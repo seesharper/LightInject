@@ -530,7 +530,7 @@ namespace LightInject
         
         private Expression CreateSingletonExpression(Type serviceType, Type implementingType, string serviceName)
         {
-            Expression newExpression = CreateNewExpression(serviceType, implementingType, serviceName);
+            Expression newExpression = CreateNewExpression(implementingType);
             object singletonInstance =
                 Expression.Lambda<Func<List<object>, object>>(newExpression, _constantsParameterExpression).CompileToMethod()(_constants);
                  
@@ -567,7 +567,7 @@ namespace LightInject
             return _availableServices.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, ImplementationInfo>(StringComparer.InvariantCultureIgnoreCase));
         }
                 
-        private Expression CreateNewExpression(Type serviceType, Type implementingType, string serviceName)
+        private Expression CreateNewExpression(Type implementingType)
         {
             ConstructorInfo constructorInfo = GetConstructorInfo(implementingType);
             IEnumerable<Expression> parameterExpressions = GetParameterExpressions(constructorInfo);
@@ -579,21 +579,34 @@ namespace LightInject
       
         private IEnumerable<MemberBinding> GetMemberBindingExpressions(IEnumerable<PropertyInfo> properties)
         {
-            return properties.Select(p => Expression.Bind(p, GetBodyExpression(p.PropertyType, string.Empty)));                        
+            return properties.Select(p => Expression.Bind(p, GetBodyExpression(p.PropertyType, HasMultipleImplementations(p.PropertyType) ? p.Name : string.Empty)));                        
         }
 
-        private static bool HasInjectableProperties(Type implementingType)
+        private bool HasInjectableProperties(Type implementingType)
         {
-            return implementingType.GetProperties().Any(p => p.CanRead && p.CanWrite);
+            return !IsFactory(implementingType) && implementingType.GetProperties().Any(IsInjectable);
         }
 
         private IEnumerable<PropertyInfo> GetInjectableProperties(Type implementingType)
         {
-            var properties = implementingType.GetProperties().Where(p => p.CanRead && p.CanWrite).ToList();
+            var properties = implementingType.GetProperties().Where(IsInjectable).ToList();            
             return properties;
-
         }
 
+        private bool IsInjectable(PropertyInfo propertyInfo)
+        {
+            return  !IsReadOnly(propertyInfo) && CanGetInstance(propertyInfo.PropertyType, propertyInfo.Name);
+        }
+
+        private static bool IsReadOnly(PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetSetMethod(false) == null;
+        }
+
+        private bool CanGetInstance(Type serviceType, string serviceName)
+        {
+            return GetImplementationInfo(serviceType, HasMultipleImplementations(serviceType) ? serviceName : string.Empty) != null;                        
+        }
 
         private bool HasMultipleImplementations(Type serviceType)
         {
@@ -601,8 +614,14 @@ namespace LightInject
         }
         
         private Expression GetBodyExpression(Type serviceType, string serviceName)
-        {
+        {                     
             ImplementationInfo implementationInfo = GetImplementationInfo(serviceType, serviceName);
+            if (implementationInfo == null)
+            {
+                throw new InvalidOperationException(
+                    string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}", serviceType, serviceName));
+            }
+
             try
             {                
                 Expression expression = implementationInfo.FactoryExpression.Value;                
@@ -656,15 +675,26 @@ namespace LightInject
 
         private ImplementationInfo GetImplementationInfo(Type serviceType, string serviceName)
         {
-            return GetImplementations(serviceType).GetOrAdd(
-                serviceName,
-                s =>
-                TryResolveImplementationForUnknownService(serviceType, serviceName));                                                                                                      
+            ImplementationInfo implementationInfo;
+
+            GetImplementations(serviceType).TryGetValue(serviceName, out implementationInfo);
+            if (implementationInfo != null)
+            {
+                return implementationInfo;
+            }
+
+            implementationInfo = TryResolveImplementationForUnknownService(serviceType, serviceName);
+            if (implementationInfo != null)
+            {
+                GetImplementations(serviceType).TryAdd(serviceName, implementationInfo);
+            }
+
+            return implementationInfo;            
         }
 
         private ImplementationInfo CreateImplementationInfo(Type serviceType, Type implementingType, string serviceName)
         {
-            return new ImplementationInfo(implementingType, () => CreateNewExpression(serviceType, implementingType, serviceName));                                          
+            return new ImplementationInfo(implementingType, () => CreateNewExpression(implementingType));                                          
         }
 
         private ImplementationInfo CreateSingletonImplementationInfo(Type serviceType, Type implementingType, string serviceName)
@@ -695,6 +725,7 @@ namespace LightInject
             if (factory != null)
                 return CreateCustomFactoryImplementationInfo(serviceType, serviceName, factory);
 
+            return null;
             throw new InvalidOperationException(
                 string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}", serviceType, serviceName));                              
         }
@@ -703,15 +734,7 @@ namespace LightInject
         {
             return GetImplementationInfo(serviceType, string.Empty);
         }
-
-        private bool CanRedirectRequestForNamedServiceToDefaultService(Type serviceType, string serviceName)
-        {
-            //This is wrong. 
-            //return !string.IsNullOrEmpty(serviceName) && GetImplementations(serviceType).Count == 1;
-            return !string.IsNullOrEmpty(serviceName) && GetImplementations(serviceType).ContainsKey(string.Empty);
-            
-        }
-
+       
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
             return string.IsNullOrEmpty(serviceName) && GetImplementations(serviceType).Count == 1;
@@ -784,7 +807,9 @@ namespace LightInject
         private ImplementationInfo CreateClosedGenericImplementationInfo(Type serviceType, string serviceName)
         {
             Type openGenericServiceType = serviceType.GetGenericTypeDefinition();
-            ImplementationInfo openGenericImplementationInfo = GetImplementationInfo(openGenericServiceType, serviceName);                                                                                     
+            ImplementationInfo openGenericImplementationInfo = GetImplementationInfo(openGenericServiceType, serviceName);
+            if (openGenericImplementationInfo == null)
+                return null;                                                      
             Type closedGenericImplementingType =
                 openGenericImplementationInfo.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
             if (openGenericImplementationInfo.IsSingleton)

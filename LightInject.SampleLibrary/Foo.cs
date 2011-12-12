@@ -18,7 +18,7 @@ namespace LightInject.SampleLibrary
             Bar = bar;
         }
 
-        public IBar Bar { get; set; }
+        public IBar Bar { get; private set; }
     }
 
     public class FooWithEnumerableDependency : IFoo
