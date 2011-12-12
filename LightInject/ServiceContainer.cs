@@ -17,7 +17,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using System.Threading;
+
 
 namespace LightInject
 {
@@ -350,7 +350,7 @@ namespace LightInject
             }
             else
             {
-                Register(serviceType, serviceName, CreateSingletonImplementationInfo(serviceType, implementingType, serviceName));
+                Register(serviceType, serviceName, CreateSingletonImplementationInfo(serviceType, implementingType));
             }
         }
 
@@ -366,7 +366,7 @@ namespace LightInject
                 RegisterAsSingleton(serviceType, implementingType, serviceName);
             else
             {
-                ImplementationInfo implementationInfo = CreateImplementationInfo(serviceType, implementingType, serviceName);                                                                                
+                ImplementationInfo implementationInfo = CreateImplementationInfo(implementingType);                                                                                
                 Register(serviceType, serviceName, implementationInfo);
             }
         }
@@ -430,11 +430,6 @@ namespace LightInject
                 new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, string.Empty))).Value(_constants);
         }
     
-        private bool ResolvableByCustomFactory(Type serviceType, string serviceName)
-        {
-            return GetAllInstances<IFactory>().Any(f => f.CanGetInstance(serviceType, serviceName));
-        }
-
         private static bool IsLazy(Type serviceType)
         {
             return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(Lazy<>);
@@ -460,31 +455,27 @@ namespace LightInject
             return serviceType.IsGenericType && !serviceType.IsGenericTypeDefinition;
         }
 
+        private static bool IsReadOnly(PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetSetMethod(false) == null;
+        }
+
         private static ConstructorInfo GetConstructorInfo(Type concreteType)
         {
             return concreteType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
         }
 
-        private ServiceRequest CreateServiceRequest(Type serviceType, string serviceName, Expression proceedExpression)
+        private static T Compile<T>(Expression<T> lambdaExpression)
         {
-            var serviceRequest = new ServiceRequest
-            {
-                ServiceType = serviceType,
-                ServiceName = serviceName,
-                Proceed = CreateProceedFunctionDelegate(proceedExpression)
-            };
-            return serviceRequest;
+            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicAssembly"), AssemblyBuilderAccess.Run);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public);
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod("MethodDelegate", MethodAttributes.Public | MethodAttributes.Static);
+            lambdaExpression.CompileToMethod(methodBuilder);
+            Type type = typeBuilder.CreateType();
+            var test = (T)(object)Delegate.CreateDelegate(lambdaExpression.Type, type.GetMethod("MethodDelegate"), true);
+            return test;
         }
-
-        private Func<object> CreateProceedFunctionDelegate(Expression proceedExpression)
-        {
-            if (proceedExpression == null)
-                return null;                        
-            var func = Expression.Lambda<Func<List<Object>, object>>(proceedExpression, _constantsParameterExpression).CompileToMethod();
-            return () => func(_constants);
-            return proceedExpression != null ? Expression.Lambda<Func<object>>(proceedExpression).CompileToMethod() : null;
-        }
-
 #if SILVERLIGHT
         private static IEnumerable<Assembly> GetAssemblies()
         {
@@ -507,6 +498,24 @@ namespace LightInject
             return AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.GlobalAssemblyCache);
         }
 #endif
+        private ServiceRequest CreateServiceRequest(Type serviceType, string serviceName, Expression proceedExpression)
+        {
+            var serviceRequest = new ServiceRequest
+            {
+                ServiceType = serviceType,
+                ServiceName = serviceName,
+                Proceed = CreateProceedFunctionDelegate(proceedExpression)
+            };
+            return serviceRequest;
+        }
+
+        private Func<object> CreateProceedFunctionDelegate(Expression proceedExpression)
+        {
+            if (proceedExpression == null)
+                return null;
+            var func = Compile(Expression.Lambda<Func<List<object>, object>>(proceedExpression, _constantsParameterExpression));            
+            return () => func(_constants);            
+        }
 
         private IEnumerable<Expression> GetParameterExpressions(ConstructorInfo constructorInfo)
         {
@@ -528,11 +537,11 @@ namespace LightInject
             }
         }
         
-        private Expression CreateSingletonExpression(Type serviceType, Type implementingType, string serviceName)
+        private Expression CreateSingletonExpression(Type serviceType, Type implementingType)
         {
             Expression newExpression = CreateNewExpression(implementingType);
             object singletonInstance =
-                Expression.Lambda<Func<List<object>, object>>(newExpression, _constantsParameterExpression).CompileToMethod()(_constants);
+                Compile(Expression.Lambda<Func<List<object>, object>>(newExpression, _constantsParameterExpression))(_constants);
                  
             return CreateConstantExpression(serviceType, singletonInstance);
         }
@@ -540,7 +549,7 @@ namespace LightInject
         private Expression CreateSingletonExpression(Func<Expression> expressionFactory)
         {
             object singletonInstance =
-                Expression.Lambda<Func<List<object>, object>>(expressionFactory(), _constantsParameterExpression).CompileToMethod()(_constants);
+                Compile(Expression.Lambda<Func<List<object>, object>>(expressionFactory(), _constantsParameterExpression))(_constants);
             return CreateConstantExpression(singletonInstance.GetType(), singletonInstance);
         }
 
@@ -597,12 +606,7 @@ namespace LightInject
         {
             return  !IsReadOnly(propertyInfo) && CanGetInstance(propertyInfo.PropertyType, propertyInfo.Name);
         }
-
-        private static bool IsReadOnly(PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetSetMethod(false) == null;
-        }
-
+       
         private bool CanGetInstance(Type serviceType, string serviceName)
         {
             return GetImplementationInfo(serviceType, HasMultipleImplementations(serviceType) ? serviceName : string.Empty) != null;                        
@@ -631,9 +635,10 @@ namespace LightInject
                     if (factory != null)
                         expression = CreateCustomFactoryExpression(factory, serviceType, serviceName, expression);            
                 }
+
                 return _methodCallRewriter.Visit(expression);
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
                 throw new InvalidOperationException(
                     string.Format("An recursive dependency has been detected while resolving (Type = {0}, Name = {1}", serviceType, serviceName));                                  
@@ -645,34 +650,20 @@ namespace LightInject
             Type actualServiceType = serviceType.GetGenericArguments().First();
 
             var methodInfo = typeof(ServiceContainer).GetMethod(
-                "CreateFuncExpression", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(string) }, null);
+                "CreateFuncExpression", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(string) }, null);
 
             return (Expression)methodInfo.MakeGenericMethod(actualServiceType).Invoke(this, new object[] { serviceName });            
         }
 
         private Expression CreateFuncExpression<TServiceType>(string serviceName)
-        {
-            
+        {            
             Expression bodyExression = GetBodyExpression(typeof(TServiceType), serviceName);
             var lambda = Expression.Lambda<Func<List<object>, TServiceType>>(bodyExression, _constantsParameterExpression);
             var compiled = (Func<List<object>, TServiceType>)Compile(lambda);
             Func<TServiceType> func = () => compiled(_constants);
             return CreateConstantExpression(typeof(Func<TServiceType>), func);
         }
-
-
-        private Delegate Compile(LambdaExpression lambdaExpression)
-        {
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicAssembly"), AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public);
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod("MethodDelegate", MethodAttributes.Public | MethodAttributes.Static);
-            lambdaExpression.CompileToMethod(methodBuilder);
-            Type type = typeBuilder.CreateType();
-            var test = Delegate.CreateDelegate(lambdaExpression.Type, type.GetMethod("MethodDelegate"), true);
-            return test;
-        }
-
+ 
         private ImplementationInfo GetImplementationInfo(Type serviceType, string serviceName)
         {
             ImplementationInfo implementationInfo;
@@ -692,22 +683,21 @@ namespace LightInject
             return implementationInfo;            
         }
 
-        private ImplementationInfo CreateImplementationInfo(Type serviceType, Type implementingType, string serviceName)
+        private ImplementationInfo CreateImplementationInfo(Type implementingType)
         {
             return new ImplementationInfo(implementingType, () => CreateNewExpression(implementingType));                                          
         }
 
-        private ImplementationInfo CreateSingletonImplementationInfo(Type serviceType, Type implementingType, string serviceName)
+        private ImplementationInfo CreateSingletonImplementationInfo(Type serviceType, Type implementingType)
         {
-            return new ImplementationInfo(implementingType, () => CreateSingletonExpression(serviceType, implementingType, serviceName))
+            return new ImplementationInfo(implementingType, () => CreateSingletonExpression(serviceType, implementingType))
                    {
                        IsSingleton = true 
                    };
         }
 
         private ImplementationInfo TryResolveImplementationForUnknownService(Type serviceType, string serviceName)
-        {
-            
+        {            
             if (IsEnumerableOfT(serviceType))
                 return CreateEnumerableImplementationInfo(serviceType);
             if (IsFunc(serviceType))
@@ -725,16 +715,9 @@ namespace LightInject
             if (factory != null)
                 return CreateCustomFactoryImplementationInfo(serviceType, serviceName, factory);
 
-            return null;
-            throw new InvalidOperationException(
-                string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}", serviceType, serviceName));                              
+            return null;            
         }
-        
-        private ImplementationInfo CreateImplementationInfoThatRedirectsToDefaultService(Type serviceType)
-        {
-            return GetImplementationInfo(serviceType, string.Empty);
-        }
-       
+           
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
             return string.IsNullOrEmpty(serviceName) && GetImplementations(serviceType).Count == 1;
@@ -813,15 +796,15 @@ namespace LightInject
             Type closedGenericImplementingType =
                 openGenericImplementationInfo.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
             if (openGenericImplementationInfo.IsSingleton)
-                return CreateSingletonImplementationInfo(serviceType, closedGenericImplementingType, serviceName);
-            return CreateImplementationInfo(serviceType, closedGenericImplementingType, serviceName);
+                return CreateSingletonImplementationInfo(serviceType, closedGenericImplementingType);
+            return CreateImplementationInfo(closedGenericImplementingType);
         }
 
         private Func<List<object>, object> CreateDelegate(Type serviceType, string serviceName)
         {
             EnsureServiceContainerIsConfigured();
-            Expression expression = GetBodyExpression(serviceType, serviceName);                      
-            return Expression.Lambda<Func<List<object>, object>>(expression, _constantsParameterExpression).CompileToMethod();            
+            Expression expression = GetBodyExpression(serviceType, serviceName);
+            return Compile(Expression.Lambda<Func<List<object>, object>>(expression, _constantsParameterExpression));
         }
 
         private void EnsureServiceContainerIsConfigured()
@@ -1136,21 +1119,4 @@ namespace LightInject
             _serviceContainer.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
         }
     }
-
-    public static class ExpressionExtensions2
-    {
-        public static T CompileToMethod<T>(this Expression<T> expression)
-        {
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicAssembly"), AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public);
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod("MethodDelegate", MethodAttributes.Public | MethodAttributes.Static);
-            expression.CompileToMethod(methodBuilder);
-            Type type = typeBuilder.CreateType();
-            return (T)(object)Delegate.CreateDelegate(typeof(T), type.GetMethod("MethodDelegate"), true);
-        }        
-    }
-
-    
-
 }
