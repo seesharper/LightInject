@@ -135,16 +135,7 @@ namespace DependencyInjector.Tests
             var instance2 = container.GetInstance(typeof(IFoo<int>));
             Assert.AreSame(instance1,instance2);
         }
-
-        //[TestMethod]
-        //public void GetInstance_ClosedGenericType_ReturnsInstance()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IService<string>), typeof(ClosedGenericClass));
-        //    var instance = container.GetInstance(typeof(IService<string>));
-        //    Assert.IsInstanceOfType(instance, typeof(ClosedGenericClass));
-        //}
-        
+          
         [TestMethod]
         public void GetInstance_Singleton_ReturnsSingleInstance()
         {
@@ -154,9 +145,7 @@ namespace DependencyInjector.Tests
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1,instance2);
         }
-                        
-       
-
+                             
         [TestMethod]
         public void GetInstance_Func_ReturnsFuncInstance()
         {
@@ -212,7 +201,7 @@ namespace DependencyInjector.Tests
         public void GetInstance_Funcfactory_ReturnsFactoryCreatedInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>((c) => new Foo());
+            container.Register<IFoo>(c => new Foo());
             var instance = container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
@@ -221,8 +210,8 @@ namespace DependencyInjector.Tests
         public void GetInstance_Funcfactory_ReturnsInstanceWithDependencies()
         {
             var container = CreateContainer();
-            container.Register<IBar>((c) => new Bar());       
-            container.Register<IFoo>((c) => new FooWithDependency(container.GetInstance<IBar>()));
+            container.Register<IBar>(c => new Bar());       
+            container.Register<IFoo>(c => new FooWithDependency(container.GetInstance<IBar>()));
             var instance = container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance, typeof(FooWithDependency));
         }
@@ -455,19 +444,7 @@ namespace DependencyInjector.Tests
             var instance = (FooWithLazyDependency)container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance.LazyService,typeof(Lazy<IBar>));
         }
-
-        [TestMethod, Ignore]
-        public void GetInstance_FuncFactory_ReturnsFactoryCreatedDependency()
-        {                        
-            var container = CreateContainer();
-            var bar = new Bar();
-            container.Register<IBar>(c => bar);
-            container.Register(typeof (IBar), typeof (AnotherBar),"AnotherBar");
-            container.Register(typeof(IFoo),typeof(FooWithDependency));
-            var instance = (FooWithDependency)container.GetInstance<IFoo>();
-            Assert.AreEqual(bar,instance.Bar);
-        }
-
+       
         [TestMethod]
         public void GetInstance_InjectCustomFactoryOneImplementingType_DoesNotPassParameterNameAsServiceName()
         {
@@ -630,6 +607,17 @@ namespace DependencyInjector.Tests
             var foo = (FooWithProperyDependency)container.GetInstance<IFoo>();
             Assert.IsNotNull(foo.Bar);
         }
+
+        [TestMethod]
+        public void GetInstance_ServicesRegisteredFromAssembly_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(Foo).Assembly, t => true);
+            var foo = container.GetInstance<IFoo>();
+            Assert.IsNotNull(foo);
+        }
+
+
 
 
         #endregion
