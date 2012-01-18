@@ -1,12 +1,13 @@
 ﻿#define NET
 using System;
-using System.Collections.Generic;
 #if NET
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 #endif
 #if SILVERLIGHT
 using System.Collections;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Resources;
 using Expression = System.Linq.Expressions.Expression;
@@ -17,7 +18,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-
 
 namespace LightInject
 {
@@ -86,7 +86,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
         /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/>.</param>
-        void RegisterAsSingleton<TService>(Expression<Func<TService>> factory);
+        void RegisterAsSingleton<TService>(Expression<Func<IServiceContainer, TService>> factory);
 
         /// <summary>
         /// Registers a factory delegate used to create an instance of <typeparamref name="TService"/>.
@@ -102,7 +102,7 @@ namespace LightInject
         /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
         /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/>.</param>
         /// <param name="serviceName">The name of the service.</param>
-        void RegisterAsSingleton<TService>(Expression<Func<TService>> factory, string serviceName);
+        void RegisterAsSingleton<TService>(Expression<Func<IServiceContainer, TService>> factory, string serviceName);
 
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
@@ -287,10 +287,9 @@ namespace LightInject
         public void Register(Assembly assembly, Func<Type, bool> shouldLoad)
         {
             AssemblyScanner.Scan(assembly, shouldLoad);
-        }
-              
-#if !SILVERLIGHT
+        }              
 
+#if !SILVERLIGHT
         /// <summary>
         /// Loads service from the current directory.
         /// </summary>
@@ -308,7 +307,7 @@ namespace LightInject
             }
         }
 #endif
-
+        
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -340,7 +339,7 @@ namespace LightInject
             if (implementingType == null)
             {
                 ImplementationInfo implementationInfo = TryResolveImplementationForUnknownService(serviceType, serviceName);
-                                                                                                  
+                                                                                                                  
                 var singletonImplementationInfo = new ImplementationInfo(null,
                                                                          () =>
                                                                          CreateSingletonExpression(
@@ -386,7 +385,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
         /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/>.</param>
-        public void RegisterAsSingleton<TService>(Expression<Func<TService>> factory)
+        public void RegisterAsSingleton<TService>(Expression<Func<IServiceContainer, TService>> factory)
         {
             RegisterAsSingleton(factory, string.Empty);
         }
@@ -409,7 +408,7 @@ namespace LightInject
         /// <typeparam name="TService">The type of service for which to register a factory delegate.</typeparam>
         /// <param name="factory">The delegate used to create a instance of <typeparamref name="TService"/>.</param>
         /// <param name="serviceName">The name of the service.</param>
-        public void RegisterAsSingleton<TService>(Expression<Func<TService>> factory, string serviceName)
+        public void RegisterAsSingleton<TService>(Expression<Func<IServiceContainer, TService>> factory, string serviceName)
         {
             var implementationInfo = new ImplementationInfo(
                 typeof(Func<TService>),
@@ -493,11 +492,13 @@ namespace LightInject
         }
 #endif
 #if !SILVERLIGHT
+        
         private static IEnumerable<Assembly> GetAssemblies()
         {
             return AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.GlobalAssemblyCache);
         }
 #endif
+        
         private ServiceRequest CreateServiceRequest(Type serviceType, string serviceName, Expression proceedExpression)
         {
             var serviceRequest = new ServiceRequest
@@ -528,7 +529,7 @@ namespace LightInject
         {
             GetImplementations(serviceType).AddOrUpdate(serviceName, s => implementationInfo, (s, i) => implementationInfo);                                                        
         }
-
+        
         private void RegisterFromAppDomain()
         {
             foreach (Assembly assembly in GetAssemblies())
@@ -659,7 +660,7 @@ namespace LightInject
         {            
             Expression bodyExression = GetBodyExpression(typeof(TServiceType), serviceName);
             var lambda = Expression.Lambda<Func<List<object>, TServiceType>>(bodyExression, _constantsParameterExpression);
-            var compiled = (Func<List<object>, TServiceType>)Compile(lambda);
+            var compiled = Compile(lambda);
             Func<TServiceType> func = () => compiled(_constants);
             return CreateConstantExpression(typeof(Func<TServiceType>), func);
         }
@@ -921,7 +922,6 @@ namespace LightInject
 
             public bool IsCustomFactory { get; set; }
         }
-
 #if NET
 
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>

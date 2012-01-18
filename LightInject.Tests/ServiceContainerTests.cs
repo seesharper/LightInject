@@ -220,8 +220,8 @@ namespace DependencyInjector.Tests
         public void GetInstance_Funcfactory_ReturnsSingletonInstanceWithDependencies()
         {
             var container = CreateContainer();
-            container.RegisterAsSingleton<IBar>(() => new Bar());
-            container.RegisterAsSingleton<IFoo>(() => new FooWithDependency(container.GetInstance<IBar>()));
+            container.RegisterAsSingleton<IBar>((c) => new Bar());
+            container.RegisterAsSingleton<IFoo>((c) => new FooWithDependency(container.GetInstance<IBar>()));
             var instance = container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance, typeof(FooWithDependency));
         }
@@ -230,7 +230,7 @@ namespace DependencyInjector.Tests
         public void GetInstance_SingletonFuncFactory_ReturnsSingleInstance()
         {                        
             var container = CreateContainer();
-            container.RegisterAsSingleton<IFoo>(() => new Foo());
+            container.RegisterAsSingleton<IFoo>((c) => new Foo());
             var instance1 = container.GetInstance(typeof(IFoo));
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1,instance2);
@@ -541,7 +541,6 @@ namespace DependencyInjector.Tests
             Assert.AreSame(instance1,instance2);
         }
 
-
         [TestMethod]
         public void GetInstance_OpenGenericTypeWithSingletonDependency_ReturnsSameDependencyInstance()
         {
@@ -575,7 +574,6 @@ namespace DependencyInjector.Tests
             container.GetInstance(typeof(IFoo));
             Assert.AreEqual(2, singletonFactory.CallCount);
         }
-
 
         [TestMethod]
         public void GetInstance_OpenGenericTypeWithCustomFactory_CanProceed()
