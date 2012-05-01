@@ -21,6 +21,13 @@ using System.Text.RegularExpressions;
 
 namespace LightInject
 {
+    public enum LifeCycleType
+    {
+        Transient,
+        Singleton,
+        Request
+    }
+    
     /// <summary>
     /// Represents a service container.
     /// </summary>
@@ -42,8 +49,7 @@ namespace LightInject
         /// /// <param name="shouldLoad">A function delegate that determines if the current type should 
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         void Register(string searchPattern, Func<Type, bool> shouldLoad);
-#endif
-
+#endif        
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -170,18 +176,7 @@ namespace LightInject
         bool CanGetInstance(Type serviceType, string serviceName);
     }
 
-    /// <summary>
-    /// Represents a class that is capable of scanning an assembly and register services into an <see cref="IServiceContainer"/> instance.
-    /// </summary>
-    public interface IAssemblyScanner
-    {
-        /// <summary>
-        /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
-        /// </summary>
-        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>
-        /// <param name="shouldLoad">A function delegate that determines if the current type should be loaded into the <see cref="IServiceContainer"/>.</param>
-        void Scan(Assembly assembly, Func<Type, bool> shouldLoad);
-    }
+
 
     /// <summary>
     /// An ultra lightweight service container.
@@ -466,12 +461,14 @@ namespace LightInject
 
         private static T Compile<T>(Expression<T> lambdaExpression)
         {
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicAssembly"), AssemblyBuilderAccess.Run);
+            var t = lambdaExpression.Compile();
+            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("DynamicAssembly"), AssemblyBuilderAccess.RunAndSave);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
             TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public);
             MethodBuilder methodBuilder = typeBuilder.DefineMethod("MethodDelegate", MethodAttributes.Public | MethodAttributes.Static);
             lambdaExpression.CompileToMethod(methodBuilder);
             Type type = typeBuilder.CreateType();
+            assemblyBuilder.Save("test.dll");
             var test = (T)(object)Delegate.CreateDelegate(lambdaExpression.Type, type.GetMethod("MethodDelegate"), true);
             return test;
         }
@@ -668,7 +665,6 @@ namespace LightInject
         private ImplementationInfo GetImplementationInfo(Type serviceType, string serviceName)
         {
             ImplementationInfo implementationInfo;
-
             GetImplementations(serviceType).TryGetValue(serviceName, out implementationInfo);
             if (implementationInfo != null)
             {
@@ -704,11 +700,9 @@ namespace LightInject
             if (IsFunc(serviceType))
                 return CreateFuncImplementationInfo(serviceType, serviceName);
             if (IsLazy(serviceType))
-                return CreateLazyImplementationInfo(serviceType, serviceName);
-                                
+                return CreateLazyImplementationInfo(serviceType, serviceName);                                
             if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
-                return CreateImplementationInfoBasedOnFirstNamedInstance(serviceType);
-         
+                return CreateImplementationInfoBasedOnFirstNamedInstance(serviceType);         
             if (IsClosedGeneric(serviceType))
                 return CreateClosedGenericImplementationInfo(serviceType, serviceName);
 
@@ -802,10 +796,30 @@ namespace LightInject
         }
 
         private Func<List<object>, object> CreateDelegate(Type serviceType, string serviceName)
-        {
+        {            
             EnsureServiceContainerIsConfigured();
             Expression expression = GetBodyExpression(serviceType, serviceName);
             return Compile(Expression.Lambda<Func<List<object>, object>>(expression, _constantsParameterExpression));
+        }
+
+
+        private  Func<List<object>, object> CreateDynamicMethodDelegate(Type serviceType, string serviceName)
+        {
+            ImplementationInfo implementationInfo = GetImplementationInfo(serviceType, serviceName);
+            ConstructorInfo constructorInfo = GetConstructorInfo(implementationInfo.ImplementingType);
+            var dynamicMethod = CreateDynamicMethod();
+            ILGenerator ilGenerator = dynamicMethod.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Newobj, constructorInfo);
+            ilGenerator.Emit(OpCodes.Ret);            
+            return (Func<List<object>, object>)dynamicMethod.CreateDelegate(typeof(Func<List<object>, object>));
+
+        }
+
+        private DynamicMethod CreateDynamicMethod()
+        {
+            DynamicMethod dynamicMethod = new DynamicMethod(
+                "DynamicMethod", typeof(object), new[] { typeof(List<object>) }, typeof(ServiceContainer).Module, false);
+            return dynamicMethod;
         }
 
         private void EnsureServiceContainerIsConfigured()
@@ -1025,98 +1039,5 @@ namespace LightInject
         public Func<object> Proceed { get; internal set; }
     }
 
-    /// <summary>
-    /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
-    /// </summary>
-    public class AssemblyScanner : IAssemblyScanner
-    {
-        private readonly IServiceContainer _serviceContainer;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AssemblyScanner"/> class.
-        /// </summary>
-        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/> instance.</param>
-        public AssemblyScanner(IServiceContainer serviceContainer)
-        {
-            _serviceContainer = serviceContainer;
-        }
-
-        /// <summary>
-        /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
-        /// </summary>
-        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>
-        /// <param name="shouldLoad">A function delegate that determines if the current type should be loaded into the <see cref="IServiceContainer"/>.</param>
-        public void Scan(Assembly assembly, Func<Type, bool> shouldLoad)
-        {
-            IEnumerable<Type> types = GetConcreteTypes(assembly);
-            foreach (Type type in types.Where(shouldLoad))
-                BuildImplementationMap(type);
-        }
-       
-        private static string GetServiceName(Type serviceType, Type implementingType)
-        {
-            string implementingTypeName = implementingType.Name;
-            string serviceTypeName = serviceType.Name;
-            if (implementingType.IsGenericTypeDefinition)
-            {
-                var regex = new Regex("((?:[a-z][a-z]+))", RegexOptions.IgnoreCase);
-                implementingTypeName = regex.Match(implementingTypeName).Groups[1].Value;
-                serviceTypeName = regex.Match(serviceTypeName).Groups[1].Value;
-            }
-
-            if (serviceTypeName.Substring(1) == implementingTypeName)
-                implementingTypeName = string.Empty;
-            return implementingTypeName;
-        }
-
-        private static IEnumerable<Type> GetBaseTypes(Type concreteType)
-        {
-            Type baseType = concreteType;
-            while (baseType != typeof(object) && baseType != null)
-            {
-                yield return baseType;
-                baseType = baseType.BaseType;
-            }
-        }
-
-        private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
-        {
-            return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && t.IsPublic);
-        }
-
-        private static bool ShouldCreateSingletonExpression(Type implementingType)
-        {
-            return TypeNameStartsOrEndsWithSingleton(implementingType) || IsFactory(implementingType);                    
-        }
-
-        private static bool IsFactory(Type type)
-        {
-            return typeof(IFactory).IsAssignableFrom(type);
-        }
-
-        private static bool TypeNameStartsOrEndsWithSingleton(Type concreteType)
-        {
-            return concreteType.Name.EndsWith("Singleton", StringComparison.InvariantCultureIgnoreCase) ||
-                   concreteType.Name.StartsWith("Singleton", StringComparison.InvariantCultureIgnoreCase);
-        }
-
-        private void BuildImplementationMap(Type implementingType)
-        {
-            Type[] interfaces = implementingType.GetInterfaces();
-            foreach (Type interfaceType in interfaces)
-                RegisterInternal(interfaceType, implementingType);
-            foreach (Type baseType in GetBaseTypes(implementingType))
-                RegisterInternal(baseType, implementingType);
-        }
-
-        private void RegisterInternal(Type serviceType, Type implementingType)
-        {
-            if (serviceType.IsGenericType && serviceType.ContainsGenericParameters)
-                serviceType = serviceType.GetGenericTypeDefinition();
-            if (ShouldCreateSingletonExpression(implementingType))
-                _serviceContainer.RegisterAsSingleton(serviceType, implementingType, GetServiceName(serviceType, implementingType));
-                                                      
-            _serviceContainer.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
-        }
-    }
+  
 }

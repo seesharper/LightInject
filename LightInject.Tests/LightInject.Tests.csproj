@@ -50,6 +50,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyScannerTests.cs" />
+    <Compile Include="ExpressionTests.cs" />
+    <Compile Include="LambdaExpressionTests.cs" />
+    <Compile Include="ServiceContainerTests2.cs" />
     <Compile Include="ExpressionExtensions.cs" />
     <Compile Include="MethodCallRewriterTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

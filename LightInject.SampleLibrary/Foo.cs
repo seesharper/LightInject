@@ -5,6 +5,9 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
+    
+    
+    
     public interface IFoo { }
 
     public class Foo : IFoo { }
@@ -20,6 +23,88 @@ namespace LightInject.SampleLibrary
 
         public IBar Bar { get; private set; }
     }
+
+    public class FooWithSameDependencyTwice : IFoo
+    {
+        private readonly IBar m_bar1;
+
+        private readonly IBar m_bar2;
+
+        public FooWithSameDependencyTwice(IBar bar1, IBar bar2)
+        {
+            m_bar1 = bar1;
+            m_bar2 = bar2;
+        }
+
+        public IBar Bar2
+        {
+            get
+            {
+                return this.m_bar2;
+            }
+        }
+
+        public IBar Bar1
+        {
+            get
+            {
+                return this.m_bar1;
+            }
+        }
+    }
+
+
+
+    public class FooDecorator : IFoo
+    {
+        private readonly IFoo m_foo;
+
+        public FooDecorator(IFoo foo)
+        {
+            m_foo = foo;
+        }
+
+        public IFoo DecoratedInstance
+        {
+            get
+            {
+                return this.m_foo;
+            }
+        }
+    }
+
+
+    public class FooWithReferenceTypeDependency : IFoo
+    {
+        public FooWithReferenceTypeDependency(string value)
+        {
+            Value = value;
+        }
+
+        public string Value { get; private set; }
+    }
+
+    public class FooWithValueTypeDependency : IFoo
+    {
+        public FooWithValueTypeDependency(int value)
+        {
+            Value = value;
+        }
+
+        public int Value { get; private set; }
+    }
+
+    public class FooWithEnumDependency : IFoo
+    {
+        public FooWithEnumDependency(Encoding value)
+        {
+            Value = value;
+        }
+
+        public Encoding Value { get; private set; }
+    }
+
+
 
     public class FooWithEnumerableDependency : IFoo
     {
@@ -69,6 +154,9 @@ namespace LightInject.SampleLibrary
         public Lazy<IBar> LazyService { get; private set; }
     }
 
+    
+
+
     public class FooFactory : IFactory
     {
         public object GetInstance(ServiceRequest serviceRequest)
@@ -76,7 +164,12 @@ namespace LightInject.SampleLibrary
             ServiceRequest = serviceRequest;
             CallCount++;
             ServiceName = serviceRequest.ServiceName;
-            return serviceRequest.CanProceed ? serviceRequest.Proceed() : new Foo();
+            if (serviceRequest.CanProceed) 
+                return new FooDecorator((IFoo)serviceRequest.Proceed());
+            
+            return new Foo();
+            
+            
         }
 
         public bool CanGetInstance(Type serviceType, string serviceName)
@@ -86,7 +179,7 @@ namespace LightInject.SampleLibrary
 
         public ServiceRequest ServiceRequest { get; private set; }
 
-        public string ServiceName { get; set; }
+        public string ServiceName { get; private set; }
 
         public int CallCount { get; private set; }
     }

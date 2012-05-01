@@ -8,7 +8,19 @@ namespace LightInject.SampleLibrary
 
     public class Bar : IBar
     {
+        [ThreadStatic]
+        public static int InitializeCount = 0;
+
+        public Bar()
+        {
+            InitializeCount++;
+        }
     }
+
+    public interface IBar<T> {}
+
+    public class Bar<T> : IBar<T> {}
+
 
     public class AnotherBar : IBar
     {
