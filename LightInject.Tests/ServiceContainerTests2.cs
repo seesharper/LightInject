@@ -423,87 +423,14 @@ namespace DependencyInjector.Tests
 
         #region Factory
 
-        [TestMethod]
-        public void GetInstance_Factory_ReturnsSingleInstance()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(IFactory), typeof(FooFactory));
-            var instance1 = container.GetInstance<IFactory>();
-            var instance2 = container.GetInstance<IFactory>();
-            Assert.AreSame(instance1, instance2);
-        }
-
-        [TestMethod]
-        public void GetInstance_UnknownService_ReturnsFactoryCreatedInstance()
-        {
-            var container = CreateContainer();
-            var factoryMock = new Mock<IFactory>();
-            factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(new Foo());
-            factoryMock.Setup(f => f.CanGetInstance(typeof(IFoo), string.Empty)).Returns(true);
-            container.Register(typeof(IFactory),factoryMock.Object);
-            var instance = container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance, typeof(Foo));
-        }
-
-        [TestMethod]
-        public void GetInstance_KnownService_ReturnsFactoryCreatedInstance()
-        {
-            var container = CreateContainer();
-            var factoryMock = new Mock<IFactory>();
-            factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(new AnotherFoo());
-            factoryMock.Setup(f => f.CanGetInstance(typeof(IFoo), string.Empty)).Returns(true);
-            container.Register(typeof(IFoo),typeof(Foo));
-            container.Register(typeof(IFactory), factoryMock.Object);
-            var instance = container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
-        }
-
-        [TestMethod]
-        public void GetInstance_UnknownValueType_ReturnsFactoryCreatedInstance()
-        {
-            var container = CreateContainer();
-            var factoryMock = new Mock<IFactory>();
-            factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(42);
-            factoryMock.Setup(f => f.CanGetInstance(typeof(int), string.Empty)).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
-            var instance = container.GetInstance<int>();
-            Assert.AreEqual(42, instance);
-        }
 
 
-        [TestMethod]
-        public void GetInstance_KnownValueType_ReturnsFactoryCreatedInstance()
-        {
-            var container = CreateContainer();
-            var factoryMock = new Mock<IFactory>();
-            factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024);
-            factoryMock.Setup(f => f.CanGetInstance(typeof(int), string.Empty)).Returns(true);
-            container.Register(typeof(int), 2048);
-            container.Register(typeof(IFactory), factoryMock.Object);
-            var instance = container.GetInstance<int>();
-            Assert.AreEqual(1024, instance);
-        }
+ 
 
-        [TestMethod]
-        public void GetInstance_KnownService_CanProceedAndReturnDecorator()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(IFactory), typeof(FooFactory));
-            container.Register(typeof(IFoo), typeof(Foo));
-            var instance = container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
-        }
+      
 
-        #endregion
+     
 
-        #region Constructor Injection
-
-        
-
-       
-        
-
-        
 
        
 
@@ -511,14 +438,9 @@ namespace DependencyInjector.Tests
 
         #endregion
 
-        #region Property Injection
-
-      
-       
         
 
-
-        #endregion
+       
 
         //[TestMethod]
         //public void PerformanceTest()
