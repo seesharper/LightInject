@@ -13,7 +13,7 @@ namespace DependencyInjector.Tests
     using Moq;
 
     [TestClass]
-    public class ServiceContainerTests2
+    public class ServiceCrtontainerTests2
     {
         #region Values
 
@@ -339,7 +339,7 @@ namespace DependencyInjector.Tests
             Assert.AreSame(instance1, instance2);
         }
 
-
+        
 
         #endregion
 
@@ -564,26 +564,11 @@ namespace DependencyInjector.Tests
 
         #region Property Injection
 
-        [TestMethod]
-        public void GetInstance_KnownService_InjectsPropertyDependency()
-        {
-            var container = CreateContainer();
-            container.Register<IBar, Bar>();
-            container.Register<IFoo, FooWithProperyDependency>();
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void GetInstance_UnKnownServicePropertyDependency_ThrowsException()
-        {
-            var container = CreateContainer();            
-            container.Register<IFoo, FooWithProperyDependency>();
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
-        }
+      
        
+        
+
+
         #endregion
 
         //[TestMethod]

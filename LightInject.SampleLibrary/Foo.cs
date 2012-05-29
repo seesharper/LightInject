@@ -53,6 +53,12 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class FooWithSamePropertyDependencyTwice : IFoo
+    {
+        public IBar Bar1 { get; set; }
+
+        public IBar Bar2 { get; set; }
+    }
 
 
     public class FooDecorator : IFoo
@@ -84,6 +90,11 @@ namespace LightInject.SampleLibrary
         public string Value { get; private set; }
     }
 
+    public class FooWithReferenceTypePropertyDependency : IFoo
+    {        
+        public string Value { get; set; }
+    }
+
     public class FooWithValueTypeDependency : IFoo
     {
         public FooWithValueTypeDependency(int value)
@@ -93,6 +104,12 @@ namespace LightInject.SampleLibrary
 
         public int Value { get; private set; }
     }
+
+    public class FooWithValueTypePropertyDependency : IFoo
+    {        
+        public int Value { get; set; }
+    }
+
 
     public class FooWithEnumDependency : IFoo
     {
@@ -104,6 +121,12 @@ namespace LightInject.SampleLibrary
         public Encoding Value { get; private set; }
     }
 
+    public class FooWithEnumPropertyDependency : IFoo
+    {
+       
+
+        public Encoding Value { get;  set; }
+    }
 
 
     public class FooWithEnumerableDependency : IFoo
@@ -143,6 +166,12 @@ namespace LightInject.SampleLibrary
             get { return _dependency; }
         }
     }
+
+    public class FooWithGenericPropertyDependency<T> : IFoo<T>
+    {
+        public T Dependency { get; set; }        
+    }
+
 
     public class FooWithLazyDependency : IFoo
     {

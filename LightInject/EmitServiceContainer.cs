@@ -169,6 +169,7 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>
+        /// TODO MOVE THIS TO THE IServiceContainer interface
         void Register(Assembly assembly, Func<Type, bool> shouldLoad);
     }
 
@@ -282,7 +283,7 @@ namespace LightInject
 
         public void Register<TService, TImplementation>(LifeCycleType lifeCycle) where TImplementation : TService
         {
-            throw new NotImplementedException();
+            Register(typeof(TService),typeof(TImplementation),lifeCycle);
         }
 
         public void Register<TService, TImplementation>(string serviceName) where TImplementation : TService
@@ -857,6 +858,10 @@ namespace LightInject
                 if (RepresentsGetNamedInstanceMethod(methodCallExpression))
                 {
                     dependency.ServiceName = (string)((ConstantExpression)methodCallExpression.Arguments[0]).Value;
+                }
+                else
+                {
+                    dependency.ServiceName = string.Empty;
                 }
             }
 
