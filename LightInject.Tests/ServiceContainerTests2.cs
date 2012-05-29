@@ -498,67 +498,16 @@ namespace DependencyInjector.Tests
 
         #region Constructor Injection
 
-        [TestMethod]
-        public void GetInstance_ServiceWithDependency_InjectsDependency()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(IBar), typeof(Bar));
-            container.Register(typeof(IFoo), typeof(FooWithDependency));
-            var instance = (FooWithDependency)container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
-        }
+        
 
-        [TestMethod]
-        public void GetInstance_ServiceWithOpenGenericDependency_InjectsDependency()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(int), 42);
-            container.Register(typeof(IBar<>), typeof(Bar<>));
-            container.Register(typeof(IFoo<>), typeof(FooWithGenericDependency<>), "GenericFoo");                        
-            var instance = (FooWithGenericDependency<IBar<int>>)container.GetInstance<IFoo<IBar<int>>>("GenericFoo");            
-            Assert.IsInstanceOfType(instance.Dependency, typeof(IBar<int>));
-        }
-                
-        [TestMethod]
-        public void GetInstance_RequestLifeCycle_InjectsSameInstance()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(IBar), typeof(Bar), LifeCycleType.Request);
-            container.Register(typeof(IFoo), typeof(FooWithSameDependencyTwice));
-            var instance = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
-            Assert.AreSame(instance.Bar1, instance.Bar2);
-        }
+       
+        
 
-        [TestMethod]
-        public void GetInstance_RequestLifeCycle_CallConstructorsOnDependencyOnlyOnce()
-        {
-            var container = CreateContainer();
-            Bar.InitializeCount = 0;
-            container.Register(typeof(IBar), typeof(Bar), LifeCycleType.Request);
-            container.Register(typeof(IFoo), typeof(FooWithSameDependencyTwice));
-            container.GetInstance<IFoo>();
-            Assert.AreEqual(1, Bar.InitializeCount);
-        }
+        
 
-        [TestMethod]
-        public void GetInstance_RequestLifeCycle_InjectsTransientInstance()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(IBar), typeof(Bar), LifeCycleType.Transient);
-            container.Register(typeof(IFoo), typeof(FooWithSameDependencyTwice));
-            var instance = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
-            Assert.AreNotSame(instance.Bar1, instance.Bar2);
-        }
+       
 
-        [TestMethod]
-        public void GetInstance_MultipleContructors_UsesConstructorWithMostParameters()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(IFoo), typeof(FooWithMultipleConstructors));
-            container.Register(typeof(IBar), typeof(Bar));
-            var foo = (FooWithMultipleConstructors)container.GetInstance<IFoo>();
-            Assert.IsNotNull(foo.Bar);
-        }
+    
 
         #endregion
 

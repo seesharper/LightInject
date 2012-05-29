@@ -25,8 +25,8 @@ namespace DependencyInjector.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, FooWithProperyDependency>();
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+            container.GetInstance<IFoo>();
+            
         }
 
         [TestMethod]
@@ -34,8 +34,8 @@ namespace DependencyInjector.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
-            container.Register(typeof(IFoo<>),typeof(FooWithGenericDependency<>));
-            var instance = (FooWithGenericDependency<IBar>)container.GetInstance<IFoo<IBar>>();
+            container.Register(typeof(IFoo<>),typeof(FooWithGenericPropertyDependency<>));
+            var instance = (FooWithGenericPropertyDependency<IBar>)container.GetInstance<IFoo<IBar>>();
             Assert.IsInstanceOfType(instance.Dependency, typeof(Bar));
         }
         
@@ -44,9 +44,9 @@ namespace DependencyInjector.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
-            container.Register<IFoo, FooWithDependency>();
-            var instance1 = (FooWithDependency)container.GetInstance<IFoo>();
-            var instance2 = (FooWithDependency)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithProperyDependency>();
+            var instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            var instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
             Assert.AreNotEqual(instance1.Bar, instance2.Bar);
         }
 
@@ -55,9 +55,9 @@ namespace DependencyInjector.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(LifeCycleType.Request);
-            container.Register<IFoo, FooWithDependency>();
-            var instance1 = (FooWithDependency)container.GetInstance<IFoo>();
-            var instance2 = (FooWithDependency)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithProperyDependency>();
+            var instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            var instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
             Assert.AreNotEqual(instance1.Bar, instance2.Bar);
         }
 
@@ -66,9 +66,9 @@ namespace DependencyInjector.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(LifeCycleType.Singleton);
-            container.Register<IFoo, FooWithDependency>();
-            var instance1 = (FooWithDependency)container.GetInstance<IFoo>();
-            var instance2 = (FooWithDependency)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithProperyDependency>();
+            var instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            var instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
             Assert.AreEqual(instance1.Bar, instance2.Bar);
         }
 
@@ -163,7 +163,16 @@ namespace DependencyInjector.Tests
             Assert.IsNull(instance.Bar);
         }
 
-
+        [TestMethod]
+        public void GetInstance_RequestLifeCycle_CallConstructorsOnDependencyOnlyOnce()
+        {
+            var container = CreateContainer();
+            Bar.InitializeCount = 0;
+            container.Register(typeof(IBar), typeof(Bar), LifeCycleType.Request);
+            container.Register(typeof(IFoo), typeof(FooWithSamePropertyDependencyTwice));
+            container.GetInstance<IFoo>();
+            Assert.AreEqual(1, Bar.InitializeCount);
+        }
 
         private static IContainer CreateContainer()
         {
