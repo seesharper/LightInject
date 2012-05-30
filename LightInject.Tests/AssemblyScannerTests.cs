@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LightInject;
 using LightInject.SampleLibrary;
+using LightInject.SampleLibraryWithCompositionRoot;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -42,6 +43,17 @@ namespace DependencyInjector.Tests
         {
             GetContainerMock().Verify(sc => sc.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo"), Times.Once());
         }
+
+        [TestMethod]
+        public void Scan_SampleAssembkyWithCompositionRoot_CallsComposeMethod()
+        {
+            var assemblyScanner = new AssemblyScanner();
+            Mock<IContainer> containerMock = new Mock<IContainer>();
+            SampleCompositionRoot.CallCount = 0;
+            assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock.Object);
+            Assert.AreEqual(1,SampleCompositionRoot.CallCount);
+        }
+
 
         [TestMethod]        
         public void GetInstance_NoServices_CallsAssemblyScannerOnFirstRequest()

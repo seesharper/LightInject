@@ -839,7 +839,7 @@ namespace LightInject
 
         private void EnsureThatServiceRegistryIsConfigured()
         {
-            if (_services.Count == 0)
+            if (_services.Count == 0 && _openGenericServices.Count == 0)
             {
                 Register("*.dll|*.exe");
             }
@@ -1130,6 +1130,7 @@ namespace LightInject
     /// <summary>
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
     /// </summary>
+    /// NOTE MUST NOT SCAN LIGHTINJECT TYPES
     public class AssemblyScanner : IAssemblyScanner
     {        
         /// <summary>

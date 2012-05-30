@@ -62,6 +62,10 @@
     <Compile Include="ServiceRegistryTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
+      <Project>{65FF0CEB-76B4-44FD-898A-00C32C21738C}</Project>
+      <Name>LightInject.SampleLibraryWithCompositionRoot</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
       <Project>{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}</Project>
       <Name>LightInject.SampleLibrary</Name>

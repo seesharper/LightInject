@@ -40,7 +40,7 @@ namespace LightInject.SampleLibrary
             return typeof (IBar).IsAssignableFrom(serviceType);
         }
 
-        public string ServiceName { get; set; }
+        public string ServiceName { get; private set; }
 
         public int CallCount { get; private set; }
     }

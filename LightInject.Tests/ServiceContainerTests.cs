@@ -10,6 +10,7 @@ namespace DependencyInjector.Tests
     using System.Diagnostics;
 
     [TestClass]
+    [Ignore]
     public class ServiceContainerTests
     {        
         [TestMethod]

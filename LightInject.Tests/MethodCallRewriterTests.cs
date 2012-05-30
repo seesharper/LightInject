@@ -9,6 +9,7 @@ using Moq;
 namespace DependencyInjector.Tests
 {
     [TestClass]
+    [Ignore]
     public class MethodCallRewriterTests
     {
         [TestMethod]

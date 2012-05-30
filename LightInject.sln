@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibrary",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Tests", "LightInject.Tests\LightInject.Tests.csproj", "{195CC92D-3792-4326-938C-E51AC26A8973}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRoot", "LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj", "{65FF0CEB-76B4-44FD-898A-00C32C21738C}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = LightInject.vsmdi
@@ -35,6 +37,10 @@ Global
 		{195CC92D-3792-4326-938C-E51AC26A8973}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{195CC92D-3792-4326-938C-E51AC26A8973}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{195CC92D-3792-4326-938C-E51AC26A8973}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
