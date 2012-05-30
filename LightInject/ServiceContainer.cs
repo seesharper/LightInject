@@ -211,7 +211,7 @@ namespace LightInject
         /// </summary>
         public ServiceContainer()
         {
-            AssemblyScanner = new AssemblyScanner(this);
+            //AssemblyScanner = new AssemblyScanner(this);
             _methodCallRewriter = new MethodCallRewriter(GetBodyExpression);
         }
         
@@ -281,7 +281,7 @@ namespace LightInject
         /// be loaded into the target <see cref="IServiceContainer"/> instance.</param>
         public void Register(Assembly assembly, Func<Type, bool> shouldLoad)
         {
-            AssemblyScanner.Scan(assembly, shouldLoad);
+            //AssemblyScanner.Scan(assembly, shouldLoad);
         }              
 
 #if !SILVERLIGHT

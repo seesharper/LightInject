@@ -137,6 +137,22 @@ namespace DependencyInjector.Tests
         }
 
         [TestMethod]
+        public void GetInstance_DefaultService_PassesEmptyServiceNameToCanCreateInstanceMethod()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(int), 42, "SomeServiceName");
+            ServiceRequest serviceRequest = null;
+            var factoryMock = new Mock<IFactory>();
+            factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024).Callback<ServiceRequest>((sr) => serviceRequest = sr);
+            factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
+            container.Register(typeof(IFactory), factoryMock.Object);
+            container.GetInstance<int>();
+            factoryMock.Verify(f => f.CanGetInstance(typeof(int), string.Empty));
+        }
+
+
+
+        [TestMethod]
         public void GetInstance_UnknownService_CannotProceed()
         {
             var container = CreateContainer();

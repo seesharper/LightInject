@@ -11,11 +11,11 @@ namespace DependencyInjector.Tests
     [TestClass]
     public class AssemblyScannerTests
     {
-        private Mock<IServiceContainer> GetContainerMock()
+        private Mock<IContainer> GetContainerMock()
         {
-            var containerMock = new Mock<IServiceContainer>();
-            var assemblyScanner = new AssemblyScanner(containerMock.Object);
-            assemblyScanner.Scan(typeof(IFoo).Assembly, (t) => true);
+            var containerMock = new Mock<IContainer>();
+            var assemblyScanner = new AssemblyScanner();
+            assemblyScanner.Scan(typeof(IFoo).Assembly, containerMock.Object);
             return containerMock;
         }
         
@@ -43,26 +43,61 @@ namespace DependencyInjector.Tests
             GetContainerMock().Verify(sc => sc.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo"), Times.Once());
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [TestMethod]        
         public void GetInstance_NoServices_CallsAssemblyScannerOnFirstRequest()
         {
             var scannerMock = new Mock<IAssemblyScanner>();
-            var serviceContainer = new ServiceContainer();
+            var serviceContainer = new EmitServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
-            serviceContainer.GetInstance<IFoo>();
-            serviceContainer.GetInstance<IFoo>();
-            scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly,(t) => true),Times.Once());
+            try
+            {
+                serviceContainer.GetInstance<IFoo>();
+            }
+            catch
+            {
+                
+            }
+            finally 
+            {
+                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());                     
+            }                             
+        }
+
+        [TestMethod]
+        public void GetInstance_NoServices_CallsAssemblyScannerOnlyOnce()
+        {
+            var scannerMock = new Mock<IAssemblyScanner>();
+            var serviceContainer = new EmitServiceContainer();
+            serviceContainer.AssemblyScanner = scannerMock.Object;
+            try
+            {
+                serviceContainer.GetInstance<IFoo>();
+            }
+            catch
+            {
+                try
+                {
+                    serviceContainer.GetInstance<IFoo>();
+                }
+                catch
+                {
+
+                }
+            }
+            finally
+            {
+                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());
+            }
         }
 
         [TestMethod]
         public void Register_AssemblyFile_CallsAssemblyScanner()
         {
             var scannerMock = new Mock<IAssemblyScanner>();
-            var serviceContainer = new ServiceContainer();
+            var serviceContainer = new EmitServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
-            serviceContainer.Register("*SampleLibrary.dll",t => true);
-            scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<Func<Type,bool>>()), Times.Once());
+            serviceContainer.Register("*SampleLibrary.dll");
+            scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());
         }
     }
 }

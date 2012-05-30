@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -160,17 +161,7 @@ namespace LightInject
         /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         void Register<TService>(Expression<Func<IServiceFactory, TService>> expression, string serviceName, LifeCycleType lifeCycle);
 
-        /// <summary>
-        /// Registers services from the given <paramref name="assembly"/>.
-        /// </summary>
-        /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="shouldLoad">Determines if the currently scanned type should be loaded into the service container.</param>
-        /// <remarks>
-        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
-        /// will be used to configure the container.
-        /// </remarks>
-        /// TODO MOVE THIS TO THE IServiceContainer interface
-        void Register(Assembly assembly, Func<Type, bool> shouldLoad);
+      
     }
 
     /// <summary>
@@ -240,6 +231,22 @@ namespace LightInject
     /// </summary>
     public interface IContainer : IServiceRegistry, IServiceFactory
     {
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>        
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        void Register(Assembly assembly);
+
+        /// <summary>
+        /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
+        /// </summary>
+        /// <param name="searchPattern"></param>
+        void Register(string searchPattern);
+
     }
 
     /// <summary>
@@ -256,14 +263,38 @@ namespace LightInject
         private static readonly MethodInfo GetInstanceMethod;
         private readonly List<object> _constants = new List<object>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EmitServiceContainer"/> class.
+        /// </summary>
+        public EmitServiceContainer()
+        {
+            AssemblyScanner = new AssemblyScanner();
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is reponsible for scanning assemblies.
+        /// </summary>
+        public IAssemblyScanner AssemblyScanner { get; set; }
+
         static EmitServiceContainer()
         {
             GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
         }
 
-        public void Register(Assembly assembly, Func<Type, bool> shouldLoad)
+        public void Register(Assembly assembly)
+        {                        
+            AssemblyScanner.Scan(assembly,this);
+        }
+
+        public void Register(string searchPattern)
         {
-            throw new NotImplementedException();
+            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
+            if (directory != null)
+            {
+                string[] searchPatterns = searchPattern.Split('|');
+                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)))
+                    Register(Assembly.LoadFrom(file));
+            }
         }
 
         public void Register(Type serviceType, Type implementingType, LifeCycleType lifeCycle)
@@ -801,10 +832,19 @@ namespace LightInject
                     
         private Func<List<object>, object> CreateDelegate(Type serviceType, string serviceName)
         {
+            EnsureThatServiceRegistryIsConfigured();
             var serviceEmitter = GetServiceEmitter(serviceType, serviceName);
             return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
         }
-                        
+
+        private void EnsureThatServiceRegistryIsConfigured()
+        {
+            if (_services.Count == 0)
+            {
+                Register("*.dll|*.exe");
+            }
+        }
+
         private void RegisterValue(Type serviceType, object value, string serviceName)
         {
             int index = GetConstantIndex(value);
@@ -1082,37 +1122,40 @@ namespace LightInject
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
         /// </summary>
-        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>
-        /// <param name="shouldLoad">A function delegate that determines if the current type should be loaded into the <see cref="IServiceContainer"/>.</param>
-        void Scan(Assembly assembly, Func<Type, bool> shouldLoad);
+        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry);
     }
 
     /// <summary>
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
     /// </summary>
     public class AssemblyScanner : IAssemblyScanner
-    {
-        private readonly IServiceContainer _serviceContainer;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AssemblyScanner"/> class.
-        /// </summary>
-        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/> instance.</param>
-        public AssemblyScanner(IServiceContainer serviceContainer)
-        {
-            _serviceContainer = serviceContainer;
-        }
-
+    {        
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
         /// </summary>
-        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>
-        /// <param name="shouldLoad">A function delegate that determines if the current type should be loaded into the <see cref="IServiceContainer"/>.</param>
-        public void Scan(Assembly assembly, Func<Type, bool> shouldLoad)
+        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)
         {
             IEnumerable<Type> types = GetConcreteTypes(assembly);
-            foreach (Type type in types.Where(shouldLoad))
-                BuildImplementationMap(type);
+            var compositionRoots = types.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
+            if (compositionRoots.Count > 0)
+                ExecuteCompositionRoots(compositionRoots, serviceRegistry);
+            else
+            {
+                foreach (Type type in types)
+                    BuildImplementationMap(type, serviceRegistry);    
+            }            
+        }
+
+        private void ExecuteCompositionRoots(List<Type> compositionRoots, IServiceRegistry serviceRegistry)
+        {
+            foreach (var compositionRoot in compositionRoots)
+            {
+                ((ICompositionRoot)Activator.CreateInstance(compositionRoot)).Compose(serviceRegistry);
+            }
         }
 
         private static string GetServiceName(Type serviceType, Type implementingType)
@@ -1146,20 +1189,20 @@ namespace LightInject
             return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && t.IsPublic);
         }
        
-        private void BuildImplementationMap(Type implementingType)
+        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry)
         {
             Type[] interfaces = implementingType.GetInterfaces();
             foreach (Type interfaceType in interfaces)
-                RegisterInternal(interfaceType, implementingType);
+                RegisterInternal(interfaceType, implementingType, serviceRegistry);
             foreach (Type baseType in GetBaseTypes(implementingType))
-                RegisterInternal(baseType, implementingType);
+                RegisterInternal(baseType, implementingType, serviceRegistry);
         }
 
-        private void RegisterInternal(Type serviceType, Type implementingType)
+        private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry)
         {
             if (serviceType.IsGenericType && serviceType.ContainsGenericParameters)
                 serviceType = serviceType.GetGenericTypeDefinition();           
-            _serviceContainer.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
+            serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
         }
     }
 }
