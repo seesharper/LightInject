@@ -145,8 +145,22 @@ namespace DependencyInjector.Tests
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024).Callback<ServiceRequest>((sr) => serviceRequest = sr);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
             container.Register(typeof(IFactory), factoryMock.Object);
-            container.GetInstance<int>("SomeServiceName");
+            container.GetInstance<int>();
             Assert.IsFalse(serviceRequest.CanProceed);
+        }
+
+        [TestMethod]
+        public void GetInstance_KnownService_CanProceed()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(int), 42);
+            ServiceRequest serviceRequest = null;
+            var factoryMock = new Mock<IFactory>();
+            factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024).Callback<ServiceRequest>((sr) => serviceRequest = sr);
+            factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
+            container.Register(typeof(IFactory), factoryMock.Object);
+            container.GetInstance<int>();
+            Assert.IsTrue(serviceRequest.CanProceed);
         }
 
 

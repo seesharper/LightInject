@@ -520,11 +520,18 @@ namespace LightInject
 
 
             IFactory factory = GetCustomFactory(serviceType, serviceName);
-            if (factory != null && emitter != null)
+            if (factory != null)
             {
-                //NOTE We need to know if the emitter represents a call to the factory, otherwise this is the road to stack overflow.
-                var del = CreateDynamicMethodDelegate(emitter, typeof(IFactory));
-                emitter = CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, () => del(_constants));
+                if (emitter != null)
+                {
+                    var del = CreateDynamicMethodDelegate(emitter, typeof(IFactory));
+                    emitter = CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, () => del(_constants));    
+                }
+                else
+                {
+                    return CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, null);
+                }
+                
             }
 
             if (emitter != null) registrations.AddOrUpdate(serviceName, s => emitter, (s, d) => emitter);
@@ -611,11 +618,7 @@ namespace LightInject
 
             if (IsClosedGeneric(serviceType)) 
                 return CreateServiceEmitterBasedOnClosedGenericServiceRequest(serviceType, serviceName);
-
-            IFactory factory = GetCustomFactory(serviceType, serviceName);
-            if (factory != null)
-                return CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, null);
-
+           
             return null;
         }
 
