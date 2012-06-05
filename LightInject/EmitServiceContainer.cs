@@ -226,6 +226,34 @@ namespace LightInject
         void Compose(IServiceRegistry serviceRegistry);
     }
 
+    
+    /// <summary>
+    /// Represents a class that is responsible for selecting properties that represents a dependecy to the target <see cref="Type"/>.
+    /// </summary>
+    public interface IPropertySelector
+    {        
+        /// <summary>
+        /// Selects properties that represents a dependency from the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> for which to select the properties.</param>
+        /// <returns>A list of properties that represents a dependency to the target <paramref name="type."/></returns>
+        IEnumerable<PropertyInfo> Select(Type type);
+    }
+
+    /// <summary>
+    /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
+    /// </summary>
+    public interface IAssemblyLoader
+    {
+        /// <summary>
+        /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
+        /// </summary>
+        /// <param name="searchPattern">The search pattern to use.</param>
+        /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
+        IEnumerable<Assembly> Load(string searchPattern);
+    }
+
+
     /// <summary>
     /// Represents an inversion of control container.
     /// </summary>
@@ -269,12 +297,27 @@ namespace LightInject
         public EmitServiceContainer()
         {
             AssemblyScanner = new AssemblyScanner();
+            PropertySelctor = new PropertySelector();
+            AssemblyLoader = new AssemblyLoader();
         }
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is reponsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IPropertySelector"/> instance that is reponsible selecting the properties
+        /// that represents a dependency for a given <see cref="Type"/>.
+        /// </summary>
+        public IPropertySelector PropertySelctor { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is reponsible for loading assemblies during assembly scanning. 
+        /// </summary>
+        public IAssemblyLoader AssemblyLoader { get; set; }
+
 
         static EmitServiceContainer()
         {
@@ -288,13 +331,10 @@ namespace LightInject
 
         public void Register(string searchPattern)
         {
-            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
-            if (directory != null)
+            foreach(Assembly assembly in  AssemblyLoader.Load(searchPattern))
             {
-                string[] searchPatterns = searchPattern.Split('|');
-                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)))
-                    Register(Assembly.LoadFrom(file));
-            }
+                Register(assembly);
+            }            
         }
 
         public void Register(Type serviceType, Type implementingType, LifeCycleType lifeCycle)
@@ -488,7 +528,7 @@ namespace LightInject
             return typeof(IFactory).IsAssignableFrom(type);
         }
 
-        private static ServiceInfo CreateServiceInfo(Type implementingType)
+        private  ServiceInfo CreateServiceInfo(Type implementingType)
         {
             var serviceInfo = new ServiceInfo();
             ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(implementingType);
@@ -504,16 +544,15 @@ namespace LightInject
                 p => new Dependency { ServiceName = string.Empty, ServiceType = p.ParameterType });
         }
 
-        private static IEnumerable<PropertyDependecy> GetPropertyDependencies(Type implementingType)
+        private IEnumerable<PropertyDependecy> GetPropertyDependencies(Type implementingType)
         {
             return GetInjectableProperties(implementingType).Select(
                 p => new PropertyDependecy { PropertySetter = p.GetSetMethod(), ServiceName = string.Empty, ServiceType = p.PropertyType });
         }
 
-        private static IEnumerable<PropertyInfo> GetInjectableProperties(Type implementingType)
+        private IEnumerable<PropertyInfo> GetInjectableProperties(Type implementingType)
         {
-            var properties = implementingType.GetProperties().Where(IsInjectable).ToList();
-            return properties;
+            return PropertySelctor.Select(implementingType);            
         }
 
         private static bool IsInjectable(PropertyInfo propertyInfo)
@@ -561,15 +600,15 @@ namespace LightInject
                 else
                 {
                     return CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, null);
-                }
-                
+                }                
             }
 
             if (emitter != null) registrations.AddOrUpdate(serviceName, s => emitter, (s, d) => emitter);
 
             if (emitter == null)
-                throw new InvalidOperationException(
-                    string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}", serviceType, serviceName));
+                return null;
+                //throw new InvalidOperationException(
+                //    string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}", serviceType, serviceName));
 
             return _services[serviceType][serviceName];
         }
@@ -605,7 +644,10 @@ namespace LightInject
                 }
                 else
                 {
-                    GetServiceEmitter(dependency.ServiceType, dependency.ServiceName)(dynamicMethodInfo);
+                    var emitter = GetServiceEmitter(dependency.ServiceType, dependency.ServiceName);
+                    if (emitter == null)
+                        throw new InvalidOperationException("");
+                    emitter(dynamicMethodInfo);
                 }
             }
         }
@@ -1204,6 +1246,67 @@ namespace LightInject
             if (serviceType.IsGenericType && serviceType.ContainsGenericParameters)
                 serviceType = serviceType.GetGenericTypeDefinition();           
             serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
+        }
+    }
+
+    
+    /// <summary>
+    /// Selects the properties that represents a dependecy to the target <see cref="Type"/>.
+    /// </summary>
+    public class PropertySelector : IPropertySelector
+    {
+        /// <summary>
+        /// Selects properties that represents a dependency from the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> for which to select the properties.</param>
+        /// <returns>A list of properties that represents a dependency to the target <paramref name="type."/></returns>
+        public IEnumerable<PropertyInfo> Select(Type type)
+        {
+            return type.GetProperties().Where(IsInjectable).ToList();            
+        }
+
+        protected virtual bool IsInjectable(PropertyInfo propertyInfo)
+        {
+            return !IsReadOnly(propertyInfo);
+        }
+        
+        protected static bool IsReadOnly(PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetSetMethod(false) == null;
+        }
+    }
+
+    /// <summary>
+    /// Loads all assemblies from the application base directory that matches the given search pattern.
+    /// </summary>
+    public class AssemblyLoader : IAssemblyLoader
+    {
+        /// <summary>
+        /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
+        /// </summary>
+        /// <param name="searchPattern">The search pattern to use.</param>
+        /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
+        public IEnumerable<Assembly> Load(string searchPattern)
+        {
+            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
+            if (directory != null)
+            {
+                string[] searchPatterns = searchPattern.Split('|');
+                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
+                {                    
+                    yield return Assembly.LoadFrom(file);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Indicates if the 
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        protected virtual bool CanLoad(string fileName)
+        {
+            return true;
         }
     }
 }

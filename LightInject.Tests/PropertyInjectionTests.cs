@@ -164,6 +164,19 @@ namespace DependencyInjector.Tests
         }
 
         [TestMethod]
+        public void GetInstance_FuncFactoryWithStringConstantInitializer_ReturnsInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar), typeof(Bar));
+            container.Register<IFoo>(f => new FooWithReferenceTypePropertyDependency() {Value = "SomeValue"});
+            var instance = (FooWithReferenceTypePropertyDependency)container.GetInstance(typeof(IFoo));
+            Assert.AreEqual("SomeValue",instance.Value);
+        }
+
+
+
+
+        [TestMethod]
         public void GetInstance_RequestLifeCycle_CallConstructorsOnDependencyOnlyOnce()
         {
             var container = CreateContainer();
