@@ -8,3 +8,5 @@ _ReSharper*
 *.cs_
 *.vsp
 *.psess
+*.Cache
+*.sdf
