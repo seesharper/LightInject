@@ -1,4 +1,5 @@
-﻿using LightInject;
+﻿using System.Transactions;
+using LightInject;
 using LightInject.SampleLibrary;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -179,6 +180,32 @@ namespace DependencyInjector.Tests
             Assert.IsTrue(serviceRequest.CanProceed);
         }
 
+        [TestMethod]
+        public void GetInstance_TransactionScopedInstance_ReturnsSameInstance()
+        {
+            var container = CreateContainer(); 
+            container.Register(typeof(IFactory), typeof(TransactionScopedFactory));
+            using (new TransactionScope())
+            {
+                var firstInstance = container.GetInstance<IFoo>();
+                var secondInstance = container.GetInstance<IFoo>();
+                Assert.AreSame(firstInstance, secondInstance);
+            }
+        }
+
+        [TestMethod]
+        public void GetInstance_TransactionScopedInstanceUsingProceed_ReturnsSameInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFactory), typeof(TransactionScopedFactoryUsingProceed));
+            container.Register(typeof(IFoo), typeof(Foo));
+            using (new TransactionScope())
+            {
+                var firstInstance = container.GetInstance<IFoo>();
+                var secondInstance = container.GetInstance<IFoo>();
+                Assert.AreSame(firstInstance, secondInstance);
+            }
+        }
 
         private static IContainer CreateContainer()
         {

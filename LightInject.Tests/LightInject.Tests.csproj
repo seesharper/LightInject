@@ -42,6 +42,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -60,6 +61,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceContainerTests.cs" />
     <Compile Include="ServiceRegistryTests.cs" />
+    <Compile Include="TransactionScopedFactory.cs" />
+    <Compile Include="TransactionScopedFactoryUsingProceed.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">

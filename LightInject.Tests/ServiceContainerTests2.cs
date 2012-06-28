@@ -76,6 +76,26 @@ namespace DependencyInjector.Tests
         }
 
         [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void GetInstance_TwoNamedServices_ThrowsExceptionWhenRequestingDefaultService()
+        {
+            try
+            {
+                var container = CreateContainer();
+                container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
+                container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+                container.GetInstance(typeof(IFoo));
+            }
+            catch (InvalidOperationException exception)
+            {                
+                
+                throw;
+            }
+            
+        }
+
+
+        [TestMethod]
         public void GetInstance_TwoServices_ReturnsNamedInstance()
         {
             var container = CreateContainer();
