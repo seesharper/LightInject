@@ -442,9 +442,16 @@ namespace LightInject
        
         private class Dependency
         {
+            public Dependency()
+            {
+                ConstantIndex = -1;
+            }
+
             public Type ServiceType { get; set; }
 
             public string ServiceName { get; set; }
+
+            public int ConstantIndex { get; set; }
         }
         
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>

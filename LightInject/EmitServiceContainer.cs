@@ -297,7 +297,7 @@ namespace LightInject
         public EmitServiceContainer()
         {
             AssemblyScanner = new AssemblyScanner();
-            PropertySelctor = new PropertySelector();
+            PropertySelector = new PropertySelector();
             AssemblyLoader = new AssemblyLoader();
         }
 
@@ -310,7 +310,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IPropertySelector"/> instance that is reponsible selecting the properties
         /// that represents a dependency for a given <see cref="Type"/>.
         /// </summary>
-        public IPropertySelector PropertySelctor { get; set; }
+        public IPropertySelector PropertySelector { get; set; }
 
 
         /// <summary>
@@ -538,10 +538,10 @@ namespace LightInject
             return serviceInfo;
         }
 
-        private static IEnumerable<Dependency> GetConstructorDependencies(ConstructorInfo constructorInfo)
+        private static IEnumerable<ConstructorDependency> GetConstructorDependencies(ConstructorInfo constructorInfo)
         {
             return constructorInfo.GetParameters().OrderBy(p => p.Position).Select(
-                p => new Dependency { ServiceName = string.Empty, ServiceType = p.ParameterType });
+                p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p});
         }
 
         private IEnumerable<PropertyDependecy> GetPropertyDependencies(Type implementingType)
@@ -552,22 +552,12 @@ namespace LightInject
 
         private IEnumerable<PropertyInfo> GetInjectableProperties(Type implementingType)
         {
-            return PropertySelctor.Select(implementingType);            
+            return PropertySelector.Select(implementingType);            
         }
 
-        private static bool IsInjectable(PropertyInfo propertyInfo)
+        private ServiceInfo CreateServiceInfoFromExpression(LambdaExpression lambdaExpression)
         {
-            return !IsReadOnly(propertyInfo);
-        }
-
-        private static bool IsReadOnly(PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetSetMethod(false) == null;
-        }
-
-        private static ServiceInfo CreateServiceInfoFromExpression(LambdaExpression lambdaExpression)
-        {
-            var methodCallVisitor = new MethodCallVisitor();
+            var methodCallVisitor = new ServiceExpressionVisitor();
             ServiceInfo serviceInfo = methodCallVisitor.CreateServiceInfo(lambdaExpression);
             return serviceInfo;
         }
@@ -586,8 +576,6 @@ namespace LightInject
 
             if (emitter == null)
                 emitter = ResolveUnknownServiceEmitter(serviceType, serviceName);
-
-
 
             IFactory factory = GetCustomFactory(serviceType, serviceName);
             if (factory != null)
@@ -635,12 +623,15 @@ namespace LightInject
 
         private void EmitConstructorDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
+            ILGenerator ilGenerator = dynamicMethodInfo.GetILGenerator();
             foreach (Dependency dependency in serviceInfo.ConstructorDependencies)
             {
-                if (dependency.Value != null)
+                if (dependency.Expression != null)
                 {
-                    int index = GetConstantIndex(dependency.Value);
-                    EmitLoadConstant(dynamicMethodInfo, index, dependency.Value.GetType());
+                    var lambda = Expression.Lambda(dependency.Expression, new ParameterExpression[] { }).Compile();
+                    MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
+                    EmitLoadConstant(dynamicMethodInfo, GetConstantIndex(lambda), lambda.GetType());
+                    ilGenerator.Emit(OpCodes.Callvirt, methodInfo);
                 }
                 else
                 {
@@ -660,10 +651,12 @@ namespace LightInject
             foreach (var propertyDependency in serviceInfo.PropertyDependencies)
             {
                 ilGenerator.Emit(OpCodes.Ldloc, instance);
-                if (propertyDependency.Value != null)
+                if (propertyDependency.Expression != null)
                 {
-                    int index = GetConstantIndex(propertyDependency.Value);
-                    EmitLoadConstant(dynamicMethodInfo, index, propertyDependency.Value.GetType());
+                    var lambda = Expression.Lambda(propertyDependency.Expression, new ParameterExpression[] { }).Compile();
+                    MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
+                    EmitLoadConstant(dynamicMethodInfo, GetConstantIndex(lambda), lambda.GetType());
+                    ilGenerator.Emit(OpCodes.Callvirt, methodInfo);
                 }
                 else
                 {
@@ -881,10 +874,13 @@ namespace LightInject
 
         private void EnsureThatServiceRegistryIsConfigured()
         {
-            if (_services.Count == 0 && _openGenericServices.Count == 0)
-            {
-                Register("*.dll|*.exe");
-            }
+            if (ServiceRegistryIsEmpty())
+                Register(typeof(EmitServiceContainer).Assembly);
+        }
+
+        private bool ServiceRegistryIsEmpty()
+        {
+            return _services.Count == 0 && _openGenericServices.Count == 0;
         }
 
         private void RegisterValue(Type serviceType, object value, string serviceName)
@@ -903,44 +899,83 @@ namespace LightInject
             RegisterService(typeof(TService), implementingType, lifeCycleType, serviceName);
         }
          
-        public class MethodCallVisitor : ExpressionVisitor
+        public class ServiceExpressionVisitor : ExpressionVisitor
         {
-            private ServiceInfo _serviceInfo;
+            
+            private ServiceInfo serviceInfo;
+            
 
             public ServiceInfo CreateServiceInfo(LambdaExpression expression)
             {
                 Visit(expression.Body);
-                return _serviceInfo;
+                return serviceInfo;
             }
 
-            protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
+            protected override MemberAssignment VisitMemberAssignment(MemberAssignment memberAssignment)
             {
-                var propertyDependecy = new PropertyDependecy { PropertySetter = ((PropertyInfo)node.Member).GetSetMethod() };
-                switch (node.Expression.NodeType)
+                var propertyDependecy = CreatePropertyDependency(memberAssignment);
+                ApplyDependencyDetails(memberAssignment.Expression,propertyDependecy);                               
+                serviceInfo.PropertyDependencies.Add(propertyDependecy);                
+                return base.VisitMemberAssignment(memberAssignment);
+            }
+
+            private static void ApplyDependencyDetails(Expression expression, Dependency dependency)
+            {
+                if (RepresentsServiceFactoryMethod(expression))
                 {
-                    case ExpressionType.Call:
-                        {
-                            ApplyDependencyDetailsFromMethodCall((MethodCallExpression)node.Expression, propertyDependecy);
-                            break;
-                        }
-                    default:
-                        {
-                            ApplyDependecyDetailsFromExpression(node.Expression, propertyDependecy);
-                            break;
-                        }
+                    ApplyDependencyDetailsFromMethodCall((MethodCallExpression)expression, dependency);
                 }
-                _serviceInfo.PropertyDependencies.Add(propertyDependecy);                
-                return base.VisitMemberAssignment(node);
+                else
+                {
+                    ApplyDependecyDetailsFromExpression(expression, dependency);
+                }
             }
 
-            private void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
+
+            private static PropertyDependecy CreatePropertyDependency(MemberAssignment memberAssignment)
+            {                
+                var propertyDependecy = new PropertyDependecy
+                                        {
+                                            PropertySetter = ((PropertyInfo)memberAssignment.Member).GetSetMethod(),
+                                            ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType                                            
+                                        };
+                return propertyDependecy;
+            }
+
+            private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
             {
-                var lambda = Expression.Lambda(expression, new ParameterExpression[] { }).Compile();
-                var value = lambda.DynamicInvoke();
-                dependency.Value = value;
+                var constructorDependency = new ConstructorDependency
+                                            {
+                    Parameter = parameterInfo,
+                    ServiceType = parameterInfo.ParameterType
+                };
+                return constructorDependency;
             }
 
-            private void ApplyDependencyDetailsFromMethodCall(MethodCallExpression methodCallExpression, Dependency dependency)
+            private static bool RepresentsServiceFactoryMethod(Expression expression)
+            {
+                return IsMethodCall(expression) && 
+                    (IsServiceFactoryMethod(((MethodCallExpression)expression).Method));
+            }
+
+            private static bool IsMethodCall(Expression expression)
+            {
+                return expression.NodeType == ExpressionType.Call;
+            }
+
+            private static bool IsServiceFactoryMethod(MethodInfo methodInfo)
+            {
+                return methodInfo.DeclaringType == typeof(IServiceFactory);
+            }
+
+
+            private static void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
+            {                               
+                dependency.Expression = expression;
+                dependency.ServiceName = string.Empty;
+            }
+
+            private static void ApplyDependencyDetailsFromMethodCall(MethodCallExpression methodCallExpression, Dependency dependency)
             {
                 dependency.ServiceType = methodCallExpression.Method.GetGenericArguments()[0];
                 if (RepresentsGetNamedInstanceMethod(methodCallExpression))
@@ -955,32 +990,13 @@ namespace LightInject
 
             protected override Expression VisitNew(NewExpression node)
             {
-                _serviceInfo = new ServiceInfo { Constructor = node.Constructor };
-
-                foreach (var expression in node.Arguments)
+                serviceInfo = new ServiceInfo { Constructor = node.Constructor };
+                ParameterInfo[] parameters = node.Constructor.GetParameters();
+                for (int i = 0; i < parameters.Length; i++)
                 {
-                    switch (expression.NodeType)
-                    {
-                        case ExpressionType.Call:
-                            {
-                                _serviceInfo.ConstructorDependencies.Add(CreateDependecyFromMethodCallExpression((MethodCallExpression)expression));
-                                break;
-                            }
-
-                        case ExpressionType.Constant:
-                            {
-                                _serviceInfo.ConstructorDependencies.Add(CreateDependencyFromConstantExpression((ConstantExpression)expression));
-                                break;
-                            }
-
-                        default:
-                            {
-                                _serviceInfo.ConstructorDependencies.Add(CreateDepenedencyFromExpression(expression));
-                                break;
-                            }
-                    }                                       
-                }
-
+                    ConstructorDependency constructorDependency = CreateConstructorDependency(parameters[i]);
+                    ApplyDependencyDetails(node.Arguments[i], constructorDependency);
+                }                
                 return base.VisitNew(node);
             }
 
@@ -1022,36 +1038,7 @@ namespace LightInject
             private static bool IsStringConstantExpression(Expression argument)
             {
                 return argument.NodeType == ExpressionType.Constant && argument.Type == typeof(string);
-            }
-
-            private static Dependency CreateDepenedencyFromExpression(Expression expression)
-            {                
-                var lambda = Expression.Lambda(expression, new ParameterExpression[] { }).Compile();
-                var value = lambda.DynamicInvoke();
-                return new Dependency { Value = value };
-            }
-
-            private static Dependency CreateDependencyFromConstantExpression(ConstantExpression constantExpression)
-            {
-                var dependency = new Dependency { Value = constantExpression.Value };
-                return dependency;
-            }
-
-            private static Dependency CreateDependecyFromMethodCallExpression(MethodCallExpression methodCallExpression)
-            {
-                var dependency = new Dependency();
-                if (RepresentsGetInstanceMethod(methodCallExpression))
-                {
-                    return new Dependency { ServiceName = string.Empty, ServiceType = methodCallExpression.Method.GetGenericArguments().First() };                    
-                }
-
-                if (RepresentsGetNamedInstanceMethod(methodCallExpression))
-                {
-                    return new Dependency { ServiceName = (string)((ConstantExpression)methodCallExpression.Arguments[0]).Value, ServiceType = methodCallExpression.Method.GetGenericArguments().First() };                    
-                }
-
-                return dependency;
-            }
+            }           
         }
 
         private class DynamicMethodInfo
@@ -1129,19 +1116,25 @@ namespace LightInject
             public Action<DynamicMethodInfo, Type> EmitMethod { get; set; }
         }
 
-        public class Dependency
-        {
+        public abstract class Dependency
+        {            
             public Type ServiceType { get; set; }
 
             public string ServiceName { get; set; }
-
-            public object Value { get; set; }
+            
+            public Expression Expression { get; set; }
         }
 
         public class PropertyDependecy : Dependency
         {
             public MethodInfo PropertySetter { get; set; }
         }
+
+        public class ConstructorDependency : Dependency
+        {
+            public ParameterInfo Parameter { get; set; }
+        }
+
 
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
         {
@@ -1153,7 +1146,7 @@ namespace LightInject
                 : base(comparer)
             {
             }
-        }
+        } 
     }
 
     /// <summary>
