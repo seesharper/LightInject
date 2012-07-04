@@ -12,9 +12,9 @@ namespace DependencyInjector.Tests
     [TestClass]
     public class AssemblyScannerTests
     {
-        private Mock<IContainer> GetContainerMock()
+        private Mock<IServiceContainer> GetContainerMock()
         {
-            var containerMock = new Mock<IContainer>();
+            var containerMock = new Mock<IServiceContainer>();
             var assemblyScanner = new AssemblyScanner();
             assemblyScanner.Scan(typeof(IFoo).Assembly, containerMock.Object);
             return containerMock;
@@ -48,7 +48,7 @@ namespace DependencyInjector.Tests
         public void Scan_SampleAssembkyWithCompositionRoot_CallsComposeMethod()
         {
             var assemblyScanner = new AssemblyScanner();
-            Mock<IContainer> containerMock = new Mock<IContainer>();
+            Mock<IServiceContainer> containerMock = new Mock<IServiceContainer>();
             SampleCompositionRoot.CallCount = 0;
             assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock.Object);
             Assert.AreEqual(1,SampleCompositionRoot.CallCount);
@@ -108,7 +108,7 @@ namespace DependencyInjector.Tests
             var scannerMock = new Mock<IAssemblyScanner>();
             var serviceContainer = new EmitServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
-            serviceContainer.Register("*SampleLibrary.dll");
+            serviceContainer.Scan("*SampleLibrary.dll");
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());
         }
     }

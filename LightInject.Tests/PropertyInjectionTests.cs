@@ -187,7 +187,7 @@ namespace DependencyInjector.Tests
             Assert.AreEqual(1, Bar.InitializeCount);
         }
 
-        private static IContainer CreateContainer()
+        private static IServiceContainer CreateContainer()
         {
             return new EmitServiceContainer();
         }

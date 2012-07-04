@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using LightInject;
-using LightInject.SampleLibrary;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace DependencyInjector.Tests
+﻿namespace DependencyInjector.Tests
 {
-    using System.Diagnostics;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
-
-    using Moq;
-
+    using LightInject;
+    using LightInject.SampleLibrary;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;  
+    
     [TestClass]
     public class ServiceCrtontainerTests2
     {
@@ -358,9 +354,7 @@ namespace DependencyInjector.Tests
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1, instance2);
         }
-
         
-
         #endregion
 
 
@@ -826,7 +820,7 @@ namespace DependencyInjector.Tests
         //}
 
         
-        private static IContainer CreateContainer()
+        private static IServiceContainer CreateContainer()
         {
             return new EmitServiceContainer();
         }

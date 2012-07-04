@@ -18,7 +18,7 @@ namespace DependencyInjector.Tests
 
 
 
-        private static IContainer CreateContainer()
+        private static IServiceContainer CreateContainer()
         {
             return new EmitServiceContainer();
         }

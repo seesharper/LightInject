@@ -10,7 +10,30 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace LightInject
-{    
+{
+    using System.Text;
+
+    /// <summary>
+    /// Specifies the lifecycle type of a registered service.
+    /// </summary>
+    public enum LifeCycleType
+    {
+        /// <summary>
+        /// Specifies that a new instance is created for each request.
+        /// </summary>
+        Transient,
+        
+        /// <summary>
+        /// Specifies that the same instance is returned across multiple requests.
+        /// </summary>
+        Singleton,
+
+        /// <summary>
+        /// Specifies that the same instance is returned throughout the dependency graph.
+        /// </summary>
+        Request
+    }
+    
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
@@ -212,6 +235,27 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a factory class that is capable of returning an object instance.
+    /// </summary>    
+    public interface IFactory
+    {
+        /// <summary>
+        /// Returns an instance of the given type indicated by the <paramref name="serviceRequest"/>. 
+        /// </summary>        
+        /// <param name="serviceRequest">The <see cref="ServiceRequest"/> instance that contains information about the service request.</param>
+        /// <returns>An object instance corresponding to the <paramref name="serviceRequest"/>.</returns>
+        object GetInstance(ServiceRequest serviceRequest);
+
+        /// <summary>
+        /// Determines if this factory can return an instance of the given <paramref name="serviceType"/> and <paramref name="serviceName"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns><b>true</b>, if the instance can be created, otherwise <b>false</b>.</returns>
+        bool CanGetInstance(Type serviceType, string serviceName);
+    }
+
+    /// <summary>
     /// Represents a class that acts as a composition root for an <see cref="IServiceRegistry"/> instance.
     /// </summary>
     public interface ICompositionRoot
@@ -232,7 +276,7 @@ namespace LightInject
         /// Selects properties that represents a dependency from the given <paramref name="type"/>.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> for which to select the properties.</param>
-        /// <returns>A list of properties that represents a dependency to the target <paramref name="type."/></returns>
+        /// <returns>A list of properties that represents a dependency to the target <paramref name="type"/></returns>
         IEnumerable<PropertyInfo> Select(Type type);
     }
 
@@ -250,9 +294,22 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a class that is capable of scanning an assembly and register services into an <see cref="IServiceContainer"/> instance.
+    /// </summary>
+    public interface IAssemblyScanner
+    {
+        /// <summary>
+        /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry);
+    }
+
+    /// <summary>
     /// Represents an inversion of control container.
     /// </summary>
-    public interface IContainer : IServiceRegistry, IServiceFactory
+    public interface IServiceContainer : IServiceRegistry, IServiceFactory
     {
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
@@ -262,20 +319,21 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        void Register(Assembly assembly);
+        void Scan(Assembly assembly);
 
         /// <summary>
         /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void Register(string searchPattern);
+        void Scan(string searchPattern);
     }
 
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
-    public class EmitServiceContainer : IContainer
+    public class EmitServiceContainer : IServiceContainer
     {
+        private const string ConstructorInjectionError = "Unresolved dependency {0}";        
         private static readonly MethodInfo GetInstanceMethod;
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> services = new ServiceRegistry<Action<DynamicMethodInfo>>();
         private readonly ServiceRegistry<OpenGenericServiceInfo> openGenericServices = new ServiceRegistry<OpenGenericServiceInfo>();        
@@ -285,6 +343,7 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();        
         private readonly List<object> constants = new List<object>();
 
+        
         static EmitServiceContainer()
         {
             GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
@@ -316,16 +375,16 @@ namespace LightInject
         /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
         
-        public void Register(Assembly assembly)
+        public void Scan(Assembly assembly)
         {
             AssemblyScanner.Scan(assembly, this);
         }
 
-        public void Register(string searchPattern)
+        public void Scan(string searchPattern)
         {
             foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
             {
-                Register(assembly);
+                Scan(assembly);
             }            
         }
 
@@ -417,11 +476,22 @@ namespace LightInject
                 new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, string.Empty))).Value(constants);
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <returns>The requested service instance.</returns>
         public TService GetInstance<TService>()
         {
             return (TService)GetInstance(typeof(TService));
         }
 
+        /// <summary>
+        /// Gets a named instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<TService>(string serviceName)
         {
             return (TService)GetInstance(typeof(TService), serviceName);
@@ -515,19 +585,14 @@ namespace LightInject
                 && serviceType.GetGenericArguments()[0] == typeof(string);
         }
 
+        private static ConstructorInfo GetConstructorWithTheMostParameters(Type implementingType)
+        {
+            return implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
+        }
+
         private static bool IsFactory(Type type)
         {
             return typeof(IFactory).IsAssignableFrom(type);
-        }
-
-        private ServiceInfo CreateServiceInfo(Type implementingType)
-        {
-            var serviceInfo = new ServiceInfo();
-            ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(implementingType);
-            serviceInfo.Constructor = constructorInfo;            
-            serviceInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructorInfo));
-            serviceInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
-            return serviceInfo;
         }
 
         private static IEnumerable<ConstructorDependency> GetConstructorDependencies(ConstructorInfo constructorInfo)
@@ -535,6 +600,21 @@ namespace LightInject
             return
                 constructorInfo.GetParameters().OrderBy(p => p.Position).Select(
                     p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
+        }
+
+        private static void ThrowUnresolvedConstructorDependencyException(ConstructorDependency dependency)
+        {
+            throw new InvalidOperationException(string.Format(ConstructorInjectionError, dependency));                                    
+        }
+
+        private ServiceInfo CreateServiceInfo(Type implementingType)
+        {
+            var serviceInfo = new ServiceInfo();
+            ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(implementingType);
+            serviceInfo.Constructor = constructorInfo;
+            serviceInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructorInfo));
+            serviceInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
+            return serviceInfo;
         }
 
         private IEnumerable<PropertyDependecy> GetPropertyDependencies(Type implementingType)
@@ -554,12 +634,7 @@ namespace LightInject
             ServiceInfo serviceInfo = methodCallVisitor.Build(lambdaExpression);
             return serviceInfo;
         }
-
-        private static ConstructorInfo GetConstructorWithTheMostParameters(Type implementingType)
-        {
-            return implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
-        }
-
+        
         private Action<DynamicMethodInfo> GetServiceEmitter(Type serviceType, string serviceName)
         {
             var registrations = GetServiceRegistrations(serviceType);
@@ -588,8 +663,6 @@ namespace LightInject
 
             if (emitter == null)
                 return null;
-                //throw new InvalidOperationException(
-                //    string.Format("Unable to resolve an implementation based on request (Type = {0}, Name = {1}", serviceType, serviceName));
 
             return services[serviceType][serviceName];
         }
@@ -617,7 +690,7 @@ namespace LightInject
         private void EmitConstructorDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            foreach (Dependency dependency in serviceInfo.ConstructorDependencies)
+            foreach (ConstructorDependency dependency in serviceInfo.ConstructorDependencies)
             {
                 if (dependency.Expression != null)
                 {
@@ -630,12 +703,12 @@ namespace LightInject
                 {
                     var emitter = GetServiceEmitter(dependency.ServiceType, dependency.ServiceName);
                     if (emitter == null)
-                        throw new InvalidOperationException("");
+                        ThrowUnresolvedConstructorDependencyException(dependency);
                     emitter(dynamicMethodInfo);
                 }
             }
         }
-
+        
         private void EmitPropertyDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
@@ -869,7 +942,7 @@ namespace LightInject
         private void EnsureThatServiceRegistryIsConfigured()
         {
             if (ServiceRegistryIsEmpty())
-                Register(typeof(EmitServiceContainer).Assembly);
+                Scan(typeof(EmitServiceContainer).Assembly);
         }
 
         private bool ServiceRegistryIsEmpty()
@@ -888,7 +961,7 @@ namespace LightInject
             Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycleType, string serviceName)
         {
             var serviceinfo = CreateServiceInfoFromExpression(factory);
-            Type implementingType = serviceinfo.Constructor.DeclaringType;
+            Type implementingType = serviceinfo.ImplementingType;
             implementations.AddOrUpdate(implementingType, t => serviceinfo, (t, s) => serviceinfo);
             RegisterService(typeof(TService), implementingType, lifeCycleType, serviceName);
         }
@@ -911,12 +984,35 @@ namespace LightInject
                 return serviceInfo;
             }
 
+            /// <summary>
+            /// Visits <see cref="MemberAssignment"/> expressions and creates a <see cref="PropertyDependecy"/>.
+            /// </summary>
+            /// <param name="memberAssignment">The target <see cref="MemberAssignment"/> expression.</param>
+            /// <returns>The original expression.</returns>
             protected override MemberAssignment VisitMemberAssignment(MemberAssignment memberAssignment)
             {
                 var propertyDependecy = CreatePropertyDependency(memberAssignment);
                 ApplyDependencyDetails(memberAssignment.Expression, propertyDependecy);                                               
                 serviceInfo.PropertyDependencies.Add(propertyDependecy);                
                 return base.VisitMemberAssignment(memberAssignment);
+            }
+
+            /// <summary>
+            /// Visits <see cref="NewExpression"/> expressions and creates a <see cref="ConstructorDependency"/>.
+            /// </summary>
+            /// <param name="newExpression">The target <see cref="NewExpression"/> expression.</param>
+            /// <returns>The original expression.</returns>
+            protected override Expression VisitNew(NewExpression newExpression)
+            {
+                serviceInfo = new ServiceInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
+                ParameterInfo[] parameters = newExpression.Constructor.GetParameters();
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    ConstructorDependency constructorDependency = CreateConstructorDependency(parameters[i]);
+                    ApplyDependencyDetails(newExpression.Arguments[i], constructorDependency);
+                }
+
+                return base.VisitNew(newExpression);
             }
 
             private static void ApplyDependencyDetails(Expression expression, Dependency dependency)
@@ -985,20 +1081,7 @@ namespace LightInject
                     dependency.ServiceName = string.Empty;
                 }
             }
-
-            protected override Expression VisitNew(NewExpression node)
-            {
-                serviceInfo = new ServiceInfo { Constructor = node.Constructor };
-                ParameterInfo[] parameters = node.Constructor.GetParameters();
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    ConstructorDependency constructorDependency = CreateConstructorDependency(parameters[i]);
-                    ApplyDependencyDetails(node.Arguments[i], constructorDependency);
-                }        
-        
-                return base.VisitNew(node);
-            }
-
+            
             private static bool RepresentsGetAllInstancesMethod(MethodCallExpression node)
             {
                 return IsGetAllInstancesMethod(node.Method);
@@ -1038,6 +1121,100 @@ namespace LightInject
             {
                 return argument.NodeType == ExpressionType.Constant && argument.Type == typeof(string);
             }           
+        }
+       
+        /// <summary>
+        /// Contains information about how to create a service instance.
+        /// </summary>
+        public class ServiceInfo
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ServiceInfo"/> class.
+            /// </summary>
+            public ServiceInfo()
+            {
+                PropertyDependencies = new List<PropertyDependecy>();
+                ConstructorDependencies = new List<ConstructorDependency>();
+            }
+
+            public Type ImplementingType { get; set; }
+
+            /// <summary>
+            /// Gets or sets the <see cref="ConstructorInfo"/> that is used to create a service instance.
+            /// </summary>
+            public ConstructorInfo Constructor { get; set; }
+
+            /// <summary>
+            /// Gets a list of <see cref="PropertyDependecy"/> instances that represent 
+            /// the property dependencies for the target service instance. 
+            /// </summary>
+            public List<PropertyDependecy> PropertyDependencies { get; private set; }
+
+            /// <summary>
+            /// Gets a list of <see cref="ConstructorDependency"/> instances that represent 
+            /// the property dependencies for the target service instance. 
+            /// </summary>
+            public List<ConstructorDependency> ConstructorDependencies { get; private set; }
+        }
+        
+        /// <summary>
+        /// Represents a class dependency.
+        /// </summary>
+        public abstract class Dependency
+        {            
+            /// <summary>
+            /// Gets or sets the service <see cref="Type"/> of the <see cref="Dependency"/>.
+            /// </summary>
+            public Type ServiceType { get; set; }
+
+            /// <summary>
+            /// Gets or sets the service name of the <see cref="Dependency"/>.
+            /// </summary>
+            public string ServiceName { get; set; }
+
+            /// <summary>
+            /// Gets or sets the <see cref="Expression"/> that represent getting the value of the <see cref="Dependency"/>.
+            /// </summary>            
+            public Expression Expression { get; set; }
+
+            public override string ToString()
+            {
+                var sb = new StringBuilder();
+                sb.AppendFormat("[Requested dependency: ServiceType:{0}, ServiceName:{1}]", ServiceType, ServiceName);
+                if (Expression != null)
+                {
+                    sb.AppendFormat(" ,Expression: {0}", Expression);
+                }
+
+                return sb.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Represents a property dependency.
+        /// </summary>
+        public class PropertyDependecy : Dependency
+        {
+            /// <summary>
+            /// Gets or sets the <see cref="MethodInfo"/> that is used to set the property value.
+            /// </summary>
+            public MethodInfo PropertySetter { get; set; }
+        }
+
+        /// <summary>
+        /// Represents a constructor dependency.
+        /// </summary>
+        public class ConstructorDependency : Dependency
+        {
+            /// <summary>
+            /// Gets or sets the <see cref="ParameterInfo"/> for this <see cref="ConstructorDependency"/>.
+            /// </summary>
+            public ParameterInfo Parameter { get; set; }
+
+            public override string ToString()
+            {
+                return string.Format("[Target Type: {0}], [Parameter: {1}({2})]", Parameter.Member.DeclaringType, Parameter.Name, Parameter.ParameterType) + ", " + base.ToString();
+            }
         }
 
         private class DynamicMethodInfo
@@ -1081,40 +1258,20 @@ namespace LightInject
             private void CreateDynamicMethod()
             {
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) }, typeof(ServiceContainer).Module, false);
+                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) }, typeof(EmitServiceContainer).Module, false);
             }
         }
 
-        /// <summary>
-        /// Contains information about how to create a service instance.
-        /// </summary>
-        public class ServiceInfo
+        private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
         {
-            /// <summary>
-            /// Initializes a new instance of the <see cref="ServiceInfo"/> class.
-            /// </summary>
-            public ServiceInfo()
+            public ThreadSafeDictionary()
             {
-                PropertyDependencies = new List<PropertyDependecy>();
-                ConstructorDependencies = new List<Dependency>();
             }
 
-            /// <summary>
-            /// Gets or sets the <see cref="ConstructorInfo"/> that is used to create a service instance.
-            /// </summary>
-            public ConstructorInfo Constructor { get; set; }
-
-            /// <summary>
-            /// Gets a list of <see cref="PropertyDependecy"/> instances that represent 
-            /// the property dependencies for the target service instance. 
-            /// </summary>
-            public List<PropertyDependecy> PropertyDependencies { get; private set; }
-
-            /// <summary>
-            /// Gets a list of <see cref="ConstructorDependency"/> instances that represent 
-            /// the property dependencies for the target service instance. 
-            /// </summary>
-            public List<Dependency> ConstructorDependencies { get; private set; }
+            public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
+                : base(comparer)
+            {
+            }
         }
 
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
@@ -1131,74 +1288,35 @@ namespace LightInject
 
             public Action<DynamicMethodInfo, Type> EmitMethod { get; set; }
         }
-
-        /// <summary>
-        /// Represents a class dependency.
-        /// </summary>
-        public abstract class Dependency
-        {            
-            /// <summary>
-            /// Gets or sets the service <see cref="Type"/> of the <see cref="Dependency"/>.
-            /// </summary>
-            public Type ServiceType { get; set; }
-
-            /// <summary>
-            /// Gets or sets the service name of the <see cref="Dependency"/>.
-            /// </summary>
-            public string ServiceName { get; set; }
-
-            /// <summary>
-            /// Gets or sets the <see cref="Expression"/> that represent getting the value of the <see cref="Dependency"/>.
-            /// </summary>            
-            public Expression Expression { get; set; }
-        }
-
-        /// <summary>
-        /// Represents a property dependency.
-        /// </summary>
-        public class PropertyDependecy : Dependency
-        {
-            /// <summary>
-            /// Gets or sets the <see cref="MethodInfo"/> that is used to set the property value.
-            /// </summary>
-            public MethodInfo PropertySetter { get; set; }
-        }
-
-        /// <summary>
-        /// Represents a constructor dependency.
-        /// </summary>
-        public class ConstructorDependency : Dependency
-        {
-            /// <summary>
-            /// Gets or sets the <see cref="ParameterInfo"/> for this <see cref="ConstructorDependency"/>.
-            /// </summary>
-            public ParameterInfo Parameter { get; set; }
-        }
-
-        private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
-        {
-            public ThreadSafeDictionary()
-            {
-            }
-
-            public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
-                : base(comparer)
-            {
-            }
-        } 
     }
 
     /// <summary>
-    /// Represents a class that is capable of scanning an assembly and register services into an <see cref="IServiceContainer"/> instance.
+    /// Contains information about a service request passed to an <see cref="IFactory"/> instance.
     /// </summary>
-    public interface IAssemblyScanner
+    public class ServiceRequest
     {
         /// <summary>
-        /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
+        /// Gets a value indicating whether the service request can be resolved by the underlying container.  
         /// </summary>
-        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
-        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
-        void Scan(Assembly assembly, IServiceRegistry serviceRegistry);
+        public bool CanProceed
+        {
+            get { return Proceed != null; }
+        }
+
+        /// <summary>
+        /// Gets the requested service type.
+        /// </summary>
+        public Type ServiceType { get; internal set; }
+
+        /// <summary>
+        /// Gets the requested service name.
+        /// </summary>
+        public string ServiceName { get; internal set; }
+
+        /// <summary>
+        /// Gets the function delegate used to proceed.
+        /// </summary>
+        public Func<object> Proceed { get; internal set; }
     }
 
     /// <summary>
@@ -1225,7 +1343,7 @@ namespace LightInject
             }            
         }
 
-        private void ExecuteCompositionRoots(List<Type> compositionRoots, IServiceRegistry serviceRegistry)
+        private static void ExecuteCompositionRoots(IEnumerable<Type> compositionRoots, IServiceRegistry serviceRegistry)
         {
             foreach (var compositionRoot in compositionRoots)
             {
@@ -1290,21 +1408,26 @@ namespace LightInject
         /// Selects properties that represents a dependency from the given <paramref name="type"/>.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> for which to select the properties.</param>
-        /// <returns>A list of properties that represents a dependency to the target <paramref name="type."/></returns>
+        /// <returns>A list of properties that represents a dependency to the target <paramref name="type"/></returns>
         public IEnumerable<PropertyInfo> Select(Type type)
         {
             return type.GetProperties().Where(IsInjectable).ToList();            
         }
 
+        /// <summary>
+        /// Determines if the <paramref name="propertyInfo"/> represents an injectable property.
+        /// </summary>
+        /// <param name="propertyInfo">The <see cref="PropertyInfo"/> that describes the target property.</param>
+        /// <returns><b>true</b> if the property is injectable, otherwise <b>false</b>.</returns>
         protected virtual bool IsInjectable(PropertyInfo propertyInfo)
         {
             return !IsReadOnly(propertyInfo);
-        }
-        
-        protected static bool IsReadOnly(PropertyInfo propertyInfo)
+        }                
+
+        private static bool IsReadOnly(PropertyInfo propertyInfo)
         {
             return propertyInfo.GetSetMethod(false) == null;
-        }
+        }        
     }
 
     /// <summary>
@@ -1319,7 +1442,7 @@ namespace LightInject
         /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
         public IEnumerable<Assembly> Load(string searchPattern)
         {
-            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
+            string directory = Path.GetDirectoryName(new Uri(typeof(EmitServiceContainer).Assembly.CodeBase).LocalPath);
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');

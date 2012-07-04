@@ -39,7 +39,6 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DynamicServiceContainer.cs" />
     <Compile Include="EmitServiceContainer.cs" />
     <Compile Include="ServiceContainer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

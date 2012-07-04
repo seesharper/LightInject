@@ -19,13 +19,13 @@ namespace DependencyInjector.Tests
             Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [TestMethod]        
         public void GetInstance_UnKnownDependency_ThrowsException()
         {
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
-            container.GetInstance<IFoo>();            
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.GetInstance<IFoo>(), ExpectedErrorMessages.UnknownConstructorDependency);
         }
 
         [TestMethod]
@@ -164,7 +164,7 @@ namespace DependencyInjector.Tests
         }
 
 
-        private static IContainer CreateContainer()
+        private static IServiceContainer CreateContainer()
         {
             return new EmitServiceContainer();
         }
