@@ -172,9 +172,6 @@ namespace DependencyInjector.Tests
             Assert.AreEqual("SomeValue",instance.Value);
         }
 
-
-
-
         [TestMethod]
         public void GetInstance_RequestLifeCycle_CallConstructorsOnDependencyOnlyOnce()
         {

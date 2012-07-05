@@ -29,6 +29,15 @@ namespace DependencyInjector.Tests
         }
 
         [TestMethod]
+        public void GetInstance_RecursiveDependency_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithRecursiveDependency>();
+            container.GetInstance<IFoo>();
+        }
+
+
+        [TestMethod]
         public void GetInstance_OpenGenericDependency_InjectsDependency()
         {
             var container = CreateContainer();
