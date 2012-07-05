@@ -68,5 +68,14 @@ namespace DependencyInjector.Tests {
                 return ResourceManager.GetString("UnknownConstructorDependency", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithProperyDependency], [Property: Bar(LightInject.SampleLibrary.IBar)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IBar, ServiceName:].
+        /// </summary>
+        internal static string UnknownPropertyDependency {
+            get {
+                return ResourceManager.GetString("UnknownPropertyDependency", resourceCulture);
+            }
+        }
     }
 }

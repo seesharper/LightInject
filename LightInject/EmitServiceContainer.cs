@@ -333,7 +333,7 @@ namespace LightInject
     /// </summary>
     public class EmitServiceContainer : IServiceContainer
     {
-        private const string ConstructorInjectionError = "Unresolved dependency {0}";        
+        private const string UnresolvedDependencyError = "Unresolved dependency {0}";        
         private static readonly MethodInfo GetInstanceMethod;
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> services = new ServiceRegistry<Action<DynamicMethodInfo>>();
         private readonly ServiceRegistry<OpenGenericServiceInfo> openGenericServices = new ServiceRegistry<OpenGenericServiceInfo>();        
@@ -342,7 +342,6 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Type, ServiceInfo> implementations = new ThreadSafeDictionary<Type, ServiceInfo>();
         private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();        
         private readonly List<object> constants = new List<object>();
-
         
         static EmitServiceContainer()
         {
@@ -604,7 +603,7 @@ namespace LightInject
 
         private static void ThrowUnresolvedConstructorDependencyException(ConstructorDependency dependency)
         {
-            throw new InvalidOperationException(string.Format(ConstructorInjectionError, dependency));                                    
+            throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));                                    
         }
 
         private ServiceInfo CreateServiceInfo(Type implementingType)
@@ -620,7 +619,7 @@ namespace LightInject
         private IEnumerable<PropertyDependecy> GetPropertyDependencies(Type implementingType)
         {
             return GetInjectableProperties(implementingType).Select(
-                p => new PropertyDependecy { PropertySetter = p.GetSetMethod(), ServiceName = string.Empty, ServiceType = p.PropertyType });
+                p => new PropertyDependecy { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
         }
 
         private IEnumerable<PropertyInfo> GetInjectableProperties(Type implementingType)
@@ -688,27 +687,34 @@ namespace LightInject
         }
 
         private void EmitConstructorDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
-        {
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+        {            
             foreach (ConstructorDependency dependency in serviceInfo.ConstructorDependencies)
             {
-                if (dependency.Expression != null)
-                {
-                    var lambda = Expression.Lambda(dependency.Expression, new ParameterExpression[] { }).Compile();
-                    MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                    EmitLoadConstant(dynamicMethodInfo, GetConstantIndex(lambda), lambda.GetType());
-                    generator.Emit(OpCodes.Callvirt, methodInfo);
-                }
-                else
-                {
-                    var emitter = GetServiceEmitter(dependency.ServiceType, dependency.ServiceName);
-                    if (emitter == null)
-                        ThrowUnresolvedConstructorDependencyException(dependency);
-                    emitter(dynamicMethodInfo);
-                }
+                this.EmitDependency(dynamicMethodInfo, dependency);
             }
         }
-        
+
+        private void EmitDependency(DynamicMethodInfo dynamicMethodInfo, Dependency dependency)
+        {
+            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            if (dependency.Expression != null)
+            {
+                var lambda = Expression.Lambda(dependency.Expression, new ParameterExpression[] { }).Compile();
+                MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
+                EmitLoadConstant(dynamicMethodInfo, this.GetConstantIndex(lambda), lambda.GetType());
+                generator.Emit(OpCodes.Callvirt, methodInfo);
+            }
+            else
+            {
+                var emitter = this.GetServiceEmitter(dependency.ServiceType, dependency.ServiceName);
+                if (emitter == null)
+                {
+                    throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
+                }
+                emitter(dynamicMethodInfo);
+            }
+        }
+
         private void EmitPropertyDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
@@ -717,21 +723,9 @@ namespace LightInject
             foreach (var propertyDependency in serviceInfo.PropertyDependencies)
             {
                 generator.Emit(OpCodes.Ldloc, instance);
-                if (propertyDependency.Expression != null)
-                {
-                    var lambda = Expression.Lambda(propertyDependency.Expression, new ParameterExpression[] { }).Compile();
-                    MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                    EmitLoadConstant(dynamicMethodInfo, GetConstantIndex(lambda), lambda.GetType());
-                    generator.Emit(OpCodes.Callvirt, methodInfo);
-                }
-                else
-                {
-                    GetServiceEmitter(propertyDependency.ServiceType, propertyDependency.ServiceName)(dynamicMethodInfo);
-                }
-
-                dynamicMethodInfo.GetILGenerator().Emit(OpCodes.Callvirt, propertyDependency.PropertySetter);
+                EmitDependency(dynamicMethodInfo, propertyDependency);
+                dynamicMethodInfo.GetILGenerator().Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
             }
-
             generator.Emit(OpCodes.Ldloc, instance);
         }
 
@@ -1031,7 +1025,7 @@ namespace LightInject
             {                
                 var propertyDependecy = new PropertyDependecy
                                         {
-                                            PropertySetter = ((PropertyInfo)memberAssignment.Member).GetSetMethod(),
+                                            Property = (PropertyInfo)memberAssignment.Member,
                                             ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType                                            
                                         };
                 return propertyDependecy;
@@ -1198,7 +1192,12 @@ namespace LightInject
             /// <summary>
             /// Gets or sets the <see cref="MethodInfo"/> that is used to set the property value.
             /// </summary>
-            public MethodInfo PropertySetter { get; set; }
+            public PropertyInfo Property { get; set; }
+
+            public override string ToString()
+            {
+                return string.Format("[Target Type: {0}], [Property: {1}({2})]", Property.DeclaringType, Property.Name, Property.PropertyType) + ", " + base.ToString();
+            }
         }
 
         /// <summary>

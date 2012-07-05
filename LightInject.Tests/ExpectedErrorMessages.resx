@@ -120,4 +120,7 @@
   <data name="UnknownConstructorDependency" xml:space="preserve">
     <value>Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithDependency], [Parameter: bar(LightInject.SampleLibrary.IBar)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IBar, ServiceName:]</value>
   </data>
+  <data name="UnknownPropertyDependency" xml:space="preserve">
+    <value>Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithProperyDependency], [Property: Bar(LightInject.SampleLibrary.IBar)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IBar, ServiceName:]</value>
+  </data>
 </root>

@@ -19,14 +19,13 @@ namespace DependencyInjector.Tests
             Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [TestMethod]        
         public void GetInstance_UnKnownDependency_ThrowsException()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithProperyDependency>();
-            container.GetInstance<IFoo>();
-            
+            container.Register<IFoo, FooWithProperyDependency>();            
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.GetInstance<IFoo>(), ExpectedErrorMessages.UnknownPropertyDependency);            
         }
 
         [TestMethod]
