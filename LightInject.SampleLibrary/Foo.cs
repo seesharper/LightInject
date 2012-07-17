@@ -5,9 +5,9 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
-    
-    
-    
+
+
+
     public interface IFoo { }
 
     public class Foo : IFoo { }
@@ -53,6 +53,11 @@ namespace LightInject.SampleLibrary
         }
     }
 
+
+
+
+
+
     public class FooWithSamePropertyDependencyTwice : IFoo
     {
         public IBar Bar1 { get; set; }
@@ -91,7 +96,7 @@ namespace LightInject.SampleLibrary
     }
 
     public class FooWithReferenceTypePropertyDependency : IFoo
-    {        
+    {
         public string Value { get; set; }
     }
 
@@ -106,7 +111,7 @@ namespace LightInject.SampleLibrary
     }
 
     public class FooWithValueTypePropertyDependency : IFoo
-    {        
+    {
         public int Value { get; set; }
     }
 
@@ -123,9 +128,9 @@ namespace LightInject.SampleLibrary
 
     public class FooWithEnumPropertyDependency : IFoo
     {
-       
 
-        public Encoding Value { get;  set; }
+
+        public Encoding Value { get; set; }
     }
 
 
@@ -145,7 +150,7 @@ namespace LightInject.SampleLibrary
         {
         }
     }
-                
+
     public interface IFoo<T> { }
 
     public class Foo<T> : IFoo<T> { }
@@ -167,9 +172,48 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class FooWithOpenGenericDependency<T> : IFoo<T>
+    {
+        private readonly IBar<T> dependency;
+
+        public FooWithOpenGenericDependency(IBar<T> dependency)
+        {
+            this.dependency = dependency;
+        }
+
+        public IBar<T> Dependency
+        {
+            get { return dependency; }
+        }
+    }
+
+    public class FooWithSameOpenGenericDependencyTwice<T> : IFoo<T>
+    {
+        private readonly IBar<T> bar1;
+
+        private readonly IBar<T> bar2;
+
+        public FooWithSameOpenGenericDependencyTwice(IBar<T> bar1, IBar<T> bar2)
+        {
+            this.bar1 = bar1;
+            this.bar2 = bar2;
+        }
+
+        public IBar<T> Bar1
+        {
+            get { return bar1; }
+        }
+
+        public IBar<T> Bar2
+        {
+            get { return bar2; }
+        }
+    }
+
+
     public class FooWithGenericPropertyDependency<T> : IFoo<T>
     {
-        public T Dependency { get; set; }        
+        public T Dependency { get; set; }
     }
 
 
@@ -183,7 +227,7 @@ namespace LightInject.SampleLibrary
         public Lazy<IBar> LazyService { get; private set; }
     }
 
-    
+
 
 
     public class FooFactory : IFactory
@@ -193,12 +237,12 @@ namespace LightInject.SampleLibrary
             ServiceRequest = serviceRequest;
             CallCount++;
             ServiceName = serviceRequest.ServiceName;
-            if (serviceRequest.CanProceed) 
+            if (serviceRequest.CanProceed)
                 return new FooDecorator((IFoo)serviceRequest.Proceed());
-            
+
             return new Foo();
-            
-            
+
+
         }
 
         public bool CanGetInstance(Type serviceType, string serviceName)
@@ -208,15 +252,15 @@ namespace LightInject.SampleLibrary
 
         public ServiceRequest ServiceRequest { get; private set; }
 
-        public string ServiceName { get;  private set; }
+        public string ServiceName { get; private set; }
 
         public int CallCount { get; private set; }
     }
 
-    public class GenericFooFactory : IFactory 
-    {        
-        
-        
+    public class GenericFooFactory : IFactory
+    {
+
+
         public object GetInstance(ServiceRequest serviceRequest)
         {
             ServiceRequest = serviceRequest;

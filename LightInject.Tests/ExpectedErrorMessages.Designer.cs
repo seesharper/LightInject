@@ -70,6 +70,15 @@ namespace DependencyInjector.Tests {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unable to resolve type: LightInject.SampleLibrary.IFoo, service name: .
+        /// </summary>
+        internal static string UnknownDependency {
+            get {
+                return ResourceManager.GetString("UnknownDependency", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithProperyDependency], [Property: Bar(LightInject.SampleLibrary.IBar)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IBar, ServiceName:].
         /// </summary>
         internal static string UnknownPropertyDependency {

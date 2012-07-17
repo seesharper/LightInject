@@ -6,8 +6,8 @@
     using System.Text;
     using LightInject;
     using LightInject.SampleLibrary;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;  
-    
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     [TestClass]
     public class ServiceCrtontainerTests2
     {
@@ -56,38 +56,28 @@
         public void GetInstance_OneService_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof (IFoo), typeof (Foo));
-            object instance = container.GetInstance(typeof (IFoo));        
-            Assert.IsInstanceOfType(instance,typeof(Foo));
-        }
-                
-        [TestMethod]
-        public void GetInstance_TwoServices_ReturnsDefaultInstance()
-        {
-            var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo));
-            container.Register(typeof(IFoo), typeof(AnotherFoo),"AnotherFoo");
             object instance = container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
 
         [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        public void GetInstance_TwoServices_ReturnsDefaultInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            object instance = container.GetInstance(typeof(IFoo));
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+        [TestMethod]
         public void GetInstance_TwoNamedServices_ThrowsExceptionWhenRequestingDefaultService()
         {
-            try
-            {
-                var container = CreateContainer();
-                container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
-                container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-                container.GetInstance(typeof(IFoo));
-            }
-            catch (InvalidOperationException exception)
-            {                
-                
-                throw;
-            }
-            
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo)), ExpectedErrorMessages.UnknownDependency);
         }
 
 
@@ -97,7 +87,7 @@
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo));
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-            object instance = container.GetInstance(typeof(IFoo),"AnotherFoo");
+            object instance = container.GetInstance(typeof(IFoo), "AnotherFoo");
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
         }
 
@@ -105,14 +95,14 @@
         public void GetInstance_OneNamedService_ReturnsDefaultService()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo), typeof(Foo),"SomeFoo");
+            container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
             object instance = container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
 
         [TestMethod]
         public void Instance_OneNamedClosedGenericService_ReturnsDefaultService()
-        { 
+        {
             var container = CreateContainer();
             container.Register(typeof(IFoo<int>), typeof(Foo<int>), "SomeFoo");
             object instance = container.GetInstance(typeof(IFoo<int>));
@@ -123,7 +113,7 @@
         public void GetInstance_NamedService_ReturnsNamedInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo),typeof(Foo),"SomeFoo");
+            container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
             object instance = container.GetInstance<IFoo>("SomeFoo");
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
@@ -133,7 +123,7 @@
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo<>), typeof(Foo<>));
-            var instance = container.GetInstance(typeof(IFoo<int>));            
+            var instance = container.GetInstance(typeof(IFoo<int>));
             Assert.IsInstanceOfType(instance, typeof(Foo<int>));
         }
 
@@ -153,15 +143,15 @@
             container.Register(typeof(IFoo<>), typeof(Foo<>));
             var instance1 = container.GetInstance(typeof(IFoo<int>));
             var instance2 = container.GetInstance(typeof(IFoo<int>));
-            Assert.AreNotSame(instance1,instance2);
+            Assert.AreNotSame(instance1, instance2);
         }
-      
+
         [TestMethod]
         public void GetInstance_DefaultAndNamedOpenGenericType_ReturnsNamedInstance()
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo<>), typeof(Foo<>));
-            container.Register(typeof(IFoo<>), typeof(AnotherFoo<>),"AnotherFoo");
+            container.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo");
             var instance = container.GetInstance(typeof(IFoo<int>), "AnotherFoo");
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo<int>));
         }
@@ -170,7 +160,7 @@
         public void GetInstance_TwoNamedOpenGenericTypes_ReturnsNamedInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo<>), typeof(Foo<>),"SomeFoo");
+            container.Register(typeof(IFoo<>), typeof(Foo<>), "SomeFoo");
             container.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo");
             var instance = container.GetInstance(typeof(IFoo<int>), "AnotherFoo");
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo<int>));
@@ -190,17 +180,17 @@
         public void GetInstance_OpenGenericSingleton_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo<>), typeof(Foo<>),LifeCycleType.Singleton);
-            var instance1 = container.GetInstance(typeof (IFoo<int>));
+            container.Register(typeof(IFoo<>), typeof(Foo<>), LifeCycleType.Singleton);
+            var instance1 = container.GetInstance(typeof(IFoo<int>));
             var instance2 = container.GetInstance(typeof(IFoo<int>));
-            Assert.AreSame(instance1,instance2);
+            Assert.AreSame(instance1, instance2);
         }
-          
+
         [TestMethod]
         public void GetInstance_Singleton_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo), typeof(Foo),LifeCycleType.Singleton);
+            container.Register(typeof(IFoo), typeof(Foo), LifeCycleType.Singleton);
             var instance1 = container.GetInstance(typeof(IFoo));
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1, instance2);
@@ -211,7 +201,7 @@
         [TestMethod]
         public void GetInstance_Func_ReturnsFuncInstance()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             var factory = container.GetInstance(typeof(Func<IFoo>));
             Assert.IsInstanceOfType(factory, typeof(Func<IFoo>));
         }
@@ -219,15 +209,15 @@
         [TestMethod]
         public void GetInstance_FuncWithStringArgument_ReturnsFuncInstance()
         {
-            var container = CreateContainer();            
-            var factory = container.GetInstance(typeof(Func<string,IFoo>));
-            Assert.IsInstanceOfType(factory, typeof(Func<string,IFoo>));
+            var container = CreateContainer();
+            var factory = container.GetInstance(typeof(Func<string, IFoo>));
+            Assert.IsInstanceOfType(factory, typeof(Func<string, IFoo>));
         }
 
         [TestMethod]
         public void GetInstance_Func_ReturnsSameInstance()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             var factory1 = (Func<IFoo>)container.GetInstance(typeof(Func<IFoo>));
             var factory2 = (Func<IFoo>)container.GetInstance(typeof(Func<IFoo>));
             Assert.AreSame(factory1, factory2);
@@ -237,8 +227,8 @@
         public void GetInstance_FuncWithStringArgument_ReturnsSameInstance()
         {
             var container = CreateContainer();
-            var factory1 = (Func<string,IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
-            var factory2 = (Func<string,IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
+            var factory1 = (Func<string, IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
+            var factory2 = (Func<string, IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
             Assert.AreSame(factory1, factory2);
         }
 
@@ -249,19 +239,19 @@
             container.Register(typeof(IFoo), typeof(Foo));
             var factory = (Func<IFoo>)container.GetInstance(typeof(Func<IFoo>));
             var instance = factory();
-            Assert.IsInstanceOfType(instance,typeof(Foo));
+            Assert.IsInstanceOfType(instance, typeof(Foo));
         }
 
         [TestMethod]
         public void GetInstance_FuncWithStringArgument_IsAbleToCreateInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo), typeof(Foo),"SomeFoo");
-            var factory = (Func<string,IFoo>)container.GetInstance(typeof(Func<string,IFoo>));
+            container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
+            var factory = (Func<string, IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
             var instance = factory("SomeFoo");
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-       
+
 
         [TestMethod]
         public void GetInstance_FuncWithSingletonTarget_ReturnsSameInstance()
@@ -271,7 +261,7 @@
             var factory = (Func<IFoo>)container.GetInstance(typeof(Func<IFoo>));
             var instance1 = factory();
             var instance2 = factory();
-            Assert.AreSame(instance1,instance2);
+            Assert.AreSame(instance1, instance2);
         }
 
         [TestMethod]
@@ -287,8 +277,9 @@
         #endregion
 
         #region Func Factory
-        
-        
+
+
+
         [TestMethod]
         public void GetInstance_FuncFactory_ReturnsFactoryCreatedInstance()
         {
@@ -306,22 +297,22 @@
             var instance = container.GetInstance(typeof(IFoo), "SomeFoo");
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-        
+
         [TestMethod]
         public void GetInstance_Funcfactory_ReturnsInstanceWithDependencies()
         {
             var container = CreateContainer();
-            container.Register<IBar>(c => new Bar());       
+            container.Register<IBar>(c => new Bar());
             container.Register<IFoo>(c => new FooWithDependency(container.GetInstance<IBar>()));
             var instance = (FooWithDependency)container.GetInstance(typeof(IFoo));
-            Assert.IsInstanceOfType(instance.Bar,typeof(Bar));
-            
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+
         }
 
         [TestMethod]
         public void GetInstance_FuncFactoryWithReferenceTypeDepenedency_ReturnsInstanceWithDependencies()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             container.Register<IFoo>(c => new FooWithReferenceTypeDependency("SomeStringValue"));
             var instance = (FooWithReferenceTypeDependency)container.GetInstance(typeof(IFoo));
             Assert.AreEqual("SomeStringValue", instance.Value);
@@ -354,7 +345,7 @@
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1, instance2);
         }
-        
+
         #endregion
 
 
@@ -373,7 +364,7 @@
         [TestMethod]
         public void GenericGetAllInstances_UnknownService_ReturnsEmptyIEnumerable()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             var instances = container.GetAllInstances<IFoo>();
             Assert.IsInstanceOfType(instances, typeof(IEnumerable<IFoo>));
         }
@@ -439,22 +430,22 @@
 
 
 
- 
-
-      
-
-     
 
 
-       
 
-    
+
+
+
+
+
+
+
 
         #endregion
 
-        
 
-       
+
+
 
         //[TestMethod]
         //public void PerformanceTest()
@@ -493,10 +484,10 @@
         //    }
         //}
 
-           
-       
-        
-        
+
+
+
+
         //[TestMethod]
         //public void GetInstance_CustomFactory_ServiceNameIsPassedToFactory()
         //{
@@ -508,7 +499,7 @@
         //    container.GetInstance<IFoo>("AnotherServiceName");
         //    Assert.AreEqual("AnotherServiceName", factory.ServiceName);
         //}
-        
+
         //[TestMethod]
         //public void GetInstance_CustomFactoryWithUnNamedAndNamedServiceRequest_ServiceNameIsPassedToFactory()
         //{
@@ -541,11 +532,11 @@
 
         //}
 
-      
 
-      
 
-       
+
+
+
 
 
         //[TestMethod]
@@ -598,7 +589,7 @@
         //    container.GetInstance<IFoo>();
         //}
 
-        
+
 
         //#region Constructor Dependency Injection
 
@@ -655,8 +646,8 @@
         //}
 
 
-       
-       
+
+
         //[TestMethod]
         //public void GetInstance_InjectCustomFactoryOneImplementingType_DoesNotPassParameterNameAsServiceName()
         //{
@@ -691,7 +682,7 @@
         //    container.GetInstance<IFoo>();            
         //}
 
-        
+
 
         //[TestMethod]
         //public void GetAllInstances_TwoServices_ReturnsBothServices()
@@ -733,7 +724,7 @@
         //    Assert.AreEqual(2, instances.Count());
         //}
 
-       
+
 
         //[TestMethod]
         //public void GetInstance_OpenGenericTypeWithSingletonDependency_ReturnsSameDependencyInstance()
@@ -819,16 +810,16 @@
         //    container.GetInstance<IFoo<int>>();
         //}
 
-        
+
         private static IServiceContainer CreateContainer()
         {
             return new EmitServiceContainer();
         }
-    
-    
-        
-    
+
+
+
+
     }
 
-    
+
 }

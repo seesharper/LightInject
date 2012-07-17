@@ -19,7 +19,7 @@ namespace DependencyInjector.Tests
             Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
         }
 
-        [TestMethod]        
+        [TestMethod]
         public void GetInstance_UnKnownDependency_ThrowsException()
         {
             var container = CreateContainer();
@@ -28,17 +28,9 @@ namespace DependencyInjector.Tests
                 () => container.GetInstance<IFoo>(), ExpectedErrorMessages.UnknownConstructorDependency);
         }
 
-        [TestMethod]
-        public void GetInstance_RecursiveDependency_ThrowsException()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo, FooWithRecursiveDependency>();
-            container.GetInstance<IFoo>();
-        }
-
 
         [TestMethod]
-        public void GetInstance_OpenGenericDependency_InjectsDependency()
+        public void GetInstance_GenericDependency_InjectsDependency()
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
@@ -46,6 +38,28 @@ namespace DependencyInjector.Tests
             var instance = (FooWithGenericDependency<IBar>)container.GetInstance<IFoo<IBar>>();
             Assert.IsInstanceOfType(instance.Dependency, typeof(Bar));
         }
+
+        [TestMethod]
+        public void GetInstance_OpenGenericDependency_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar<>), typeof(Bar<>));
+            container.Register(typeof(IFoo<>), typeof(FooWithOpenGenericDependency<>));
+            var instance = (FooWithOpenGenericDependency<int>)container.GetInstance<IFoo<int>>();
+            Assert.IsInstanceOfType(instance.Dependency, typeof(Bar<int>));
+        }
+
+        [TestMethod]
+        public void GetInstance_OpenGenericDependencyWithRequestLifeCycle_InjectsSameDependenciesForSingleRequest()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar<>), typeof(Bar<>), LifeCycleType.Request);
+            container.Register(typeof(IFoo<>), typeof(FooWithSameOpenGenericDependencyTwice<>));
+            var instance = (FooWithSameOpenGenericDependencyTwice<int>)container.GetInstance<IFoo<int>>();
+            Assert.AreEqual(instance.Bar1, instance.Bar2);
+        }
+
+
 
         [TestMethod]
         public void GetInstance_DependencyWithTransientLifeCycle_InjectsTransientDependency()

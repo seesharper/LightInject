@@ -17,9 +17,9 @@ namespace LightInject.SampleLibrary
         }
     }
 
-    public interface IBar<T> {}
+    public interface IBar<T> { }
 
-    public class Bar<T> : IBar<T> {}
+    public class Bar<T> : IBar<T> { }
 
 
     public class AnotherBar : IBar
@@ -37,7 +37,7 @@ namespace LightInject.SampleLibrary
 
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
-            return typeof (IBar).IsAssignableFrom(serviceType);
+            return typeof(IBar).IsAssignableFrom(serviceType);
         }
 
         public string ServiceName { get; private set; }

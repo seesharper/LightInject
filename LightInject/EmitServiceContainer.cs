@@ -22,7 +22,7 @@ namespace LightInject
         /// Specifies that a new instance is created for each request.
         /// </summary>
         Transient,
-        
+
         /// <summary>
         /// Specifies that the same instance is returned across multiple requests.
         /// </summary>
@@ -33,7 +33,7 @@ namespace LightInject
         /// </summary>
         Request
     }
-    
+
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
@@ -45,7 +45,7 @@ namespace LightInject
         /// <param name="serviceType">The service type to register.</param>
         /// <param name="implementingType">The implementing type.</param>
         void Register(Type serviceType, Type implementingType);
-       
+
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -102,7 +102,7 @@ namespace LightInject
         /// <param name="serviceName">The name of the service.</param>
         /// /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         void Register<TService, TImplementation>(string serviceName, LifeCycleType lifeCycle) where TImplementation : TService;
-        
+
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the given <paramref name="instance"/>. 
         /// </summary>
@@ -181,7 +181,7 @@ namespace LightInject
         /// <param name="expression">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>        
         /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
-        void Register<TService>(Expression<Func<IServiceFactory, TService>> expression, string serviceName, LifeCycleType lifeCycle);      
+        void Register<TService>(Expression<Func<IServiceFactory, TService>> expression, string serviceName, LifeCycleType lifeCycle);
     }
 
     /// <summary>
@@ -266,12 +266,12 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
         void Compose(IServiceRegistry serviceRegistry);
     }
-    
+
     /// <summary>
     /// Represents a class that is responsible for selecting properties that represents a dependecy to the target <see cref="Type"/>.
     /// </summary>
     public interface IPropertySelector
-    {        
+    {
         /// <summary>
         /// Selects properties that represents a dependency from the given <paramref name="type"/>.
         /// </summary>
@@ -333,16 +333,16 @@ namespace LightInject
     /// </summary>
     public class EmitServiceContainer : IServiceContainer
     {
-        private const string UnresolvedDependencyError = "Unresolved dependency {0}";        
+        private const string UnresolvedDependencyError = "Unresolved dependency {0}";
         private static readonly MethodInfo GetInstanceMethod;
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> services = new ServiceRegistry<Action<DynamicMethodInfo>>();
-        private readonly ServiceRegistry<OpenGenericServiceInfo> openGenericServices = new ServiceRegistry<OpenGenericServiceInfo>();        
+        private readonly ServiceRegistry<OpenGenericServiceInfo> openGenericServices = new ServiceRegistry<OpenGenericServiceInfo>();
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
-        private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();        
+        private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
         private readonly ThreadSafeDictionary<Type, ServiceInfo> implementations = new ThreadSafeDictionary<Type, ServiceInfo>();
-        private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();        
+        private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();
         private readonly List<object> constants = new List<object>();
-        
+
         static EmitServiceContainer()
         {
             GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
@@ -373,7 +373,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is reponsible for loading assemblies during assembly scanning. 
         /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
-        
+
         public void Scan(Assembly assembly)
         {
             AssemblyScanner.Scan(assembly, this);
@@ -384,7 +384,7 @@ namespace LightInject
             foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
             {
                 Scan(assembly);
-            }            
+            }
         }
 
         public void Register(Type serviceType, Type implementingType, LifeCycleType lifeCycle)
@@ -461,7 +461,7 @@ namespace LightInject
         {
             RegisterService(serviceType, implementingType, LifeCycleType.Transient, serviceName);
         }
-        
+
         public void Register(Type serviceType, Type implementingType)
         {
             RegisterService(serviceType, implementingType, LifeCycleType.Transient, string.Empty);
@@ -546,7 +546,7 @@ namespace LightInject
                 generator.Emit(OpCodes.Ldloc, array);
                 generator.Emit(OpCodes.Ldc_I4, index);
                 var serviceEmitter = serviceEmitters[index];
-                serviceEmitter(dynamicMethodInfo);                                
+                serviceEmitter(dynamicMethodInfo);
                 generator.Emit(OpCodes.Stelem, elementType);
             }
 
@@ -603,7 +603,7 @@ namespace LightInject
 
         private static void ThrowUnresolvedConstructorDependencyException(ConstructorDependency dependency)
         {
-            throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));                                    
+            throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
         }
 
         private ServiceInfo CreateServiceInfo(Type implementingType)
@@ -624,7 +624,7 @@ namespace LightInject
 
         private IEnumerable<PropertyInfo> GetInjectableProperties(Type implementingType)
         {
-            return PropertySelector.Select(implementingType);            
+            return PropertySelector.Select(implementingType);
         }
 
         private ServiceInfo CreateServiceInfoFromExpression(LambdaExpression lambdaExpression)
@@ -633,7 +633,7 @@ namespace LightInject
             ServiceInfo serviceInfo = methodCallVisitor.Build(lambdaExpression);
             return serviceInfo;
         }
-        
+
         private Action<DynamicMethodInfo> GetServiceEmitter(Type serviceType, string serviceName)
         {
             var registrations = GetServiceRegistrations(serviceType);
@@ -650,12 +650,12 @@ namespace LightInject
                 if (emitter != null)
                 {
                     var del = CreateDynamicMethodDelegate(emitter, typeof(IFactory));
-                    emitter = CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants));    
+                    emitter = CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants));
                 }
                 else
                 {
                     return CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, null);
-                }                
+                }
             }
 
             if (emitter != null) registrations.AddOrUpdate(serviceName, s => emitter, (s, d) => emitter);
@@ -681,13 +681,13 @@ namespace LightInject
         {
             ServiceInfo serviceInfo = GetServiceInfo(implementingType);
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            EmitConstructorDependencies(serviceInfo, dynamicMethodInfo);            
+            EmitConstructorDependencies(serviceInfo, dynamicMethodInfo);
             generator.Emit(OpCodes.Newobj, serviceInfo.Constructor);
             EmitPropertyDependencies(serviceInfo, dynamicMethodInfo);
         }
 
         private void EmitConstructorDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
-        {            
+        {
             foreach (ConstructorDependency dependency in serviceInfo.ConstructorDependencies)
             {
                 this.EmitDependency(dynamicMethodInfo, dependency);
@@ -731,21 +731,21 @@ namespace LightInject
 
         private Action<DynamicMethodInfo> ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
         {
-            if (IsFunc(serviceType)) 
+            if (IsFunc(serviceType))
                 return CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, false);
 
-            if (IsEnumerableOfT(serviceType)) 
+            if (IsEnumerableOfT(serviceType))
                 return CreateEnumerableServiceEmitter(serviceType);
 
-            if (IsFuncWithStringArgument(serviceType)) 
+            if (IsFuncWithStringArgument(serviceType))
                 return CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, true);
 
-            if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName)) 
+            if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
                 return CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
 
-            if (IsClosedGeneric(serviceType)) 
+            if (IsClosedGeneric(serviceType))
                 return CreateServiceEmitterBasedOnClosedGenericServiceRequest(serviceType, serviceName);
-           
+
             return null;
         }
 
@@ -789,12 +789,12 @@ namespace LightInject
             var constantIndex = GetConstantIndex(del);
             return dmi => EmitLoadConstant(dmi, constantIndex, serviceType);
         }
-        
+
         private Delegate CreateFuncGetInstanceDelegate<TServiceType>(bool namedService)
         {
             if (namedService)
             {
-                Func<string, TServiceType> func = GetInstance<TServiceType>;                
+                Func<string, TServiceType> func = GetInstance<TServiceType>;
                 return func;
             }
             else
@@ -807,13 +807,13 @@ namespace LightInject
         private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnClosedGenericServiceRequest(Type serviceType, string serviceName)
         {
             Type openGenericType = serviceType.GetGenericTypeDefinition();
-            
+
             OpenGenericServiceInfo openGenericServiceInfo = GetOpenGenericTypeInfo(openGenericType, serviceName);
-            if (openGenericServiceInfo == null) 
+            if (openGenericServiceInfo == null)
                 return null;
-        
+
             Type closedGenericType = openGenericServiceInfo.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-            return dmi => openGenericServiceInfo.EmitMethod(dmi, closedGenericType);                        
+            return dmi => openGenericServiceInfo.EmitMethod(dmi, closedGenericType);
         }
 
         private OpenGenericServiceInfo GetOpenGenericTypeInfo(Type serviceType, string serviceName)
@@ -851,21 +851,21 @@ namespace LightInject
         {
             return services.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo>>(StringComparer.InvariantCultureIgnoreCase));
         }
-      
+
         private ThreadSafeDictionary<string, OpenGenericServiceInfo> GetOpenGenericRegistrations(Type serviceType)
         {
             return openGenericServices.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, OpenGenericServiceInfo>(StringComparer.InvariantCultureIgnoreCase));
         }
-            
+
         private void RegisterService(Type serviceType, Type implementingType, LifeCycleType lifeCycleType, string serviceName)
         {
             if (serviceType.IsGenericTypeDefinition)
                 RegisterOpenGenericService(serviceType, implementingType, lifeCycleType, serviceName);
             else
-            {                
+            {
                 Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(implementingType, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);
-                GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);    
-            }            
+                GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);
+            }
         }
 
         private void RegisterOpenGenericService(Type serviceType, Type implementingType, LifeCycleType lifeCycleType, string serviceName)
@@ -875,15 +875,15 @@ namespace LightInject
                 openGenericTypeInfo.EmitMethod = (d, t) => EmitNewInstance(t, d);
             else if (lifeCycleType == LifeCycleType.Singleton)
                 openGenericTypeInfo.EmitMethod = (d, t) => EmitSingletonInstance(t, d);
-            else if (lifeCycleType == LifeCycleType.Singleton)
+            else if (lifeCycleType == LifeCycleType.Request)
                 openGenericTypeInfo.EmitMethod = (d, t) => EmitRequestInstance(t, d);
-            
+
             GetOpenGenericRegistrations(serviceType).AddOrUpdate(serviceName, s => openGenericTypeInfo, (s, o) => openGenericTypeInfo);
         }
 
         private Action<DynamicMethodInfo> GetEmitDelegate(Type implementingType, LifeCycleType lifeCycleType)
         {
-            Action<DynamicMethodInfo> emitDelegate = null;            
+            Action<DynamicMethodInfo> emitDelegate = null;
             switch (lifeCycleType)
             {
                 case LifeCycleType.Transient:
@@ -925,18 +925,20 @@ namespace LightInject
                 constants.Add(value);
             return constants.IndexOf(value);
         }
-                    
+
         private Func<List<object>, object> CreateDelegate(Type serviceType, string serviceName)
         {
-            EnsureThatServiceRegistryIsConfigured();
+            EnsureThatServiceRegistryIsConfigured(serviceType);
             var serviceEmitter = GetServiceEmitter(serviceType, serviceName);
+            if (serviceEmitter == null)
+                throw new InvalidOperationException(string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
             return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
         }
 
-        private void EnsureThatServiceRegistryIsConfigured()
+        private void EnsureThatServiceRegistryIsConfigured(Type serviceType)
         {
             if (ServiceRegistryIsEmpty())
-                Scan(typeof(EmitServiceContainer).Assembly);
+                Scan(serviceType.Assembly);
         }
 
         private bool ServiceRegistryIsEmpty()
@@ -959,14 +961,14 @@ namespace LightInject
             implementations.AddOrUpdate(implementingType, t => serviceinfo, (t, s) => serviceinfo);
             RegisterService(typeof(TService), implementingType, lifeCycleType, serviceName);
         }
-         
+
         /// <summary>
         /// Builds a <see cref="ServiceInfo"/> instance based on a <see cref="LambdaExpression"/>.
         /// </summary>
         public class ServiceInfoBuilder : ExpressionVisitor
-        {            
+        {
             private ServiceInfo serviceInfo;
-            
+
             /// <summary>
             /// Builds a <see cref="ServiceInfo"/> instance based on the given <paramref name="lambdaExpression"/>.
             /// </summary>
@@ -986,8 +988,8 @@ namespace LightInject
             protected override MemberAssignment VisitMemberAssignment(MemberAssignment memberAssignment)
             {
                 var propertyDependecy = CreatePropertyDependency(memberAssignment);
-                ApplyDependencyDetails(memberAssignment.Expression, propertyDependecy);                                               
-                serviceInfo.PropertyDependencies.Add(propertyDependecy);                
+                ApplyDependencyDetails(memberAssignment.Expression, propertyDependecy);
+                serviceInfo.PropertyDependencies.Add(propertyDependecy);
                 return base.VisitMemberAssignment(memberAssignment);
             }
 
@@ -1004,6 +1006,7 @@ namespace LightInject
                 {
                     ConstructorDependency constructorDependency = CreateConstructorDependency(parameters[i]);
                     ApplyDependencyDetails(newExpression.Arguments[i], constructorDependency);
+                    serviceInfo.ConstructorDependencies.Add(constructorDependency);
                 }
 
                 return base.VisitNew(newExpression);
@@ -1022,19 +1025,19 @@ namespace LightInject
             }
 
             private static PropertyDependecy CreatePropertyDependency(MemberAssignment memberAssignment)
-            {                
+            {
                 var propertyDependecy = new PropertyDependecy
-                                        {
-                                            Property = (PropertyInfo)memberAssignment.Member,
-                                            ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType                                            
-                                        };
+                {
+                    Property = (PropertyInfo)memberAssignment.Member,
+                    ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType
+                };
                 return propertyDependecy;
             }
 
             private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
             {
                 var constructorDependency = new ConstructorDependency
-                                            {
+                {
                     Parameter = parameterInfo,
                     ServiceType = parameterInfo.ParameterType
                 };
@@ -1043,7 +1046,7 @@ namespace LightInject
 
             private static bool RepresentsServiceFactoryMethod(Expression expression)
             {
-                return IsMethodCall(expression) && 
+                return IsMethodCall(expression) &&
                     IsServiceFactoryMethod(((MethodCallExpression)expression).Method);
             }
 
@@ -1058,7 +1061,7 @@ namespace LightInject
             }
 
             private static void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
-            {                               
+            {
                 dependency.Expression = expression;
                 dependency.ServiceName = string.Empty;
             }
@@ -1075,7 +1078,7 @@ namespace LightInject
                     dependency.ServiceName = string.Empty;
                 }
             }
-            
+
             private static bool RepresentsGetAllInstancesMethod(MethodCallExpression node)
             {
                 return IsGetAllInstancesMethod(node.Method);
@@ -1114,9 +1117,9 @@ namespace LightInject
             private static bool IsStringConstantExpression(Expression argument)
             {
                 return argument.NodeType == ExpressionType.Constant && argument.Type == typeof(string);
-            }           
+            }
         }
-       
+
         /// <summary>
         /// Contains information about how to create a service instance.
         /// </summary>
@@ -1150,12 +1153,12 @@ namespace LightInject
             /// </summary>
             public List<ConstructorDependency> ConstructorDependencies { get; private set; }
         }
-        
+
         /// <summary>
         /// Represents a class dependency.
         /// </summary>
         public abstract class Dependency
-        {            
+        {
             /// <summary>
             /// Gets or sets the service <see cref="Type"/> of the <see cref="Dependency"/>.
             /// </summary>
@@ -1323,7 +1326,7 @@ namespace LightInject
     /// </summary>
     /// NOTE MUST NOT SCAN LIGHTINJECT TYPES
     public class AssemblyScanner : IAssemblyScanner
-    {        
+    {
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
         /// </summary>
@@ -1338,8 +1341,8 @@ namespace LightInject
             else
             {
                 foreach (Type type in types)
-                    BuildImplementationMap(type, serviceRegistry);    
-            }            
+                    BuildImplementationMap(type, serviceRegistry);
+            }
         }
 
         private static void ExecuteCompositionRoots(IEnumerable<Type> compositionRoots, IServiceRegistry serviceRegistry)
@@ -1380,7 +1383,7 @@ namespace LightInject
         {
             return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && t.IsPublic);
         }
-       
+
         private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry)
         {
             Type[] interfaces = implementingType.GetInterfaces();
@@ -1393,11 +1396,11 @@ namespace LightInject
         private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry)
         {
             if (serviceType.IsGenericType && serviceType.ContainsGenericParameters)
-                serviceType = serviceType.GetGenericTypeDefinition();           
+                serviceType = serviceType.GetGenericTypeDefinition();
             serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
         }
     }
-    
+
     /// <summary>
     /// Selects the properties that represents a dependecy to the target <see cref="Type"/>.
     /// </summary>
@@ -1410,7 +1413,7 @@ namespace LightInject
         /// <returns>A list of properties that represents a dependency to the target <paramref name="type"/></returns>
         public IEnumerable<PropertyInfo> Select(Type type)
         {
-            return type.GetProperties().Where(IsInjectable).ToList();            
+            return type.GetProperties().Where(IsInjectable).ToList();
         }
 
         /// <summary>
@@ -1421,12 +1424,12 @@ namespace LightInject
         protected virtual bool IsInjectable(PropertyInfo propertyInfo)
         {
             return !IsReadOnly(propertyInfo);
-        }                
+        }
 
         private static bool IsReadOnly(PropertyInfo propertyInfo)
         {
             return propertyInfo.GetSetMethod(false) == null;
-        }        
+        }
     }
 
     /// <summary>
@@ -1446,7 +1449,7 @@ namespace LightInject
             {
                 string[] searchPatterns = searchPattern.Split('|');
                 foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
-                {                    
+                {
                     yield return Assembly.LoadFrom(file);
                 }
             }

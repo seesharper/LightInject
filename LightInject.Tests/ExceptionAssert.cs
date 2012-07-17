@@ -7,7 +7,7 @@
     {
         public static TException Throws<TException>(Action action) where TException : Exception
         {
-            return (TException)Execute<TException>(action);            
+            return (TException)Execute<TException>(action);
         }
 
         public static TException Throws<TException>(Action action, string message) where TException : Exception
@@ -27,7 +27,7 @@
         }
 
         private static Exception Execute<TException>(Action action) where TException : Exception
-        {            
+        {
             try
             {
                 action();
@@ -37,7 +37,7 @@
             {
                 Assert.IsInstanceOfType(ex, typeof(TException));
                 return ex;
-            }            
+            }
         }
     }
 }
