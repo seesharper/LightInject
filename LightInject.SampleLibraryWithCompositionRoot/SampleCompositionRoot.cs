@@ -7,7 +7,7 @@
         public void Compose(IServiceRegistry serviceRegistry)
         {
             CallCount++;
-            serviceRegistry.Register(typeof(int),42);
+            serviceRegistry.Register(42);
         }
     }
 }

@@ -35,7 +35,11 @@
             }
             catch (Exception ex)
             {
-                Assert.IsInstanceOfType(ex, typeof(TException));
+                if (!(ex is TException))
+                {
+                    throw;
+                }
+
                 return ex;
             }
         }

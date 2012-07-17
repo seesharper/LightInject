@@ -117,7 +117,7 @@ namespace DependencyInjector.Tests
         public void GetInstance_ValueTypeDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register(typeof(int), 42);           
+            container.Register( 42);           
             container.Register<IFoo, FooWithValueTypePropertyDependency>();
             var instance = (FooWithValueTypePropertyDependency)container.GetInstance<IFoo>();
             Assert.AreEqual(42,instance.Value);
@@ -127,7 +127,7 @@ namespace DependencyInjector.Tests
         public void GetInstance_EnumDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register(typeof(Encoding), Encoding.UTF8);
+            container.Register(Encoding.UTF8);
             container.Register<IFoo, FooWithEnumPropertyDependency>();
             var instance = (FooWithEnumPropertyDependency)container.GetInstance<IFoo>();
             Assert.AreEqual(Encoding.UTF8, instance.Value);
@@ -137,7 +137,7 @@ namespace DependencyInjector.Tests
         public void GetInstance_ReferenceTypeDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register(typeof(string), "SomeValue");
+            container.Register("SomeValue");
             container.Register<IFoo, FooWithReferenceTypePropertyDependency>();
             var instance = (FooWithReferenceTypePropertyDependency)container.GetInstance<IFoo>();
             Assert.AreEqual("SomeValue", instance.Value);

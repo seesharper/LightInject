@@ -102,42 +102,21 @@ namespace LightInject
         /// <param name="serviceName">The name of the service.</param>
         /// /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         void Register<TService, TImplementation>(string serviceName, LifeCycleType lifeCycle) where TImplementation : TService;
-
+       
         /// <summary>
-        /// Registers the <paramref name="serviceType"/> with the given <paramref name="instance"/>. 
+        /// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
         /// </summary>
-        /// <param name="serviceType">The service type to register.</param>
+        /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="instance">The instance returned when this service is requested.</param>
-        /// <remarks>
-        /// The <paramref name="instance"/> is registered as a singleton service.
-        /// </remarks>
-        void Register(Type serviceType, object instance);
+        void Register<TService>(TService instance);
 
         /// <summary>
-        /// Registers the <paramref name="serviceType"/> with the given <paramref name="instance"/>. 
+        /// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
         /// </summary>
-        /// <param name="serviceType">The service type to register.</param>
+        /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="instance">The instance returned when this service is requested.</param>
         /// <param name="serviceName">The name of the service.</param>
-        /// <remarks>
-        /// The <paramref name="instance"/> is registered as a singleton service.
-        /// </remarks>
-        void Register(Type serviceType, object instance, string serviceName);
-
-        ///// <summary>
-        ///// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
-        ///// </summary>
-        ///// <typeparam name="TService">The service type to register.</typeparam>
-        ///// <param name="instance">The instance returned when this service is requested.</param>
-        //void Register<TService>(TService instance);
-
-        ///// <summary>
-        ///// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
-        ///// </summary>
-        ///// <typeparam name="TService">The service type to register.</typeparam>
-        ///// <param name="instance">The instance returned when this service is requested.</param>
-        ///// <param name="serviceName">The name of the service.</param>
-        //void Register<TService>(TService instance, string serviceName);
+        void Register<TService>(TService instance, string serviceName);
 
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="expression"/> that 
@@ -389,7 +368,7 @@ namespace LightInject
 
         public void Register(Type serviceType, Type implementingType, LifeCycleType lifeCycle)
         {
-            RegisterService(serviceType, implementingType, lifeCycle, string.Empty);
+            Register(serviceType, implementingType, string.Empty, lifeCycle);
         }
 
         public void Register(Type serviceType, Type implementingType, string serviceName, LifeCycleType lifeCycle)
@@ -409,18 +388,14 @@ namespace LightInject
 
         public void Register<TService, TImplementation>(string serviceName) where TImplementation : TService
         {
-            throw new NotImplementedException();
+            Register<TService, TImplementation>(serviceName, LifeCycleType.Transient);
         }
 
         public void Register<TService, TImplementation>(string serviceName, LifeCycleType lifeCycle) where TImplementation : TService
         {
-            throw new NotImplementedException();
+            Register(typeof(TService),typeof(TImplementation),serviceName,lifeCycle);
         }
 
-        public void Register(Type serviceType, object value)
-        {
-            RegisterValue(serviceType, value, string.Empty);
-        }
 
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycle)
         {
@@ -434,22 +409,17 @@ namespace LightInject
 
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName, LifeCycleType lifeCycle)
         {
-            throw new NotImplementedException();
-        }
-
-        public void Register(Type serviceType, object value, string serviceName)
-        {
-            RegisterValue(serviceType, value, serviceName);
+            RegisterServiceFromLambdaExpression(factory, lifeCycle, serviceName);
         }
 
         public void Register<TService>(TService instance)
         {
-            throw new NotImplementedException();
+            Register(instance, string.Empty);
         }
 
         public void Register<TService>(TService instance, string serviceName)
         {
-            throw new NotImplementedException();
+            RegisterValue(typeof(TService), instance, serviceName);
         }
 
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory)
@@ -600,12 +570,7 @@ namespace LightInject
                 constructorInfo.GetParameters().OrderBy(p => p.Position).Select(
                     p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
         }
-
-        private static void ThrowUnresolvedConstructorDependencyException(ConstructorDependency dependency)
-        {
-            throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
-        }
-
+       
         private ServiceInfo CreateServiceInfo(Type implementingType)
         {
             var serviceInfo = new ServiceInfo();

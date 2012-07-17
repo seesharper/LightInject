@@ -46,7 +46,7 @@ namespace DependencyInjector.Tests
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(new Foo());
             factoryMock.Setup(f => f.CanGetInstance(typeof(IFoo), string.Empty)).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
@@ -59,7 +59,7 @@ namespace DependencyInjector.Tests
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(new AnotherFoo());
             factoryMock.Setup(f => f.CanGetInstance(typeof(IFoo), string.Empty)).Returns(true);
             container.Register(typeof(IFoo), typeof(Foo));
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
         }
@@ -71,7 +71,7 @@ namespace DependencyInjector.Tests
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(42);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), string.Empty)).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             var instance = container.GetInstance<int>();
             Assert.AreEqual(42, instance);
         }
@@ -83,8 +83,8 @@ namespace DependencyInjector.Tests
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), string.Empty)).Returns(true);
-            container.Register(typeof(int), 2048);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(2048);
+            container.Register(factoryMock.Object);
             var instance = container.GetInstance<int>();
             Assert.AreEqual(1024, instance);
         }
@@ -106,7 +106,7 @@ namespace DependencyInjector.Tests
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             container.GetInstance<int>("SomeServiceName");
             factoryMock.Verify(f => f.CanGetInstance(typeof(int),"SomeServiceName"));
         }
@@ -119,7 +119,7 @@ namespace DependencyInjector.Tests
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024).Callback<ServiceRequest>((sr) => serviceRequest = sr);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             container.GetInstance<int>("SomeServiceName");
             Assert.AreEqual("SomeServiceName",serviceRequest.ServiceName);
         }
@@ -132,7 +132,7 @@ namespace DependencyInjector.Tests
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024).Callback<ServiceRequest>((sr) => serviceRequest = sr);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             container.GetInstance<int>("SomeServiceName");
             Assert.AreEqual(typeof(int), serviceRequest.ServiceType);
         }
@@ -141,12 +141,12 @@ namespace DependencyInjector.Tests
         public void GetInstance_DefaultService_PassesEmptyServiceNameToCanCreateInstanceMethod()
         {
             var container = CreateContainer();
-            container.Register(typeof(int), 42, "SomeServiceName");
+            container.Register(42, "SomeServiceName");
             ServiceRequest serviceRequest = null;
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024).Callback<ServiceRequest>((sr) => serviceRequest = sr);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             container.GetInstance<int>();
             factoryMock.Verify(f => f.CanGetInstance(typeof(int), string.Empty));
         }
@@ -161,7 +161,7 @@ namespace DependencyInjector.Tests
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024).Callback<ServiceRequest>((sr) => serviceRequest = sr);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             container.GetInstance<int>();
             Assert.IsFalse(serviceRequest.CanProceed);
         }
@@ -170,12 +170,12 @@ namespace DependencyInjector.Tests
         public void GetInstance_KnownService_CanProceed()
         {
             var container = CreateContainer();
-            container.Register(typeof(int), 42);
+            container.Register(42);
             ServiceRequest serviceRequest = null;
             var factoryMock = new Mock<IFactory>();
             factoryMock.Setup(f => f.GetInstance(It.IsAny<ServiceRequest>())).Returns(1024).Callback<ServiceRequest>((sr) => serviceRequest = sr);
             factoryMock.Setup(f => f.CanGetInstance(typeof(int), It.IsAny<string>())).Returns(true);
-            container.Register(typeof(IFactory), factoryMock.Object);
+            container.Register(factoryMock.Object);
             container.GetInstance<int>();
             Assert.IsTrue(serviceRequest.CanProceed);
         }

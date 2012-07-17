@@ -123,6 +123,9 @@
   <data name="UnknownDependency" xml:space="preserve">
     <value>Unable to resolve type: LightInject.SampleLibrary.IFoo, service name: </value>
   </data>
+  <data name="UnknownGenericDependency" xml:space="preserve">
+    <value>Unable to resolve type: LightInject.SampleLibrary.IFoo`1[System.Int32], service name: </value>
+  </data>
   <data name="UnknownPropertyDependency" xml:space="preserve">
     <value>Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithProperyDependency], [Property: Bar(LightInject.SampleLibrary.IBar)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IBar, ServiceName:]</value>
   </data>

@@ -1,4 +1,4 @@
-namespace DependencyInjector.Tests
+ namespace DependencyInjector.Tests
 {
     using System;
     using System.Linq.Expressions;
@@ -9,6 +9,16 @@ namespace DependencyInjector.Tests
     [TestClass]
     public class ServiceInfoBuilderTests
     {
+        [TestMethod]
+        public void CreateServiceInfo_NewOperatorInConstructor_ReturnsServiceInfo()
+        {
+            var serviceInfoBuilder = new EmitServiceContainer.ServiceInfoBuilder();
+            Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithDependency(new Bar());
+            var serviceInfo = serviceInfoBuilder.Build(e);
+            Assert.AreEqual(typeof(FooWithDependency),serviceInfo.ImplementingType);
+        }
+        
+        
         [TestMethod]
         public void CreateServiceInfo_GetInstanceInConstructor_ReturnsServiceInfoWithServiceType()
         {
