@@ -594,8 +594,8 @@ namespace LightInject
 
         private ServiceInfo CreateServiceInfoFromExpression(LambdaExpression lambdaExpression)
         {
-            var methodCallVisitor = new ServiceInfoBuilder();
-            ServiceInfo serviceInfo = methodCallVisitor.Build(lambdaExpression);
+            var methodCallVisitor = new LambdaExpressionParser();
+            ServiceInfo serviceInfo = methodCallVisitor.Parse(lambdaExpression);
             return serviceInfo;
         }
 
@@ -927,45 +927,31 @@ namespace LightInject
             RegisterService(typeof(TService), implementingType, lifeCycleType, serviceName);
         }
 
-        /// <summary>
-        /// Builds a <see cref="ServiceInfo"/> instance based on a <see cref="LambdaExpression"/>.
-        /// </summary>
-        public class ServiceInfoBuilder : ExpressionVisitor
+        public class LambdaExpressionParser
         {
-            private ServiceInfo serviceInfo;
-
-            /// <summary>
-            /// Builds a <see cref="ServiceInfo"/> instance based on the given <paramref name="lambdaExpression"/>.
-            /// </summary>
-            /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> from which to build a <see cref="ServiceInfo"/> instance.</param>
-            /// <returns>A <see cref="ServiceInfo"/> instance.</returns>
-            public ServiceInfo Build(LambdaExpression lambdaExpression)
-            {
-                Visit(lambdaExpression.Body);
-                return serviceInfo;
+                                                
+            public ServiceInfo Parse(LambdaExpression lambdaExpression)
+            {                                
+                switch (lambdaExpression.Body.NodeType)
+                {
+                    case ExpressionType.New:
+                        return CreateServiceInfoBasedOnNewExpression((NewExpression)lambdaExpression.Body);                        
+                    case ExpressionType.MemberInit:
+                        return CreateServiceInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                       
+                    default:
+                        return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);                
+                }                
             }
 
-            /// <summary>
-            /// Visits <see cref="MemberAssignment"/> expressions and creates a <see cref="PropertyDependecy"/>.
-            /// </summary>
-            /// <param name="memberAssignment">The target <see cref="MemberAssignment"/> expression.</param>
-            /// <returns>The original expression.</returns>
-            protected override MemberAssignment VisitMemberAssignment(MemberAssignment memberAssignment)
+            private static ServiceInfo CreateServiceInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
             {
-                var propertyDependecy = CreatePropertyDependency(memberAssignment);
-                ApplyDependencyDetails(memberAssignment.Expression, propertyDependecy);
-                serviceInfo.PropertyDependencies.Add(propertyDependecy);
-                return base.VisitMemberAssignment(memberAssignment);
+                return new ServiceInfo { Expression = lambdaExpression.Body };                
             }
+            
 
-            /// <summary>
-            /// Visits <see cref="NewExpression"/> expressions and creates a <see cref="ConstructorDependency"/>.
-            /// </summary>
-            /// <param name="newExpression">The target <see cref="NewExpression"/> expression.</param>
-            /// <returns>The original expression.</returns>
-            protected override Expression VisitNew(NewExpression newExpression)
+            private static ServiceInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
             {
-                serviceInfo = new ServiceInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
+                var serviceInfo = CreateServiceInfo(newExpression);
                 ParameterInfo[] parameters = newExpression.Constructor.GetParameters();
                 for (int i = 0; i < parameters.Length; i++)
                 {
@@ -974,19 +960,55 @@ namespace LightInject
                     serviceInfo.ConstructorDependencies.Add(constructorDependency);
                 }
 
-                return base.VisitNew(newExpression);
+                return serviceInfo;
             }
 
-            private static void ApplyDependencyDetails(Expression expression, Dependency dependency)
+            private static ServiceInfo CreateServiceInfo(NewExpression newExpression)
             {
-                if (RepresentsServiceFactoryMethod(expression))
+                var serviceInfo = new ServiceInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
+                return serviceInfo;
+            }
+
+            private static ServiceInfo CreateServiceInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
+            {
+                var serviceInfo = CreateServiceInfoBasedOnNewExpression(memberInitExpression.NewExpression);
+                foreach (MemberBinding memberBinding in memberInitExpression.Bindings)
                 {
-                    ApplyDependencyDetailsFromMethodCall((MethodCallExpression)expression, dependency);
+                    HandleMemberBinding(memberBinding, serviceInfo);
                 }
-                else
+
+                return serviceInfo;
+            }
+
+            private static void HandleMemberBinding(MemberBinding memberBinding, ServiceInfo serviceInfo)
+            {
+                switch (memberBinding.BindingType)
                 {
-                    ApplyDependecyDetailsFromExpression(expression, dependency);
+                    case MemberBindingType.Assignment:
+                        HandleMemberAssignment((MemberAssignment)memberBinding, serviceInfo);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException("memberBinding", memberBinding.BindingType, "Unknown member binding");
                 }
+            }
+
+            private static void HandleMemberAssignment(MemberAssignment memberAssignment, ServiceInfo serviceInfo)
+            {
+                var propertyDependency = CreatePropertyDependency(memberAssignment);
+                ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
+                serviceInfo.PropertyDependencies.Add(propertyDependency);
+            }
+
+
+
+            private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
+            {
+                var constructorDependency = new ConstructorDependency
+                {
+                    Parameter = parameterInfo,
+                    ServiceType = parameterInfo.ParameterType
+                };
+                return constructorDependency;
             }
 
             private static PropertyDependecy CreatePropertyDependency(MemberAssignment memberAssignment)
@@ -999,14 +1021,16 @@ namespace LightInject
                 return propertyDependecy;
             }
 
-            private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
-            {
-                var constructorDependency = new ConstructorDependency
+            private static void ApplyDependencyDetails(Expression expression, Dependency dependency)
+            {                
+                if (RepresentsServiceFactoryMethod(expression))
                 {
-                    Parameter = parameterInfo,
-                    ServiceType = parameterInfo.ParameterType
-                };
-                return constructorDependency;
+                    ApplyDependencyDetailsFromMethodCall((MethodCallExpression)expression, dependency);
+                }
+                else
+                {
+                    ApplyDependecyDetailsFromExpression(expression, dependency);
+                }
             }
 
             private static bool RepresentsServiceFactoryMethod(Expression expression)
@@ -1033,7 +1057,7 @@ namespace LightInject
 
             private static void ApplyDependencyDetailsFromMethodCall(MethodCallExpression methodCallExpression, Dependency dependency)
             {
-                dependency.ServiceType = methodCallExpression.Method.GetGenericArguments()[0];
+                dependency.ServiceType = methodCallExpression.Method.ReturnType;
                 if (RepresentsGetNamedInstanceMethod(methodCallExpression))
                 {
                     dependency.ServiceName = (string)((ConstantExpression)methodCallExpression.Arguments[0]).Value;
@@ -1044,29 +1068,14 @@ namespace LightInject
                 }
             }
 
-            private static bool RepresentsGetAllInstancesMethod(MethodCallExpression node)
-            {
-                return IsGetAllInstancesMethod(node.Method);
-            }
-
             private static bool RepresentsGetNamedInstanceMethod(MethodCallExpression node)
             {
                 return IsGetInstanceMethod(node.Method) && HasOneArgumentRepresentingServiceName(node);
             }
 
-            private static bool RepresentsGetInstanceMethod(MethodCallExpression node)
-            {
-                return IsGetInstanceMethod(node.Method) && node.Arguments.Count == 0;
-            }
-
             private static bool IsGetInstanceMethod(MethodInfo methodInfo)
             {
                 return typeof(IServiceFactory).IsAssignableFrom(methodInfo.DeclaringType) && methodInfo.Name == "GetInstance";
-            }
-
-            private static bool IsGetAllInstancesMethod(MethodInfo methodInfo)
-            {
-                return typeof(IServiceFactory).IsAssignableFrom(methodInfo.DeclaringType) && methodInfo.Name == "GetAllInstances";
             }
 
             private static bool HasOneArgumentRepresentingServiceName(MethodCallExpression node)
@@ -1085,6 +1094,8 @@ namespace LightInject
             }
         }
 
+
+ 
         /// <summary>
         /// Contains information about how to create a service instance.
         /// </summary>
@@ -1100,6 +1111,9 @@ namespace LightInject
             }
 
             public Type ImplementingType { get; set; }
+
+
+            public Expression Expression { get; set; }
 
             /// <summary>
             /// Gets or sets the <see cref="ConstructorInfo"/> that is used to create a service instance.

@@ -330,16 +330,28 @@
         }
 
         [TestMethod]
+        public void GetInstance_FuncFactoryWithMethodCall_ReturnsFactoryCreatedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(c => CreateFoo());
+            var instance = container.GetInstance(typeof(IFoo));
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+        private IFoo CreateFoo()
+        {
+            return new Foo();
+        }
+
+
+        [TestMethod]
         public void GetInstance_FuncFactory_ReturnsLastRegisteredFactoryCreatedInstance()
         {
             var container = CreateContainer();
             container.Register<IFoo>(c => new FooWithMultipleConstructors());
             container.Register<IFoo>(c => new FooWithMultipleConstructors(new Bar()));
-            //Her må vi legge til en test i ServiceInfoBuildertests slik at implementing type ikke blir overskrevet.
-
-            var instance = container.GetInstance(typeof(IFoo));
-            Console.WriteLine(instance);
-            //Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+            var instance = (FooWithMultipleConstructors)container.GetInstance(typeof(IFoo));            
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
         }
 
         [TestMethod]

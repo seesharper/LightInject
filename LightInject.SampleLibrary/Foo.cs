@@ -144,6 +144,15 @@ namespace LightInject.SampleLibrary
         public IEnumerable<IBar> Bars { get; private set; }
     }
 
+    public class FooWithEnumerablePropertyDependency : IFoo
+    {
+        public FooWithEnumerablePropertyDependency()
+        {            
+        }
+
+        public IEnumerable<IBar> Bars { get; set; }
+    }
+
     public class FooWithRecursiveDependency : IFoo
     {
         public FooWithRecursiveDependency(IFoo foo)
