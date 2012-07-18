@@ -60,7 +60,6 @@
             Assert.AreEqual(42, value);
         }
 
-
         #endregion
         [TestMethod]
         public void GetInstance_OneService_ReturnsInstance()
@@ -97,7 +96,6 @@
             container.Register(typeof(IBar<>), typeof(Bar<>));
             ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)), ExpectedErrorMessages.UnknownGenericDependency);
         }
-
 
         [TestMethod]
         public void GetInstance_TwoServices_ReturnsNamedInstance()
@@ -154,8 +152,6 @@
             var instance = container.GetInstance(typeof(IFoo<int>));
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo<int>));
         }
-
-
 
         [TestMethod]
         public void GetInstance_NamedOpenGenericType_ReturnsDefaultInstance()
@@ -230,7 +226,7 @@
         public void GetInstance_NamedSingleton_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo,Foo>("SomeFoo", LifeCycleType.Singleton);
+            container.Register<IFoo, Foo>("SomeFoo", LifeCycleType.Singleton);
             var instance1 = container.GetInstance(typeof(IFoo), "SomeFoo");
             var instance2 = container.GetInstance(typeof(IFoo), "SomeFoo");
             Assert.AreSame(instance1, instance2);
@@ -292,12 +288,11 @@
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
 
-
         [TestMethod]
         public void GetInstance_FuncWithSingletonTarget_ReturnsSameInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo,Foo>(LifeCycleType.Singleton);
+            container.Register<IFoo, Foo>(LifeCycleType.Singleton);
             var factory = (Func<IFoo>)container.GetInstance(typeof(Func<IFoo>));
             var instance1 = factory();
             var instance2 = factory();
@@ -318,8 +313,6 @@
 
         #region Func Factory
 
-
-
         [TestMethod]
         public void GetInstance_FuncFactory_ReturnsFactoryCreatedInstance()
         {
@@ -328,15 +321,7 @@
             var instance = container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-
-        
-
-        private IFoo CreateFoo()
-        {
-            return new Foo();
-        }
-
-
+    
         [TestMethod]
         public void GetInstance_FuncFactory_ReturnsLastRegisteredFactoryCreatedInstance()
         {
@@ -360,7 +345,7 @@
         public void GetInstance_NamedSingletonFuncFactory_ReturnsFactoryCreatedInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(c => new Foo(), "SomeFoo",LifeCycleType.Singleton);
+            container.Register<IFoo>(c => new Foo(), "SomeFoo", LifeCycleType.Singleton);
             var firstInstance = container.GetInstance(typeof(IFoo), "SomeFoo");
             var secondInstance = container.GetInstance(typeof(IFoo), "SomeFoo");
             Assert.AreSame(firstInstance, secondInstance);
@@ -374,7 +359,6 @@
             container.Register<IFoo>(c => new FooWithDependency(container.GetInstance<IBar>()));
             var instance = (FooWithDependency)container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
-
         }
 
         [TestMethod]
@@ -408,14 +392,13 @@
         public void GetInstance_SingletonFuncFactory_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>((c) => new Foo(), LifeCycleType.Singleton);
+            container.Register<IFoo>(c => new Foo(), LifeCycleType.Singleton);
             var instance1 = container.GetInstance(typeof(IFoo));
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1, instance2);
         }
 
         #endregion
-
 
         #region IEnumerable
 
@@ -436,7 +419,6 @@
             var instances = container.GetAllInstances<IFoo>();
             Assert.IsInstanceOfType(instances, typeof(IEnumerable<IFoo>));
         }
-
 
         [TestMethod]
         public void GetInstance_IEnumerableWithReferenceTypes_ReturnsAllInstances()
@@ -489,405 +471,11 @@
             Assert.IsInstanceOfType(instances, typeof(IEnumerable<IFoo>));
         }
 
-
         #endregion
-
-
-
-        #region Factory
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        #endregion
-
-
-
-
-
-        //[TestMethod]
-        //public void PerformanceTest()
-        //{
-        //    var stopwatch = new Stopwatch();
-        //    stopwatch.Start();
-        //    this.PerfomanceTestUsingServiceContainer();
-        //    stopwatch.Stop();
-        //    Console.WriteLine("ServiceContainer:{0} ", stopwatch.ElapsedMilliseconds);
-        //    stopwatch.Reset();
-        //    stopwatch.Start();
-        //    this.PerfomanceTestUsingDynamicServiceContainer();
-        //    stopwatch.Stop();
-        //    Console.WriteLine("DynamicServiceContainer:{0} ", stopwatch.ElapsedMilliseconds);
-        //}
-
-        //public void PerfomanceTestUsingServiceContainer()
-        //{
-        //    var container = new ServiceContainer();
-        //    container.Register<IBar>(c => new Bar());
-        //    container.Register<IFoo>(c => new FooWithDependency(container.GetInstance<IBar>()));
-        //    for (int i = 0; i < 1000000; i++)
-        //    {
-        //        container.GetInstance(typeof(IFoo));
-        //    }
-        //}
-
-        //public void PerfomanceTestUsingDynamicServiceContainer()
-        //{
-        //    var container = new DynamicServiceContainer();
-        //    container.Register<IBar>(c => new Bar());
-        //    container.Register<IFoo>(c => new FooWithDependency(container.GetInstance<IBar>()));
-        //    for (int i = 0; i < 1000000; i++)
-        //    {
-        //        container.GetInstance(typeof(IFoo));
-        //    }
-        //}
-
-
-
-
-
-        //[TestMethod]
-        //public void GetInstance_CustomFactory_ServiceNameIsPassedToFactory()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFactory), typeof(FooFactory));            
-        //    var factory = (FooFactory)container.GetInstance<IFactory>();
-        //    container.GetInstance<IFoo>("SomeServiceName");
-        //    Assert.AreEqual("SomeServiceName",factory.ServiceName);
-        //    container.GetInstance<IFoo>("AnotherServiceName");
-        //    Assert.AreEqual("AnotherServiceName", factory.ServiceName);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_CustomFactoryWithUnNamedAndNamedServiceRequest_ServiceNameIsPassedToFactory()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFactory), typeof(FooFactory));
-        //    var factory = (FooFactory)container.GetInstance<IFactory>();
-        //    container.GetInstance<IFoo>();
-        //    Assert.AreEqual("", factory.ServiceName);
-        //    container.GetInstance<IFoo>("AnotherServiceName");
-        //    Assert.AreEqual("AnotherServiceName", factory.ServiceName);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_CustomFactoryWithUnknownService_ReturnsFactoryCreatedInstance()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFactory), typeof(FooFactory));
-        //    var instance = container.GetInstance<IFoo>();
-        //    Assert.IsNotNull(instance);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_CustomFactory_CallsProceedWhenImplementationIsAvailable()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFactory), typeof(FooFactory));
-        //    container.Register(typeof(IFoo), typeof(AnotherFoo));            
-        //    var instance = container.GetInstance<IFoo>();
-        //    Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
-
-        //}
-
-
-
-
-
-
-
-
-        //[TestMethod]
-        //[ExpectedException(typeof(InvalidOperationException))]
-        //public void GetInstance_InvalidService_ThrowsInvalidOperationException()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IBar), typeof(Bar));
-        //    container.GetInstance<IFoo>();
-        //}
-
-        //[TestMethod]
-        //[ExpectedException(typeof(InvalidOperationException))]
-        //public void GetInstance_InvalidServiceName_ThrowsInvalidOperationException()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo),"SomeFoo");
-        //    var instance = container.GetInstance<IFoo>("SomeInvalidServiceName");
-        //    Assert.IsInstanceOfType(instance,typeof(Foo));
-        //}
-
-        //[TestMethod]
-        //[ExpectedException(typeof(InvalidOperationException))]
-        //public void GetInstance_InvalidServiceName_ThrowsInvalidOperationExceptionWhenDefaultServiceIfAvailable()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo));
-        //    var instance = container.GetInstance<IFoo>("SomeInvalidServiceName");
-        //    Assert.IsInstanceOfType(instance, typeof(Foo));
-        //}
-
-
-        //[TestMethod]
-        //[ExpectedException(typeof(InvalidOperationException))]
-        //public void GetInstance_InvalidServiceNameWithTwoNamedServices_ThrowsException()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo),"SomeFoo");
-        //    container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-        //    container.GetInstance<IFoo>("SomeInvalidServiceName");
-        //}
-
-        //[TestMethod]
-        //[ExpectedException(typeof(InvalidOperationException))]
-        //public void GetInstance_DefaultServiceWithTwoNamedServices_ThrowsException()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
-        //    container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-        //    container.GetInstance<IFoo>();
-        //}
-
-
-
-        //#region Constructor Dependency Injection
-
-        //[TestMethod]
-        //public void GetInstance_ServiceWithTransientDependency_ReturnsInstanceWithInjectedDependency()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IBar), typeof(Bar));
-        //    container.Register(typeof(IFoo), typeof(FooWithDependency));
-        //    var instance = (FooWithDependency)container.GetInstance<IFoo>();
-        //    Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
-        //}
-
-
-        //[TestMethod]
-        //public void GetInstance_ServiceWithIEnumerableDependency_ReturnsInstanceWithIEnumerableDependency()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IBar), typeof(Bar));
-        //    container.Register(typeof(IBar), typeof(AnotherBar),"AnotherBar");
-        //    container.Register(typeof(IFoo), typeof(FooWithEnumerableDependency));
-        //    var instance = (FooWithEnumerableDependency)container.GetInstance<IFoo>();
-        //    Assert.IsInstanceOfType(instance.Bars,typeof(IEnumerable<IBar>));
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_ServiceWithUnknownDependency_ReturnsFactoryCreatedInstance()
-        //{
-        //    var container = CreateContainer();            
-        //    container.Register(typeof(IFactory), typeof(BarFactory));
-        //    container.Register(typeof(IFoo), typeof(FooWithDependency));
-        //    var instance = (FooWithDependency)container.GetInstance<IFoo>();
-        //    Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
-        //}
-
-        //[TestMethod]
-        //[ExpectedException(typeof(InvalidOperationException))]
-        //public void GetInstance_ServiceWithUnknownDependency_ThrowsInvalidOperationException()
-        //{
-        //    var container = CreateContainer();            
-        //    container.Register(typeof(IFoo), typeof(FooWithDependency));
-        //    container.GetInstance<IFoo>();
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_InjectSingleton_ReturnsSingleInstance()
-        //{
-        //    var container = CreateContainer();            
-        //    container.Register(typeof(IBar),typeof(Bar), LifeCycleType.Singleton);
-        //    container.Register(typeof(IFoo), typeof(FooWithDependency));
-        //    var instance1 = (FooWithDependency)container.GetInstance<IFoo>();
-        //    var instance2 = (FooWithDependency)container.GetInstance<IFoo>();
-        //    Assert.AreSame(instance1.Bar,instance2.Bar);
-        //}
-
-
-
-
-        //[TestMethod]
-        //public void GetInstance_InjectCustomFactoryOneImplementingType_DoesNotPassParameterNameAsServiceName()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IBar), typeof(Bar));            
-        //    container.Register(typeof(IFactory), typeof(FooFactory));
-        //    container.Register(typeof(IFoo), typeof(FooWithDependency));
-        //    var factory = (FooFactory)container.GetInstance<IFactory>();
-        //    container.GetInstance<IFoo>();
-        //    Assert.AreEqual(string.Empty,factory.ServiceName);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_InjectCustomFactoryTwoImplementingTypes_PassesParameterNameAsServiceName()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IBar), typeof(Bar));
-        //    container.Register(typeof(IBar), typeof(AnotherBar), "AnotherBar");            
-        //    container.Register(typeof(IFactory), typeof(BarFactory));
-        //    container.Register(typeof(IFoo), typeof(FooWithDependency));
-        //    var factory = (BarFactory)container.GetInstance<IFactory>();
-        //    container.GetInstance<IFoo>();
-        //    Assert.AreEqual("bar", factory.ServiceName);
-        //}
-
-        //[TestMethod]
-        //[ExpectedException(typeof(InvalidOperationException))]
-        //public void GetInstance_RecursiveDependency_ThrowsException()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));            
-        //    container.GetInstance<IFoo>();            
-        //}
-
-
-
-        //[TestMethod]
-        //public void GetAllInstances_TwoServices_ReturnsBothServices()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo));
-        //    container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-        //    var instances = container.GetAllInstances(typeof(IFoo));
-        //    Assert.AreEqual(2,instances.Count());
-
-        //}
-
-        //[TestMethod]
-        //public void GenericGetAllInstances_TwoServices_ReturnsIEnumerable()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo));
-        //    container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-        //    var instances = container.GetAllInstances<IFoo>();
-        //    Assert.IsInstanceOfType(instances, typeof(IEnumerable<IFoo>));
-        //}
-
-        //[TestMethod]
-        //public void GenericGetAllInstances_UnknownService_ReturnsEmptyIEnumerable()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo));            
-        //    var instances = container.GetAllInstances<IFoo>();
-        //    Assert.IsInstanceOfType(instances, typeof(IEnumerable<IFoo>));
-        //}
-
-        //[TestMethod]
-        //public void GenericGetAllInstances_TwoServices_ReturnsBothServices()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo));
-        //    container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-        //    var instances = container.GetAllInstances(typeof(IFoo));
-        //    Assert.AreEqual(2, instances.Count());
-        //}
-
-
-
-        //[TestMethod]
-        //public void GetInstance_OpenGenericTypeWithSingletonDependency_ReturnsSameDependencyInstance()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IBar), typeof(Bar), LifeCycleType.Singleton);
-        //    container.Register(typeof(IFoo<>),typeof(FooWithGenericDependency<>));
-        //    var instance1 = (FooWithGenericDependency<IBar>)container.GetInstance(typeof(IFoo<IBar>));
-        //    var instance2 = (FooWithGenericDependency<IBar>)container.GetInstance(typeof(IFoo<IBar>));
-        //    Assert.AreEqual(instance1.Dependency,instance2.Dependency);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_SingletonWithCustomFactory_CanProceed()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFactory), typeof(FooFactory));
-        //    container.Register(typeof(IFoo),typeof(Foo), LifeCycleType.Singleton);
-        //    var factory = (FooFactory)container.GetInstance<IFactory>();
-        //    container.GetInstance(typeof(IFoo));
-        //    Assert.IsTrue(factory.ServiceRequest.CanProceed);            
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_SingletonWithCustomFactory_CallsFactoryTwice()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo), LifeCycleType.Singleton);
-        //    container.Register(typeof(IFactory), typeof(FooFactory));
-        //    var singletonFactory = (FooFactory)container.GetInstance<IFactory>();
-        //    container.GetInstance(typeof(IFoo));
-        //    container.GetInstance(typeof(IFoo));
-        //    Assert.AreEqual(2, singletonFactory.CallCount);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_OpenGenericTypeWithCustomFactory_CanProceed()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFactory), typeof(GenericFooFactory));
-        //    var factory = (GenericFooFactory)container.GetInstance<IFactory>();
-        //    container.Register(typeof(IFoo<>),typeof(Foo<>));
-        //    container.GetInstance<IFoo<int>>();
-        //    Assert.IsTrue(factory.ServiceRequest.CanProceed);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_MultipleContructors_UsesConstructorWithMostParameters()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo),typeof(FooWithMultipleConstructors));
-        //    container.Register(typeof(IBar),typeof(Bar));
-        //    var foo = (FooWithMultipleConstructors)container.GetInstance<IFoo>();
-        //    Assert.IsNotNull(foo.Bar);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_ServiceWithPropertyDependency_InjectsDependency()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(FooWithProperyDependency));
-        //    container.Register(typeof(IBar), typeof(Bar));
-        //    var foo = (FooWithProperyDependency)container.GetInstance<IFoo>();
-        //    Assert.IsNotNull(foo.Bar);
-        //}
-
-        //[TestMethod]
-        //public void GetInstance_ServicesRegisteredFromAssembly_ReturnsInstance()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(Foo).Assembly, t => true);
-        //    var foo = container.GetInstance<IFoo>();
-        //    Assert.IsNotNull(foo);
-        //}
-
-
-        //[TestMethod]
-        //[ExpectedException(typeof(InvalidOperationException))]
-        //public void GetInstance_UnknownOpenGenericType_ThrowsException()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register(typeof(IFoo), typeof(Foo));
-        //    container.GetInstance<IFoo<int>>();
-        //}
-
 
         private static IServiceContainer CreateContainer()
         {
             return new EmitServiceContainer();
         }
-
-
-
-
     }
-
-
 }

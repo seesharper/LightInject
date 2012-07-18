@@ -1,11 +1,11 @@
-﻿using System;
-using System.Text;
-using LightInject;
-using LightInject.SampleLibrary;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace DependencyInjector.Tests
+﻿namespace DependencyInjector.Tests
 {
+    using System;
+    using System.Text;
+    using LightInject;
+    using LightInject.SampleLibrary;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     [TestClass]
     public class PropertyInjectionTests
     {
@@ -33,7 +33,7 @@ namespace DependencyInjector.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
-            container.Register(typeof(IFoo<>),typeof(FooWithGenericPropertyDependency<>));
+            container.Register(typeof(IFoo<>), typeof(FooWithGenericPropertyDependency<>));
             var instance = (FooWithGenericPropertyDependency<IBar>)container.GetInstance<IFoo<IBar>>();
             Assert.IsInstanceOfType(instance.Dependency, typeof(Bar));
         }
@@ -71,7 +71,6 @@ namespace DependencyInjector.Tests
             Assert.AreEqual(instance1.Bar, instance2.Bar);
         }
 
-
         [TestMethod]
         public void GetInstance_DependencyWithTransientLifeCycle_InjectsTransientDependenciesForSingleRequest()
         {
@@ -79,7 +78,7 @@ namespace DependencyInjector.Tests
             container.Register<IBar, Bar>();
             container.Register<IFoo, FooWithSamePropertyDependencyTwice>();
             var instance = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
-            Assert.AreNotEqual(instance.Bar1,instance.Bar2);
+            Assert.AreNotEqual(instance.Bar1, instance.Bar2);
         }
 
         [TestMethod]
@@ -117,10 +116,10 @@ namespace DependencyInjector.Tests
         public void GetInstance_ValueTypeDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register( 42);           
+            container.Register(42);           
             container.Register<IFoo, FooWithValueTypePropertyDependency>();
             var instance = (FooWithValueTypePropertyDependency)container.GetInstance<IFoo>();
-            Assert.AreEqual(42,instance.Value);
+            Assert.AreEqual(42, instance.Value);
         }
 
         [TestMethod]
@@ -148,7 +147,7 @@ namespace DependencyInjector.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IBar), typeof(Bar));
-            container.Register<IFoo>(f => new FooWithProperyDependency() { Bar = f.GetInstance<IBar>() });
+            container.Register<IFoo>(f => new FooWithProperyDependency { Bar = f.GetInstance<IBar>() });
             var instance = (FooWithProperyDependency)container.GetInstance(typeof(IFoo));
             Assert.IsNotNull(instance.Bar);
         }
@@ -167,9 +166,9 @@ namespace DependencyInjector.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IBar), typeof(Bar));
-            container.Register<IFoo>(f => new FooWithReferenceTypePropertyDependency() {Value = "SomeValue"});
+            container.Register<IFoo>(f => new FooWithReferenceTypePropertyDependency { Value = "SomeValue" });
             var instance = (FooWithReferenceTypePropertyDependency)container.GetInstance(typeof(IFoo));
-            Assert.AreEqual("SomeValue",instance.Value);
+            Assert.AreEqual("SomeValue", instance.Value);
         }
 
         [TestMethod]

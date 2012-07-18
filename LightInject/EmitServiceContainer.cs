@@ -574,6 +574,7 @@ namespace LightInject
         {
             var serviceInfo = new ServiceInfo();
             ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(implementingType);
+            serviceInfo.ImplementingType = implementingType;
             serviceInfo.Constructor = constructorInfo;
             serviceInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructorInfo));
             serviceInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
@@ -683,7 +684,7 @@ namespace LightInject
         private void EmitPropertyDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            LocalBuilder instance = generator.DeclareLocal(serviceInfo.Constructor.DeclaringType);
+            LocalBuilder instance = generator.DeclareLocal(serviceInfo.ImplementingType);
             generator.Emit(OpCodes.Stloc, instance);
             foreach (var propertyDependency in serviceInfo.PropertyDependencies)
             {
@@ -1087,8 +1088,6 @@ namespace LightInject
                 return argument.NodeType == ExpressionType.Constant && argument.Type == typeof(string);
             }
         }
-
-
  
         /// <summary>
         /// Contains information about how to create a service instance.
@@ -1104,11 +1103,11 @@ namespace LightInject
                 ConstructorDependencies = new List<ConstructorDependency>();
             }
 
+            /// <summary>
+            /// Gets or sets the implementing type that represents the concrete class to create.
+            /// </summary>
             public Type ImplementingType { get; set; }
-
-
-            public Expression Expression { get; set; }
-
+            
             /// <summary>
             /// Gets or sets the <see cref="ConstructorInfo"/> that is used to create a service instance.
             /// </summary>

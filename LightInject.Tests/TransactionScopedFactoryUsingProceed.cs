@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Transactions;
-using LightInject;
-using LightInject.SampleLibrary;
-
-namespace DependencyInjector.Tests
+﻿namespace DependencyInjector.Tests
 {
+    using System;
+    using System.Collections.Concurrent;
+    using System.Transactions;
+    using LightInject;
+    using LightInject.SampleLibrary;
+
     public class TransactionScopedFactoryUsingProceed : IFactory
     {
         private readonly ConcurrentDictionary<Transaction, IFoo> instances 
@@ -15,9 +15,9 @@ namespace DependencyInjector.Tests
         {
             if (Transaction.Current != null)
             {
-                return instances.GetOrAdd(Transaction.Current, 
-                    t => CreateTransactionScopedInstance(t, serviceRequest));
+                return instances.GetOrAdd(Transaction.Current, t => CreateTransactionScopedInstance(t, serviceRequest));
             }
+
             return CreateInstance(serviceRequest);
         }
 
