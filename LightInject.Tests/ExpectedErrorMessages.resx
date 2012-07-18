@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="InvalidFuncFactoryExpression" xml:space="preserve">
+    <value>Only the new operator is supported in a function factory</value>
+  </data>
   <data name="UnknownConstructorDependency" xml:space="preserve">
     <value>Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithDependency], [Parameter: bar(LightInject.SampleLibrary.IBar)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IBar, ServiceName:]</value>
   </data>

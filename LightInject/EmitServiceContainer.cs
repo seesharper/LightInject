@@ -393,9 +393,8 @@ namespace LightInject
 
         public void Register<TService, TImplementation>(string serviceName, LifeCycleType lifeCycle) where TImplementation : TService
         {
-            Register(typeof(TService),typeof(TImplementation),serviceName,lifeCycle);
+            Register(typeof(TService), typeof(TImplementation), serviceName, lifeCycle);
         }
-
 
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycle)
         {
@@ -676,6 +675,7 @@ namespace LightInject
                 {
                     throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
                 }
+
                 emitter(dynamicMethodInfo);
             }
         }
@@ -935,20 +935,14 @@ namespace LightInject
                 switch (lambdaExpression.Body.NodeType)
                 {
                     case ExpressionType.New:
-                        return CreateServiceInfoBasedOnNewExpression((NewExpression)lambdaExpression.Body);                        
+                        return CreateServiceInfoBasedOnNewExpression((NewExpression)lambdaExpression.Body);
                     case ExpressionType.MemberInit:
-                        return CreateServiceInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                       
+                        return CreateServiceInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                                      
                     default:
-                        return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);                
+                        throw new InvalidOperationException("Only the new operator is supported in a function factory");
                 }                
             }
-
-            private static ServiceInfo CreateServiceInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
-            {
-                return new ServiceInfo { Expression = lambdaExpression.Body };                
-            }
-            
-
+                        
             private static ServiceInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
             {
                 var serviceInfo = CreateServiceInfo(newExpression);

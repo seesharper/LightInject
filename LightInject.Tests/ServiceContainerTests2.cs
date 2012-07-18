@@ -329,14 +329,7 @@
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
 
-        [TestMethod]
-        public void GetInstance_FuncFactoryWithMethodCall_ReturnsFactoryCreatedInstance()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo>(c => CreateFoo());
-            var instance = container.GetInstance(typeof(IFoo));
-            Assert.IsInstanceOfType(instance, typeof(Foo));
-        }
+        
 
         private IFoo CreateFoo()
         {

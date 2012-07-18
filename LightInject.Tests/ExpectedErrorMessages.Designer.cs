@@ -61,6 +61,15 @@ namespace DependencyInjector.Tests {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Only the new operator is supported in a function factory.
+        /// </summary>
+        internal static string InvalidFuncFactoryExpression {
+            get {
+                return ResourceManager.GetString("InvalidFuncFactoryExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithDependency], [Parameter: bar(LightInject.SampleLibrary.IBar)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IBar, ServiceName:].
         /// </summary>
         internal static string UnknownConstructorDependency {
