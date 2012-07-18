@@ -1,17 +1,16 @@
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-
 namespace LightInject
 {
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Linq.Expressions;
+    using System.Reflection;
+    using System.Reflection.Emit;
+    using System.Runtime.CompilerServices;
     using System.Text;
+    using System.Text.RegularExpressions;
 
     /// <summary>
     /// Specifies the lifecycle type of a registered service.
@@ -310,7 +309,7 @@ namespace LightInject
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
-    public class EmitServiceContainer : IServiceContainer
+    public class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
         private static readonly MethodInfo GetInstanceMethod;
@@ -322,15 +321,15 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();
         private readonly List<object> constants = new List<object>();
 
-        static EmitServiceContainer()
+        static ServiceContainer()
         {
             GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EmitServiceContainer"/> class.
+        /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
-        public EmitServiceContainer()
+        public ServiceContainer()
         {
             AssemblyScanner = new AssemblyScanner();
             PropertySelector = new PropertySelector();
@@ -692,6 +691,7 @@ namespace LightInject
                 EmitDependency(dynamicMethodInfo, propertyDependency);
                 dynamicMethodInfo.GetILGenerator().Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
             }
+
             generator.Emit(OpCodes.Ldloc, instance);
         }
 
@@ -750,7 +750,7 @@ namespace LightInject
         private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
         {
             var actualServiceType = serviceType.GetGenericArguments().Last();
-            var methodInfo = typeof(EmitServiceContainer).GetMethod("CreateFuncGetInstanceDelegate", BindingFlags.Instance | BindingFlags.NonPublic);
+            var methodInfo = typeof(ServiceContainer).GetMethod("CreateFuncGetInstanceDelegate", BindingFlags.Instance | BindingFlags.NonPublic);
             var del = methodInfo.MakeGenericMethod(actualServiceType).Invoke(this, new object[] { namedService });
             var constantIndex = GetConstantIndex(del);
             return dmi => EmitLoadConstant(dmi, constantIndex, serviceType);
@@ -928,9 +928,16 @@ namespace LightInject
             RegisterService(typeof(TService), implementingType, lifeCycleType, serviceName);
         }
 
+        /// <summary>
+        /// Parses a <see cref="LambdaExpression"/> into a <see cref="ServiceInfo"/> instance.
+        /// </summary>
         public class LambdaExpressionParser
-        {
-                                                
+        {                                                
+            /// <summary>
+            /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ServiceInfo"/> instance.
+            /// </summary>
+            /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
+            /// <returns>A <see cref="ServiceInfo"/> instance.</returns>
             public ServiceInfo Parse(LambdaExpression lambdaExpression)
             {                                
                 switch (lambdaExpression.Body.NodeType)
@@ -993,8 +1000,6 @@ namespace LightInject
                 ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
                 serviceInfo.PropertyDependencies.Add(propertyDependency);
             }
-
-
 
             private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
             {
@@ -1169,6 +1174,10 @@ namespace LightInject
             /// </summary>
             public PropertyInfo Property { get; set; }
 
+            /// <summary>
+            /// Returns textual information about the depenency.
+            /// </summary>
+            /// <returns>A string that describes the dependency.</returns>
             public override string ToString()
             {
                 return string.Format("[Target Type: {0}], [Property: {1}({2})]", Property.DeclaringType, Property.Name, Property.PropertyType) + ", " + base.ToString();
@@ -1185,6 +1194,10 @@ namespace LightInject
             /// </summary>
             public ParameterInfo Parameter { get; set; }
 
+            /// <summary>
+            /// Returns textual information about the depenency.
+            /// </summary>
+            /// <returns>A string that describes the dependency.</returns>
             public override string ToString()
             {
                 return string.Format("[Target Type: {0}], [Parameter: {1}({2})]", Parameter.Member.DeclaringType, Parameter.Name, Parameter.ParameterType) + ", " + base.ToString();
@@ -1232,7 +1245,7 @@ namespace LightInject
             private void CreateDynamicMethod()
             {
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) }, typeof(EmitServiceContainer).Module, false);
+                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) }, typeof(ServiceContainer).Module, false);
             }
         }
 
@@ -1306,7 +1319,7 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)
         {
-            IEnumerable<Type> types = GetConcreteTypes(assembly);
+            IEnumerable<Type> types = GetConcreteTypes(assembly).ToList();
             var compositionRoots = types.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
             if (compositionRoots.Count > 0)
                 ExecuteCompositionRoots(compositionRoots, serviceRegistry);
@@ -1416,7 +1429,7 @@ namespace LightInject
         /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
         public IEnumerable<Assembly> Load(string searchPattern)
         {
-            string directory = Path.GetDirectoryName(new Uri(typeof(EmitServiceContainer).Assembly.CodeBase).LocalPath);
+            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');
