@@ -59,7 +59,7 @@ namespace DependencyInjector.Tests
         public void GetInstance_NoServices_CallsAssemblyScannerOnFirstRequest()
         {
             var scannerMock = new Mock<IAssemblyScanner>();
-            var serviceContainer = new EmitServiceContainer();
+            var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
             try
             {
@@ -79,7 +79,7 @@ namespace DependencyInjector.Tests
         public void GetInstance_NoServices_CallsAssemblyScannerOnlyOnce()
         {
             var scannerMock = new Mock<IAssemblyScanner>();
-            var serviceContainer = new EmitServiceContainer();
+            var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
             try
             {
@@ -106,7 +106,7 @@ namespace DependencyInjector.Tests
         public void Register_AssemblyFile_CallsAssemblyScanner()
         {
             var scannerMock = new Mock<IAssemblyScanner>();
-            var serviceContainer = new EmitServiceContainer();
+            var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
             serviceContainer.Scan("*SampleLibrary.dll");
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());

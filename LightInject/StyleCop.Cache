@@ -3,55 +3,6 @@
   <project key="-133797802">
     <configuration>CODE_ANALYSIS;DEBUG;TRACE</configuration>
   </project>
-  <sourcecode name="AssemblyInfo.cs" parser="StyleCop.CSharp.CsParser">
-    <settings>
-      <timestamp>11/24/2011 15:25:04</timestamp>
-      <milliseconds>505</milliseconds>
-    </settings>
-    <timestamp>01/19/2012 12:02:10</timestamp>
-    <milliseconds>951</milliseconds>
-    <violations />
-  </sourcecode>
-  <sourcecode name="ServiceContainer.cs" parser="StyleCop.CSharp.CsParser">
-    <settings>
-      <timestamp>11/24/2011 15:25:04</timestamp>
-      <milliseconds>505</milliseconds>
-    </settings>
-    <timestamp>02/02/2012 12:29:57</timestamp>
-    <milliseconds>605</milliseconds>
-    <violations>
-      <violation namespace="StyleCop.CSharp.LayoutRules" rule="CodeMustNotContainMultipleBlankLinesInARow" ruleCheckId="SA1507">
-        <context>The code must not contain multiple blank lines in a row.</context>
-        <line>810</line>
-        <warning>False</warning>
-      </violation>
-      <violation namespace="StyleCop.CSharp.ReadabilityRules" rule="SplitParametersMustStartOnLineAfterDeclaration" ruleCheckId="SA1116">
-        <context>If the method parameters are on separate lines, the first parameter must begin on the line beneath the name of the method.</context>
-        <line>343</line>
-        <warning>False</warning>
-      </violation>
-      <violation namespace="StyleCop.CSharp.LayoutRules" rule="ClosingCurlyBracketsMustNotBePrecededByBlankLine" ruleCheckId="SA1508">
-        <context>A closing curly bracket must not be preceded by a blank line.</context>
-        <line>821</line>
-        <warning>False</warning>
-      </violation>
-      <violation namespace="StyleCop.CSharp.NamingRules" rule="FieldNamesMustNotUseHungarianNotation" ruleCheckId="SA1305">
-        <context>The variable name 'ilGenerator' begins with a prefix that looks like Hungarian notation. Remove the prefix or add it to the list of allowed prefixes.</context>
-        <line>816</line>
-        <warning>False</warning>
-      </violation>
-      <violation namespace="StyleCop.CSharp.SpacingRules" rule="CodeMustNotContainMultipleWhitespaceInARow" ruleCheckId="SA1025">
-        <context>The code contains multiple spaces in a row. Only one space is needed.</context>
-        <line>811</line>
-        <warning>False</warning>
-      </violation>
-      <violation namespace="StyleCop.CSharp.MaintainabilityRules" rule="FileMayOnlyContainASingleClass" ruleCheckId="SA1402">
-        <context>A C# document may only contain a single class at the root level unless all of the classes are partial and are of the same type.</context>
-        <line>1021</line>
-        <warning>False</warning>
-      </violation>
-    </violations>
-  </sourcecode>
   <sourcecode name="DynamicServiceContainer.cs" parser="StyleCop.CSharp.CsParser">
     <settings>
       <timestamp>11/24/2011 15:25:04</timestamp>
@@ -281,5 +232,26 @@
         <warning>False</warning>
       </violation>
     </violations>
+  </sourcecode>
+  <project key="60861655">
+    <configuration>DEBUG;TRACE</configuration>
+  </project>
+  <sourcecode name="AssemblyInfo.cs" parser="StyleCop.CSharp.CsParser">
+    <settings>
+      <timestamp>07/17/2012 17:28:57</timestamp>
+      <milliseconds>628</milliseconds>
+    </settings>
+    <timestamp>07/17/2012 17:28:57</timestamp>
+    <milliseconds>628</milliseconds>
+    <violations />
+  </sourcecode>
+  <sourcecode name="ServiceContainer.cs" parser="StyleCop.CSharp.CsParser">
+    <settings>
+      <timestamp>07/17/2012 17:28:57</timestamp>
+      <milliseconds>628</milliseconds>
+    </settings>
+    <timestamp>07/18/2012 15:03:22</timestamp>
+    <milliseconds>491</milliseconds>
+    <violations />
   </sourcecode>
 </stylecopresultscache>

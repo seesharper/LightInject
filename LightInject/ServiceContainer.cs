@@ -352,11 +352,23 @@ namespace LightInject
         /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
 
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>        
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
         public void Scan(Assembly assembly)
         {
             AssemblyScanner.Scan(assembly, this);
         }
 
+        /// <summary>
+        /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
+        /// </summary>
+        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         public void Scan(string searchPattern)
         {
             foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
@@ -365,76 +377,176 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingType">The implementing type.</param>
+        /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         public void Register(Type serviceType, Type implementingType, LifeCycleType lifeCycle)
         {
             Register(serviceType, implementingType, string.Empty, lifeCycle);
         }
 
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingType">The implementing type.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         public void Register(Type serviceType, Type implementingType, string serviceName, LifeCycleType lifeCycle)
         {
             RegisterService(serviceType, implementingType, lifeCycle, serviceName);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <typeparamref name="TImplementation"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TImplementation">The implementing type.</typeparam>
         public void Register<TService, TImplementation>() where TImplementation : TService
         {
             Register(typeof(TService), typeof(TImplementation));
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <typeparamref name="TImplementation"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TImplementation">The implementing type.</typeparam>
+        /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         public void Register<TService, TImplementation>(LifeCycleType lifeCycle) where TImplementation : TService
         {
             Register(typeof(TService), typeof(TImplementation), lifeCycle);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <typeparamref name="TImplementation"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TImplementation">The implementing type.</typeparam>
+        /// <param name="serviceName">The name of the service.</param>
         public void Register<TService, TImplementation>(string serviceName) where TImplementation : TService
         {
             Register<TService, TImplementation>(serviceName, LifeCycleType.Transient);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <typeparamref name="TImplementation"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TImplementation">The implementing type.</typeparam>
+        /// <param name="serviceName">The name of the service.</param>
+        /// /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         public void Register<TService, TImplementation>(string serviceName, LifeCycleType lifeCycle) where TImplementation : TService
         {
             Register(typeof(TService), typeof(TImplementation), serviceName, lifeCycle);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
+        /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycle)
         {
             RegisterServiceFromLambdaExpression(factory, lifeCycle, string.Empty);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
+        /// <param name="serviceName">The name of the service.</param>        
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression(factory, LifeCycleType.Transient, serviceName);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
+        /// <param name="serviceName">The name of the service.</param>        
+        /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName, LifeCycleType lifeCycle)
         {
             RegisterServiceFromLambdaExpression(factory, lifeCycle, serviceName);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="instance">The instance returned when this service is requested.</param>
         public void Register<TService>(TService instance)
         {
             Register(instance, string.Empty);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="instance">The instance returned when this service is requested.</param>
+        /// <param name="serviceName">The name of the service.</param>
         public void Register<TService>(TService instance, string serviceName)
         {
             RegisterValue(typeof(TService), instance, serviceName);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
+        /// <example>
+        /// The following example shows how to register a new IFoo service.
+        /// <code>
+        /// <![CDATA[
+        /// container.Register<IFoo>(r => new FooWithDependency(r.GetInstance<IBar>()))
+        /// ]]>
+        /// </code>
+        /// </example>
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory)
         {
             RegisterServiceFromLambdaExpression(factory, LifeCycleType.Transient, string.Empty);
         }
 
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingType">The implementing type.</param>
+        /// <param name="serviceName">The name of the service.</param>
         public void Register(Type serviceType, Type implementingType, string serviceName)
         {
             RegisterService(serviceType, implementingType, LifeCycleType.Transient, serviceName);
         }
 
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingType">The implementing type.</param>
         public void Register(Type serviceType, Type implementingType)
         {
             RegisterService(serviceType, implementingType, LifeCycleType.Transient, string.Empty);
         }
 
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
         {
             return delegates.GetOrAdd(
@@ -464,6 +576,12 @@ namespace LightInject
             return (TService)GetInstance(typeof(TService), serviceName);
         }
 
+        /// <summary>
+        /// Gets a named instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName)
         {
             return namedDelegates.GetOrAdd(
@@ -472,11 +590,21 @@ namespace LightInject
                 new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, serviceName))).Value(constants);
         }
 
+        /// <summary>
+        /// Gets all instances of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of services to resolve.</param>
+        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
         public IEnumerable<object> GetAllInstances(Type serviceType)
         {
             return (IEnumerable<object>)GetInstance(typeof(IEnumerable<>).MakeGenericType(serviceType));
         }
 
+        /// <summary>
+        /// Gets all instances of type <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of services to resolve.</typeparam>
+        /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
         public IEnumerable<TService> GetAllInstances<TService>()
         {
             return GetInstance<IEnumerable<TService>>();
@@ -1151,6 +1279,10 @@ namespace LightInject
             /// </summary>            
             public Expression Expression { get; set; }
 
+            /// <summary>
+            /// Returns textual information about the depenency.
+            /// </summary>
+            /// <returns>A string that describes the dependency.</returns>
             public override string ToString()
             {
                 var sb = new StringBuilder();

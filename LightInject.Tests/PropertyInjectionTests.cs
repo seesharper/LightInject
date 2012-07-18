@@ -184,7 +184,7 @@
 
         private static IServiceContainer CreateContainer()
         {
-            return new EmitServiceContainer();
+            return new ServiceContainer();
         }
     }
 }
