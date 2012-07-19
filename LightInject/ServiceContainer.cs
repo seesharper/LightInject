@@ -726,36 +726,51 @@ namespace LightInject
             return serviceInfo;
         }
 
-        private Action<DynamicMethodInfo> GetServiceEmitter(Type serviceType, string serviceName)
+        private Action<DynamicMethodInfo> GetEmitMethod(Type serviceType, string serviceName)
         {
-            var registrations = GetServiceRegistrations(serviceType);
-            Action<DynamicMethodInfo> emitter;
-
-            registrations.TryGetValue(serviceName, out emitter);
-
-            if (emitter == null)
-                emitter = ResolveUnknownServiceEmitter(serviceType, serviceName);
+            Action<DynamicMethodInfo> emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);
 
             IFactory factory = GetCustomFactory(serviceType, serviceName);
             if (factory != null)
             {
-                if (emitter != null)
-                {
-                    var del = CreateDynamicMethodDelegate(emitter, typeof(IFactory));
-                    emitter = CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants));
-                }
-                else
-                {
-                    return CreateServiceEmitterBasedOnCustomFactory(serviceType, serviceName, factory, null);
-                }
+                emitMethod = GetCustomFactoryEmitMethod(serviceType, serviceName, factory, emitMethod);
             }
 
-            if (emitter != null) registrations.AddOrUpdate(serviceName, s => emitter, (s, d) => emitter);
+            UpdateServiceRegistration(serviceType, serviceName, emitMethod);
+            
+            return emitMethod;            
+        }
 
-            if (emitter == null)
-                return null;
+        private Action<DynamicMethodInfo> GetCustomFactoryEmitMethod(Type serviceType, string serviceName, IFactory factory, Action<DynamicMethodInfo> emitMethod)
+        {
+            if (emitMethod != null)
+            {
+                var del = CreateDynamicMethodDelegate(emitMethod, typeof(IFactory));
+                emitMethod = this.CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, () => del(this.constants));
+            }
+            else
+            {
+                emitMethod = this.CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, null);
+            }
 
-            return services[serviceType][serviceName];
+            return emitMethod;
+        }
+
+        private Action<DynamicMethodInfo> GetRegisteredEmitMethod(Type serviceType, string serviceName)
+        {
+            Action<DynamicMethodInfo> emitMethod;
+            var registrations = this.GetServiceRegistrations(serviceType);
+            registrations.TryGetValue(serviceName, out emitMethod);
+
+            return emitMethod ?? ResolveUnknownServiceEmitter(serviceType, serviceName);
+        }
+
+        private void UpdateServiceRegistration(Type serviceType, string serviceName, Action<DynamicMethodInfo> emitMethod)
+        {
+            if (emitMethod != null)
+            {
+                GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitMethod, (s, m) => emitMethod);
+            }
         }
 
         private void EmitRequestInstance(Type implementingType, DynamicMethodInfo dynamicMethodInfo)
@@ -798,7 +813,7 @@ namespace LightInject
             }
             else
             {
-                var emitter = this.GetServiceEmitter(dependency.ServiceType, dependency.ServiceName);
+                var emitter = this.GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
                 if (emitter == null)
                 {
                     throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
@@ -843,7 +858,7 @@ namespace LightInject
             return null;
         }
 
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnCustomFactory(Type serviceType, string serviceName, IFactory factory, Func<object> proceed)
+        private Action<DynamicMethodInfo> CreateEmitMethodBasedOnCustomFactory(Type serviceType, string serviceName, IFactory factory, Func<object> proceed)
         {
             int serviceRequestConstantIndex = CreateServiceRequestConstant(serviceType, serviceName, proceed);
             int factoryConstantIndex = GetConstantIndex(factory);
@@ -923,7 +938,7 @@ namespace LightInject
 
         private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnSingleNamedInstance(Type serviceType)
         {
-            return GetServiceEmitter(serviceType, GetServiceRegistrations(serviceType).First().Key);
+            return this.GetEmitMethod(serviceType, GetServiceRegistrations(serviceType).First().Key);
         }
 
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
@@ -1023,7 +1038,7 @@ namespace LightInject
         private Func<List<object>, object> CreateDelegate(Type serviceType, string serviceName)
         {
             EnsureThatServiceRegistryIsConfigured(serviceType);
-            var serviceEmitter = GetServiceEmitter(serviceType, serviceName);
+            var serviceEmitter = this.GetEmitMethod(serviceType, serviceName);
             if (serviceEmitter == null)
                 throw new InvalidOperationException(string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
             return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
