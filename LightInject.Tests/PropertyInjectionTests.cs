@@ -25,7 +25,7 @@
             var container = CreateContainer();
             container.Register<IFoo, FooWithProperyDependency>();            
             ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), ExpectedErrorMessages.UnknownPropertyDependency);            
+                () => container.GetInstance<IFoo>(), ErrorMessages.UnknownPropertyDependency);            
         }
 
         [TestMethod]

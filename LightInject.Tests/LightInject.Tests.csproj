@@ -52,12 +52,8 @@
   <ItemGroup>
     <Compile Include="AssemblyScannerTests.cs" />
     <Compile Include="ConstructorInjectionTests.cs" />
+    <Compile Include="ErrorMessages.cs" />
     <Compile Include="ExceptionAssert.cs" />
-    <Compile Include="ExpectedErrorMessages.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ExpectedErrorMessages.resx</DependentUpon>
-    </Compile>
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="FactoryTests.cs" />
     <Compile Include="PropertyInjectionTests.cs" />
@@ -83,12 +79,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="ExpectedErrorMessages.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ExpectedErrorMessages.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

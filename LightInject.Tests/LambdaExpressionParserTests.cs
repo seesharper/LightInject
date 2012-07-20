@@ -62,7 +62,7 @@
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => CreateFoo();
-            ExceptionAssert.Throws<InvalidOperationException>(() => parser.Parse(e), ExpectedErrorMessages.InvalidFuncFactoryExpression);            
+            ExceptionAssert.Throws<InvalidOperationException>(() => parser.Parse(e), ErrorMessages.InvalidFuncFactoryExpression);            
         }
 
         [TestMethod]

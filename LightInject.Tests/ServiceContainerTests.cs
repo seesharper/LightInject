@@ -88,7 +88,7 @@
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo)), ExpectedErrorMessages.UnknownDependency);
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo)), ErrorMessages.UnknownDependency);
         }
 
         [TestMethod]
@@ -107,7 +107,7 @@
         {
             var container = CreateContainer();
             container.Register(typeof(IBar<>), typeof(Bar<>));
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)), ExpectedErrorMessages.UnknownGenericDependency);
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)), ErrorMessages.UnknownGenericDependency);
         }
 
         [TestMethod]
