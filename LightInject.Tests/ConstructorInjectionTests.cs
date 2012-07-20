@@ -1,11 +1,12 @@
-﻿using System;
-using System.Text;
-using LightInject;
-using LightInject.SampleLibrary;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace DependencyInjector.Tests
+﻿namespace DependencyInjector.Tests
 {
+    using System;
+    using System.Linq;
+    using System.Text;
+    using LightInject;
+    using LightInject.SampleLibrary;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     [TestClass]
     public class ConstructorInjectionTests
     {
@@ -27,7 +28,6 @@ namespace DependencyInjector.Tests
             ExceptionAssert.Throws<InvalidOperationException>(
                 () => container.GetInstance<IFoo>(), ExpectedErrorMessages.UnknownConstructorDependency);
         }
-
 
         [TestMethod]
         public void GetInstance_GenericDependency_InjectsDependency()
@@ -58,8 +58,6 @@ namespace DependencyInjector.Tests
             var instance = (FooWithSameOpenGenericDependencyTwice<int>)container.GetInstance<IFoo<int>>();
             Assert.AreEqual(instance.Bar1, instance.Bar2);
         }
-
-
 
         [TestMethod]
         public void GetInstance_DependencyWithTransientLifeCycle_InjectsTransientDependency()
@@ -115,7 +113,7 @@ namespace DependencyInjector.Tests
         }
 
         [TestMethod]
-        public void GetInstance_DependencyWithRequestLifeCycle_InjectsSameDependenciesForSingleRequest()
+        public void GetInstance_DependencyWithRequestLifeCycle_InjectsSameDependencyForSingleClass()
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(LifeCycleType.Request);
@@ -123,6 +121,18 @@ namespace DependencyInjector.Tests
             var instance = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
             Assert.AreEqual(instance.Bar1, instance.Bar2);
         }
+
+        [TestMethod]
+        public void GetInstance_DependencyWithRequestLifeCycle_InjectsSameDependencyThroughoutObjectGraph()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, BarWithSampleServiceDependency>();
+            container.Register<ISampleService, SampleService>(LifeCycleType.Request);
+            container.Register<IFoo, FooWithSampleServiceDependency>();
+            var instance = (FooWithSampleServiceDependency)container.GetInstance<IFoo>();
+            Assert.AreSame(((BarWithSampleServiceDependency)instance.Bar).SampleService, instance.SampleService);
+        }
+
 
         [TestMethod]
         public void GetInstance_DependencyWithRequestLifeCycle_InjectsTransientDependenciesForMultipleRequest()
@@ -186,13 +196,31 @@ namespace DependencyInjector.Tests
             Assert.IsNotNull(foo.Bar);
         }
 
+        [TestMethod]
+        public void GetInstance_FuncDependency_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar), typeof(Bar));
+            container.Register(typeof(IFoo), typeof(FooWithFuncDependency));
+            var instance = (FooWithFuncDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.GetBar(), typeof(Bar));
+        }
+
+        [TestMethod]
+        public void GetInstance_IEnumerableDependency_InjectsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar), typeof(Bar));
+            container.Register(typeof(IBar), typeof(AnotherBar), "AnotherBar");
+            container.Register(typeof(IFoo), typeof(FooWithEnumerableDependency));
+            var instance = (FooWithEnumerableDependency)container.GetInstance<IFoo>();
+            Assert.AreEqual(2, instance.Bars.Count());
+        }
+
 
         private static IServiceContainer CreateContainer()
         {
             return new ServiceContainer();
         }
-
-
-
     }
 }

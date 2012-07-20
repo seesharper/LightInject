@@ -1315,13 +1315,7 @@ namespace LightInject
             public override string ToString()
             {
                 var sb = new StringBuilder();
-                sb.AppendFormat("[Requested dependency: ServiceType:{0}, ServiceName:{1}]", ServiceType, ServiceName);
-                if (Expression != null)
-                {
-                    sb.AppendFormat(" ,Expression: {0}", Expression);
-                }
-
-                return sb.ToString();
+                return sb.AppendFormat("[Requested dependency: ServiceType:{0}, ServiceName:{1}]", ServiceType, ServiceName).ToString();                                
             }
         }
 

@@ -8,8 +8,10 @@
     using LightInject.SampleLibrary;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    using Moq;
+
     [TestClass]
-    public class ServiceCrtontainerTests2
+    public class ServiceContainerTests
     {
         #region Values
 
@@ -88,6 +90,17 @@
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
             ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo)), ExpectedErrorMessages.UnknownDependency);
         }
+
+        [TestMethod]
+        public void GetInstance_DuplicateRegistration_ReturnsLastRegisteredService()
+        {
+            var container = CreateContainer();            
+            container.Register<IFoo, Foo>();
+            container.Register<IFoo>(new AnotherFoo());
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
+        }
+
 
         [TestMethod]
         public void GetInstance_UnknownGenericType_ThrowsExceptionWhenRequestingDefaultService()
@@ -170,6 +183,16 @@
             var instance1 = container.GetInstance(typeof(IFoo<int>));
             var instance2 = container.GetInstance(typeof(IFoo<int>));
             Assert.AreNotSame(instance1, instance2);
+        }
+
+        [TestMethod]
+        public void GetInstance_OpenGenericType_ReturnsClosedGenericInstancesIfPresent()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
+            container.Register(typeof(IFoo<string>), typeof(FooWithStringTypeParameter));
+            var instance = container.GetInstance(typeof(IFoo<string>));
+            Assert.IsInstanceOfType(instance, typeof(FooWithStringTypeParameter));
         }
 
         [TestMethod]
@@ -476,6 +499,13 @@
         private static IServiceContainer CreateContainer()
         {
             return new ServiceContainer();
+        }
+
+        private void Manual()
+        {
+            var sampleService = new SampleService();
+            var bar = new BarWithSampleServiceDependency(sampleService);
+            var foo = new FooWithSampleServiceDependency(bar, sampleService);
         }
     }
 }

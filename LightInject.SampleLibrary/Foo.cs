@@ -52,10 +52,30 @@ namespace LightInject.SampleLibrary
             }
         }
     }
+    
+    public class FooWithSampleServiceDependency : IFoo
+    {
+        public FooWithSampleServiceDependency(IBar bar, ISampleService sampleService)
+        {
+            SampleService = sampleService;
+            Bar = bar;
+        }
+        public ISampleService SampleService { get; private set; }
+        public IBar Bar { get; private set; }
+    }
 
 
+    public class BarWithSampleServiceDependency : IBar
+    {
+        public BarWithSampleServiceDependency(ISampleService sampleService)
+        {
+            SampleService = sampleService;
+        }
 
+        public ISampleService SampleService { get; private set; }
+    }
 
+    
 
 
     public class FooWithSamePropertyDependencyTwice : IFoo
@@ -68,18 +88,18 @@ namespace LightInject.SampleLibrary
 
     public class FooDecorator : IFoo
     {
-        private readonly IFoo m_foo;
+        private readonly IFoo foo;
 
         public FooDecorator(IFoo foo)
         {
-            m_foo = foo;
+            this.foo = foo;
         }
 
         public IFoo DecoratedInstance
         {
             get
             {
-                return this.m_foo;
+                return this.foo;
             }
         }
     }
@@ -167,18 +187,13 @@ namespace LightInject.SampleLibrary
     public class AnotherFoo<T> : IFoo<T> { }
 
     public class FooWithGenericDependency<T> : IFoo<T>
-    {
-        private readonly T _dependency;
-
+    {        
         public FooWithGenericDependency(T dependency)
         {
-            _dependency = dependency;
+            Dependency = dependency;
         }
 
-        public T Dependency
-        {
-            get { return _dependency; }
-        }
+        public T Dependency { get; private set; }        
     }
 
     public class FooWithOpenGenericDependency<T> : IFoo<T>
@@ -225,6 +240,9 @@ namespace LightInject.SampleLibrary
         public T Dependency { get; set; }
     }
 
+
+    public class FooWithStringTypeParameter : IFoo<string> {}
+    
 
     public class FooWithLazyDependency : IFoo
     {
@@ -304,4 +322,13 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; set; }
     }
 
+
+    public class FooWithFuncDependency : IFoo
+    {
+        public FooWithFuncDependency(Func<IBar> getBar)
+        {
+            GetBar = getBar;
+        }
+        public Func<IBar> GetBar { get; private set; } 
+    }
 }
