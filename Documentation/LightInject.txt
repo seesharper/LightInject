@@ -79,7 +79,7 @@ This makes it possible to do implicit registration for the simple cases and opti
  
 ### Assembly Registration ###
 
-	container.Register(someAssembly);
+	container.Scan(someAssembly);
 
 This will implicitly register all services found within the target assembly.
 
