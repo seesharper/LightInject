@@ -1,3 +1,4 @@
+#define NET
 /*****************************************************************************   
    Copyright 2012 bernhard.richter@gmail.com
 
@@ -12,13 +13,23 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
- *****************************************************************************/
+******************************************************************************
+   LightInject version 2.0.0.0 
+   https://github.com/seesharper/LightInject/wiki/Getting-started
+******************************************************************************/
 namespace LightInject
 {
     using System;
+#if NET
     using System.Collections.Concurrent;
+#endif
     using System.Collections.Generic;
+#if SILVERLIGHT
+    using System.Collections;
+#endif
+#if NET
     using System.IO;
+#endif
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -313,12 +324,13 @@ namespace LightInject
         /// will be used to configure the container.
         /// </remarks>     
         void Scan(Assembly assembly);
-
+#if NET
         /// <summary>
         /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         void Scan(string searchPattern);
+#endif
     }
 
     /// <summary>
@@ -326,7 +338,7 @@ namespace LightInject
     /// </summary>
     public class ServiceContainer : IServiceContainer
     {
-        private const string UnresolvedDependencyError = "Unresolved dependency {0}";
+        private const string UnresolvedDependencyError = "Unresolved dependency {0}";        
         private static readonly MethodInfo GetInstanceMethod;
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> services = new ServiceRegistry<Action<DynamicMethodInfo>>();
         private readonly ServiceRegistry<OpenGenericServiceInfo> openGenericServices = new ServiceRegistry<OpenGenericServiceInfo>();
@@ -335,7 +347,7 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Type, ServiceInfo> implementations = new ThreadSafeDictionary<Type, ServiceInfo>();
         private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();
         private readonly List<object> constants = new List<object>();
-
+        
         static ServiceContainer()
         {
             GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
@@ -348,7 +360,9 @@ namespace LightInject
         {
             AssemblyScanner = new AssemblyScanner();
             PropertySelector = new PropertySelector();
+#if NET
             AssemblyLoader = new AssemblyLoader();
+#endif
         }
 
         /// <summary>
@@ -361,12 +375,12 @@ namespace LightInject
         /// that represents a dependency for a given <see cref="Type"/>.
         /// </summary>
         public IPropertySelector PropertySelector { get; set; }
-
+#if NET
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is reponsible for loading assemblies during assembly scanning. 
         /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
-
+#endif
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
@@ -379,7 +393,7 @@ namespace LightInject
         {
             AssemblyScanner.Scan(assembly, this);
         }
-
+#if NET
         /// <summary>
         /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
         /// </summary>
@@ -391,7 +405,7 @@ namespace LightInject
                 Scan(assembly);
             }
         }
-
+#endif
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -1147,7 +1161,8 @@ namespace LightInject
                         HandleMemberAssignment((MemberAssignment)memberBinding, serviceInfo);
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException("memberBinding", memberBinding.BindingType, "Unknown member binding");
+                        throw new ArgumentOutOfRangeException(
+                            "memberBinding", string.Format("Unknown member binding: {0}", memberBinding.BindingType));
                 }
             }
 
@@ -1403,7 +1418,7 @@ namespace LightInject
                     "DynamicMethod", typeof(object), new[] { typeof(List<object>) }, typeof(ServiceContainer).Module, false);
             }
         }
-
+#if NET
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
         {
             public ThreadSafeDictionary()
@@ -1415,7 +1430,84 @@ namespace LightInject
             {
             }
         }
+#endif
+#if SILVERLIGHT
+        private class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+        {
 
+            private readonly Dictionary<TKey, TValue> _dictionary;
+            private readonly object _syncObject = new object();
+
+            public ThreadSafeDictionary() {_dictionary = new Dictionary<TKey, TValue>();}            
+
+            public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
+            {
+                _dictionary = new Dictionary<TKey, TValue>(comparer);
+            }
+
+            public TValue GetOrAdd(TKey key, Func<TKey,TValue> valuefactory)
+            {
+                lock (_syncObject)
+                {
+                    TValue value;
+                    if (!_dictionary.TryGetValue(key, out value))
+                    {
+                        value = valuefactory(key);
+                        _dictionary.Add(key, value);
+                    }
+                    return value;
+                }
+            }    
+
+            public int Count
+            {
+                get { return _dictionary.Count; }
+            }
+
+            public void AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
+            {
+                lock (_syncObject)
+                {
+                    TValue value;
+                    if (!_dictionary.TryGetValue(key, out value))
+                        _dictionary.Add(key, addValueFactory(key));
+                    else
+                        _dictionary[key] = updateValueFactory(key, value);
+                }
+            }
+
+            public void TryGetValue(TKey key, out TValue value)
+            {
+                lock (_syncObject)
+                {
+                    _dictionary.TryGetValue(key, out value);
+                }
+            }
+
+            public ICollection<TValue> Values
+            {
+                get
+                {
+                    lock (_syncObject)
+                    {
+                        return _dictionary.Values;
+                    }                    
+                }
+            }
+
+
+            public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+            {
+                lock (_syncObject)
+                    return _dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value).GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }        
+#endif
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
         {
         }
@@ -1571,7 +1663,7 @@ namespace LightInject
             return propertyInfo.GetSetMethod(false) == null;
         }
     }
-
+#if NET
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
     /// </summary>
@@ -1605,4 +1697,5 @@ namespace LightInject
             return true;
         }
     }
+#endif
 }

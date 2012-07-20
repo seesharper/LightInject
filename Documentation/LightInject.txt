@@ -50,7 +50,7 @@ There are basically two ways of registering services with the service container.
 
 The service type(**IFoo**) is associated with the implementing type(**Foo**) without providing any details about how to create the instance or how to resolve potential dependencies of the **Foo** class.
 
-The container will look for the most resolvable constructor in the case of a class having multiple constructors.
+The container will look for the constructor with the largest number of parameters in the case of a class having multiple constructors.
 Any property that is a read-write property will be considered a dependency of the implementing type.
 
 **Note:** The container will throw an **InvalidOperationException** if it encounters any dependency that can not be resolved.
