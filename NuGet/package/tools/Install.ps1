@@ -18,12 +18,7 @@ function PreProcess([string] $framework, [string] $nameSpace, [string]$sourceFil
 		{
 			$line = $line.Replace('LightInject', $nameSpace)
 		}
-		
-		if($line.Contains("public class MethodCallRewriter"))
-		{
-			$line = $line.Replace('public', 'internal')
-		}
-		
+						
 		if($line.StartsWith("#if") -or $line.StartsWith("#endif"))
 		{		
 			if($line.StartsWith("#if"))	

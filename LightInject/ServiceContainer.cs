@@ -1560,8 +1560,7 @@ namespace LightInject
 
     /// <summary>
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
-    /// </summary>
-    /// NOTE MUST NOT SCAN LIGHTINJECT TYPES
+    /// </summary>    
     internal class AssemblyScanner : IAssemblyScanner
     {
         /// <summary>
