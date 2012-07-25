@@ -31,6 +31,14 @@ This will install a single code file (**ServiceContainer.cs**) into the current 
 * **Composition root** 
 	*A location in the application where services are registered.*   
 
+## About the code ##
+
+The first thing to notice about the code is that every type that is expected to be **public**, is marked with the **internal** access modifier.
+
+This is done intentionally to prevent the types used by the service container to leak out into the application code and hence creating a dependency to this specific service container.
+
+The structure of the code is very functional and great effort has been put into making the codebase as readable and understandable as possible. 
+
 
 ## Dependency Injection
 
