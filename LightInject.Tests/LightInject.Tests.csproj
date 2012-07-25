@@ -63,7 +63,6 @@
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="FactoryTests.cs" />
     <Compile Include="PropertyInjectionTests.cs" />
-    <Compile Include="SampleCompositionRoot.cs" />
     <Compile Include="ServiceContainerTests.cs" />
     <Compile Include="ExpressionExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

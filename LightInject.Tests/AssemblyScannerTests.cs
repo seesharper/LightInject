@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using LightInject;
-using LightInject.SampleLibrary;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-
-namespace DependencyInjector.Tests
+﻿namespace LightInject.Tests
 {
-    using LightInject.Tests;
+    using LightInject;
+    using LightInject.SampleLibrary;
+    using LightInject.SampleLibraryWithCompositionRoot;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class AssemblyScannerTests
@@ -24,25 +20,25 @@ namespace DependencyInjector.Tests
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresDefaultService()
         {            
-            GetContainerMock().Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty), Times.Once());
+            this.GetContainerMock().Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty), Times.Once());
         }
         
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresNamedService()
         {            
-            GetContainerMock().Verify(sc => sc.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo"), Times.Once());
+            this.GetContainerMock().Verify(sc => sc.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo"), Times.Once());
         }
 
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresDefaultOpenGenericService()
         {
-            GetContainerMock().Verify(sc => sc.Register(typeof(IFoo<>), typeof(Foo<>), string.Empty), Times.Once());
+            this.GetContainerMock().Verify(sc => sc.Register(typeof(IFoo<>), typeof(Foo<>), string.Empty), Times.Once());
         }
 
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresNamedOpenGenericType()
         {
-            GetContainerMock().Verify(sc => sc.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo"), Times.Once());
+            this.GetContainerMock().Verify(sc => sc.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo"), Times.Once());
         }
 
         [TestMethod]
@@ -54,7 +50,6 @@ namespace DependencyInjector.Tests
             assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock.Object);
             Assert.AreEqual(1, SampleCompositionRoot.CallCount);
         }
-
 
         [TestMethod]        
         public void GetInstance_NoServices_CallsAssemblyScannerOnFirstRequest()
@@ -70,6 +65,7 @@ namespace DependencyInjector.Tests
             {
                 
             }
+
             finally 
             {
                 scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());                     
