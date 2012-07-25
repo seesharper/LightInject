@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using LightInject;
 using LightInject.SampleLibrary;
-using LightInject.SampleLibraryWithCompositionRoot;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
 namespace DependencyInjector.Tests
 {
+    using LightInject.Tests;
+
     [TestClass]
     public class AssemblyScannerTests
     {
@@ -46,12 +47,12 @@ namespace DependencyInjector.Tests
 
         [TestMethod]
         public void Scan_SampleAssembkyWithCompositionRoot_CallsComposeMethod()
-        {
+        {            
             var assemblyScanner = new AssemblyScanner();
             Mock<IServiceContainer> containerMock = new Mock<IServiceContainer>();
             SampleCompositionRoot.CallCount = 0;
             assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock.Object);
-            Assert.AreEqual(1,SampleCompositionRoot.CallCount);
+            Assert.AreEqual(1, SampleCompositionRoot.CallCount);
         }
 
 

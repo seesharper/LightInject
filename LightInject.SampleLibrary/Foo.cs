@@ -257,7 +257,7 @@ namespace LightInject.SampleLibrary
 
 
 
-    public class FooFactory : IFactory
+    internal class FooFactory : IFactory
     {
         public object GetInstance(ServiceRequest serviceRequest)
         {
@@ -284,7 +284,7 @@ namespace LightInject.SampleLibrary
         public int CallCount { get; private set; }
     }
 
-    public class GenericFooFactory : IFactory
+    internal class GenericFooFactory : IFactory
     {
 
 

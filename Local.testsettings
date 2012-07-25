@@ -16,7 +16,7 @@
       <DataCollectors>
         <DataCollector uri="datacollector://microsoft/CodeCoverage/1.0" assemblyQualifiedName="Microsoft.VisualStudio.TestTools.CodeCoverage.CoveragePlugIn, Microsoft.VisualStudio.QualityTools.Plugins.CodeCoverage, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" friendlyName="Code Coverage">
           <Configuration>
-            <CodeCoverage xmlns="">
+            <CodeCoverage keyFile="LightInject.snk" xmlns="">
               <Regular>
                 <CodeCoverageItem binaryFile="LightInject\bin\Debug\LightInject.dll" pdbFile="LightInject\bin\Debug\LightInject.pdb" instrumentInPlace="true" />
               </Regular>

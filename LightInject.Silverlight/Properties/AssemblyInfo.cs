@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LightInject.SampleLibraryWithCompositionRoot")]
+[assembly: AssemblyTitle("LightInject.Silverlight")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("DIPS ASA")]
-[assembly: AssemblyProduct("LightInject.SampleLibraryWithCompositionRoot")]
+[assembly: AssemblyProduct("LightInject.Silverlight")]
 [assembly: AssemblyCopyright("Copyright © DIPS ASA 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("19248a1a-15d9-4743-aec5-bb82067af955")]
+[assembly: Guid("c6d3da53-4c77-4829-917d-91005ca12e98")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -29,10 +29,7 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-// You can specify all the values or you can default the Build and Revision Numbers 
+// You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: InternalsVisibleTo("LightInject.Tests, PublicKey=00240000048000009400000006020000002400005253413100040000010001009b14e2cb0ad516f90766c1a4d793a02d1f8fcbbaef57250028f98c241e6344d4b2a104ee20da7d6ef6a2fff9987b9def6b1e88a8744340c90a2880bf0194897b255a1fd20ebc70b833f770942000bcefee3122aadf8947cb37c6951a292c5146692ecc60df6c7b8ce629aed50b8f3c1c597132ae505bbea0cfea4c5b7a2f45b8")]
-[assembly: InternalsVisibleTo("LightInject, PublicKey=00240000048000009400000006020000002400005253413100040000010001009b14e2cb0ad516f90766c1a4d793a02d1f8fcbbaef57250028f98c241e6344d4b2a104ee20da7d6ef6a2fff9987b9def6b1e88a8744340c90a2880bf0194897b255a1fd20ebc70b833f770942000bcefee3122aadf8947cb37c6951a292c5146692ecc60df6c7b8ce629aed50b8f3c1c597132ae505bbea0cfea4c5b7a2f45b8")]

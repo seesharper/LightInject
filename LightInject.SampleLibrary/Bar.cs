@@ -26,7 +26,7 @@ namespace LightInject.SampleLibrary
     {
     }
 
-    public class BarFactory : IFactory
+    internal class BarFactory : IFactory
     {
         public object GetInstance(ServiceRequest serviceRequest)
         {

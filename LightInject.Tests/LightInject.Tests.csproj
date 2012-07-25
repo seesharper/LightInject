@@ -9,8 +9,8 @@
     <ProjectGuid>{195CC92D-3792-4326-938C-E51AC26A8973}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DependencyInjector.Tests</RootNamespace>
-    <AssemblyName>DependencyInjector.Tests</AssemblyName>
+    <RootNamespace>LightInject.Tests</RootNamespace>
+    <AssemblyName>LightInject.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -31,6 +31,12 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>LightInject.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -57,6 +63,7 @@
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="FactoryTests.cs" />
     <Compile Include="PropertyInjectionTests.cs" />
+    <Compile Include="SampleCompositionRoot.cs" />
     <Compile Include="ServiceContainerTests.cs" />
     <Compile Include="ExpressionExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -78,6 +85,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="LightInject.snk" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

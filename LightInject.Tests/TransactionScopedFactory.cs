@@ -6,7 +6,7 @@ using LightInject.SampleLibrary;
 
 namespace DependencyInjector.Tests
 {
-    public class TransactionScopedFactory : IFactory
+    internal class TransactionScopedFactory : IFactory
     {
         private readonly ConcurrentDictionary<Transaction, IFoo> instances 
             = new ConcurrentDictionary<Transaction, IFoo>();

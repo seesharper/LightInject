@@ -6,7 +6,7 @@
     using LightInject;
     using LightInject.SampleLibrary;
 
-    public class TransactionScopedFactoryUsingProceed : IFactory
+    internal class TransactionScopedFactoryUsingProceed : IFactory
     {
         private readonly ConcurrentDictionary<Transaction, IFoo> instances 
             = new ConcurrentDictionary<Transaction, IFoo>();

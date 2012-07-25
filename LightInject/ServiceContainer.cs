@@ -40,7 +40,7 @@ namespace LightInject
     /// <summary>
     /// Specifies the lifecycle type of a registered service.
     /// </summary>
-    public enum LifeCycleType
+    internal enum LifeCycleType
     {
         /// <summary>
         /// Specifies that a new instance is created for each request.
@@ -61,7 +61,7 @@ namespace LightInject
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
-    public interface IServiceRegistry
+    internal interface IServiceRegistry
     {
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
@@ -190,7 +190,7 @@ namespace LightInject
     /// <summary>
     /// Defines a set of methods used to retrieve service instances.
     /// </summary>
-    public interface IServiceFactory
+    internal interface IServiceFactory
     {
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
@@ -240,7 +240,7 @@ namespace LightInject
     /// <summary>
     /// Represents a factory class that is capable of returning an object instance.
     /// </summary>    
-    public interface IFactory
+    internal interface IFactory
     {
         /// <summary>
         /// Returns an instance of the given type indicated by the <paramref name="serviceRequest"/>. 
@@ -261,7 +261,7 @@ namespace LightInject
     /// <summary>
     /// Represents a class that acts as a composition root for an <see cref="IServiceRegistry"/> instance.
     /// </summary>
-    public interface ICompositionRoot
+    internal interface ICompositionRoot
     {
         /// <summary>
         /// Composes services by adding services to the <paramref name="serviceRegistry"/>.
@@ -273,7 +273,7 @@ namespace LightInject
     /// <summary>
     /// Represents a class that is responsible for selecting properties that represents a dependecy to the target <see cref="Type"/>.
     /// </summary>
-    public interface IPropertySelector
+    internal interface IPropertySelector
     {
         /// <summary>
         /// Selects properties that represents a dependency from the given <paramref name="type"/>.
@@ -286,7 +286,7 @@ namespace LightInject
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
     /// </summary>
-    public interface IAssemblyLoader
+    internal interface IAssemblyLoader
     {
         /// <summary>
         /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
@@ -299,7 +299,7 @@ namespace LightInject
     /// <summary>
     /// Represents a class that is capable of scanning an assembly and register services into an <see cref="IServiceContainer"/> instance.
     /// </summary>
-    public interface IAssemblyScanner
+    internal interface IAssemblyScanner
     {
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
@@ -312,7 +312,7 @@ namespace LightInject
     /// <summary>
     /// Represents an inversion of control container.
     /// </summary>
-    public interface IServiceContainer : IServiceRegistry, IServiceFactory
+    internal interface IServiceContainer : IServiceRegistry, IServiceFactory
     {
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
@@ -335,7 +335,7 @@ namespace LightInject
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
-    public class ServiceContainer : IServiceContainer
+    internal class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";        
         private static readonly MethodInfo GetInstanceMethod;
@@ -1413,8 +1413,14 @@ namespace LightInject
 
             private void CreateDynamicMethod()
             {
+#if NET                
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", typeof(object), new[] { typeof(List<object>) }, typeof(ServiceContainer).Module, false);
+#endif
+#if SILVERLIGHT
+                dynamicMethod = new DynamicMethod(
+                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) });
+#endif
             }
         }
 #if NET
@@ -1526,7 +1532,7 @@ namespace LightInject
     /// <summary>
     /// Contains information about a service request passed to an <see cref="IFactory"/> instance.
     /// </summary>
-    public class ServiceRequest
+    internal class ServiceRequest
     {
         /// <summary>
         /// Gets a value indicating whether the service request can be resolved by the underlying container.  
@@ -1537,17 +1543,17 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Gets the requested service type.
+        /// Gets or sets the requested service type.
         /// </summary>
         public Type ServiceType { get; internal set; }
 
         /// <summary>
-        /// Gets the requested service name.
+        /// Gets or sets the requested service name.
         /// </summary>
         public string ServiceName { get; internal set; }
 
         /// <summary>
-        /// Gets the function delegate used to proceed.
+        /// Gets or sets the function delegate used to proceed.
         /// </summary>
         public Func<object> Proceed { get; internal set; }
     }
@@ -1556,7 +1562,7 @@ namespace LightInject
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
     /// </summary>
     /// NOTE MUST NOT SCAN LIGHTINJECT TYPES
-    public class AssemblyScanner : IAssemblyScanner
+    internal class AssemblyScanner : IAssemblyScanner
     {
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
@@ -1564,14 +1570,14 @@ namespace LightInject
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)
-        {
-            IEnumerable<Type> types = GetConcreteTypes(assembly).ToList();
-            var compositionRoots = types.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
+        {            
+            IEnumerable<Type> concreteTypes = GetConcreteTypes(assembly).ToList();
+            var compositionRoots = concreteTypes.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
             if (compositionRoots.Count > 0)
                 ExecuteCompositionRoots(compositionRoots, serviceRegistry);
             else
             {
-                foreach (Type type in types)
+                foreach (Type type in concreteTypes)
                     BuildImplementationMap(type, serviceRegistry);
             }
         }
@@ -1611,8 +1617,8 @@ namespace LightInject
         }
 
         private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
-        {
-            return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && t.IsPublic);
+        {            
+            return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && !(t.Namespace ?? string.Empty).StartsWith("System"));
         }
 
         private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry)
@@ -1635,7 +1641,7 @@ namespace LightInject
     /// <summary>
     /// Selects the properties that represents a dependecy to the target <see cref="Type"/>.
     /// </summary>
-    public class PropertySelector : IPropertySelector
+    internal class PropertySelector : IPropertySelector
     {
         /// <summary>
         /// Selects properties that represents a dependency from the given <paramref name="type"/>.
@@ -1666,7 +1672,7 @@ namespace LightInject
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
     /// </summary>
-    public class AssemblyLoader : IAssemblyLoader
+    internal class AssemblyLoader : IAssemblyLoader
     {
         /// <summary>
         /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
