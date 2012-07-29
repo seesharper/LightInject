@@ -329,6 +329,7 @@ namespace LightInject
         /// </remarks>     
         void Scan(Assembly assembly);
 #if NET
+        
         /// <summary>
         /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
         /// </summary>
@@ -380,11 +381,13 @@ namespace LightInject
         /// </summary>
         public IPropertySelector PropertySelector { get; set; }
 #if NET
+        
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is reponsible for loading assemblies during assembly scanning. 
         /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
 #endif
+        
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
@@ -398,6 +401,7 @@ namespace LightInject
             AssemblyScanner.Scan(assembly, this);
         }
 #if NET
+       
         /// <summary>
         /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
         /// </summary>
@@ -409,7 +413,8 @@ namespace LightInject
                 Scan(assembly);
             }
         }
-#endif
+#endif        
+        
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -1467,6 +1472,7 @@ namespace LightInject
             }
         }
 #if NET
+        
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
         {
             public ThreadSafeDictionary()
@@ -1480,6 +1486,7 @@ namespace LightInject
         }
 #endif
 #if SILVERLIGHT
+        
         private class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         {
 
@@ -1556,6 +1563,7 @@ namespace LightInject
             }
         }        
 #endif
+        
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
         {
         }
@@ -1726,6 +1734,7 @@ namespace LightInject
         }
     }
 #if NET
+    
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
     /// </summary>
