@@ -27,10 +27,10 @@ namespace LightInject
 #if NET
     using System.Collections.Concurrent;
 #endif
-    using System.Collections.Generic;
 #if SILVERLIGHT
     using System.Collections;
 #endif
+    using System.Collections.Generic;
 #if NET    
     using System.IO;
 #endif
@@ -1489,72 +1489,80 @@ namespace LightInject
         
         private class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         {
+            private readonly Dictionary<TKey, TValue> dictionary;
+            private readonly object syncObject = new object();
 
-            private readonly Dictionary<TKey, TValue> _dictionary;
-            private readonly object _syncObject = new object();
-
-            public ThreadSafeDictionary() {_dictionary = new Dictionary<TKey, TValue>();}            
+            public ThreadSafeDictionary()
+            {
+                dictionary = new Dictionary<TKey, TValue>();
+            }            
 
             public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
             {
-                _dictionary = new Dictionary<TKey, TValue>(comparer);
+                dictionary = new Dictionary<TKey, TValue>(comparer);
             }
-
-            public TValue GetOrAdd(TKey key, Func<TKey,TValue> valuefactory)
-            {
-                lock (_syncObject)
-                {
-                    TValue value;
-                    if (!_dictionary.TryGetValue(key, out value))
-                    {
-                        value = valuefactory(key);
-                        _dictionary.Add(key, value);
-                    }
-                    return value;
-                }
-            }    
 
             public int Count
             {
-                get { return _dictionary.Count; }
-            }
-
-            public void AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
-            {
-                lock (_syncObject)
-                {
-                    TValue value;
-                    if (!_dictionary.TryGetValue(key, out value))
-                        _dictionary.Add(key, addValueFactory(key));
-                    else
-                        _dictionary[key] = updateValueFactory(key, value);
-                }
-            }
-
-            public void TryGetValue(TKey key, out TValue value)
-            {
-                lock (_syncObject)
-                {
-                    _dictionary.TryGetValue(key, out value);
-                }
+                get { return dictionary.Count; }
             }
 
             public ICollection<TValue> Values
             {
                 get
                 {
-                    lock (_syncObject)
+                    lock (syncObject)
                     {
-                        return _dictionary.Values;
-                    }                    
+                        return dictionary.Values;
+                    }
                 }
             }
 
+            public TValue GetOrAdd(TKey key, Func<TKey, TValue> valuefactory)
+            {
+                lock (syncObject)
+                {
+                    TValue value;
+                    if (!dictionary.TryGetValue(key, out value))
+                    {
+                        value = valuefactory(key);
+                        dictionary.Add(key, value);
+                    }
+
+                    return value;
+                }
+            }    
+        
+            public void AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
+            {
+                lock (syncObject)
+                {
+                    TValue value;
+                    if (!dictionary.TryGetValue(key, out value))
+                    {
+                        dictionary.Add(key, addValueFactory(key));
+                    }
+                    else
+                    {
+                        dictionary[key] = updateValueFactory(key, value);
+                    }
+                }
+            }
+
+            public void TryGetValue(TKey key, out TValue value)
+            {
+                lock (syncObject)
+                {
+                    dictionary.TryGetValue(key, out value);
+                }
+            }
 
             public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
             {
-                lock (_syncObject)
-                    return _dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value).GetEnumerator();
+                lock (syncObject)
+                {
+                    return dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value).GetEnumerator();
+                }
             }
 
             IEnumerator IEnumerable.GetEnumerator()
