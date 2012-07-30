@@ -9,36 +9,42 @@
     [TestClass]
     public class AssemblyScannerTests
     {
-        private Mock<IServiceContainer> GetContainerMock()
+        private Mock<IServiceContainer> GetContainerMock(LifeCycleType lifeCycleType)
         {
             var containerMock = new Mock<IServiceContainer>();
             var assemblyScanner = new AssemblyScanner();
-            assemblyScanner.Scan(typeof(IFoo).Assembly, containerMock.Object);
+            assemblyScanner.Scan(typeof(IFoo).Assembly, containerMock.Object, lifeCycleType);
             return containerMock;
         }
         
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresDefaultService()
         {            
-            this.GetContainerMock().Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty), Times.Once());
+            this.GetContainerMock(LifeCycleType.Transient).Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty, LifeCycleType.Transient), Times.Once());
+        }
+
+        [TestMethod]
+        public void Scan_SampleAssembly_ConfiguresServiceWithGivenLifeCycleType()
+        {
+            this.GetContainerMock(LifeCycleType.Request).Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty, LifeCycleType.Request), Times.Once());
         }
         
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresNamedService()
-        {            
-            this.GetContainerMock().Verify(sc => sc.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo"), Times.Once());
+        {
+            this.GetContainerMock(LifeCycleType.Transient).Verify(sc => sc.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo", LifeCycleType.Transient), Times.Once());
         }
 
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresDefaultOpenGenericService()
         {
-            this.GetContainerMock().Verify(sc => sc.Register(typeof(IFoo<>), typeof(Foo<>), string.Empty), Times.Once());
+            this.GetContainerMock(LifeCycleType.Transient).Verify(sc => sc.Register(typeof(IFoo<>), typeof(Foo<>), string.Empty, LifeCycleType.Transient), Times.Once());
         }
 
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresNamedOpenGenericType()
         {
-            this.GetContainerMock().Verify(sc => sc.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo"), Times.Once());
+            this.GetContainerMock(LifeCycleType.Transient).Verify(sc => sc.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo", LifeCycleType.Transient), Times.Once());
         }
 
         [TestMethod]
@@ -47,7 +53,7 @@
             var assemblyScanner = new AssemblyScanner();
             Mock<IServiceContainer> containerMock = new Mock<IServiceContainer>();
             SampleCompositionRoot.CallCount = 0;
-            assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock.Object);
+            assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock.Object, LifeCycleType.Transient);
             Assert.AreEqual(1, SampleCompositionRoot.CallCount);
         }
 
@@ -68,7 +74,7 @@
 
             finally 
             {
-                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());                     
+                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), LifeCycleType.Transient), Times.Once());                     
             }                             
         }
 
@@ -95,7 +101,7 @@
             }
             finally
             {
-                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());
+                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), LifeCycleType.Transient), Times.Once());
             }
         }
 
@@ -105,8 +111,8 @@
             var scannerMock = new Mock<IAssemblyScanner>();
             var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
-            serviceContainer.Scan("*SampleLibrary.dll");
-            scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>()), Times.Once());
+            serviceContainer.RegisterAssembly("*SampleLibrary.dll");
+            scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), LifeCycleType.Transient), Times.Once());
         }
     }
 }

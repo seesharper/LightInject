@@ -311,7 +311,8 @@ namespace LightInject
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
-        void Scan(Assembly assembly, IServiceRegistry serviceRegistry);
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found withing the assembly.</param>
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType);
     }
 
     /// <summary>
@@ -327,14 +328,25 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        void Scan(Assembly assembly);
+        void RegisterAssembly(Assembly assembly);
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found withing the assembly.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType);
 #if NET
         
         /// <summary>
         /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void Scan(string searchPattern);
+        void RegisterAssembly(string searchPattern);
 #endif
     }
 
@@ -396,9 +408,23 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>             
-        public void Scan(Assembly assembly)
+        public void RegisterAssembly(Assembly assembly)
         {
-            AssemblyScanner.Scan(assembly, this);
+            RegisterAssembly(assembly, LifeCycleType.Transient);
+        }
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found withing the assembly.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        public void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType)
+        {
+            AssemblyScanner.Scan(assembly, this, lifeCycleType);
         }
 #if NET
        
@@ -406,11 +432,11 @@ namespace LightInject
         /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        public void Scan(string searchPattern)
+        public void RegisterAssembly(string searchPattern)
         {
             foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
             {
-                Scan(assembly);
+                this.RegisterAssembly(assembly);
             }
         }
 #endif        
@@ -1121,7 +1147,7 @@ namespace LightInject
         {
             if (ServiceRegistryIsEmpty())
             {
-                Scan(serviceType.Assembly);
+                this.RegisterAssembly(serviceType.Assembly);
             }
         }
 
@@ -1614,7 +1640,8 @@ namespace LightInject
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
-        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found withing the assembly.</param>
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType)
         {            
             IEnumerable<Type> concreteTypes = GetConcreteTypes(assembly).ToList();
             var compositionRoots = concreteTypes.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
@@ -1626,7 +1653,7 @@ namespace LightInject
             {
                 foreach (Type type in concreteTypes)
                 {
-                    BuildImplementationMap(type, serviceRegistry);
+                    BuildImplementationMap(type, serviceRegistry, lifeCycleType);
                 }
             }
         }
@@ -1673,28 +1700,28 @@ namespace LightInject
             return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && !(t.Namespace ?? string.Empty).StartsWith("System"));
         }
 
-        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry)
+        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType)
         {
             Type[] interfaces = implementingType.GetInterfaces();
             foreach (Type interfaceType in interfaces)
             {
-                RegisterInternal(interfaceType, implementingType, serviceRegistry);
+                RegisterInternal(interfaceType, implementingType, serviceRegistry, lifeCycleType);
             }
 
             foreach (Type baseType in GetBaseTypes(implementingType))
             {
-                RegisterInternal(baseType, implementingType, serviceRegistry);
+                RegisterInternal(baseType, implementingType, serviceRegistry, lifeCycleType);
             }
         }
 
-        private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry)
+        private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType)
         {
             if (serviceType.IsGenericType && serviceType.ContainsGenericParameters)
             {
                 serviceType = serviceType.GetGenericTypeDefinition();
             }
 
-            serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType));
+            serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType), lifeCycleType);
         }
     }
 
