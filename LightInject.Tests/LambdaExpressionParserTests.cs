@@ -58,10 +58,19 @@
         }
 
         [TestMethod]
+        public void CreateServiceInfo_ExternalMethodCallInObjectInitializer_ReturnsDependencyAsExpression()
+        {
+            var parser = new ServiceContainer.LambdaExpressionParser();
+            Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithProperyDependency { Bar = this.GetInstance() };
+            var serviceInfo = parser.Parse(e);
+            Assert.IsTrue(serviceInfo.PropertyDependencies[0].Expression != null);
+        }
+
+        [TestMethod]
         public void CreateServiceInfo_MethodCall_ThrowsInvalidOperationException()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
-            Expression<Func<IServiceFactory, IFoo>> e = f => this.CreateFoo();
+            Expression<Func<IServiceFactory, IBar>> e = f => this.GetInstance();
             ExceptionAssert.Throws<InvalidOperationException>(() => parser.Parse(e), ErrorMessages.InvalidFuncFactoryExpression);            
         }
 
@@ -83,7 +92,7 @@
             Assert.IsTrue(serviceInfo.ConstructorDependencies[0].ServiceType == typeof(IEnumerable<IBar>));
         }
         
-        private IFoo CreateFoo()
+        private IBar GetInstance()
         {
             return null;
         }

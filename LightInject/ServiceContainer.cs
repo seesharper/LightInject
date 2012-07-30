@@ -1281,12 +1281,12 @@ namespace LightInject
 
             private static bool IsGetInstanceMethod(MethodInfo methodInfo)
             {
-                return typeof(IServiceFactory).IsAssignableFrom(methodInfo.DeclaringType) && methodInfo.Name == "GetInstance";
+                return methodInfo.Name == "GetInstance";
             }
 
             private static bool HasOneArgumentRepresentingServiceName(MethodCallExpression node)
             {
-                return HasOneArgument(node) && IsStringConstantExpression(node.Arguments[0]);
+                return HasOneArgument(node) && IsConstantExpression(node.Arguments[0]);
             }
 
             private static bool HasOneArgument(MethodCallExpression node)
@@ -1294,9 +1294,9 @@ namespace LightInject
                 return node.Arguments.Count == 1;
             }
 
-            private static bool IsStringConstantExpression(Expression argument)
-            {
-                return argument.NodeType == ExpressionType.Constant && argument.Type == typeof(string);
+            private static bool IsConstantExpression(Expression argument)
+            {                
+                return argument.NodeType == ExpressionType.Constant;
             }
         }
  
