@@ -1,14 +1,13 @@
-﻿namespace DependencyInjector.Tests
+﻿namespace LightInject.Tests
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    
     using LightInject;
     using LightInject.SampleLibrary;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    using Moq;
 
     [TestClass]
     public class ServiceContainerTests
@@ -100,7 +99,6 @@
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
         }
-
 
         [TestMethod]
         public void GetInstance_UnknownGenericType_ThrowsExceptionWhenRequestingDefaultService()
@@ -499,13 +497,6 @@
         private static IServiceContainer CreateContainer()
         {
             return new ServiceContainer();
-        }
-
-        private void Manual()
-        {
-            var sampleService = new SampleService();
-            var bar = new BarWithSampleServiceDependency(sampleService);
-            var foo = new FooWithSampleServiceDependency(bar, sampleService);
         }
     }
 }

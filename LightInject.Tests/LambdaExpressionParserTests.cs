@@ -1,7 +1,7 @@
- namespace DependencyInjector.Tests
+ namespace LightInject.Tests
 {
     using System;
-    using System.Collections.Generic;    
+    using System.Collections.Generic;
     using System.Linq.Expressions;
     using LightInject;
     using LightInject.SampleLibrary;
@@ -61,7 +61,7 @@
         public void CreateServiceInfo_MethodCall_ThrowsInvalidOperationException()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
-            Expression<Func<IServiceFactory, IFoo>> e = f => CreateFoo();
+            Expression<Func<IServiceFactory, IFoo>> e = f => this.CreateFoo();
             ExceptionAssert.Throws<InvalidOperationException>(() => parser.Parse(e), ErrorMessages.InvalidFuncFactoryExpression);            
         }
 

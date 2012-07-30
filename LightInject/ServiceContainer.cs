@@ -1194,25 +1194,12 @@ namespace LightInject
                 var serviceInfo = CreateServiceInfoBasedOnNewExpression(memberInitExpression.NewExpression);
                 foreach (MemberBinding memberBinding in memberInitExpression.Bindings)
                 {
-                    HandleMemberBinding(memberBinding, serviceInfo);
+                    HandleMemberAssignment((MemberAssignment)memberBinding, serviceInfo);
                 }
 
                 return serviceInfo;
             }
-
-            private static void HandleMemberBinding(MemberBinding memberBinding, ServiceInfo serviceInfo)
-            {
-                switch (memberBinding.BindingType)
-                {
-                    case MemberBindingType.Assignment:
-                        HandleMemberAssignment((MemberAssignment)memberBinding, serviceInfo);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(
-                            "memberBinding", string.Format("Unknown member binding: {0}", memberBinding.BindingType));
-                }
-            }
-
+           
             private static void HandleMemberAssignment(MemberAssignment memberAssignment, ServiceInfo serviceInfo)
             {
                 var propertyDependency = CreatePropertyDependency(memberAssignment);

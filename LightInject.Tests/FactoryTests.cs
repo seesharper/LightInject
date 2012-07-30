@@ -1,11 +1,12 @@
-﻿using System.Transactions;
-using LightInject;
-using LightInject.SampleLibrary;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-
-namespace DependencyInjector.Tests
+﻿namespace LightInject.Tests
 {
+    using System.Transactions;
+    using DependencyInjector.Tests;
+    using LightInject;
+    using LightInject.SampleLibrary;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+
     [TestClass]
     public class FactoryTests
     {

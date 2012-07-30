@@ -1,4 +1,4 @@
-﻿namespace DependencyInjector.Tests
+﻿namespace LightInject.Tests
 {
     using System;
     using System.Linq;
@@ -133,7 +133,6 @@
             Assert.AreSame(((BarWithSampleServiceDependency)instance.Bar).SampleService, instance.SampleService);
         }
 
-
         [TestMethod]
         public void GetInstance_DependencyWithRequestLifeCycle_InjectsTransientDependenciesForMultipleRequest()
         {
@@ -216,7 +215,6 @@
             var instance = (FooWithEnumerableDependency)container.GetInstance<IFoo>();
             Assert.AreEqual(2, instance.Bars.Count());
         }
-
 
         private static IServiceContainer CreateContainer()
         {

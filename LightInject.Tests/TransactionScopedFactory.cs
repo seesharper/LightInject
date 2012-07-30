@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Transactions;
-using LightInject;
-using LightInject.SampleLibrary;
-
-namespace DependencyInjector.Tests
+﻿namespace LightInject.Tests
 {
+    using System;
+    using System.Collections.Concurrent;
+    using System.Transactions;
+
+    using LightInject;
+    using LightInject.SampleLibrary;
+
     internal class TransactionScopedFactory : IFactory
     {
         private readonly ConcurrentDictionary<Transaction, IFoo> instances 
@@ -15,15 +16,15 @@ namespace DependencyInjector.Tests
         {
             if (Transaction.Current != null)
             {                
-                return instances.GetOrAdd(Transaction.Current, CreateTransactionScopedInstance);
+                return this.instances.GetOrAdd(Transaction.Current, this.CreateTransactionScopedInstance);
             }
-            return CreateInstance();
+            return this.CreateInstance();
         }
 
         private IFoo CreateTransactionScopedInstance(Transaction transaction)
         {
-            transaction.TransactionCompleted += OnTransactionCompleted;
-            return CreateInstance();
+            transaction.TransactionCompleted += this.OnTransactionCompleted;
+            return this.CreateInstance();
         }
 
         private IFoo CreateInstance()
@@ -33,9 +34,9 @@ namespace DependencyInjector.Tests
 
         private void OnTransactionCompleted(object sender, TransactionEventArgs e)
         {            
-            e.Transaction.TransactionCompleted -= OnTransactionCompleted;
+            e.Transaction.TransactionCompleted -= this.OnTransactionCompleted;
             IFoo foo;
-            instances.TryRemove(e.Transaction, out foo);
+            this.instances.TryRemove(e.Transaction, out foo);
         }
 
         public bool CanGetInstance(Type serviceType, string serviceName)

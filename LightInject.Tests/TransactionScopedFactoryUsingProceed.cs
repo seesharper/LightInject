@@ -1,8 +1,9 @@
-﻿namespace DependencyInjector.Tests
+﻿namespace LightInject.Tests
 {
     using System;
     using System.Collections.Concurrent;
     using System.Transactions;
+
     using LightInject;
     using LightInject.SampleLibrary;
 
@@ -15,10 +16,10 @@
         {
             if (Transaction.Current != null)
             {
-                return instances.GetOrAdd(Transaction.Current, t => CreateTransactionScopedInstance(t, serviceRequest));
+                return this.instances.GetOrAdd(Transaction.Current, t => this.CreateTransactionScopedInstance(t, serviceRequest));
             }
 
-            return CreateInstance(serviceRequest);
+            return this.CreateInstance(serviceRequest);
         }
 
         public bool CanGetInstance(Type serviceType, string serviceName)
@@ -28,8 +29,8 @@
 
         private IFoo CreateTransactionScopedInstance(Transaction transaction, ServiceRequest serviceRequest)
         {
-            transaction.TransactionCompleted += OnTransactionCompleted;
-            return CreateInstance(serviceRequest);
+            transaction.TransactionCompleted += this.OnTransactionCompleted;
+            return this.CreateInstance(serviceRequest);
         }
 
         private IFoo CreateInstance(ServiceRequest serviceRequest)
@@ -39,9 +40,9 @@
 
         private void OnTransactionCompleted(object sender, TransactionEventArgs e)
         {
-            e.Transaction.TransactionCompleted -= OnTransactionCompleted;
+            e.Transaction.TransactionCompleted -= this.OnTransactionCompleted;
             IFoo foo;
-            instances.TryRemove(e.Transaction, out foo);
+            this.instances.TryRemove(e.Transaction, out foo);
         }
     }
 }

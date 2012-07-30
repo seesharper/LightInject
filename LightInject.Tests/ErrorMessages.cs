@@ -1,4 +1,4 @@
-﻿namespace DependencyInjector.Tests
+﻿namespace LightInject.Tests
 {
     public static class ErrorMessages
     {

@@ -1,4 +1,4 @@
-﻿namespace DependencyInjector.Tests
+﻿namespace LightInject.Tests
 {
     using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
