@@ -93,6 +93,18 @@
         }
 
         [TestMethod]
+        public void GetInstance_DependencyWithSingletonLifeCycle_CallsDependencyConstructorOnlyOnce()
+        {
+            var container = CreateContainer();
+            Bar.InitializeCount = 0;
+            container.Register<IBar>(c => new Bar(), LifeCycleType.Singleton);            
+            container.Register<IFoo>(c => new FooWithDependency(c.GetInstance<IBar>()));
+            container.GetInstance<IFoo>();
+            container.GetInstance<IFoo>();
+            Assert.AreEqual(1, Bar.InitializeCount);
+        }
+        
+        [TestMethod]
         public void GetInstance_DependencyWithTransientLifeCycle_InjectsTransientDependenciesForSingleRequest()
         {
             var container = CreateContainer();

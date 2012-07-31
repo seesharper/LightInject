@@ -182,6 +182,15 @@
             Assert.AreEqual(1, Bar.InitializeCount);
         }
 
+        [TestMethod]
+        public void GetInstance_StaticDependency_DoesNotInjectDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo,FooWithStaticDependency>();
+            container.GetInstance<IFoo>();
+            Assert.IsNull(FooWithStaticDependency.Bar);
+        }
+
         private static IServiceContainer CreateContainer()
         {
             return new ServiceContainer();

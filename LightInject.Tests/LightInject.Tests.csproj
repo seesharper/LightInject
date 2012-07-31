@@ -62,6 +62,7 @@
     <Compile Include="ExceptionAssert.cs" />
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="FactoryTests.cs" />
+    <Compile Include="PerformanceTests.cs" />
     <Compile Include="PropertyInjectionTests.cs" />
     <Compile Include="ServiceContainerTests.cs" />
     <Compile Include="ExpressionExtensions.cs" />

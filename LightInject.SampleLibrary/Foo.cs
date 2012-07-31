@@ -10,7 +10,21 @@ namespace LightInject.SampleLibrary
 
     public interface IFoo { }
 
-    public class Foo : IFoo { }
+    public class Foo : IFoo
+    {
+        public static int Instances { get; set; }
+        
+        public Foo()
+        {
+            Instances++;
+        }
+    }
+
+    public class FooWithStaticDependency : IFoo
+    {
+        public static IBar Bar { get; set; }
+    }
+
 
     public class AnotherFoo : IFoo { }
 
@@ -23,6 +37,8 @@ namespace LightInject.SampleLibrary
 
         public IBar Bar { get; private set; }
     }
+
+    
 
     public class FooWithSameDependencyTwice : IFoo
     {

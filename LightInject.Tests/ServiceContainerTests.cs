@@ -4,7 +4,8 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    
+    using System.Threading.Tasks;
+
     using LightInject;
     using LightInject.SampleLibrary;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -241,6 +242,17 @@
             var instance1 = container.GetInstance(typeof(IFoo));
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1, instance2);
+        }
+
+        [TestMethod]
+        public void GetInstance_Singleton_CallsConstructorOnlyOnce()
+        {
+            var container = CreateContainer();
+            Foo.Instances = 0;
+            container.Register(typeof(IFoo), typeof(Foo), LifeCycleType.Singleton);            
+            container.GetInstance(typeof(IFoo));
+            container.GetInstance(typeof(IFoo));
+            Assert.AreEqual(1, Foo.Instances);
         }
 
         [TestMethod]
@@ -491,6 +503,33 @@
             var instances = container.GetAllInstances<IFoo>();
             Assert.IsInstanceOfType(instances, typeof(IEnumerable<IFoo>));
         }
+
+        [TestMethod]
+        public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo), LifeCycleType.Singleton);
+            IList<IFoo> instances = new List<IFoo>();
+            Parallel.Invoke(
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                        () => instances.Add(container.GetInstance<IFoo>()),
+                () => instances.Add(container.GetInstance<IFoo>()));
+
+            IFoo firstInstance = instances[0];
+            foreach (var instance in instances)
+            {
+                Assert.AreSame(firstInstance, instance);
+            }
+        }
+        
+
 
         #endregion
 

@@ -612,11 +612,11 @@ namespace LightInject
         /// <param name="serviceType">The type of the requested service.</param>
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
-        {
+        {         
             return delegates.GetOrAdd(
                 serviceType,
                 t =>
-                new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, string.Empty))).Value(constants);
+                new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, string.Empty))).Value(constants);                                   
         }
 
         /// <summary>
@@ -1752,7 +1752,7 @@ namespace LightInject
 
         private static bool IsReadOnly(PropertyInfo propertyInfo)
         {
-            return propertyInfo.GetSetMethod(false) == null;
+            return propertyInfo.GetSetMethod(false) == null || propertyInfo.GetSetMethod(false).IsStatic;
         }
     }
 #if NET
