@@ -39,6 +39,10 @@ This is done intentionally to prevent the types used by the service container to
 
 The structure of the code is very functional and great effort has been put into making the codebase as readable and understandable as possible. 
 
+### Thread safety ###
+
+LightInject has been built from the ground up to be 100% thread safe.
+
 
 ## Dependency Injection
 
