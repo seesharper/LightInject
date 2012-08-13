@@ -37,8 +37,7 @@ namespace LightInject
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Runtime.CompilerServices;
+    using System.Reflection.Emit;    
     using System.Text;
     using System.Text.RegularExpressions;
 
@@ -363,7 +362,7 @@ namespace LightInject
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
         private readonly ThreadSafeDictionary<Type, ServiceInfo> implementations = new ThreadSafeDictionary<Type, ServiceInfo>();
         private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();
-        private readonly List<object> constants = new List<object>();
+        private readonly Storage<object> constants = new Storage<object>();
         
         static ServiceContainer()
         {
@@ -616,7 +615,7 @@ namespace LightInject
             return delegates.GetOrAdd(
                 serviceType,
                 t =>
-                new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, string.Empty))).Value(constants);                                   
+                new Lazy<Func<object[], object>>(() => CreateDelegate(serviceType, string.Empty))).Value(constants.Items);                                   
         }
 
         /// <summary>
@@ -651,7 +650,7 @@ namespace LightInject
             return namedDelegates.GetOrAdd(
                 Tuple.Create(serviceType, serviceName),
                 t =>
-                new Lazy<Func<List<object>, object>>(() => CreateDelegate(serviceType, serviceName))).Value(constants);
+                new Lazy<Func<object[], object>>(() => CreateDelegate(serviceType, serviceName))).Value(constants.Items);
         }
 
         /// <summary>
@@ -674,7 +673,7 @@ namespace LightInject
             return GetInstance<IEnumerable<TService>>();
         }
 
-        private static Func<List<object>, object> CreateDynamicMethodDelegate(Action<DynamicMethodInfo> serviceEmitter, Type serviceType)
+        private static Func<object[], object> CreateDynamicMethodDelegate(Action<DynamicMethodInfo> serviceEmitter, Type serviceType)
         {
             var dynamicMethodInfo = new DynamicMethodInfo();
             serviceEmitter(dynamicMethodInfo);
@@ -687,12 +686,11 @@ namespace LightInject
         }
 
         private static void EmitLoadConstant(DynamicMethodInfo dynamicMethodInfo, int index, Type type)
-        {
-            MethodInfo method = typeof(List<object>).GetMethod("get_Item");
+        {           
             var generator = dynamicMethodInfo.GetILGenerator();
             generator.Emit(OpCodes.Ldarg_0);
             generator.Emit(OpCodes.Ldc_I4, index);
-            generator.Emit(OpCodes.Callvirt, method);
+            generator.Emit(OpCodes.Ldelem_Ref);
             generator.Emit(type.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
         }
 
@@ -815,7 +813,7 @@ namespace LightInject
             if (emitMethod != null)
             {
                 var del = CreateDynamicMethodDelegate(emitMethod, typeof(IFactory));
-                emitMethod = this.CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, () => del(this.constants));
+                emitMethod = this.CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants.Items));
             }
             else
             {
@@ -876,7 +874,7 @@ namespace LightInject
             {
                 var lambda = Expression.Lambda(dependency.Expression, new ParameterExpression[] { }).Compile();
                 MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                EmitLoadConstant(dynamicMethodInfo, this.GetConstantIndex(lambda), lambda.GetType());
+                EmitLoadConstant(dynamicMethodInfo, constants.Add(lambda), lambda.GetType());
                 generator.Emit(OpCodes.Callvirt, methodInfo);
             }
             else
@@ -939,14 +937,20 @@ namespace LightInject
         private Action<DynamicMethodInfo> CreateEmitMethodBasedOnCustomFactory(Type serviceType, string serviceName, IFactory factory, Func<object> proceed)
         {
             int serviceRequestConstantIndex = CreateServiceRequestConstant(serviceType, serviceName, proceed);
-            int factoryConstantIndex = GetConstantIndex(factory);
+            var factoryConstantIndex = this.CreateFactoryConstant(factory);
             return dmi => EmitCallCustomFactory(dmi, serviceRequestConstantIndex, factoryConstantIndex, serviceType);
+        }
+
+        private int CreateFactoryConstant(IFactory factory)
+        {
+            int factoryConstantIndex = this.constants.Add(factory);
+            return factoryConstantIndex;
         }
 
         private int CreateServiceRequestConstant(Type serviceType, string serviceName, Func<object> proceed)
         {
             var serviceRequest = new ServiceRequest { ServiceType = serviceType, ServiceName = serviceName, Proceed = proceed };
-            return GetConstantIndex(serviceRequest);
+            return constants.Add(serviceRequest);
         }
 
         private IFactory GetCustomFactory(Type serviceType, string serviceName)
@@ -966,8 +970,8 @@ namespace LightInject
             IList<Action<DynamicMethodInfo>> serviceEmitters = GetServiceRegistrations(actualServiceType).Values.ToList();
             var dynamicMethodInfo = new DynamicMethodInfo();
             EmitEnumerable(serviceEmitters, actualServiceType, dynamicMethodInfo);
-            var array = dynamicMethodInfo.CreateDelegate()(constants);
-            int index = GetConstantIndex(array);
+            var array = dynamicMethodInfo.CreateDelegate()(constants.Items);
+            int index = constants.Add(array);
             return dmi => EmitLoadConstant(dmi, index, actualServiceType.MakeArrayType());
         }
 
@@ -976,7 +980,7 @@ namespace LightInject
             var actualServiceType = serviceType.GetGenericArguments().Last();
             var methodInfo = typeof(ServiceContainer).GetMethod("CreateFuncGetInstanceDelegate", BindingFlags.Instance | BindingFlags.NonPublic);
             var del = methodInfo.MakeGenericMethod(actualServiceType).Invoke(this, new object[] { namedService });
-            var constantIndex = GetConstantIndex(del);
+            var constantIndex = constants.Add(del);
             return dmi => EmitLoadConstant(dmi, constantIndex, serviceType);
         }
 
@@ -1104,7 +1108,12 @@ namespace LightInject
 
         private void EmitSingletonInstance(Type implementingType, DynamicMethodInfo dynamicMethodInfo)
         {
-            EmitLoadConstant(dynamicMethodInfo, GetConstantIndex(GetSingletonInstance(implementingType)), implementingType);
+            EmitLoadConstant(dynamicMethodInfo, CreateSingletonConstantIndex(implementingType), implementingType);
+        }
+
+        private int CreateSingletonConstantIndex(Type implementingType)
+        {
+            return constants.Add(GetSingletonInstance(implementingType));
         }
 
         private object GetSingletonInstance(Type implementingType)
@@ -1116,22 +1125,11 @@ namespace LightInject
         {
             var dynamicMethodInfo = new DynamicMethodInfo();
             EmitNewInstance(implementingType, dynamicMethodInfo);
-            object instance = dynamicMethodInfo.CreateDelegate()(constants);
+            object instance = dynamicMethodInfo.CreateDelegate()(constants.Items);
             return instance;
         }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        private int GetConstantIndex(object value)
-        {
-            if (!constants.Contains(value))
-            {
-                constants.Add(value);
-            }
-
-            return constants.IndexOf(value);
-        }
-
-        private Func<List<object>, object> CreateDelegate(Type serviceType, string serviceName)
+        
+        private Func<object[], object> CreateDelegate(Type serviceType, string serviceName)
         {
             EnsureThatServiceRegistryIsConfigured(serviceType);
             var serviceEmitter = this.GetEmitMethod(serviceType, serviceName);
@@ -1158,7 +1156,7 @@ namespace LightInject
 
         private void RegisterValue(Type serviceType, object value, string serviceName)
         {
-            int index = GetConstantIndex(value);
+            int index = constants.Add(value);
             Action<DynamicMethodInfo> emitter = dmi => EmitLoadConstant(dmi, index, serviceType);
             GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, d => emitter, (s, d) => emitter);
         }
@@ -1450,10 +1448,10 @@ namespace LightInject
                 return dynamicMethod.GetILGenerator();
             }
 
-            public Func<List<object>, object> CreateDelegate()
+            public Func<object[], object> CreateDelegate()
             {
                 dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
-                return (Func<List<object>, object>)dynamicMethod.CreateDelegate(typeof(Func<List<object>, object>));
+                return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
             }
 
             public bool ContainsLocalVariable(Type implementingType)
@@ -1476,7 +1474,7 @@ namespace LightInject
             {
 #if NET                
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) }, typeof(ServiceContainer).Module, false);
+                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
 #endif
 #if SILVERLIGHT
                 dynamicMethod = new DynamicMethod(
@@ -1486,6 +1484,61 @@ namespace LightInject
         }
 #if NET
         
+        private class Storage<T>
+        {
+            private readonly object lockObject = new object();
+            private T[] items = new T[0];
+
+            public T[] Items
+            {
+                get
+                {
+                    return this.items;
+                }
+            }
+
+            public int Add(T value)
+            {
+                int index = Array.IndexOf(this.items, value);
+                if (index == -1)
+                {
+                    return TryAddValue(value);
+                }
+
+                return index;
+            }
+
+            private int TryAddValue(T value)
+            {
+                lock (lockObject)
+                {
+                    int index = Array.IndexOf(items, value);
+                    if (index == -1)
+                    {
+                        index = AddValue(value);
+                    }
+
+                    return index;
+                }
+            }
+
+            private int AddValue(T value)
+            {
+                int index = items.Length;
+                T[] snapshot = CreateSnapshot();
+                snapshot[index] = value;
+                this.items = snapshot;
+                return index;
+            }
+
+            private T[] CreateSnapshot()
+            {
+                var snapshot = new T[items.Length + 1];
+                Array.Copy(items, snapshot, items.Length);
+                return snapshot;
+            }
+        }
+
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
         {
             public ThreadSafeDictionary()
@@ -1589,7 +1642,7 @@ namespace LightInject
         {
         }
 
-        private class DelegateRegistry<TKey> : ThreadSafeDictionary<TKey, Lazy<Func<List<object>, object>>>
+        private class DelegateRegistry<TKey> : ThreadSafeDictionary<TKey, Lazy<Func<object[], object>>>
         {
         }
 
