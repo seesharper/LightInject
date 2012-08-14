@@ -611,11 +611,15 @@ namespace LightInject
         /// <param name="serviceType">The type of the requested service.</param>
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
-        {         
-            return delegates.GetOrAdd(
-                serviceType,
-                t =>
-                new Lazy<Func<object[], object>>(() => CreateDelegate(serviceType, string.Empty))).Value(constants.Items);                                   
+        {
+            Func<object[], object> del;
+
+            if (!delegates.TryGetValue(serviceType, out del))
+            {
+                del = delegates.GetOrAdd(serviceType, t => CreateDelegate(serviceType, string.Empty));
+            }
+
+            return del(constants.Items);                       
         }
 
         /// <summary>
@@ -647,10 +651,14 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName)
         {
-            return namedDelegates.GetOrAdd(
-                Tuple.Create(serviceType, serviceName),
-                t =>
-                new Lazy<Func<object[], object>>(() => CreateDelegate(serviceType, serviceName))).Value(constants.Items);
+            Func<object[], object> del;
+
+            if (!namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
+            {
+                del = delegates.GetOrAdd(serviceType, t => CreateDelegate(serviceType, serviceName));
+            }
+
+            return del(constants.Items);                              
         }
 
         /// <summary>
@@ -1432,58 +1440,6 @@ namespace LightInject
             }
         }
 
-        private class DynamicMethodInfo
-        {
-            private readonly IDictionary<Type, LocalBuilder> localVariables = new Dictionary<Type, LocalBuilder>();
-
-            private DynamicMethod dynamicMethod;
-
-            public DynamicMethodInfo()
-            {
-                CreateDynamicMethod();
-            }
-
-            public ILGenerator GetILGenerator()
-            {
-                return dynamicMethod.GetILGenerator();
-            }
-
-            public Func<object[], object> CreateDelegate()
-            {
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
-                return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
-            }
-
-            public bool ContainsLocalVariable(Type implementingType)
-            {
-                return localVariables.ContainsKey(implementingType);
-            }
-
-            public void EmitLoadLocalVariable(Type implementingType)
-            {
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Ldloc, localVariables[implementingType]);
-            }
-
-            public void EmitStoreLocalVariable(Type implementingType)
-            {
-                localVariables.Add(implementingType, dynamicMethod.GetILGenerator().DeclareLocal(implementingType));
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Stloc, localVariables[implementingType]);
-            }
-
-            private void CreateDynamicMethod()
-            {
-#if NET                
-                dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
-#endif
-#if SILVERLIGHT
-                dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) });
-#endif
-            }
-        }
-#if NET
-        
         private class Storage<T>
         {
             private readonly object lockObject = new object();
@@ -1539,6 +1495,97 @@ namespace LightInject
             }
         }
 
+        private class KeyValueStorage<TKey, TValue>
+        {
+            private readonly object lockObject = new object();
+            private Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
+
+            public bool TryGetValue(TKey key, out TValue value)
+            {
+                return dictionary.TryGetValue(key, out value);
+            }
+
+            public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
+            {
+                TValue value;
+                if (!dictionary.TryGetValue(key, out value))
+                {
+                    lock (lockObject)
+                    {
+                        value = TryAddValue(key, valueFactory);
+                    }
+                }
+
+                return value;
+            }
+
+            private TValue TryAddValue(TKey key, Func<TKey, TValue> valueFactory)
+            {
+                TValue value;
+                if (!this.dictionary.TryGetValue(key, out value))
+                {
+                    var snapshot = new Dictionary<TKey, TValue>(this.dictionary);
+                    value = valueFactory(key);
+                    snapshot.Add(key, value);
+                    this.dictionary = snapshot;
+                }
+
+                return value;
+            }
+        }
+
+        private class DynamicMethodInfo
+        {
+            private readonly IDictionary<Type, LocalBuilder> localVariables = new Dictionary<Type, LocalBuilder>();
+
+            private DynamicMethod dynamicMethod;
+
+            public DynamicMethodInfo()
+            {
+                CreateDynamicMethod();
+            }
+
+            public ILGenerator GetILGenerator()
+            {
+                return dynamicMethod.GetILGenerator();
+            }
+
+            public Func<object[], object> CreateDelegate()
+            {
+                dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
+                return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
+            }
+
+            public bool ContainsLocalVariable(Type implementingType)
+            {
+                return localVariables.ContainsKey(implementingType);
+            }
+
+            public void EmitLoadLocalVariable(Type implementingType)
+            {
+                dynamicMethod.GetILGenerator().Emit(OpCodes.Ldloc, localVariables[implementingType]);
+            }
+
+            public void EmitStoreLocalVariable(Type implementingType)
+            {
+                localVariables.Add(implementingType, dynamicMethod.GetILGenerator().DeclareLocal(implementingType));
+                dynamicMethod.GetILGenerator().Emit(OpCodes.Stloc, localVariables[implementingType]);
+            }
+
+            private void CreateDynamicMethod()
+            {
+#if NET                
+                dynamicMethod = new DynamicMethod(
+                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
+#endif
+#if SILVERLIGHT
+                dynamicMethod = new DynamicMethod(
+                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) });
+#endif
+            }
+        }
+#if NET
+                
         private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
         {
             public ThreadSafeDictionary()
@@ -1642,7 +1689,7 @@ namespace LightInject
         {
         }
 
-        private class DelegateRegistry<TKey> : ThreadSafeDictionary<TKey, Lazy<Func<object[], object>>>
+        private class DelegateRegistry<TKey> : KeyValueStorage<TKey, Func<object[], object>>
         {
         }
 
