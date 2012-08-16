@@ -275,6 +275,14 @@ namespace LightInject.SampleLibrary
 
     internal class FooFactory : IFactory
     {
+
+        public static int Instances { get; set; }
+
+        public FooFactory()
+        {
+            Instances++;
+        }
+
         public object GetInstance(ServiceRequest serviceRequest)
         {
             ServiceRequest = serviceRequest;

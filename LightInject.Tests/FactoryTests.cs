@@ -1,5 +1,6 @@
 ﻿namespace LightInject.Tests
 {
+    using System.Collections.Generic;
     using System.Transactions;
     using DependencyInjector.Tests;
     using LightInject;
@@ -204,7 +205,7 @@
                 Assert.AreSame(firstInstance, secondInstance);
             }
         }
-
+       
         private static IServiceContainer CreateContainer()
         {
             return new ServiceContainer();

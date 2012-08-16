@@ -363,7 +363,9 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Type, ServiceInfo> implementations = new ThreadSafeDictionary<Type, ServiceInfo>();
         private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();
         private readonly Storage<object> constants = new Storage<object>();
-        
+        private Storage<IFactory> factories;
+        private bool firstServiceRequest = true;
+
         static ServiceContainer()
         {
             GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
@@ -969,7 +971,7 @@ namespace LightInject
                 return null;
             }
 
-            return GetInstance<IEnumerable<IFactory>>().FirstOrDefault(f => f.CanGetInstance(serviceType, serviceName));
+            return factories.Items.FirstOrDefault(f => f.CanGetInstance(serviceType, serviceName));            
         }
 
         private Action<DynamicMethodInfo> CreateEnumerableServiceEmitter(Type serviceType)
@@ -1139,7 +1141,12 @@ namespace LightInject
         
         private Func<object[], object> CreateDelegate(Type serviceType, string serviceName)
         {
-            EnsureThatServiceRegistryIsConfigured(serviceType);
+            if (this.FirstServiceRequest())
+            {
+                EnsureThatServiceRegistryIsConfigured(serviceType);
+                CreateCustomFactories();
+            }
+
             var serviceEmitter = this.GetEmitMethod(serviceType, serviceName);
             if (serviceEmitter == null)
             {
@@ -1149,6 +1156,22 @@ namespace LightInject
             return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
         }
 
+        private bool FirstServiceRequest()
+        {
+            if (firstServiceRequest)
+            {                
+                firstServiceRequest = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void CreateCustomFactories()
+        {            
+            factories = new Storage<IFactory>(GetInstance<IEnumerable<IFactory>>());            
+        }
+
         private void EnsureThatServiceRegistryIsConfigured(Type serviceType)
         {
             if (ServiceRegistryIsEmpty())
@@ -1156,7 +1179,7 @@ namespace LightInject
                 this.RegisterAssembly(serviceType.Assembly);
             }
         }
-
+         
         private bool ServiceRegistryIsEmpty()
         {
             return services.Count == 0 && openGenericServices.Count == 0;
@@ -1444,6 +1467,15 @@ namespace LightInject
         {
             private readonly object lockObject = new object();
             private T[] items = new T[0];
+
+            public Storage()
+            {
+            }
+            
+            public Storage(IEnumerable<T> collection)
+            {
+                items = collection.ToArray();
+            }
 
             public T[] Items
             {
