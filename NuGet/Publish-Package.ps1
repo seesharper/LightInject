@@ -10,6 +10,8 @@ $keyfile = "$env:USERPROFILE\DropBox\NuGet Access Key.txt"
 $apikey = get-content $keyfile
 $appid = "LightInject"
 
-.\NuGet.exe push $apiid $package $apikey -source http://packages.nuget.org/v1
+'.\NuGet.exe push $apiid $package $apikey -source http://packages.nuget.org/v1'
+.\NuGet.exe SetApiKey $apikey
+.\NuGet.exe push $package 
 
 popd

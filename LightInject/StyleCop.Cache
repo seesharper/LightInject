@@ -1,9 +1,12 @@
 <stylecopresultscache>
   <version>11</version>
+  <project key="60861655">
+    <configuration>TRACE;DEBUG;NET</configuration>
+  </project>
   <sourcecode name="AssemblyInfo.cs" parser="StyleCop.CSharp.CsParser">
     <settings>
-      <timestamp>07/26/2012 21:33:52</timestamp>
-      <milliseconds>230</milliseconds>
+      <timestamp>07/31/2012 18:46:41</timestamp>
+      <milliseconds>856</milliseconds>
     </settings>
     <timestamp>07/25/2012 22:02:02</timestamp>
     <milliseconds>254</milliseconds>
@@ -15,16 +18,13 @@
       </violation>
     </violations>
   </sourcecode>
-  <project key="60861655">
-    <configuration>TRACE;DEBUG;NET</configuration>
-  </project>
   <sourcecode name="ServiceContainer.cs" parser="StyleCop.CSharp.CsParser">
     <settings>
-      <timestamp>07/26/2012 21:33:52</timestamp>
-      <milliseconds>230</milliseconds>
+      <timestamp>07/31/2012 18:46:41</timestamp>
+      <milliseconds>856</milliseconds>
     </settings>
-    <timestamp>07/30/2012 14:52:54</timestamp>
-    <milliseconds>653</milliseconds>
+    <timestamp>08/16/2012 14:40:15</timestamp>
+    <milliseconds>194</milliseconds>
     <violations />
   </sourcecode>
 </stylecopresultscache>

@@ -19,7 +19,7 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
-[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Reviewed. Suppression is OK here.")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 
 namespace LightInject
 {
@@ -275,7 +275,7 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a class that is responsible for selecting properties that represents a dependecy to the target <see cref="Type"/>.
+    /// Represents a class that is responsible for selecting properties that represents a dependency to the target <see cref="Type"/>.
     /// </summary>
     internal interface IPropertySelector
     {
@@ -310,7 +310,7 @@ namespace LightInject
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
-        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found withing the assembly.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
         void Scan(Assembly assembly, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType);
     }
 
@@ -333,7 +333,7 @@ namespace LightInject
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found withing the assembly.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
         /// <remarks>
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
@@ -342,7 +342,7 @@ namespace LightInject
 #if NET
         
         /// <summary>
-        /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
+        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         void RegisterAssembly(string searchPattern);
@@ -384,19 +384,19 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is reponsible for scanning assemblies.
+        /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="IPropertySelector"/> instance that is reponsible selecting the properties
+        /// Gets or sets the <see cref="IPropertySelector"/> instance that is responsible selecting the properties
         /// that represents a dependency for a given <see cref="Type"/>.
         /// </summary>
         public IPropertySelector PropertySelector { get; set; }
 #if NET
         
         /// <summary>
-        /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is reponsible for loading assemblies during assembly scanning. 
+        /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning. 
         /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
 #endif
@@ -418,7 +418,7 @@ namespace LightInject
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found withing the assembly.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
         /// <remarks>
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
@@ -430,7 +430,7 @@ namespace LightInject
 #if NET
        
         /// <summary>
-        /// Registers services from assemblies in the base directory that mathes the <paramref name="searchPattern"/>.
+        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         public void RegisterAssembly(string searchPattern)
@@ -798,8 +798,8 @@ namespace LightInject
 
         private ServiceInfo CreateServiceInfoFromExpression(LambdaExpression lambdaExpression)
         {
-            var methodCallVisitor = new LambdaExpressionParser();
-            ServiceInfo serviceInfo = methodCallVisitor.Parse(lambdaExpression);
+            var lambdaExpressionParser = new LambdaExpressionParser();
+            ServiceInfo serviceInfo = lambdaExpressionParser.Parse(lambdaExpression);
             return serviceInfo;
         }
 
