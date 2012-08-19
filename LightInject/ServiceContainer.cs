@@ -363,6 +363,7 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Type, ServiceInfo> implementations = new ThreadSafeDictionary<Type, ServiceInfo>();
         private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();
         private readonly Storage<object> constants = new Storage<object>();
+        private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>(); 
         private Storage<IFactory> factories;
         private bool firstServiceRequest = true;
 
@@ -814,10 +815,24 @@ namespace LightInject
             }
 
             UpdateServiceRegistration(serviceType, serviceName, emitMethod);
-            
-            return emitMethod;            
+            if (dependencyStack.Contains(emitMethod))
+                throw new InvalidOperationException();
+
+            dependencyStack.Push(emitMethod);            
+            return this.CreateEmitMethodWrapper(emitMethod);
         }
         
+        private Action<DynamicMethodInfo> CreateEmitMethodWrapper(Action<DynamicMethodInfo> emitMethod)
+        {
+            if (emitMethod == null) return null;
+            return (dmi) =>
+                {
+                    emitMethod(dmi);
+                    dependencyStack.Pop();
+                };
+        }
+
+
         private Action<DynamicMethodInfo> GetCustomFactoryEmitMethod(Type serviceType, string serviceName, IFactory factory, Action<DynamicMethodInfo> emitMethod)
         {
             if (emitMethod != null)
@@ -978,6 +993,12 @@ namespace LightInject
         {
             Type actualServiceType = serviceType.GetGenericArguments()[0];
             IList<Action<DynamicMethodInfo>> serviceEmitters = GetServiceRegistrations(actualServiceType).Values.ToList();
+            
+            if (dependencyStack.Count > 0 && serviceEmitters.Contains(dependencyStack.Peek()))
+            {
+                serviceEmitters.Remove(dependencyStack.Peek());
+            }
+
             var dynamicMethodInfo = new DynamicMethodInfo();
             EmitEnumerable(serviceEmitters, actualServiceType, dynamicMethodInfo);
             var array = dynamicMethodInfo.CreateDelegate()(constants.Items);
@@ -1147,6 +1168,7 @@ namespace LightInject
                 CreateCustomFactories();
             }
 
+            dependencyStack.Clear();
             var serviceEmitter = this.GetEmitMethod(serviceType, serviceName);
             if (serviceEmitter == null)
             {

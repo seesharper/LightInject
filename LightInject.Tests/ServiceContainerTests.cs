@@ -389,7 +389,7 @@
         {
             var container = CreateContainer();
             container.Register<IBar>(c => new Bar());
-            container.Register<IFoo>(c => new FooWithDependency(container.GetInstance<IBar>()));
+            container.Register<IFoo>(c => new FooWithDependency(c.GetInstance<IBar>()));
             var instance = (FooWithDependency)container.GetInstance(typeof(IFoo));
             Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
         }
@@ -483,7 +483,7 @@
             var instance2 = container.GetInstance<IEnumerable<IFoo>>();
             Assert.AreSame(instance1, instance2);
         }
-
+               
         [TestMethod]
         public void GetAllInstances_NonGeneric_ReturnsAllInstances()
         {

@@ -38,6 +38,15 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; private set; }
     }
 
+    public class FooWithEnumerableIFooDependency : IFoo
+    {
+        public IEnumerable<IFoo> FooList { get; private set; }
+
+        public FooWithEnumerableIFooDependency(IEnumerable<IFoo> fooList)
+        {
+            FooList = fooList;
+        }
+    }
     
 
     public class FooWithSameDependencyTwice : IFoo

@@ -91,7 +91,7 @@
             var serviceInfo = parser.Parse(e);
             Assert.IsTrue(serviceInfo.ConstructorDependencies[0].ServiceType == typeof(IEnumerable<IBar>));
         }
-        
+                
         private IBar GetInstance()
         {
             return null;

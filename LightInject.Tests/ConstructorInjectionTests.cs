@@ -228,6 +228,28 @@
             Assert.AreEqual(2, instance.Bars.Count());
         }
 
+        [TestMethod]
+        public void GetInstance_CompositeDependency_InjectsOnlyOtherImplementations()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo), "Foo");
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            container.Register<IFoo>(
+                factory => new FooWithEnumerableIFooDependency(factory.GetAllInstances<IFoo>()));
+            var instance = (FooWithEnumerableIFooDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.FooList.First(), typeof(Foo));
+            Assert.IsInstanceOfType(instance.FooList.Last(), typeof(AnotherFoo));
+        }
+
+        [TestMethod]
+        public void GetInstance_RecursiveDependency_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+        }
+
+
         private static IServiceContainer CreateContainer()
         {
             return new ServiceContainer();
