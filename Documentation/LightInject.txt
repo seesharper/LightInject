@@ -91,11 +91,18 @@ This makes it possible to do implicit registration for the simple cases and opti
  
 ### Assembly Registration ###
 
-	container.Scan(someAssembly);
+Register all services found within the target assembly applying the **Transient** lifecycle.
 
-This will implicitly register all services found within the target assembly.
+	container.RegisterAssembly(someAssembly);
 
-**Note:** When registering services from an assembly, all services are registered with the transient lifecycle.
+Register all services found within the target assembly providing a default lifecycle.
+
+	container.RegisterAssembly(someAssembly, LifeCycleType.Singleton);
+
+Register all services found within the target assembly providing a type filter.
+
+	container.RegisterAssembly(someAssembly, t => t.Namespace == "SomeNamespace");
+
 
 
 ### No Registration ###
