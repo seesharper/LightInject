@@ -311,7 +311,8 @@ namespace LightInject
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
-        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType);
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType, Func<Type, bool> shouldRegister);
     }
 
     /// <summary>
@@ -333,12 +334,36 @@ namespace LightInject
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        void RegisterAssembly(Assembly assembly, Func<Type, bool> shouldRegister);
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
         /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
         /// <remarks>
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
         void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType);
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType, Func<Type, bool> shouldRegister);
+
 #if NET
         
         /// <summary>
@@ -419,6 +444,20 @@ namespace LightInject
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        public void RegisterAssembly(Assembly assembly, Func<Type, bool> shouldRegister)
+        {
+            AssemblyScanner.Scan(assembly, this, LifeCycleType.Transient, shouldRegister);
+        }
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
         /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
         /// <remarks>
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
@@ -426,8 +465,24 @@ namespace LightInject
         /// </remarks>     
         public void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType)
         {
-            AssemblyScanner.Scan(assembly, this, lifeCycleType);
+            AssemblyScanner.Scan(assembly, this, lifeCycleType, t => true);
         }
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        public void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType, Func<Type, bool> shouldRegister)
+        {
+            AssemblyScanner.Scan(assembly, this, lifeCycleType, shouldRegister);
+        }
+
 #if NET
        
         /// <summary>
@@ -816,7 +871,9 @@ namespace LightInject
 
             UpdateServiceRegistration(serviceType, serviceName, emitMethod);
             if (dependencyStack.Contains(emitMethod))
-                throw new InvalidOperationException();
+            {
+                throw new InvalidOperationException(string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceType, serviceName));
+            }
 
             dependencyStack.Push(emitMethod);            
             return this.CreateEmitMethodWrapper(emitMethod);
@@ -824,25 +881,28 @@ namespace LightInject
         
         private Action<DynamicMethodInfo> CreateEmitMethodWrapper(Action<DynamicMethodInfo> emitMethod)
         {
-            if (emitMethod == null) return null;
-            return (dmi) =>
+            if (emitMethod == null)
+            {
+                return null;
+            }
+
+            return dmi =>
                 {
                     emitMethod(dmi);
                     dependencyStack.Pop();
                 };
         }
 
-
         private Action<DynamicMethodInfo> GetCustomFactoryEmitMethod(Type serviceType, string serviceName, IFactory factory, Action<DynamicMethodInfo> emitMethod)
         {
             if (emitMethod != null)
             {
                 var del = CreateDynamicMethodDelegate(emitMethod, typeof(IFactory));
-                emitMethod = this.CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants.Items));
+                emitMethod = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants.Items));
             }
             else
             {
-                emitMethod = this.CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, null);
+                emitMethod = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, null);
             }
 
             return emitMethod;
@@ -904,7 +964,16 @@ namespace LightInject
             }
             else
             {
-                var emitter = this.GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
+                Action<DynamicMethodInfo> emitter;
+                try
+                {
+                    emitter = this.GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency), ex);                    
+                }
+                                
                 if (emitter == null)
                 {
                     throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
@@ -1794,8 +1863,9 @@ namespace LightInject
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
-        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found withing the assembly.</param>
-        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType)
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, LifeCycleType lifeCycleType, Func<Type, bool> shouldRegister)
         {            
             IEnumerable<Type> concreteTypes = GetConcreteTypes(assembly).ToList();
             var compositionRoots = concreteTypes.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
@@ -1805,7 +1875,7 @@ namespace LightInject
             }
             else
             {
-                foreach (Type type in concreteTypes)
+                foreach (Type type in concreteTypes.Where(shouldRegister))
                 {
                     BuildImplementationMap(type, serviceRegistry, lifeCycleType);
                 }
@@ -1880,7 +1950,7 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Selects the properties that represents a dependecy to the target <see cref="Type"/>.
+    /// Selects the properties that represents a dependency to the target <see cref="Type"/>.
     /// </summary>
     internal class PropertySelector : IPropertySelector
     {

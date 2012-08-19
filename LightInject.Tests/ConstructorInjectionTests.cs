@@ -218,6 +218,16 @@
         }
 
         [TestMethod]
+        public void GetInstance_NamedFuncDependency_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar), typeof(Bar), "SomeBar");
+            container.Register(typeof(IFoo), typeof(FooWithNamedFuncDependency));
+            var instance = (FooWithNamedFuncDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.GetBar("SomeBar"), typeof(Bar));
+        }
+
+        [TestMethod]
         public void GetInstance_IEnumerableDependency_InjectsAllInstances()
         {
             var container = CreateContainer();
@@ -234,11 +244,24 @@
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo), "Foo");
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-            container.Register<IFoo>(
-                factory => new FooWithEnumerableIFooDependency(factory.GetAllInstances<IFoo>()));
+            container.Register(typeof(IFoo), typeof(FooWithEnumerableIFooDependency));            
             var instance = (FooWithEnumerableIFooDependency)container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance.FooList.First(), typeof(Foo));
             Assert.IsInstanceOfType(instance.FooList.Last(), typeof(AnotherFoo));
+        }
+
+        [TestMethod]
+        public void GetInstance_SecondLevelCompositeDependency_InjectsOnlyOtherImplementations()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar), typeof(BarWithFooDependency));
+            container.Register(typeof(IFoo), typeof(Foo), "Foo");
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            container.Register<IFoo>(f => new FooWithEnumerableIFooDependency(f.GetAllInstances<IFoo>()));
+                
+            var instance = (BarWithFooDependency)container.GetInstance<IBar>();
+            Assert.IsInstanceOfType(((FooWithEnumerableIFooDependency)instance.Foo).FooList.First(), typeof(Foo));
+            Assert.IsInstanceOfType(((FooWithEnumerableIFooDependency)instance.Foo).FooList.Last(), typeof(AnotherFoo));            
         }
 
         [TestMethod]
@@ -246,9 +269,19 @@
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.GetInstance<IFoo>(), ex => ex.InnerException.Message == ErrorMessages.RecursiveDependency);
         }
 
+        [TestMethod]
+        public void GetInstance_SecondLevelRecursiveDependency_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar), typeof(BarWithFooDependency));
+            container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.GetInstance<IBar>(), ex => ex.InnerException.Message == ErrorMessages.RecursiveDependency);
+        }
 
         private static IServiceContainer CreateContainer()
         {

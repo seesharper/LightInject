@@ -406,9 +406,8 @@ We can now register both the open and closed generic types.
 
 ## Func&lt;T&gt; ##
 
-Sometimes it is useful to have a way to create a service instance from inside a class rather than passing that instance as a dependency.
 
-This can be done by declaring the dependency as a Func&lt;T&gt; delegate.
+We can resolve named services from within a service instance by passing a **Func&lt;T&gt;** delegate as the dependency. 
 
     public class FooWithFuncDependency : IFoo
     {
@@ -425,6 +424,29 @@ The container creates a delegate that is capable of resolving the underlying dep
 	container.Register(typeof(IFoo), typeof(FooWithFuncDependency));
 	var instance = (FooWithFuncDependency)container.GetInstance<IFoo>();
 	Assert.IsInstanceOfType(instance.GetBar(), typeof(Bar));
+
+## Func&lt;string,T&gt; ##
+
+We can resolve named services from within a service instance by passing a **Func&lt;string,T&gt;** delegate as the dependency. 
+
+    public class FooWithNamedFuncDependency : IFoo
+    {
+        public FooWithNamedFuncDependency(Func<string, IBar> getBar)
+        {
+            GetBar = getBar;
+        }
+        public Func<string,IBar> GetBar { get; private set; }
+    }
+
+The container now creates a delegate that is capable of resolving the underlying named dependency.
+
+    var container = CreateContainer();
+    container.Register(typeof(IBar), typeof(Bar), "SomeBar");
+    container.Register(typeof(IFoo), typeof(FooWithNamedFuncDependency));
+    var instance = (FooWithNamedFuncDependency)container.GetInstance<IFoo>();
+    Assert.IsInstanceOfType(instance.GetBar("SomeBar"), typeof(Bar));
+
+
 
 ## IEnumerable&lt;T&gt; ##
 
@@ -454,6 +476,54 @@ We can now register multiple implementations of the **IBar** interface and have 
     var instance = (FooWithEnumerableDependency)container.GetInstance<IFoo>();
     Assert.AreEqual(2, instance.Bars.Count());
 	
+## Composite pattern ##
+
+The [composite pattern](http://en.wikipedia.org/wiki/Composite_pattern) is a simple pattern that lets a class implement an interface and then delegates invocation of methods to a set other classes implementing the same interface. 
+
+LightInject makes this very simple by letting us inject an IEnumerable&lt;T&gt; of the same interface.
+
+    public class FooWithEnumerableIFooDependency : IFoo
+    {
+        public IEnumerable<IFoo> FooList { get; private set; }
+
+        public FooWithEnumerableIFooDependency(IEnumerable<IFoo> fooList)
+        {
+            FooList = fooList;
+        }
+    }
+
+While this looks like a recursive dependency, **LightInject** detects this and removes the  **FooWithEnumerableIFooDependency** from the IEnumerable&lt;IFoo&gt; beeing injected.	 
+
+    container.Register(typeof(IFoo), typeof(Foo), "Foo");
+    container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+    container.Register(typeof(IFoo), typeof(FooWithEnumerableIFooDependency));            
+    var instance = (FooWithEnumerableIFooDependency)container.GetInstance<IFoo>();
+    Assert.IsInstanceOfType(instance.FooList.First(), typeof(Foo));
+    Assert.IsInstanceOfType(instance.FooList.Last(), typeof(AnotherFoo));
+
+
+## Exceptions ##
+
+**LightInject** does not have any native exception classes and will throw an **InvalidOperationException** if an error occurs.  
+
+LightInject will never fail silently and will throw an **InvalidOperationException** if a service or its dependencies cannot be resolved. 
+
+## Recursive dependency detection ##
+
+A recursive dependency graph is when a service depends directly or indirectly on itself.
+
+    public class FooWithRecursiveDependency : IFoo
+    {
+        public FooWithRecursiveDependency(IFoo foo)
+        {
+        }
+    }
+
+The folling code will throw an **InvalidOperationException** stating that there are existing recursive dependencies. 
+
+	container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
+	container.GetInstance<IFoo>()
+
 
 ## Mocking ##
 
