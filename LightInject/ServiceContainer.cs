@@ -381,14 +381,14 @@ namespace LightInject
     {        
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";        
         private static readonly MethodInfo GetInstanceMethod;
-        private readonly ServiceRegistry<Action<DynamicMethodInfo>> services = new ServiceRegistry<Action<DynamicMethodInfo>>();
-        private readonly ServiceRegistry<OpenGenericServiceInfo> openGenericServices = new ServiceRegistry<OpenGenericServiceInfo>();
+        private readonly ServiceRegistry<Emitter> emitters = new ServiceRegistry<Emitter>();
+        private readonly ServiceRegistry<OpenGenericEmitter> openGenericEmitters = new ServiceRegistry<OpenGenericEmitter>();
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
-        private readonly ThreadSafeDictionary<Type, ServiceInfo> implementations = new ThreadSafeDictionary<Type, ServiceInfo>();
+        private readonly ThreadSafeDictionary<Type, ImplementationInfo> implementations = new ThreadSafeDictionary<Type, ImplementationInfo>();
         private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();
         private readonly Storage<object> constants = new Storage<object>();
-        private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>(); 
+        private readonly Stack<Emitter> dependencyStack = new Stack<Emitter>(); 
         private Storage<IFactory> factories;
         private bool firstServiceRequest = true;
 
@@ -674,7 +674,7 @@ namespace LightInject
 
             if (!delegates.TryGetValue(serviceType, out del))
             {
-                del = delegates.GetOrAdd(serviceType, t => CreateDelegate(serviceType, string.Empty));
+                del = delegates.GetOrAdd(serviceType, t => CreateDelegate(t, string.Empty));
             }
 
             return del(constants.Items);                       
@@ -713,7 +713,7 @@ namespace LightInject
 
             if (!namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
             {
-                del = delegates.GetOrAdd(serviceType, t => CreateDelegate(serviceType, serviceName));
+                del = namedDelegates.GetOrAdd(Tuple.Create(serviceType, serviceName), t => CreateDelegate(t.Item1, serviceName));
             }
 
             return del(constants.Items);                              
@@ -760,7 +760,7 @@ namespace LightInject
             generator.Emit(type.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
         }
 
-        private static void EmitEnumerable(IList<Action<DynamicMethodInfo>> serviceEmitters, Type elementType, DynamicMethodInfo dynamicMethodInfo)
+        private static void EmitEnumerable(IList<Emitter> serviceEmitters, Type elementType, DynamicMethodInfo dynamicMethodInfo)
         {
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
             LocalBuilder array = generator.DeclareLocal(elementType.MakeArrayType());
@@ -773,7 +773,7 @@ namespace LightInject
                 generator.Emit(OpCodes.Ldloc, array);
                 generator.Emit(OpCodes.Ldc_I4, index);
                 var serviceEmitter = serviceEmitters[index];
-                serviceEmitter(dynamicMethodInfo);
+                serviceEmitter.Method(dynamicMethodInfo);
                 generator.Emit(OpCodes.Stelem, elementType);
             }
 
@@ -830,9 +830,9 @@ namespace LightInject
                     p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
         }
        
-        private ServiceInfo CreateServiceInfo(Type implementingType)
+        private ImplementationInfo CreateServiceInfo(Type implementingType)
         {
-            var serviceInfo = new ServiceInfo();
+            var serviceInfo = new ImplementationInfo();
             ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(implementingType);
             serviceInfo.ImplementingType = implementingType;
             serviceInfo.Constructor = constructorInfo;
@@ -852,75 +852,85 @@ namespace LightInject
             return PropertySelector.Select(implementingType);
         }
 
-        private ServiceInfo CreateServiceInfoFromExpression(LambdaExpression lambdaExpression)
+        private ImplementationInfo CreateServiceInfoFromExpression(LambdaExpression lambdaExpression)
         {
             var lambdaExpressionParser = new LambdaExpressionParser();
-            ServiceInfo serviceInfo = lambdaExpressionParser.Parse(lambdaExpression);
-            return serviceInfo;
+            ImplementationInfo implementationInfo = lambdaExpressionParser.Parse(lambdaExpression);
+            return implementationInfo;
         }
 
-        private Action<DynamicMethodInfo> GetEmitMethod(Type serviceType, string serviceName)
+        private Emitter GetEmitMethod(Type serviceType, string serviceName)
         {
-            Action<DynamicMethodInfo> emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);
+            Emitter emitter = GetRegisteredEmitMethod(serviceType, serviceName);
 
             IFactory factory = GetCustomFactory(serviceType, serviceName);
             if (factory != null)
             {
-                emitMethod = GetCustomFactoryEmitMethod(serviceType, serviceName, factory, emitMethod);
+                emitter = GetCustomFactoryEmitMethod(serviceType, serviceName, factory, emitter);
             }
 
-            UpdateServiceRegistration(serviceType, serviceName, emitMethod);
-            if (dependencyStack.Contains(emitMethod))
-            {
-                throw new InvalidOperationException(string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceType, serviceName));
-            }
+            //UpdateServiceRegistration(serviceType, serviceName, emitter);
+            //if (dependencyStack.Contains(emitMethod))
+            //{
+            //    throw new InvalidOperationException(string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceType, serviceName));
+            //}
 
-            dependencyStack.Push(emitMethod);            
-            return this.CreateEmitMethodWrapper(emitMethod);
+            //dependencyStack.Push(emitMethod);            
+            return this.CreateEmitMethodWrapper(emitter, serviceType, serviceName);
         }
         
-        private Action<DynamicMethodInfo> CreateEmitMethodWrapper(Action<DynamicMethodInfo> emitMethod)
+        private Emitter CreateEmitMethodWrapper(Emitter emitter, Type serviceType, string serviceName)
         {
-            if (emitMethod == null)
+            if (emitter == null)
             {
                 return null;
             }
 
-            return dmi =>
-                {
-                    emitMethod(dmi);
-                    dependencyStack.Pop();
-                };
+            return new Emitter
+            {
+                Method = dmi =>
+                    {
+                        if (dependencyStack.Contains(emitter))
+                        {
+                            throw new InvalidOperationException(string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceType, serviceName));
+                        }
+
+                        dependencyStack.Push(emitter);
+                        emitter.Method(dmi);
+                        dependencyStack.Pop();
+                    }
+            };
         }
 
-        private Action<DynamicMethodInfo> GetCustomFactoryEmitMethod(Type serviceType, string serviceName, IFactory factory, Action<DynamicMethodInfo> emitMethod)
+        private Emitter GetCustomFactoryEmitMethod(Type serviceType, string serviceName, IFactory factory, Emitter emitter)
         {
-            if (emitMethod != null)
+            if (emitter != null)
             {
-                var del = CreateDynamicMethodDelegate(emitMethod, typeof(IFactory));
-                emitMethod = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants.Items));
+                var del = CreateDynamicMethodDelegate(emitter.Method, typeof(IFactory));
+                emitter = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants.Items));
             }
             else
             {
-                emitMethod = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, null);
+                emitter = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, null);
             }
 
-            return emitMethod;
+            UpdateServiceRegistration(serviceType, serviceName, emitter);
+            return emitter;
         }
 
-        private Action<DynamicMethodInfo> GetRegisteredEmitMethod(Type serviceType, string serviceName)
+        private Emitter GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
-            Action<DynamicMethodInfo> emitMethod;
+            Emitter emitter;
             var registrations = this.GetServiceRegistrations(serviceType);
-            registrations.TryGetValue(serviceName, out emitMethod);
-            return emitMethod ?? ResolveUnknownServiceEmitter(serviceType, serviceName);
+            registrations.TryGetValue(serviceName, out emitter);
+            return emitter ?? ResolveUnknownServiceEmitter(serviceType, serviceName);
         }
 
-        private void UpdateServiceRegistration(Type serviceType, string serviceName, Action<DynamicMethodInfo> emitMethod)
+        private void UpdateServiceRegistration(Type serviceType, string serviceName, Emitter emitter)
         {
-            if (emitMethod != null)
+            if (emitter != null)
             {
-                GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitMethod, (s, m) => emitMethod);
+                GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitter, (s, m) => emitter);
             }
         }
 
@@ -937,16 +947,16 @@ namespace LightInject
 
         private void EmitNewInstance(Type implementingType, DynamicMethodInfo dynamicMethodInfo)
         {
-            ServiceInfo serviceInfo = GetServiceInfo(implementingType);
+            ImplementationInfo implementationInfo = GetServiceInfo(implementingType);
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            EmitConstructorDependencies(serviceInfo, dynamicMethodInfo);
-            generator.Emit(OpCodes.Newobj, serviceInfo.Constructor);
-            EmitPropertyDependencies(serviceInfo, dynamicMethodInfo);
+            EmitConstructorDependencies(implementationInfo, dynamicMethodInfo);
+            generator.Emit(OpCodes.Newobj, implementationInfo.Constructor);
+            EmitPropertyDependencies(implementationInfo, dynamicMethodInfo);
         }
 
-        private void EmitConstructorDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitConstructorDependencies(ImplementationInfo implementationInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            foreach (ConstructorDependency dependency in serviceInfo.ConstructorDependencies)
+            foreach (ConstructorDependency dependency in implementationInfo.ConstructorDependencies)
             {
                 this.EmitDependency(dynamicMethodInfo, dependency);
             }
@@ -964,7 +974,7 @@ namespace LightInject
             }
             else
             {
-                Action<DynamicMethodInfo> emitter;
+                Emitter emitter;
                 try
                 {
                     emitter = this.GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
@@ -979,16 +989,21 @@ namespace LightInject
                     throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
                 }
 
-                emitter(dynamicMethodInfo);
+                emitter.Method(dynamicMethodInfo);
             }
         }
 
-        private void EmitPropertyDependencies(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitPropertyDependencies(ImplementationInfo implementationInfo, DynamicMethodInfo dynamicMethodInfo)
         {
+            if (implementationInfo.PropertyDependencies.Count == 0)
+            {
+                return;
+            }
+
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            LocalBuilder instance = generator.DeclareLocal(serviceInfo.ImplementingType);
+            LocalBuilder instance = generator.DeclareLocal(implementationInfo.ImplementingType);
             generator.Emit(OpCodes.Stloc, instance);
-            foreach (var propertyDependency in serviceInfo.PropertyDependencies)
+            foreach (var propertyDependency in implementationInfo.PropertyDependencies)
             {
                 generator.Emit(OpCodes.Ldloc, instance);
                 EmitDependency(dynamicMethodInfo, propertyDependency);
@@ -998,41 +1013,44 @@ namespace LightInject
             generator.Emit(OpCodes.Ldloc, instance);
         }
 
-        private Action<DynamicMethodInfo> ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
+        private Emitter ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
         {
+            Emitter emitter = null;
             if (IsFunc(serviceType))
             {
-                return CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, false);
+                emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, false);
             }
 
-            if (IsEnumerableOfT(serviceType))
+            else if (IsEnumerableOfT(serviceType))
             {
-                return CreateEnumerableServiceEmitter(serviceType);
+                emitter = CreateEnumerableServiceEmitter(serviceType);
             }
 
-            if (IsFuncWithStringArgument(serviceType))
+            else if (IsFuncWithStringArgument(serviceType))
             {
-                return CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, true);
+                emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, true);
             }
 
-            if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
+            else if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
             {
-                return CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
+                emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
             }
 
-            if (IsClosedGeneric(serviceType))
+            else if (IsClosedGeneric(serviceType))
             {
-                return CreateServiceEmitterBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                emitter = CreateServiceEmitterBasedOnClosedGenericServiceRequest(serviceType, serviceName);
             }
-
-            return null;
+                        
+            UpdateServiceRegistration(serviceType, serviceName, emitter);
+            
+            return emitter;
         }
 
-        private Action<DynamicMethodInfo> CreateEmitMethodBasedOnCustomFactory(Type serviceType, string serviceName, IFactory factory, Func<object> proceed)
+        private Emitter CreateEmitMethodBasedOnCustomFactory(Type serviceType, string serviceName, IFactory factory, Func<object> proceed)
         {
             int serviceRequestConstantIndex = CreateServiceRequestConstant(serviceType, serviceName, proceed);
             var factoryConstantIndex = this.CreateFactoryConstant(factory);
-            return dmi => EmitCallCustomFactory(dmi, serviceRequestConstantIndex, factoryConstantIndex, serviceType);
+            return new Emitter { Method = dmi => EmitCallCustomFactory(dmi, serviceRequestConstantIndex, factoryConstantIndex, serviceType) };            
         }
 
         private int CreateFactoryConstant(IFactory factory)
@@ -1058,11 +1076,22 @@ namespace LightInject
             return factories.Items.FirstOrDefault(f => f.CanGetInstance(serviceType, serviceName));            
         }
 
-        private Action<DynamicMethodInfo> CreateEnumerableServiceEmitter(Type serviceType)
+        private Emitter CreateEnumerableServiceEmitter(Type serviceType)
         {
             Type actualServiceType = serviceType.GetGenericArguments()[0];
-            IList<Action<DynamicMethodInfo>> serviceEmitters = GetServiceRegistrations(actualServiceType).Values.ToList();
+            if (actualServiceType.IsGenericType)
+            {
+                var openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
+                var openGenericServiceEmitters = GetOpenGenericRegistrations(openGenericServiceType);
+                foreach (var openGenericEmitterEntry in openGenericServiceEmitters.Keys)
+                {
+                    var test = this.GetRegisteredEmitMethod(actualServiceType, openGenericEmitterEntry);
+                }
+            }
             
+            IList<Emitter> serviceEmitters = GetServiceRegistrations(actualServiceType).Values.ToList();
+            
+
             if (dependencyStack.Count > 0 && serviceEmitters.Contains(dependencyStack.Peek()))
             {
                 serviceEmitters.Remove(dependencyStack.Peek());
@@ -1072,16 +1101,16 @@ namespace LightInject
             EmitEnumerable(serviceEmitters, actualServiceType, dynamicMethodInfo);
             var array = dynamicMethodInfo.CreateDelegate()(constants.Items);
             int index = constants.Add(array);
-            return dmi => EmitLoadConstant(dmi, index, actualServiceType.MakeArrayType());
+            return new Emitter { Method = dmi => EmitLoadConstant(dmi, index, actualServiceType.MakeArrayType()) };
         }
 
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
+        private Emitter CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
         {
             var actualServiceType = serviceType.GetGenericArguments().Last();
             var methodInfo = typeof(ServiceContainer).GetMethod("CreateFuncGetInstanceDelegate", BindingFlags.Instance | BindingFlags.NonPublic);
             var del = methodInfo.MakeGenericMethod(actualServiceType).Invoke(this, new object[] { namedService });
             var constantIndex = constants.Add(del);
-            return dmi => EmitLoadConstant(dmi, constantIndex, serviceType);
+            return new Emitter { Method = dmi => EmitLoadConstant(dmi, constantIndex, serviceType) };            
         }
 
         private Delegate CreateFuncGetInstanceDelegate<TServiceType>(bool namedService)
@@ -1098,21 +1127,21 @@ namespace LightInject
             }
         }
 
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnClosedGenericServiceRequest(Type serviceType, string serviceName)
+        private Emitter CreateServiceEmitterBasedOnClosedGenericServiceRequest(Type serviceType, string serviceName)
         {
             Type openGenericType = serviceType.GetGenericTypeDefinition();
 
-            OpenGenericServiceInfo openGenericServiceInfo = GetOpenGenericTypeInfo(openGenericType, serviceName);
-            if (openGenericServiceInfo == null)
+            OpenGenericEmitter openGenericEmitter = GetOpenGenericTypeInfo(openGenericType, serviceName);
+            if (openGenericEmitter == null)
             {
                 return null;
             }
 
-            Type closedGenericType = openGenericServiceInfo.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-            return dmi => openGenericServiceInfo.EmitMethod(dmi, closedGenericType);
+            Type closedGenericType = openGenericEmitter.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
+            return new Emitter { ImplementingType = closedGenericType, Method = dmi => openGenericEmitter.EmitMethod(dmi, closedGenericType) };
         }
 
-        private OpenGenericServiceInfo GetOpenGenericTypeInfo(Type serviceType, string serviceName)
+        private OpenGenericEmitter GetOpenGenericTypeInfo(Type serviceType, string serviceName)
         {
             var openGenericRegistrations = GetOpenGenericRegistrations(serviceType);
             if (CanRedirectRequestForDefaultOpenGenericServiceToSingleNamedService(serviceType, serviceName))
@@ -1120,12 +1149,12 @@ namespace LightInject
                 return openGenericRegistrations.First().Value;
             }
 
-            OpenGenericServiceInfo openGenericServiceInfo;
-            openGenericRegistrations.TryGetValue(serviceName, out openGenericServiceInfo);
-            return openGenericServiceInfo;
+            OpenGenericEmitter openGenericEmitter;
+            openGenericRegistrations.TryGetValue(serviceName, out openGenericEmitter);
+            return openGenericEmitter;
         }
 
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnSingleNamedInstance(Type serviceType)
+        private Emitter CreateServiceEmitterBasedOnSingleNamedInstance(Type serviceType)
         {
             return this.GetEmitMethod(serviceType, GetServiceRegistrations(serviceType).First().Key);
         }
@@ -1140,19 +1169,19 @@ namespace LightInject
             return string.IsNullOrEmpty(serviceName) && GetOpenGenericRegistrations(serviceType).Count == 1;
         }
 
-        private ServiceInfo GetServiceInfo(Type implementingType)
+        private ImplementationInfo GetServiceInfo(Type implementingType)
         {
             return implementations.GetOrAdd(implementingType, CreateServiceInfo);
         }
 
-        private ThreadSafeDictionary<string, Action<DynamicMethodInfo>> GetServiceRegistrations(Type serviceType)
+        private ThreadSafeDictionary<string, Emitter> GetServiceRegistrations(Type serviceType)
         {
-            return services.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo>>(StringComparer.InvariantCultureIgnoreCase));
+            return this.emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Emitter>(StringComparer.InvariantCultureIgnoreCase));
         }
 
-        private ThreadSafeDictionary<string, OpenGenericServiceInfo> GetOpenGenericRegistrations(Type serviceType)
+        private ThreadSafeDictionary<string, OpenGenericEmitter> GetOpenGenericRegistrations(Type serviceType)
         {
-            return openGenericServices.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, OpenGenericServiceInfo>(StringComparer.InvariantCultureIgnoreCase));
+            return this.openGenericEmitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, OpenGenericEmitter>(StringComparer.InvariantCultureIgnoreCase));
         }
 
         private void RegisterService(Type serviceType, Type implementingType, LifeCycleType lifeCycleType, string serviceName)
@@ -1163,14 +1192,14 @@ namespace LightInject
             }
             else
             {
-                Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(implementingType, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);
+                Emitter emitDelegate = GetEmitDelegate(implementingType, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);
                 GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);
             }
         }
 
         private void RegisterOpenGenericService(Type serviceType, Type implementingType, LifeCycleType lifeCycleType, string serviceName)
         {
-            var openGenericTypeInfo = new OpenGenericServiceInfo { ImplementingType = implementingType };
+            var openGenericTypeInfo = new OpenGenericEmitter { ImplementingType = implementingType };
             if (lifeCycleType == LifeCycleType.Transient)
             {
                 openGenericTypeInfo.EmitMethod = (d, t) => EmitNewInstance(t, d);
@@ -1187,23 +1216,35 @@ namespace LightInject
             GetOpenGenericRegistrations(serviceType).AddOrUpdate(serviceName, s => openGenericTypeInfo, (s, o) => openGenericTypeInfo);
         }
 
-        private Action<DynamicMethodInfo> GetEmitDelegate(Type implementingType, LifeCycleType lifeCycleType)
+        private Emitter GetEmitDelegate(Type implementingType, LifeCycleType lifeCycleType)
         {
-            Action<DynamicMethodInfo> emitDelegate = null;
+            Emitter emitter = null;
             switch (lifeCycleType)
             {
                 case LifeCycleType.Transient:
-                    emitDelegate = dynamicMethodInfo => EmitNewInstance(implementingType, dynamicMethodInfo);
+                    emitter = new Emitter
+                        {
+                            ImplementingType = implementingType, 
+                            Method = dynamicMethodInfo => EmitNewInstance(implementingType, dynamicMethodInfo) 
+                        };
                     break;
                 case LifeCycleType.Request:
-                    emitDelegate = dynamicMethodInfo => EmitRequestInstance(implementingType, dynamicMethodInfo);
+                    emitter = new Emitter
+                    {
+                        ImplementingType = implementingType,
+                        Method = dynamicMethodInfo => EmitRequestInstance(implementingType, dynamicMethodInfo)
+                    };
                     break;
                 case LifeCycleType.Singleton:
-                    emitDelegate = dynamicMethodInfo => EmitSingletonInstance(implementingType, dynamicMethodInfo);
+                    emitter = new Emitter
+                    {
+                        ImplementingType = implementingType,
+                        Method = dynamicMethodInfo => EmitSingletonInstance(implementingType, dynamicMethodInfo)
+                    };
                     break;
             }
 
-            return emitDelegate;
+            return emitter;
         }
 
         private void EmitSingletonInstance(Type implementingType, DynamicMethodInfo dynamicMethodInfo)
@@ -1244,7 +1285,7 @@ namespace LightInject
                 throw new InvalidOperationException(string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
             }
 
-            return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
+            return CreateDynamicMethodDelegate(serviceEmitter.Method, serviceType);
         }
 
         private bool FirstServiceRequest()
@@ -1273,13 +1314,13 @@ namespace LightInject
          
         private bool ServiceRegistryIsEmpty()
         {
-            return services.Count == 0 && openGenericServices.Count == 0;
+            return this.emitters.Count == 0 && this.openGenericEmitters.Count == 0;
         }
 
         private void RegisterValue(Type serviceType, object value, string serviceName)
         {
             int index = constants.Add(value);
-            Action<DynamicMethodInfo> emitter = dmi => EmitLoadConstant(dmi, index, serviceType);
+            var emitter = new Emitter { Method = dmi => EmitLoadConstant(dmi, index, serviceType) };
             GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, d => emitter, (s, d) => emitter);
         }
 
@@ -1293,16 +1334,16 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Parses a <see cref="LambdaExpression"/> into a <see cref="ServiceInfo"/> instance.
+        /// Parses a <see cref="LambdaExpression"/> into a <see cref="ImplementationInfo"/> instance.
         /// </summary>
         public class LambdaExpressionParser
         {                                                
             /// <summary>
-            /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ServiceInfo"/> instance.
+            /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ImplementationInfo"/> instance.
             /// </summary>
             /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
-            /// <returns>A <see cref="ServiceInfo"/> instance.</returns>
-            public ServiceInfo Parse(LambdaExpression lambdaExpression)
+            /// <returns>A <see cref="ImplementationInfo"/> instance.</returns>
+            public ImplementationInfo Parse(LambdaExpression lambdaExpression)
             {                                
                 switch (lambdaExpression.Body.NodeType)
                 {
@@ -1315,7 +1356,7 @@ namespace LightInject
                 }                
             }
                         
-            private static ServiceInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
+            private static ImplementationInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
             {
                 var serviceInfo = CreateServiceInfo(newExpression);
                 ParameterInfo[] parameters = newExpression.Constructor.GetParameters();
@@ -1329,13 +1370,13 @@ namespace LightInject
                 return serviceInfo;
             }
 
-            private static ServiceInfo CreateServiceInfo(NewExpression newExpression)
+            private static ImplementationInfo CreateServiceInfo(NewExpression newExpression)
             {
-                var serviceInfo = new ServiceInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
+                var serviceInfo = new ImplementationInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
                 return serviceInfo;
             }
 
-            private static ServiceInfo CreateServiceInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
+            private static ImplementationInfo CreateServiceInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
             {
                 var serviceInfo = CreateServiceInfoBasedOnNewExpression(memberInitExpression.NewExpression);
                 foreach (MemberBinding memberBinding in memberInitExpression.Bindings)
@@ -1346,11 +1387,11 @@ namespace LightInject
                 return serviceInfo;
             }
            
-            private static void HandleMemberAssignment(MemberAssignment memberAssignment, ServiceInfo serviceInfo)
+            private static void HandleMemberAssignment(MemberAssignment memberAssignment, ImplementationInfo implementationInfo)
             {
                 var propertyDependency = CreatePropertyDependency(memberAssignment);
                 ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
-                serviceInfo.PropertyDependencies.Add(propertyDependency);
+                implementationInfo.PropertyDependencies.Add(propertyDependency);
             }
 
             private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
@@ -1449,12 +1490,12 @@ namespace LightInject
         /// <summary>
         /// Contains information about how to create a service instance.
         /// </summary>
-        public class ServiceInfo
+        public class ImplementationInfo
         {
             /// <summary>
-            /// Initializes a new instance of the <see cref="ServiceInfo"/> class.
+            /// Initializes a new instance of the <see cref="ImplementationInfo"/> class.
             /// </summary>
-            public ServiceInfo()
+            public ImplementationInfo()
             {
                 PropertyDependencies = new List<PropertyDependecy>();
                 ConstructorDependencies = new List<ConstructorDependency>();
@@ -1545,7 +1586,7 @@ namespace LightInject
             public ParameterInfo Parameter { get; set; }
 
             /// <summary>
-            /// Returns textual information about the depenency.
+            /// Returns textual information about the dependency.
             /// </summary>
             /// <returns>A string that describes the dependency.</returns>
             public override string ToString()
@@ -1625,7 +1666,7 @@ namespace LightInject
 
             public bool TryGetValue(TKey key, out TValue value)
             {
-                return dictionary.TryGetValue(key, out value);
+                return dictionary.TryGetValue(key, out value);                
             }
 
             public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
@@ -1639,7 +1680,7 @@ namespace LightInject
                     }
                 }
 
-                return value;
+               return value;
             }
 
             private TValue TryAddValue(TKey key, Func<TKey, TValue> valueFactory)
@@ -1754,6 +1795,17 @@ namespace LightInject
                 }
             }
 
+            public ICollection<TKey> Keys
+            {
+                get
+                {
+                    lock (syncObject)
+                    {
+                        return dictionary.Keys;
+                    }
+                }
+            }
+
             public TValue GetOrAdd(TKey key, Func<TKey, TValue> valuefactory)
             {
                 lock (syncObject)
@@ -1807,7 +1859,7 @@ namespace LightInject
             }
         }        
 #endif
-        
+
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
         {
         }
@@ -1816,12 +1868,30 @@ namespace LightInject
         {
         }
 
-        private class OpenGenericServiceInfo
+        private class OpenGenericEmitter
         {
             public Type ImplementingType { get; set; }
 
             public Action<DynamicMethodInfo, Type> EmitMethod { get; set; }
         }
+
+        private class Emitter
+        {
+            public Type ImplementingType { get; set; }
+
+            public Action<DynamicMethodInfo> Method { get; set; }
+
+            public override int GetHashCode()
+            {
+                return Method.GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return Method.Equals(((Emitter)obj).Method);
+            }
+        }
+
     }
 
     /// <summary>

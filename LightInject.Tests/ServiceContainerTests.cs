@@ -120,6 +120,17 @@
         }
 
         [TestMethod]
+        public void GetInstance_TwoServices_ReturnsNamedInstanceAfterGettingDefaultInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            container.GetInstance(typeof(IFoo), "AnotherFoo");
+            object defaultInstance = container.GetInstance(typeof(IFoo));            
+            Assert.IsInstanceOfType(defaultInstance, typeof(Foo));
+        }
+
+        [TestMethod]
         public void GetInstance_OneNamedService_ReturnsDefaultService()
         {
             var container = CreateContainer();
@@ -503,6 +514,26 @@
             var instances = container.GetAllInstances<IFoo>();
             Assert.IsInstanceOfType(instances, typeof(IEnumerable<IFoo>));
         }
+
+        [TestMethod]
+        public void GetAllInstances_TwoOpenGenericServices_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
+            container.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo");
+            var instances = container.GetAllInstances<IFoo<int>>();
+            Assert.AreEqual(2, instances.Count());
+        }
+
+        [TestMethod]
+        public void GetAllInstances_EnumerableWithRecursiveDependency_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.GetAllInstances<IFoo>(), ex => ex.Message == ErrorMessages.RecursiveDependency);
+        }
+
 
         [TestMethod]
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()

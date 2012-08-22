@@ -270,7 +270,7 @@
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
             ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), ex => ex.InnerException.Message == ErrorMessages.RecursiveDependency);
+                () => container.GetInstance<IFoo>(), ex => ex.Message == ErrorMessages.RecursiveDependency);
         }
 
         [TestMethod]
@@ -280,7 +280,7 @@
             container.Register(typeof(IBar), typeof(BarWithFooDependency));
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
             ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IBar>(), ex => ex.InnerException.Message == ErrorMessages.RecursiveDependency);
+                () => container.GetInstance<IBar>(), ex => ex.Message == ErrorMessages.RecursiveDependency);
         }
 
         private static IServiceContainer CreateContainer()
