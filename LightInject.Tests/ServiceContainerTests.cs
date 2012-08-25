@@ -88,7 +88,7 @@
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo)), ErrorMessages.UnknownDependency);
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo)), ErrorMessages.UnableToResolveType);
         }
 
         [TestMethod]
@@ -485,14 +485,14 @@
         }
 
         [TestMethod]
-        public void GetInstance_IEnumerable_ReturnsSameInstance()
+        public void GetInstance_IEnumerable_ReturnsTransientInstance()
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo));
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
             var instance1 = container.GetInstance<IEnumerable<IFoo>>();
             var instance2 = container.GetInstance<IEnumerable<IFoo>>();
-            Assert.AreSame(instance1, instance2);
+            Assert.AreNotSame(instance1, instance2);
         }
                
         [TestMethod]
@@ -526,41 +526,96 @@
         }
 
         [TestMethod]
+        public void GetAllInstances_ClosedAndOpenGenericService_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<int>), typeof(Foo<int>));
+            container.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo");
+            var instances = container.GetAllInstances<IFoo<int>>();
+            Assert.AreEqual(2, instances.Count());
+        }
+
+
+        [TestMethod]
         public void GetAllInstances_EnumerableWithRecursiveDependency_ThrowsException()
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
             ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetAllInstances<IFoo>(), ex => ex.Message == ErrorMessages.RecursiveDependency);
+                () => container.GetAllInstances<IFoo>(), ex => ex.InnerException.InnerException.InnerException.Message == ErrorMessages.RecursiveDependency);
         }
 
+        [TestMethod]
+        public void Run()
+        {
+            for (int i = 0; i < 1; i++)
+            {
+                GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance();
+            }
+        }
 
+        
         [TestMethod]
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo), LifeCycleType.Singleton);
+            Foo.Instances = 0;
             IList<IFoo> instances = new List<IFoo>();
-            Parallel.Invoke(
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                        () => instances.Add(container.GetInstance<IFoo>()),
-                () => instances.Add(container.GetInstance<IFoo>()));
-
-            IFoo firstInstance = instances[0];
-            foreach (var instance in instances)
+            for (int i = 0; i < 100; i++)
             {
-                Assert.AreSame(firstInstance, instance);
+                RunParallel(container);
             }
+                      
+            Assert.AreEqual(1,Foo.Instances);
         }
-        
 
+        private static void RunParallel(IServiceContainer container)
+        {
+            Parallel.Invoke(
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>(),
+                () => container.GetInstance<IFoo>());
+        }
 
         #endregion
 

@@ -25,7 +25,7 @@
             var container = CreateContainer();
             container.Register<IFoo, FooWithProperyDependency>();            
             ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), ErrorMessages.UnknownPropertyDependency);            
+                () => container.GetInstance<IFoo>(), e => e.InnerException.Message == ErrorMessages.UnknownPropertyDependency);            
         }
 
         [TestMethod]
@@ -186,7 +186,7 @@
         public void GetInstance_StaticDependency_DoesNotInjectDependency()
         {
             var container = CreateContainer();
-            container.Register<IFoo,FooWithStaticDependency>();
+            container.Register<IFoo, FooWithStaticDependency>();
             container.GetInstance<IFoo>();
             Assert.IsNull(FooWithStaticDependency.Bar);
         }

@@ -26,7 +26,7 @@
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
             ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), ErrorMessages.UnknownConstructorDependency);
+                () => container.GetInstance<IFoo>(), e=> e.InnerException.Message == ErrorMessages.UnknownConstructorDependency);
         }
 
         [TestMethod]
@@ -270,7 +270,7 @@
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
             ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), ex => ex.Message == ErrorMessages.RecursiveDependency);
+                () => container.GetInstance<IFoo>(), ex => ex.InnerException.InnerException.Message == ErrorMessages.RecursiveDependency);
         }
 
         [TestMethod]
@@ -280,7 +280,27 @@
             container.Register(typeof(IBar), typeof(BarWithFooDependency));
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
             ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IBar>(), ex => ex.Message == ErrorMessages.RecursiveDependency);
+                () => container.GetInstance<IBar>(), ex => ex.InnerException.InnerException.InnerException.Message == ErrorMessages.RecursiveDependency);
+        }
+
+        [TestMethod]
+        public void GetInstance_RequestLifeCycle_FirstIEnumerableAndArgumentAreSame()
+         {
+            var container = CreateContainer();
+            container.Register(typeof(IBar), typeof(Bar), LifeCycleType.Request);
+            container.Register(typeof(IFoo), typeof(FooWithEnumerableAndRegularDependency));
+            var instance = (FooWithEnumerableAndRegularDependency)container.GetInstance<IFoo>();
+            Assert.AreSame(instance.Bar, instance.Bars.First());
+        }
+
+        [TestMethod]
+        public void GetInstance_SingletonLifeCycle_FirstIEnumerableAndArgumentAreSame()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IBar), typeof(Bar), LifeCycleType.Singleton);
+            container.Register(typeof(IFoo), typeof(FooWithEnumerableAndRegularDependency));
+            var instance = (FooWithEnumerableAndRegularDependency)container.GetInstance<IFoo>();
+            Assert.AreSame(instance.Bar, instance.Bars.First());
         }
 
         private static IServiceContainer CreateContainer()
