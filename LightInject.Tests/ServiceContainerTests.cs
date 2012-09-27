@@ -442,6 +442,30 @@
             Assert.AreSame(instance1, instance2);
         }
 
+        [TestMethod]
+        public void GetInstance_FuncFactoryWithMethodCall_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(factory => GetFoo());
+            var foo = container.GetInstance<IFoo>();
+            Assert.IsNotNull(foo);
+        }
+
+        [TestMethod]
+        public void GetInstance_SingletonFuncFactoryWithMethodCall_ReturnsSingleInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(factory => GetFoo(), LifeCycleType.Singleton);
+            var instance1 = container.GetInstance<IFoo>();
+            var instance2 = container.GetInstance<IFoo>();
+            Assert.AreSame(instance1, instance2);
+        }
+
+        private IFoo GetFoo()
+        {
+            return new Foo();
+        }
+
         #endregion
 
         #region IEnumerable

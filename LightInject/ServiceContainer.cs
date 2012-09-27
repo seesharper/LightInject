@@ -945,6 +945,19 @@ namespace LightInject
             EmitPropertyDependencies(implementationInfo, dynamicMethodInfo);
         }
 
+        private void EmitNewInstanceUsingFunctionDelegate(LambdaExpression factoryExpression, DynamicMethodInfo dynamicMethodInfo)
+        {
+            Delegate factoryDelegate = factoryExpression.Compile();
+            var factoryDelegateIndex = constants.Add(factoryDelegate);
+            var serviceFactoryIndex = constants.Add(this);
+            Type funcType = factoryDelegate.GetType();            
+            EmitLoadConstant(dynamicMethodInfo, factoryDelegateIndex, funcType);
+            EmitLoadConstant(dynamicMethodInfo, serviceFactoryIndex, typeof(IServiceFactory));
+            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            MethodInfo invokeMethod = funcType.GetMethod("Invoke");
+            generator.Emit(OpCodes.Callvirt, invokeMethod);
+        }
+
         private void EmitConstructorDependencies(ImplementationInfo implementationInfo, DynamicMethodInfo dynamicMethodInfo)
         {
             foreach (ConstructorDependency dependency in implementationInfo.ConstructorDependencies)
@@ -1308,10 +1321,22 @@ namespace LightInject
             Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycleType, string serviceName)
         {
             var serviceinfo = CreateServiceInfoFromExpression(factory);
-            Type implementingType = serviceinfo.ImplementingType;
-            implementations.AddOrUpdate(implementingType, t => serviceinfo, (t, s) => serviceinfo);
-            RegisterService(typeof(TService), implementingType, lifeCycleType, serviceName);
+            if (serviceinfo.FactoryExpression != null)
+            {
+                Action<DynamicMethodInfo> emitDelegate = (dmi) => this.EmitNewInstanceUsingFunctionDelegate(serviceinfo.FactoryExpression, dmi);
+                this.GetServiceRegistrations(typeof(TService)).AddOrUpdate(serviceName, s => emitDelegate, (s, d) => emitDelegate);
+            }
+            else
+            {
+                Type implementingType = serviceinfo.ImplementingType;
+                implementations.AddOrUpdate(implementingType, t => serviceinfo, (t, s) => serviceinfo);
+                RegisterService(typeof(TService), implementingType, lifeCycleType, serviceName);    
+            }
+            
         }
+
+        
+
 
         /// <summary>
         /// Parses a <see cref="LambdaExpression"/> into a <see cref="ImplementationInfo"/> instance.
@@ -1332,10 +1357,16 @@ namespace LightInject
                     case ExpressionType.MemberInit:
                         return CreateServiceInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                                      
                     default:
-                        throw new InvalidOperationException("Only the new operator is supported in a function factory");
+                        return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);
+                        
                 }                
             }
-                        
+
+            private ImplementationInfo CreateServiceInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
+            {
+                return new ImplementationInfo() { FactoryExpression = lambdaExpression };
+            }
+
             private static ImplementationInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
             {
                 var serviceInfo = CreateServiceInfo(newExpression);
@@ -1502,6 +1533,11 @@ namespace LightInject
             /// the property dependencies for the target service instance. 
             /// </summary>
             public List<ConstructorDependency> ConstructorDependencies { get; private set; }
+
+            /// <summary>
+            /// Gets or sets the <see cref="LambdaExpression"/> to be used to create the service instance.
+            /// </summary>
+            public LambdaExpression FactoryExpression { get; set; }
         }
 
         /// <summary>
