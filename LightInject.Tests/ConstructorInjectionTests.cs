@@ -198,7 +198,7 @@
         }
 
         [TestMethod]
-        public void GetInstance_MultipleContructors_UsesConstructorWithMostParameters()
+        public void GetInstance_MultipleConstructors_UsesConstructorWithMostParameters()
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithMultipleConstructors));
@@ -301,6 +301,20 @@
             container.Register(typeof(IFoo), typeof(FooWithEnumerableAndRegularDependency));
             var instance = (FooWithEnumerableAndRegularDependency)container.GetInstance<IFoo>();
             Assert.AreSame(instance.Bar, instance.Bars.First());
+        }
+
+        [TestMethod]
+        public void GetInstance_FuncFactoryWithMethodCallAsDependency_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(factory => new FooWithDependency(this.CreateBar()));
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Bar,typeof(Bar));
+        }
+
+        private IBar CreateBar()
+        {
+            return new Bar();
         }
 
         private static IServiceContainer CreateContainer()
