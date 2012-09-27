@@ -383,6 +383,7 @@ namespace LightInject
         private static readonly MethodInfo GetInstanceMethod;
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> emitters = new ServiceRegistry<Action<DynamicMethodInfo>>();
         private readonly ServiceRegistry<OpenGenericEmitter> openGenericEmitters = new ServiceRegistry<OpenGenericEmitter>();
+        private readonly ServiceRegistry<Action<DynamicMethodInfo,Type,string>> openGenericEmitters2 = new ServiceRegistry<Action<DynamicMethodInfo, Type, string>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
         private readonly ThreadSafeDictionary<ServiceInfo, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceInfo, ConstructionInfo>();        
@@ -1057,7 +1058,7 @@ namespace LightInject
             }
             else if (IsClosedGeneric(serviceType))
             {
-                emitter = CreateServiceEmitterBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                emitter = CreateServiceEmitterBasedOnClosedGenericServiceRequest2(serviceType, serviceName);
             }
                         
             UpdateServiceRegistration(serviceType, serviceName, emitter);
@@ -1116,7 +1117,7 @@ namespace LightInject
         private void EnsureEmitMethodsForOpenGenericTypesAreCreated(Type actualServiceType)
         {
             var openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
-            var openGenericServiceEmitters = this.GetOpenGenericRegistrations(openGenericServiceType);
+            var openGenericServiceEmitters = this.GetOpenGenericRegistrations2(openGenericServiceType);
             foreach (var openGenericEmitterEntry in openGenericServiceEmitters.Keys)
             {
                 GetRegisteredEmitMethod(actualServiceType, openGenericEmitterEntry);
@@ -1146,29 +1147,55 @@ namespace LightInject
             }
         }
 
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnClosedGenericServiceRequest(Type serviceType, string serviceName)
+        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnClosedGenericServiceRequest(Type closedGenericServiceType, string serviceName)
         {
-            Type openGenericType = serviceType.GetGenericTypeDefinition();
+            Type openGenericServiceType = closedGenericServiceType.GetGenericTypeDefinition();
 
-            OpenGenericEmitter openGenericEmitter = GetOpenGenericTypeInfo(openGenericType, serviceName);
+            OpenGenericEmitter openGenericEmitter = GetOpenGenericTypeInfo(openGenericServiceType, serviceName);
             if (openGenericEmitter == null)
             {
                 return null;
             }
 
-            Type closedGenericType = openGenericEmitter.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-            return dmi => openGenericEmitter.EmitMethod(dmi, serviceType, closedGenericType);
+            Type closedGenericImplementingType = openGenericEmitter.ImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
+            return dmi => openGenericEmitter.EmitMethod(dmi, closedGenericServiceType, closedGenericImplementingType);
         }
 
-        private OpenGenericEmitter GetOpenGenericTypeInfo(Type serviceType, string serviceName)
+        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnClosedGenericServiceRequest2(Type closedGenericServiceType, string serviceName)
         {
-            var openGenericRegistrations = GetOpenGenericRegistrations(serviceType);
-            if (CanRedirectRequestForDefaultOpenGenericServiceToSingleNamedService(serviceType, serviceName))
+            Type openGenericServiceType = closedGenericServiceType.GetGenericTypeDefinition();
+
+            Action<DynamicMethodInfo, Type, string> openGenericEmitter = GetOpenGenericTypeInfo2(openGenericServiceType, serviceName);
+            if (openGenericEmitter == null)
+            {
+                return null;
+            }
+            
+            return dmi => openGenericEmitter(dmi, closedGenericServiceType,serviceName);
+        }
+
+        private OpenGenericEmitter GetOpenGenericTypeInfo(Type openGenericServiceType, string serviceName)
+        {
+            var openGenericRegistrations = GetOpenGenericRegistrations(openGenericServiceType);
+            if (CanRedirectRequestForDefaultOpenGenericServiceToSingleNamedService(openGenericServiceType, serviceName))
             {
                 return openGenericRegistrations.First().Value;
             }
 
             OpenGenericEmitter openGenericEmitter;
+            openGenericRegistrations.TryGetValue(serviceName, out openGenericEmitter);
+            return openGenericEmitter;
+        }
+
+        private Action<DynamicMethodInfo, Type, string> GetOpenGenericTypeInfo2(Type openGenericServiceType, string serviceName)
+        {
+            var openGenericRegistrations = GetOpenGenericRegistrations2(openGenericServiceType);
+            if (CanRedirectRequestForDefaultOpenGenericServiceToSingleNamedService2(openGenericServiceType, serviceName))
+            {
+                return openGenericRegistrations.First().Value;
+            }
+
+            Action<DynamicMethodInfo, Type, string> openGenericEmitter;
             openGenericRegistrations.TryGetValue(serviceName, out openGenericEmitter);
             return openGenericEmitter;
         }
@@ -1188,6 +1215,10 @@ namespace LightInject
             return string.IsNullOrEmpty(serviceName) && GetOpenGenericRegistrations(serviceType).Count == 1;
         }
 
+        private bool CanRedirectRequestForDefaultOpenGenericServiceToSingleNamedService2(Type serviceType, string serviceName)
+        {
+            return string.IsNullOrEmpty(serviceName) && GetOpenGenericRegistrations2(serviceType).Count == 1;
+        }
         private ConstructionInfo GetConstructionInfo(ServiceInfo serviceInfo)
         {
             return implementations.GetOrAdd(serviceInfo, CreateServiceInfo);
@@ -1203,11 +1234,16 @@ namespace LightInject
             return this.openGenericEmitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, OpenGenericEmitter>(StringComparer.InvariantCultureIgnoreCase));
         }
 
+        private ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type, string>> GetOpenGenericRegistrations2(Type serviceType)
+        {
+            return this.openGenericEmitters2.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo,Type,string>>(StringComparer.InvariantCultureIgnoreCase));
+        }
+
         private void RegisterService(Type serviceType, Type implementingType, LifeCycleType lifeCycleType, string serviceName)
         {
             if (serviceType.IsGenericTypeDefinition)
             {
-                RegisterOpenGenericService(serviceType, implementingType, lifeCycleType, serviceName);
+                RegisterOpenGenericService2(serviceType, implementingType, lifeCycleType, serviceName);
             }
             else
             {
@@ -1217,9 +1253,20 @@ namespace LightInject
             }
         }
 
-        private void RegisterOpenGenericService(Type serviceType, Type implementingType, LifeCycleType lifeCycleType, string serviceName)
+        private void RegisterOpenGenericService2(Type openGenericServiceType, Type openGenericImplementingType, LifeCycleType lifeCycleType, string serviceName)
         {
-            var openGenericTypeInfo = new OpenGenericEmitter { ImplementingType = implementingType };            
+            Action<DynamicMethodInfo, Type, string> emitter = (dmi, closedGenericServiceType, requestedServiceName) =>
+                { 
+                    Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
+                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = requestedServiceName };
+                    GetEmitDelegate(serviceInfo, lifeCycleType)(dmi);
+                };
+            this.GetOpenGenericRegistrations2(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);
+        }
+
+        private void RegisterOpenGenericService(Type openGenericServiceType, Type openGenericImplementingType, LifeCycleType lifeCycleType, string serviceName)
+        {        
+            var openGenericTypeInfo = new OpenGenericEmitter { ImplementingType = openGenericImplementingType };            
             if (lifeCycleType == LifeCycleType.Transient)
             {
                 openGenericTypeInfo.EmitMethod = (dmi, closedGenericServiceType, closedGenericImplementingType) =>
@@ -1245,7 +1292,7 @@ namespace LightInject
                     };
             }
 
-            GetOpenGenericRegistrations(serviceType).AddOrUpdate(serviceName, s => openGenericTypeInfo, (s, o) => openGenericTypeInfo);
+            GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => openGenericTypeInfo, (s, o) => openGenericTypeInfo);
         }
 
         private Action<DynamicMethodInfo> GetEmitDelegate(ServiceInfo serviceInfo, LifeCycleType lifeCycleType)
@@ -1341,7 +1388,7 @@ namespace LightInject
          
         private bool ServiceRegistryIsEmpty()
         {
-            return this.emitters.Count == 0 && this.openGenericEmitters.Count == 0;
+            return this.emitters.Count == 0 && this.openGenericEmitters2.Count == 0;
         }
 
         private void RegisterValue(Type serviceType, object value, string serviceName)
