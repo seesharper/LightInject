@@ -928,13 +928,13 @@ namespace LightInject
 
         private void EmitRequestInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            if (!dynamicMethodInfo.ContainsLocalVariable(serviceInfo.ImplementingType))
+            if (!dynamicMethodInfo.ContainsLocalVariable(serviceInfo))
             {
                 EmitNewInstance(serviceInfo, dynamicMethodInfo);
-                dynamicMethodInfo.EmitStoreLocalVariable(serviceInfo.ImplementingType);
+                dynamicMethodInfo.EmitStoreLocalVariable(serviceInfo);
             }
 
-            dynamicMethodInfo.EmitLoadLocalVariable(serviceInfo.ImplementingType);
+            dynamicMethodInfo.EmitLoadLocalVariable(serviceInfo);
         }
 
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
@@ -1137,7 +1137,7 @@ namespace LightInject
             }
 
             Type closedGenericType = openGenericEmitter.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-            return dmi => openGenericEmitter.EmitMethod(dmi, closedGenericType);
+            return dmi => openGenericEmitter.EmitMethod(dmi, serviceType, closedGenericType);
         }
 
         private OpenGenericEmitter GetOpenGenericTypeInfo(Type serviceType, string serviceName)
@@ -1191,7 +1191,7 @@ namespace LightInject
             }
             else
             {
-                ServiceInfo serviceInfo = new ServiceInfo(){ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName};
+                var serviceInfo = new ServiceInfo(){ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName};
                 Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);
                 GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);
             }
@@ -1202,26 +1202,26 @@ namespace LightInject
             var openGenericTypeInfo = new OpenGenericEmitter { ImplementingType = implementingType };            
             if (lifeCycleType == LifeCycleType.Transient)
             {
-                openGenericTypeInfo.EmitMethod = (d, t) =>
+                openGenericTypeInfo.EmitMethod = (dmi, closedGenericServiceType, closedGenericImplementingType) =>
                     {
-                        var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = t, ServiceName = serviceName };
-                        EmitNewInstance(serviceInfo, d);
+                        var serviceInfo = new ServiceInfo() { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
+                        EmitNewInstance(serviceInfo, dmi);
                     };
             }
             else if (lifeCycleType == LifeCycleType.Singleton)
             {
-                openGenericTypeInfo.EmitMethod = (d, t) =>
+                openGenericTypeInfo.EmitMethod = (dmi,closedGenericServiceType, closedGenericImplementingType) =>
                     {
-                        var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = t, ServiceName = serviceName };
-                        EmitSingletonInstance(serviceInfo, d);
+                        var serviceInfo = new ServiceInfo() { ServiceType = closedGenericImplementingType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
+                        EmitSingletonInstance(serviceInfo, dmi);
                     };
             }
             else if (lifeCycleType == LifeCycleType.Request)
             {
-                openGenericTypeInfo.EmitMethod = (d, t) =>
+                openGenericTypeInfo.EmitMethod = (dmi, closedGenericServiceType, closedGenericImplementingType) =>
                     {
-                        var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = t, ServiceName = serviceName };
-                        EmitRequestInstance(serviceInfo, d);
+                        var serviceInfo = new ServiceInfo() { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
+                        EmitRequestInstance(serviceInfo, dmi);
                     };
             }
 
@@ -1535,7 +1535,7 @@ namespace LightInject
             }
         }
  
-        public class ServiceInfo : IEquatable<ServiceInfo>
+        public class ServiceInfo 
         {
             public Type ServiceType { get; set; }
 
@@ -1545,10 +1545,22 @@ namespace LightInject
 
             public LambdaExpression FactoryExpression { get; set; }
 
-            public bool Equals(ServiceInfo other)
+            public override int GetHashCode()
             {
-                return this.ServiceName == other.ServiceName && this.ServiceType == other.ServiceType;
+                return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();
             }
+
+            public override bool Equals(object obj)
+            {
+                var other = obj as ServiceInfo;
+                if (other == null)
+                {
+                    return false;
+                }
+
+                var result = this.ServiceName == other.ServiceName && this.ServiceType == other.ServiceType;
+                return result;                
+            }            
         }
 
 
@@ -1770,7 +1782,7 @@ namespace LightInject
 
         private class DynamicMethodInfo
         {
-            private readonly IDictionary<Type, LocalBuilder> localVariables = new Dictionary<Type, LocalBuilder>();
+            private readonly IDictionary<ServiceInfo, LocalBuilder> localVariables = new Dictionary<ServiceInfo, LocalBuilder>();
 
             private DynamicMethod dynamicMethod;
 
@@ -1790,20 +1802,20 @@ namespace LightInject
                 return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
             }
 
-            public bool ContainsLocalVariable(Type implementingType)
+            public bool ContainsLocalVariable(ServiceInfo serviceInfo)
             {
-                return localVariables.ContainsKey(implementingType);
+                return localVariables.ContainsKey(serviceInfo);
             }
 
-            public void EmitLoadLocalVariable(Type implementingType)
+            public void EmitLoadLocalVariable(ServiceInfo serviceInfo)
             {
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Ldloc, localVariables[implementingType]);
+                dynamicMethod.GetILGenerator().Emit(OpCodes.Ldloc, localVariables[serviceInfo]);
             }
 
-            public void EmitStoreLocalVariable(Type implementingType)
+            public void EmitStoreLocalVariable(ServiceInfo serviceInfo)
             {
-                localVariables.Add(implementingType, dynamicMethod.GetILGenerator().DeclareLocal(implementingType));
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Stloc, localVariables[implementingType]);
+                localVariables.Add(serviceInfo, dynamicMethod.GetILGenerator().DeclareLocal(serviceInfo.ServiceType));
+                dynamicMethod.GetILGenerator().Emit(OpCodes.Stloc, localVariables[serviceInfo]);
             }
 
             private void CreateDynamicMethod()
@@ -1942,7 +1954,7 @@ namespace LightInject
         {
             public Type ImplementingType { get; set; }
 
-            public Action<DynamicMethodInfo, Type> EmitMethod { get; set; }
+            public Action<DynamicMethodInfo,Type, Type> EmitMethod { get; set; }
         }      
     }
 
