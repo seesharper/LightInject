@@ -386,7 +386,8 @@ namespace LightInject
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
         private readonly ThreadSafeDictionary<Type, ImplementationInfo> implementations = new ThreadSafeDictionary<Type, ImplementationInfo>();
-        private readonly ThreadSafeDictionary<Type, Lazy<object>> singletons = new ThreadSafeDictionary<Type, Lazy<object>>();
+        private readonly ThreadSafeDictionary<ServiceInfo, Lazy<object>> singletons = new ThreadSafeDictionary<ServiceInfo, Lazy<object>>();
+        private readonly ThreadSafeDictionary<Tuple<Type,string>, Lazy<object>> singletons2 = new ThreadSafeDictionary<Tuple<Type,string>, Lazy<object>>();
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>(); 
         private Storage<IFactory> factories;
@@ -925,20 +926,20 @@ namespace LightInject
             }
         }
 
-        private void EmitRequestInstance(Type implementingType, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitRequestInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            if (!dynamicMethodInfo.ContainsLocalVariable(implementingType))
+            if (!dynamicMethodInfo.ContainsLocalVariable(serviceInfo.ImplementingType))
             {
-                EmitNewInstance(implementingType, dynamicMethodInfo);
-                dynamicMethodInfo.EmitStoreLocalVariable(implementingType);
+                EmitNewInstance(serviceInfo, dynamicMethodInfo);
+                dynamicMethodInfo.EmitStoreLocalVariable(serviceInfo.ImplementingType);
             }
 
-            dynamicMethodInfo.EmitLoadLocalVariable(implementingType);
+            dynamicMethodInfo.EmitLoadLocalVariable(serviceInfo.ImplementingType);
         }
 
-        private void EmitNewInstance(Type implementingType, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            ImplementationInfo implementationInfo = GetServiceInfo(implementingType);
+            ImplementationInfo implementationInfo = GetServiceInfo(serviceInfo.ImplementingType);
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
             EmitConstructorDependencies(implementationInfo, dynamicMethodInfo);
             generator.Emit(OpCodes.Newobj, implementationInfo.Constructor);
@@ -1190,72 +1191,108 @@ namespace LightInject
             }
             else
             {
-                Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(implementingType, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);
+                ServiceInfo serviceInfo = new ServiceInfo(){ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName};
+                Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);
                 GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);
             }
         }
 
         private void RegisterOpenGenericService(Type serviceType, Type implementingType, LifeCycleType lifeCycleType, string serviceName)
         {
-            var openGenericTypeInfo = new OpenGenericEmitter { ImplementingType = implementingType };
+            var openGenericTypeInfo = new OpenGenericEmitter { ImplementingType = implementingType };            
             if (lifeCycleType == LifeCycleType.Transient)
             {
-                openGenericTypeInfo.EmitMethod = (d, t) => EmitNewInstance(t, d);
+                openGenericTypeInfo.EmitMethod = (d, t) =>
+                    {
+                        var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = t, ServiceName = serviceName };
+                        EmitNewInstance(serviceInfo, d);
+                    };
             }
             else if (lifeCycleType == LifeCycleType.Singleton)
             {
-                openGenericTypeInfo.EmitMethod = (d, t) => EmitSingletonInstance(t, d);
+                openGenericTypeInfo.EmitMethod = (d, t) =>
+                    {
+                        var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = t, ServiceName = serviceName };
+                        EmitSingletonInstance(serviceInfo, d);
+                    };
             }
             else if (lifeCycleType == LifeCycleType.Request)
             {
-                openGenericTypeInfo.EmitMethod = (d, t) => EmitRequestInstance(t, d);
+                openGenericTypeInfo.EmitMethod = (d, t) =>
+                    {
+                        var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = t, ServiceName = serviceName };
+                        EmitRequestInstance(serviceInfo, d);
+                    };
             }
 
             GetOpenGenericRegistrations(serviceType).AddOrUpdate(serviceName, s => openGenericTypeInfo, (s, o) => openGenericTypeInfo);
         }
 
-        private Action<DynamicMethodInfo> GetEmitDelegate(Type implementingType, LifeCycleType lifeCycleType)
+        private Action<DynamicMethodInfo> GetEmitDelegate(ServiceInfo serviceInfo, LifeCycleType lifeCycleType)
         {
             Action<DynamicMethodInfo> emitter = null;
             switch (lifeCycleType)
             {
                 case LifeCycleType.Transient:
-                    emitter = dynamicMethodInfo => EmitNewInstance(implementingType, dynamicMethodInfo);                    
+                    emitter = dynamicMethodInfo => EmitNewInstance(serviceInfo, dynamicMethodInfo);                    
                     break;
                 case LifeCycleType.Request:
-                    emitter = dynamicMethodInfo => EmitRequestInstance(implementingType, dynamicMethodInfo);                   
+                    emitter = dynamicMethodInfo => EmitRequestInstance(serviceInfo, dynamicMethodInfo);                   
                     break;
                 case LifeCycleType.Singleton:
-                    emitter = dynamicMethodInfo => EmitSingletonInstance(implementingType, dynamicMethodInfo);                   
+                    emitter = dynamicMethodInfo => EmitSingletonInstance(serviceInfo, dynamicMethodInfo);                   
                     break;
             }
 
             return emitter;
         }
 
-        private void EmitSingletonInstance(Type implementingType, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitSingletonInstance2(Type serviceType, string serviceName, Action<DynamicMethodInfo> instanceEmitter, DynamicMethodInfo dynamicMethodInfo)
         {
-            EmitLoadConstant(dynamicMethodInfo, CreateSingletonConstantIndex(implementingType), implementingType);
+            EmitLoadConstant(dynamicMethodInfo, CreateSingletonConstantIndex2(serviceType, serviceName, instanceEmitter), serviceType);
         }
 
-        private int CreateSingletonConstantIndex(Type implementingType)
+        private void EmitSingletonInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            return constants.Add(GetSingletonInstance(implementingType));
+            EmitLoadConstant(dynamicMethodInfo, CreateSingletonConstantIndex(serviceInfo), serviceInfo.ImplementingType);
         }
 
-        private object GetSingletonInstance(Type implementingType)
+        private int CreateSingletonConstantIndex2(Type serviceType, string serviceName, Action<DynamicMethodInfo> instanceEmitter)
         {
-            return singletons.GetOrAdd(implementingType, t => new Lazy<object>(() => CreateSingletonInstance(t))).Value;
+            return constants.Add(GetSingletonInstance2(serviceType, serviceName, instanceEmitter));
+        }
+        private int CreateSingletonConstantIndex(ServiceInfo serviceInfo)
+        {
+            return constants.Add(GetSingletonInstance(serviceInfo));
         }
 
-        private object CreateSingletonInstance(Type implementingType)
+        private object GetSingletonInstance(ServiceInfo serviceInfo)
+        {
+            return singletons.GetOrAdd(serviceInfo, t => new Lazy<object>(() => CreateSingletonInstance(t))).Value;
+        }
+
+        private object GetSingletonInstance2(Type serviceType, string serviceName, Action<DynamicMethodInfo> instanceEmitter)
+        {
+            var key = Tuple.Create(serviceType, serviceName);
+            return singletons2.GetOrAdd(key, t => new Lazy<object>(() => CreateSingletonInstance2(instanceEmitter))).Value;
+        }
+
+        private object CreateSingletonInstance(ServiceInfo serviceInfo)
         {
             var dynamicMethodInfo = new DynamicMethodInfo();
-            EmitNewInstance(implementingType, dynamicMethodInfo);
+            EmitNewInstance(serviceInfo, dynamicMethodInfo);
             object instance = dynamicMethodInfo.CreateDelegate()(constants.Items);
             return instance;
         }
-        
+
+        private object CreateSingletonInstance2(Action<DynamicMethodInfo> instanceEmitter)
+        {
+            var dynamicMethodInfo = new DynamicMethodInfo();
+            instanceEmitter(dynamicMethodInfo);
+            object instance = dynamicMethodInfo.CreateDelegate()(constants.Items);
+            return instance;
+        }
+
         private Func<object[], object> CreateDelegate(Type serviceType, string serviceName)
         {
             if (this.FirstServiceRequest())
@@ -1498,6 +1535,23 @@ namespace LightInject
             }
         }
  
+        public class ServiceInfo : IEquatable<ServiceInfo>
+        {
+            public Type ServiceType { get; set; }
+
+            public string ServiceName { get; set; }
+
+            public Type ImplementingType { get; set; }
+
+            public LambdaExpression FactoryExpression { get; set; }
+
+            public bool Equals(ServiceInfo other)
+            {
+                return this.ServiceName == other.ServiceName && this.ServiceType == other.ServiceType;
+            }
+        }
+
+
         /// <summary>
         /// Contains information about how to create a service instance.
         /// </summary>
