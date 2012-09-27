@@ -385,7 +385,7 @@ namespace LightInject
         private readonly ServiceRegistry<OpenGenericEmitter> openGenericEmitters = new ServiceRegistry<OpenGenericEmitter>();
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
-        private readonly ThreadSafeDictionary<Type, ImplementationInfo> implementations = new ThreadSafeDictionary<Type, ImplementationInfo>();
+        private readonly ThreadSafeDictionary<ServiceInfo, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceInfo, ConstructionInfo>();
         private readonly ThreadSafeDictionary<ServiceInfo, Lazy<object>> singletons = new ThreadSafeDictionary<ServiceInfo, Lazy<object>>();
         private readonly ThreadSafeDictionary<Tuple<Type,string>, Lazy<object>> singletons2 = new ThreadSafeDictionary<Tuple<Type,string>, Lazy<object>>();
         private readonly Storage<object> constants = new Storage<object>();
@@ -831,15 +831,25 @@ namespace LightInject
                     p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
         }
        
-        private ImplementationInfo CreateServiceInfo(Type implementingType)
+        private ConstructionInfo CreateServiceInfo(ServiceInfo serviceInfo)
         {
-            var serviceInfo = new ImplementationInfo();
-            ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(implementingType);
-            serviceInfo.ImplementingType = implementingType;
-            serviceInfo.Constructor = constructorInfo;
-            serviceInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructorInfo));
-            serviceInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
-            return serviceInfo;
+            if (serviceInfo.FactoryExpression != null)
+            {
+                return this.CreateConstructionInfoFromLambdaExpression(serviceInfo.FactoryExpression);                
+            }
+            
+            return this.CreateConstructionInfoFromImplementingType(serviceInfo);
+        }
+
+        private ConstructionInfo CreateConstructionInfoFromImplementingType(ServiceInfo serviceInfo)
+        {
+            var constructionInfo = new ConstructionInfo();
+            ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(serviceInfo.ImplementingType);
+            constructionInfo.ImplementingType = serviceInfo.ImplementingType;
+            constructionInfo.Constructor = constructorInfo;
+            constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructorInfo));
+            constructionInfo.PropertyDependencies.AddRange(this.GetPropertyDependencies(serviceInfo.ImplementingType));
+            return constructionInfo;
         }
 
         private IEnumerable<PropertyDependecy> GetPropertyDependencies(Type implementingType)
@@ -853,11 +863,11 @@ namespace LightInject
             return PropertySelector.Select(implementingType);
         }
 
-        private ImplementationInfo CreateServiceInfoFromExpression(LambdaExpression lambdaExpression)
+        private ConstructionInfo CreateConstructionInfoFromLambdaExpression(LambdaExpression lambdaExpression)
         {
             var lambdaExpressionParser = new LambdaExpressionParser();
-            ImplementationInfo implementationInfo = lambdaExpressionParser.Parse(lambdaExpression);
-            return implementationInfo;
+            ConstructionInfo constructionInfo = lambdaExpressionParser.Parse(lambdaExpression);
+            return constructionInfo;
         }
 
         private Action<DynamicMethodInfo> GetEmitMethod(Type serviceType, string serviceName)
@@ -939,11 +949,11 @@ namespace LightInject
 
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            ImplementationInfo implementationInfo = GetServiceInfo(serviceInfo.ImplementingType);
+            ConstructionInfo constructionInfo = this.GetConstructionInfo(serviceInfo);
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            EmitConstructorDependencies(implementationInfo, dynamicMethodInfo);
-            generator.Emit(OpCodes.Newobj, implementationInfo.Constructor);
-            EmitPropertyDependencies(implementationInfo, dynamicMethodInfo);
+            EmitConstructorDependencies(constructionInfo, dynamicMethodInfo);
+            generator.Emit(OpCodes.Newobj, constructionInfo.Constructor);
+            EmitPropertyDependencies(constructionInfo, dynamicMethodInfo);
         }
 
         private void EmitNewInstanceUsingFunctionDelegate(LambdaExpression factoryExpression, DynamicMethodInfo dynamicMethodInfo)
@@ -959,9 +969,9 @@ namespace LightInject
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
-        private void EmitConstructorDependencies(ImplementationInfo implementationInfo, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            foreach (ConstructorDependency dependency in implementationInfo.ConstructorDependencies)
+            foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
                 this.EmitDependency(dynamicMethodInfo, dependency);
             }
@@ -996,17 +1006,17 @@ namespace LightInject
             }
         }
 
-        private void EmitPropertyDependencies(ImplementationInfo implementationInfo, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitPropertyDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            if (implementationInfo.PropertyDependencies.Count == 0)
+            if (constructionInfo.PropertyDependencies.Count == 0)
             {
                 return;
             }
 
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            LocalBuilder instance = generator.DeclareLocal(implementationInfo.ImplementingType);
+            LocalBuilder instance = generator.DeclareLocal(constructionInfo.ImplementingType);
             generator.Emit(OpCodes.Stloc, instance);
-            foreach (var propertyDependency in implementationInfo.PropertyDependencies)
+            foreach (var propertyDependency in constructionInfo.PropertyDependencies)
             {
                 generator.Emit(OpCodes.Ldloc, instance);
                 EmitDependency(dynamicMethodInfo, propertyDependency);
@@ -1168,9 +1178,9 @@ namespace LightInject
             return string.IsNullOrEmpty(serviceName) && GetOpenGenericRegistrations(serviceType).Count == 1;
         }
 
-        private ImplementationInfo GetServiceInfo(Type implementingType)
+        private ConstructionInfo GetConstructionInfo(ServiceInfo serviceInfo)
         {
-            return implementations.GetOrAdd(implementingType, CreateServiceInfo);
+            return implementations.GetOrAdd(serviceInfo, CreateServiceInfo);
         }
 
         private ThreadSafeDictionary<string, Action<DynamicMethodInfo>> GetServiceRegistrations(Type serviceType)
@@ -1357,35 +1367,25 @@ namespace LightInject
         private void RegisterServiceFromLambdaExpression<TService>(
             Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycleType, string serviceName)
         {
-            var serviceinfo = CreateServiceInfoFromExpression(factory);
-            if (serviceinfo.FactoryExpression != null)
-            {
-                Action<DynamicMethodInfo> emitDelegate = (dmi) => this.EmitNewInstanceUsingFunctionDelegate(serviceinfo.FactoryExpression, dmi);
-                this.GetServiceRegistrations(typeof(TService)).AddOrUpdate(serviceName, s => emitDelegate, (s, d) => emitDelegate);
-            }
-            else
-            {
-                Type implementingType = serviceinfo.ImplementingType;
-                implementations.AddOrUpdate(implementingType, t => serviceinfo, (t, s) => serviceinfo);
-                RegisterService(typeof(TService), implementingType, lifeCycleType, serviceName);    
-            }
-            
+            var serviceInfo = new ServiceInfo() { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName };
+            Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo, IsFactory(typeof(TService)) ? LifeCycleType.Singleton : lifeCycleType);
+            GetServiceRegistrations(typeof(TService)).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);            
         }
 
         
 
 
         /// <summary>
-        /// Parses a <see cref="LambdaExpression"/> into a <see cref="ImplementationInfo"/> instance.
+        /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
         /// </summary>
         public class LambdaExpressionParser
         {                                                
             /// <summary>
-            /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ImplementationInfo"/> instance.
+            /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
             /// </summary>
             /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
-            /// <returns>A <see cref="ImplementationInfo"/> instance.</returns>
-            public ImplementationInfo Parse(LambdaExpression lambdaExpression)
+            /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
+            public ConstructionInfo Parse(LambdaExpression lambdaExpression)
             {                                
                 switch (lambdaExpression.Body.NodeType)
                 {
@@ -1399,12 +1399,12 @@ namespace LightInject
                 }                
             }
 
-            private ImplementationInfo CreateServiceInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
+            private ConstructionInfo CreateServiceInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
             {
-                return new ImplementationInfo() { FactoryExpression = lambdaExpression };
+                return new ConstructionInfo() { FactoryDelegate = lambdaExpression.Compile() };
             }
 
-            private static ImplementationInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
+            private static ConstructionInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
             {
                 var serviceInfo = CreateServiceInfo(newExpression);
                 ParameterInfo[] parameters = newExpression.Constructor.GetParameters();
@@ -1418,13 +1418,13 @@ namespace LightInject
                 return serviceInfo;
             }
 
-            private static ImplementationInfo CreateServiceInfo(NewExpression newExpression)
+            private static ConstructionInfo CreateServiceInfo(NewExpression newExpression)
             {
-                var serviceInfo = new ImplementationInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
+                var serviceInfo = new ConstructionInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
                 return serviceInfo;
             }
 
-            private static ImplementationInfo CreateServiceInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
+            private static ConstructionInfo CreateServiceInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
             {
                 var serviceInfo = CreateServiceInfoBasedOnNewExpression(memberInitExpression.NewExpression);
                 foreach (MemberBinding memberBinding in memberInitExpression.Bindings)
@@ -1435,11 +1435,11 @@ namespace LightInject
                 return serviceInfo;
             }
            
-            private static void HandleMemberAssignment(MemberAssignment memberAssignment, ImplementationInfo implementationInfo)
+            private static void HandleMemberAssignment(MemberAssignment memberAssignment, ConstructionInfo constructionInfo)
             {
                 var propertyDependency = CreatePropertyDependency(memberAssignment);
                 ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
-                implementationInfo.PropertyDependencies.Add(propertyDependency);
+                constructionInfo.PropertyDependencies.Add(propertyDependency);
             }
 
             private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
@@ -1567,12 +1567,12 @@ namespace LightInject
         /// <summary>
         /// Contains information about how to create a service instance.
         /// </summary>
-        public class ImplementationInfo
+        public class ConstructionInfo
         {
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImplementationInfo"/> class.
+            /// Initializes a new instance of the <see cref="ConstructionInfo"/> class.
             /// </summary>
-            public ImplementationInfo()
+            public ConstructionInfo()
             {
                 PropertyDependencies = new List<PropertyDependecy>();
                 ConstructorDependencies = new List<ConstructorDependency>();
@@ -1601,9 +1601,9 @@ namespace LightInject
             public List<ConstructorDependency> ConstructorDependencies { get; private set; }
 
             /// <summary>
-            /// Gets or sets the <see cref="LambdaExpression"/> to be used to create the service instance.
+            /// Gets or sets the function delegate to be used to create the service instance.
             /// </summary>
-            public LambdaExpression FactoryExpression { get; set; }
+            public Delegate FactoryDelegate { get; set; }
         }
 
         /// <summary>
