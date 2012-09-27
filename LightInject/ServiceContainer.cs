@@ -387,7 +387,7 @@ namespace LightInject
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
         private readonly ThreadSafeDictionary<ServiceInfo, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceInfo, ConstructionInfo>();
         private readonly ThreadSafeDictionary<ServiceInfo, Lazy<object>> singletons = new ThreadSafeDictionary<ServiceInfo, Lazy<object>>();
-        private readonly ThreadSafeDictionary<Tuple<Type,string>, Lazy<object>> singletons2 = new ThreadSafeDictionary<Tuple<Type,string>, Lazy<object>>();
+        private readonly ThreadSafeDictionary<ServiceInfo, Lazy<object>> singletons2 = new ThreadSafeDictionary<ServiceInfo, Lazy<object>>();
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>(); 
         private Storage<IFactory> factories;
@@ -950,15 +950,27 @@ namespace LightInject
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
             ConstructionInfo constructionInfo = this.GetConstructionInfo(serviceInfo);
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            EmitConstructorDependencies(constructionInfo, dynamicMethodInfo);
-            generator.Emit(OpCodes.Newobj, constructionInfo.Constructor);
-            EmitPropertyDependencies(constructionInfo, dynamicMethodInfo);
+            if (constructionInfo.FactoryDelegate != null)
+            {
+                this.EmitNewInstanceUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodInfo);
+            }
+            else
+            {
+                this.EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo);
+            }
+            
         }
 
-        private void EmitNewInstanceUsingFunctionDelegate(LambdaExpression factoryExpression, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitNewInstanceUsingImplementingType(DynamicMethodInfo dynamicMethodInfo, ConstructionInfo constructionInfo)
         {
-            Delegate factoryDelegate = factoryExpression.Compile();
+            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            this.EmitConstructorDependencies(constructionInfo, dynamicMethodInfo);
+            generator.Emit(OpCodes.Newobj, constructionInfo.Constructor);
+            this.EmitPropertyDependencies(constructionInfo, dynamicMethodInfo);
+        }
+
+        private void EmitNewInstanceUsingFactoryDelegate(Delegate factoryDelegate, DynamicMethodInfo dynamicMethodInfo)
+        {            
             var factoryDelegateIndex = constants.Add(factoryDelegate);
             var serviceFactoryIndex = constants.Add(this);
             Type funcType = factoryDelegate.GetType();            
@@ -1223,7 +1235,7 @@ namespace LightInject
                 openGenericTypeInfo.EmitMethod = (dmi,closedGenericServiceType, closedGenericImplementingType) =>
                     {
                         var serviceInfo = new ServiceInfo() { ServiceType = closedGenericImplementingType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
-                        EmitSingletonInstance(serviceInfo, dmi);
+                        EmitSingletonInstance(serviceInfo, this.GetEmitDelegate(serviceInfo,LifeCycleType.Transient) , dmi);
                     };
             }
             else if (lifeCycleType == LifeCycleType.Request)
@@ -1250,26 +1262,21 @@ namespace LightInject
                     emitter = dynamicMethodInfo => EmitRequestInstance(serviceInfo, dynamicMethodInfo);                   
                     break;
                 case LifeCycleType.Singleton:
-                    emitter = dynamicMethodInfo => EmitSingletonInstance(serviceInfo, dynamicMethodInfo);                   
+                    emitter = dynamicMethodInfo => EmitSingletonInstance(serviceInfo, this.GetEmitDelegate(serviceInfo, LifeCycleType.Transient), dynamicMethodInfo);                   
                     break;
             }
 
             return emitter;
         }
 
-        private void EmitSingletonInstance2(Type serviceType, string serviceName, Action<DynamicMethodInfo> instanceEmitter, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitSingletonInstance(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter, DynamicMethodInfo dynamicMethodInfo)
         {
-            EmitLoadConstant(dynamicMethodInfo, CreateSingletonConstantIndex2(serviceType, serviceName, instanceEmitter), serviceType);
+            EmitLoadConstant(dynamicMethodInfo, CreateSingletonConstantIndex2(serviceInfo, instanceEmitter), serviceInfo.ServiceType);
         }
-
-        private void EmitSingletonInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
+        
+        private int CreateSingletonConstantIndex2(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter)
         {
-            EmitLoadConstant(dynamicMethodInfo, CreateSingletonConstantIndex(serviceInfo), serviceInfo.ImplementingType);
-        }
-
-        private int CreateSingletonConstantIndex2(Type serviceType, string serviceName, Action<DynamicMethodInfo> instanceEmitter)
-        {
-            return constants.Add(GetSingletonInstance2(serviceType, serviceName, instanceEmitter));
+            return constants.Add(GetSingletonInstance2(serviceInfo, instanceEmitter));
         }
         private int CreateSingletonConstantIndex(ServiceInfo serviceInfo)
         {
@@ -1281,10 +1288,9 @@ namespace LightInject
             return singletons.GetOrAdd(serviceInfo, t => new Lazy<object>(() => CreateSingletonInstance(t))).Value;
         }
 
-        private object GetSingletonInstance2(Type serviceType, string serviceName, Action<DynamicMethodInfo> instanceEmitter)
-        {
-            var key = Tuple.Create(serviceType, serviceName);
-            return singletons2.GetOrAdd(key, t => new Lazy<object>(() => CreateSingletonInstance2(instanceEmitter))).Value;
+        private object GetSingletonInstance2(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter)
+        {            
+            return singletons2.GetOrAdd(serviceInfo, t => new Lazy<object>(() => CreateSingletonInstance2(instanceEmitter))).Value;
         }
 
         private object CreateSingletonInstance(ServiceInfo serviceInfo)

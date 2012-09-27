@@ -65,15 +65,7 @@
             var serviceInfo = parser.Parse(e);
             Assert.IsTrue(serviceInfo.PropertyDependencies[0].Expression != null);
         }
-
-        [TestMethod]
-        public void CreateServiceInfo_MethodCall_ThrowsInvalidOperationException()
-        {
-            var parser = new ServiceContainer.LambdaExpressionParser();
-            Expression<Func<IServiceFactory, IBar>> e = f => this.GetInstance();
-            ExceptionAssert.Throws<InvalidOperationException>(() => parser.Parse(e), ErrorMessages.InvalidFuncFactoryExpression);            
-        }
-
+       
         [TestMethod]
         public void CreateServiceInfo_GetAllInstancesInObjectInitializer_ReturnsServiceInfoWithServiceType()
         {
