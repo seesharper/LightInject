@@ -63,7 +63,7 @@
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithProperyDependency { Bar = this.GetInstance() };
             var serviceInfo = parser.Parse(e);
-            Assert.IsTrue(serviceInfo.PropertyDependencies[0].Expression != null);
+            Assert.IsTrue(serviceInfo.PropertyDependencies[0].FactoryExpression != null);
         }
        
         [TestMethod]

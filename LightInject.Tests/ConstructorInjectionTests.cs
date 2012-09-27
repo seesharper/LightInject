@@ -318,7 +318,7 @@
         }
 
         private static IServiceContainer CreateContainer()
-        {
+        { 
             return new ServiceContainer();
         }
     }

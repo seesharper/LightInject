@@ -385,9 +385,8 @@ namespace LightInject
         private readonly ServiceRegistry<OpenGenericEmitter> openGenericEmitters = new ServiceRegistry<OpenGenericEmitter>();
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
-        private readonly ThreadSafeDictionary<ServiceInfo, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceInfo, ConstructionInfo>();
+        private readonly ThreadSafeDictionary<ServiceInfo, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceInfo, ConstructionInfo>();        
         private readonly ThreadSafeDictionary<ServiceInfo, Lazy<object>> singletons = new ThreadSafeDictionary<ServiceInfo, Lazy<object>>();
-        private readonly ThreadSafeDictionary<ServiceInfo, Lazy<object>> singletons2 = new ThreadSafeDictionary<ServiceInfo, Lazy<object>>();
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>(); 
         private Storage<IFactory> factories;
@@ -957,8 +956,7 @@ namespace LightInject
             else
             {
                 this.EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo);
-            }
-            
+            }            
         }
 
         private void EmitNewInstanceUsingImplementingType(DynamicMethodInfo dynamicMethodInfo, ConstructionInfo constructionInfo)
@@ -992,9 +990,9 @@ namespace LightInject
         private void EmitDependency(DynamicMethodInfo dynamicMethodInfo, Dependency dependency)
         {
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            if (dependency.Expression != null)
+            if (dependency.FactoryExpression != null)
             {
-                var lambda = Expression.Lambda(dependency.Expression, new ParameterExpression[] { }).Compile();
+                var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
                 MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
                 EmitLoadConstant(dynamicMethodInfo, constants.Add(lambda), lambda.GetType());
                 generator.Emit(OpCodes.Callvirt, methodInfo);
@@ -1213,8 +1211,8 @@ namespace LightInject
             }
             else
             {
-                var serviceInfo = new ServiceInfo(){ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName};
-                Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);
+                var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName };
+                Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);                    
                 GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);
             }
         }
@@ -1226,23 +1224,23 @@ namespace LightInject
             {
                 openGenericTypeInfo.EmitMethod = (dmi, closedGenericServiceType, closedGenericImplementingType) =>
                     {
-                        var serviceInfo = new ServiceInfo() { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
+                        var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
                         EmitNewInstance(serviceInfo, dmi);
                     };
             }
             else if (lifeCycleType == LifeCycleType.Singleton)
             {
-                openGenericTypeInfo.EmitMethod = (dmi,closedGenericServiceType, closedGenericImplementingType) =>
+                openGenericTypeInfo.EmitMethod = (dmi, closedGenericServiceType, closedGenericImplementingType) =>
                     {
-                        var serviceInfo = new ServiceInfo() { ServiceType = closedGenericImplementingType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
-                        EmitSingletonInstance(serviceInfo, this.GetEmitDelegate(serviceInfo,LifeCycleType.Transient) , dmi);
+                        var serviceInfo = new ServiceInfo { ServiceType = closedGenericImplementingType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
+                        EmitSingletonInstance(serviceInfo, GetEmitDelegate(serviceInfo, LifeCycleType.Transient), dmi);
                     };
             }
             else if (lifeCycleType == LifeCycleType.Request)
             {
                 openGenericTypeInfo.EmitMethod = (dmi, closedGenericServiceType, closedGenericImplementingType) =>
                     {
-                        var serviceInfo = new ServiceInfo() { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
+                        var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
                         EmitRequestInstance(serviceInfo, dmi);
                     };
             }
@@ -1271,37 +1269,20 @@ namespace LightInject
 
         private void EmitSingletonInstance(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter, DynamicMethodInfo dynamicMethodInfo)
         {
-            EmitLoadConstant(dynamicMethodInfo, CreateSingletonConstantIndex2(serviceInfo, instanceEmitter), serviceInfo.ServiceType);
+            EmitLoadConstant(dynamicMethodInfo, this.CreateSingletonConstantIndex(serviceInfo, instanceEmitter), serviceInfo.ServiceType);
         }
         
-        private int CreateSingletonConstantIndex2(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter)
+        private int CreateSingletonConstantIndex(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter)
         {
-            return constants.Add(GetSingletonInstance2(serviceInfo, instanceEmitter));
+            return constants.Add(this.GetSingletonInstance(serviceInfo, instanceEmitter));
         }
-        private int CreateSingletonConstantIndex(ServiceInfo serviceInfo)
-        {
-            return constants.Add(GetSingletonInstance(serviceInfo));
-        }
-
-        private object GetSingletonInstance(ServiceInfo serviceInfo)
-        {
-            return singletons.GetOrAdd(serviceInfo, t => new Lazy<object>(() => CreateSingletonInstance(t))).Value;
-        }
-
-        private object GetSingletonInstance2(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter)
+               
+        private object GetSingletonInstance(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter)
         {            
-            return singletons2.GetOrAdd(serviceInfo, t => new Lazy<object>(() => CreateSingletonInstance2(instanceEmitter))).Value;
+            return this.singletons.GetOrAdd(serviceInfo, t => new Lazy<object>(() => this.CreateSingletonInstance(instanceEmitter))).Value;
         }
 
-        private object CreateSingletonInstance(ServiceInfo serviceInfo)
-        {
-            var dynamicMethodInfo = new DynamicMethodInfo();
-            EmitNewInstance(serviceInfo, dynamicMethodInfo);
-            object instance = dynamicMethodInfo.CreateDelegate()(constants.Items);
-            return instance;
-        }
-
-        private object CreateSingletonInstance2(Action<DynamicMethodInfo> instanceEmitter)
+        private object CreateSingletonInstance(Action<DynamicMethodInfo> instanceEmitter)
         {
             var dynamicMethodInfo = new DynamicMethodInfo();
             instanceEmitter(dynamicMethodInfo);
@@ -1373,14 +1354,11 @@ namespace LightInject
         private void RegisterServiceFromLambdaExpression<TService>(
             Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycleType, string serviceName)
         {
-            var serviceInfo = new ServiceInfo() { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName };
+            var serviceInfo = new ServiceInfo { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName };
             Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo, IsFactory(typeof(TService)) ? LifeCycleType.Singleton : lifeCycleType);
             GetServiceRegistrations(typeof(TService)).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);            
         }
-
-        
-
-
+       
         /// <summary>
         /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
         /// </summary>
@@ -1400,14 +1378,13 @@ namespace LightInject
                     case ExpressionType.MemberInit:
                         return CreateServiceInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                                      
                     default:
-                        return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);
-                        
+                        return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);                        
                 }                
             }
 
-            private ConstructionInfo CreateServiceInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
+            private static ConstructionInfo CreateServiceInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
             {
-                return new ConstructionInfo() { FactoryDelegate = lambdaExpression.Compile() };
+                return new ConstructionInfo { FactoryDelegate = lambdaExpression.Compile() };
             }
 
             private static ConstructionInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
@@ -1498,7 +1475,7 @@ namespace LightInject
 
             private static void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
             {
-                dependency.Expression = expression;
+                dependency.FactoryExpression = expression;
                 dependency.ServiceName = string.Empty;
             }
 
@@ -1569,7 +1546,6 @@ namespace LightInject
             }            
         }
 
-
         /// <summary>
         /// Contains information about how to create a service instance.
         /// </summary>
@@ -1628,9 +1604,9 @@ namespace LightInject
             public string ServiceName { get; set; }
 
             /// <summary>
-            /// Gets or sets the <see cref="Expression"/> that represent getting the value of the <see cref="Dependency"/>.
+            /// Gets or sets the <see cref="FactoryExpression"/> that represent getting the value of the <see cref="Dependency"/>.
             /// </summary>            
-            public Expression Expression { get; set; }
+            public Expression FactoryExpression { get; set; }
 
             /// <summary>
             /// Returns textual information about the dependency.
@@ -1960,7 +1936,7 @@ namespace LightInject
         {
             public Type ImplementingType { get; set; }
 
-            public Action<DynamicMethodInfo,Type, Type> EmitMethod { get; set; }
+            public Action<DynamicMethodInfo, Type, Type> EmitMethod { get; set; }
         }      
     }
 
