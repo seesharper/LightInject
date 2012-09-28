@@ -382,7 +382,7 @@ namespace LightInject
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";        
         private static readonly MethodInfo GetInstanceMethod;
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> emitters = new ServiceRegistry<Action<DynamicMethodInfo>>();        
-        private readonly ServiceRegistry<Action<DynamicMethodInfo, Type, string>> openGenericEmitters2 = new ServiceRegistry<Action<DynamicMethodInfo, Type, string>>(); 
+        private readonly ServiceRegistry<Action<DynamicMethodInfo, Type>> openGenericEmitters2 = new ServiceRegistry<Action<DynamicMethodInfo, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
         private readonly ThreadSafeDictionary<ServiceInfo, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceInfo, ConstructionInfo>();        
@@ -1150,16 +1150,16 @@ namespace LightInject
         {
             Type openGenericServiceType = closedGenericServiceType.GetGenericTypeDefinition();
 
-            Action<DynamicMethodInfo, Type, string> openGenericEmitter = this.GetOpenGenericTypeInfo(openGenericServiceType, serviceName);
+            Action<DynamicMethodInfo, Type> openGenericEmitter = this.GetOpenGenericTypeInfo(openGenericServiceType, serviceName);
             if (openGenericEmitter == null)
             {
                 return null;
             }
             
-            return dmi => openGenericEmitter(dmi, closedGenericServiceType, serviceName);
+            return dmi => openGenericEmitter(dmi, closedGenericServiceType);
         }
   
-        private Action<DynamicMethodInfo, Type, string> GetOpenGenericTypeInfo(Type openGenericServiceType, string serviceName)
+        private Action<DynamicMethodInfo, Type> GetOpenGenericTypeInfo(Type openGenericServiceType, string serviceName)
         {
             var openGenericRegistrations = this.GetOpenGenericRegistrations(openGenericServiceType);
             if (this.CanRedirectRequestForDefaultOpenGenericServiceToSingleNamedService(openGenericServiceType, serviceName))
@@ -1167,7 +1167,7 @@ namespace LightInject
                 return openGenericRegistrations.First().Value;
             }
 
-            Action<DynamicMethodInfo, Type, string> openGenericEmitter;
+            Action<DynamicMethodInfo, Type> openGenericEmitter;
             openGenericRegistrations.TryGetValue(serviceName, out openGenericEmitter);
             return openGenericEmitter;
         }
@@ -1197,9 +1197,9 @@ namespace LightInject
             return this.emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo>>(StringComparer.InvariantCultureIgnoreCase));
         }
         
-        private ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type, string>> GetOpenGenericRegistrations(Type serviceType)
+        private ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type>> GetOpenGenericRegistrations(Type serviceType)
         {
-            return this.openGenericEmitters2.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type, string>>(StringComparer.InvariantCultureIgnoreCase));
+            return this.openGenericEmitters2.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type>>(StringComparer.InvariantCultureIgnoreCase));
         }
 
         private void RegisterService(Type serviceType, Type implementingType, LifeCycleType lifeCycleType, string serviceName)
@@ -1218,10 +1218,10 @@ namespace LightInject
 
         private void RegisterOpenGenericService(Type openGenericServiceType, Type openGenericImplementingType, LifeCycleType lifeCycleType, string serviceName)
         {
-            Action<DynamicMethodInfo, Type, string> emitter = (dmi, closedGenericServiceType, requestedServiceName) =>
+            Action<DynamicMethodInfo, Type> emitter = (dmi, closedGenericServiceType) =>
                 { 
                     Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
-                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = requestedServiceName };
+                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
                     GetEmitDelegate(serviceInfo, lifeCycleType)(dmi);
                 };
             this.GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);
