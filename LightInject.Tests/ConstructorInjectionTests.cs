@@ -312,6 +312,25 @@
             Assert.IsInstanceOfType(instance.Bar,typeof(Bar));
         }
 
+        [TestMethod]
+        public void GetInstance_CustomFuncDependency_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(factory => new FooWithCustomFuncDependency(() => "test"));
+            var instance = (FooWithCustomFuncDependency)container.GetInstance<IFoo>();
+            Assert.IsNotNull(instance.StringFunc);
+        }
+
+        [TestMethod]
+        public void GetInstance_CustomFuncDependencyUsingFactoryParameter_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register("SomeValue");
+            container.Register<IFoo>(factory => new FooWithCustomFuncDependency(() => factory.GetInstance<string>()));
+            var instance = (FooWithCustomFuncDependency)container.GetInstance<IFoo>();
+            Assert.IsNotNull(instance.StringFunc);
+        }
+
         private IBar CreateBar()
         {
             return new Bar();

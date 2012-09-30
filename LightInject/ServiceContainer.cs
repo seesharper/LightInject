@@ -1342,14 +1342,20 @@ namespace LightInject
         /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
         /// </summary>
         public class LambdaExpressionParser
-        {                                                
+        {                                                            
             /// <summary>
             /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
             /// </summary>
             /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
             /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
             public ConstructionInfo Parse(LambdaExpression lambdaExpression)
-            {                                
+            {                                                                
+                LambdaExpressionValidator lambdaExpressionValidator = new LambdaExpressionValidator();
+                if (!lambdaExpressionValidator.CanParse(lambdaExpression))
+                {
+                    return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);
+                }
+                
                 switch (lambdaExpression.Body.NodeType)
                 {
                     case ExpressionType.New:
@@ -1357,7 +1363,7 @@ namespace LightInject
                     case ExpressionType.MemberInit:
                         return CreateServiceInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                                      
                     default:
-                        return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);                        
+                        return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);
                 }                
             }
 
@@ -1453,7 +1459,7 @@ namespace LightInject
             }
 
             private static void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
-            {
+            {                
                 dependency.FactoryExpression = expression;
                 dependency.ServiceName = string.Empty;
             }
@@ -1497,6 +1503,22 @@ namespace LightInject
             }
         }
  
+        public class LambdaExpressionValidator : ExpressionVisitor
+        {
+            private bool canParse = true;
+            public bool CanParse(LambdaExpression lambdaExpression)
+            {
+                Visit(lambdaExpression.Body);                
+                return canParse;
+            }
+
+            protected override Expression VisitLambda<T>(Expression<T> node)
+            {
+                canParse = false;
+                return base.VisitLambda<T>(node);
+            }           
+        }
+
         public class ServiceInfo 
         {
             public Type ServiceType { get; set; }
