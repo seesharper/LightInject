@@ -320,6 +320,13 @@ namespace LightInject
     /// </summary>
     internal interface IServiceContainer : IServiceRegistry, IServiceFactory
     {
+        
+        /// <summary>
+        /// Gets a list of <see cref="ServiceInfo"/> instances that represents the 
+        /// registered services.          
+        /// </summary>
+        IEnumerable<ServiceInfo> AvailableServices { get; set; } 
+                
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
@@ -830,7 +837,7 @@ namespace LightInject
                     p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
         }
        
-        private ConstructionInfo CreateServiceInfo(ServiceInfo serviceInfo)
+        private ConstructionInfo CreateConstructionInfo(ServiceInfo serviceInfo)
         {
             if (serviceInfo.FactoryExpression != null)
             {
@@ -1189,7 +1196,7 @@ namespace LightInject
 
         private ConstructionInfo GetConstructionInfo(ServiceInfo serviceInfo)
         {
-            return implementations.GetOrAdd(serviceInfo, CreateServiceInfo);
+            return implementations.GetOrAdd(serviceInfo, this.CreateConstructionInfo);
         }
 
         private ThreadSafeDictionary<string, Action<DynamicMethodInfo>> GetServiceRegistrations(Type serviceType)
@@ -1210,8 +1217,8 @@ namespace LightInject
             }
             else
             {
-                var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName };
-                Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo, IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType);                    
+                var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, LifeCycle = IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType};
+                Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo);                    
                 GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);
             }
         }
@@ -1221,16 +1228,16 @@ namespace LightInject
             Action<DynamicMethodInfo, Type> emitter = (dmi, closedGenericServiceType) =>
                 { 
                     Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
-                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName };
-                    GetEmitDelegate(serviceInfo, lifeCycleType)(dmi);
+                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, LifeCycle = lifeCycleType};
+                    GetEmitDelegate(serviceInfo)(dmi);
                 };
             this.GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);
         }
         
-        private Action<DynamicMethodInfo> GetEmitDelegate(ServiceInfo serviceInfo, LifeCycleType lifeCycleType)
+        private Action<DynamicMethodInfo> GetEmitDelegate(ServiceInfo serviceInfo)
         {
             Action<DynamicMethodInfo> emitter = null;
-            switch (lifeCycleType)
+            switch (serviceInfo.LifeCycle)
             {
                 case LifeCycleType.Transient:
                     emitter = dynamicMethodInfo => EmitNewInstance(serviceInfo, dynamicMethodInfo);                    
@@ -1239,7 +1246,7 @@ namespace LightInject
                     emitter = dynamicMethodInfo => EmitRequestInstance(serviceInfo, dynamicMethodInfo);                   
                     break;
                 case LifeCycleType.Singleton:
-                    emitter = dynamicMethodInfo => EmitSingletonInstance(serviceInfo, this.GetEmitDelegate(serviceInfo, LifeCycleType.Transient), dynamicMethodInfo);                   
+                    emitter = dynamicMethodInfo => EmitSingletonInstance(serviceInfo,(dmi) => this.EmitNewInstance(serviceInfo,dmi) , dynamicMethodInfo);                   
                     break;
             }
 
@@ -1333,8 +1340,8 @@ namespace LightInject
         private void RegisterServiceFromLambdaExpression<TService>(
             Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycleType, string serviceName)
         {
-            var serviceInfo = new ServiceInfo { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName };
-            Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo, IsFactory(typeof(TService)) ? LifeCycleType.Singleton : lifeCycleType);
+            var serviceInfo = new ServiceInfo { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, LifeCycle = IsFactory(typeof(TService)) ? LifeCycleType.Singleton : lifeCycleType };
+            Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo);
             GetServiceRegistrations(typeof(TService)).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);            
         }
        
@@ -1350,7 +1357,8 @@ namespace LightInject
             /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
             public ConstructionInfo Parse(LambdaExpression lambdaExpression)
             {                                                                
-                LambdaExpressionValidator lambdaExpressionValidator = new LambdaExpressionValidator();
+                var lambdaExpressionValidator = new LambdaExpressionValidator();
+                
                 if (!lambdaExpressionValidator.CanParse(lambdaExpression))
                 {
                     return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);
@@ -1506,45 +1514,18 @@ namespace LightInject
         public class LambdaExpressionValidator : ExpressionVisitor
         {
             private bool canParse = true;
+
             public bool CanParse(LambdaExpression lambdaExpression)
             {
-                Visit(lambdaExpression.Body);                
-                return canParse;
+                this.Visit(lambdaExpression.Body);                
+                return this.canParse;
             }
 
             protected override Expression VisitLambda<T>(Expression<T> node)
             {
-                canParse = false;
-                return base.VisitLambda<T>(node);
+                this.canParse = false;
+                return base.VisitLambda(node);
             }           
-        }
-
-        public class ServiceInfo 
-        {
-            public Type ServiceType { get; set; }
-
-            public string ServiceName { get; set; }
-
-            public Type ImplementingType { get; set; }
-
-            public LambdaExpression FactoryExpression { get; set; }
-
-            public override int GetHashCode()
-            {
-                return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();
-            }
-
-            public override bool Equals(object obj)
-            {
-                var other = obj as ServiceInfo;
-                if (other == null)
-                {
-                    return false;
-                }
-
-                var result = this.ServiceName == other.ServiceName && this.ServiceType == other.ServiceType;
-                return result;                
-            }            
         }
 
         /// <summary>
@@ -1933,7 +1914,38 @@ namespace LightInject
         {
         }
     }
-    
+
+        internal class ServiceInfo 
+        {
+            public Type ServiceType { get; set; }
+
+            public string ServiceName { get; set; }
+
+            public Type ImplementingType { get; set; }
+
+            public LambdaExpression FactoryExpression { get; set; }
+
+            public LifeCycleType LifeCycle { get; set; }
+
+            public override int GetHashCode()
+            {
+                return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                var other = obj as ServiceInfo;
+                if (other == null)
+                {
+                    return false;
+                }
+
+                var result = this.ServiceName == other.ServiceName && this.ServiceType == other.ServiceType;
+                return result;                
+            }            
+        }
+
+
     /// <summary>
     /// Contains information about a service request passed to an <see cref="IFactory"/> instance.
     /// </summary>    
