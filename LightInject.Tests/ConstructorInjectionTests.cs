@@ -322,7 +322,7 @@
         }
 
         [TestMethod]
-        public void GetInstance_CustomFuncDependencyUsingFactoryParameter_InjectsDependency()
+        public void GetInstance_LambdaExpressionWithFactoryParameter_InjectsDependency()
         {
             var container = CreateContainer();
             container.Register("SomeValue");
@@ -330,6 +330,19 @@
             var instance = (FooWithCustomFuncDependency)container.GetInstance<IFoo>();
             Assert.IsNotNull(instance.StringFunc);
         }
+
+        [TestMethod]
+        public void GetInstance_MethodGroupWithFactoryParameter_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register("SomeValue");
+            container.Register<IFoo>(factory => new FooWithCustomFuncDependency(factory.GetInstance<string>));
+            var instance = (FooWithCustomFuncDependency)container.GetInstance<IFoo>();
+            Assert.IsNotNull(instance.StringFunc);
+        }
+
+       
+
 
         private IBar CreateBar()
         {

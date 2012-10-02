@@ -325,8 +325,16 @@ namespace LightInject
         /// Gets a list of <see cref="ServiceInfo"/> instances that represents the 
         /// registered services.          
         /// </summary>
-        IEnumerable<ServiceInfo> AvailableServices { get; set; } 
-                
+        IEnumerable<ServiceInfo> AvailableServices { get; }
+
+        /// <summary>
+        /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
+        /// </summary>
+        /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
+        bool CanCreateInstance(Type serviceType, string serviceName);
+        
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
@@ -433,7 +441,24 @@ namespace LightInject
         /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
 #endif
-        
+
+        /// <summary>
+        /// Gets a list of <see cref="ServiceInfo"/> instances that represents the 
+        /// registered services.          
+        /// </summary>
+        public IEnumerable<ServiceInfo> AvailableServices { get; set; }
+
+        /// <summary>
+        /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
+        /// </summary>
+        /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
+        public bool CanCreateInstance(Type serviceType, string serviceName)
+        {
+            return GetEmitMethod(serviceType, serviceName) != null;
+        }
+
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
@@ -1525,7 +1550,16 @@ namespace LightInject
             {
                 this.canParse = false;
                 return base.VisitLambda(node);
-            }           
+            }
+
+            protected override Expression VisitUnary(UnaryExpression node)
+            {
+                if (node.NodeType == ExpressionType.Convert)
+                {
+                    this.canParse = false;
+                }
+                return base.VisitUnary(node);
+            }
         }
 
         /// <summary>
