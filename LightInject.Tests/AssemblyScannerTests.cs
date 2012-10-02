@@ -1,6 +1,7 @@
 ﻿namespace LightInject.Tests
 {
     using System;
+    using System.Reflection;
 
     using LightInject;
     using LightInject.SampleLibrary;
@@ -57,7 +58,7 @@
         }
 
         [TestMethod]
-        public void Scan_SampleAssembkyWithCompositionRoot_CallsComposeMethod()
+        public void Scan_SampleAssemblyWithCompositionRoot_CallsComposeMethodOnce()
         {            
             var assemblyScanner = new AssemblyScanner();
             var containerMock = new Mock<IServiceContainer>();
@@ -65,6 +66,16 @@
             assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock.Object, LifeCycleType.Transient, t => true);
             Assert.AreEqual(1, SampleCompositionRoot.CallCount);
         }
+
+        [TestMethod]
+        public void Scan_SampleAssembkyWithCompositionRoot_HandlesRegisterAssemblyWithinCompositionRoot()
+        {
+            var container = new ServiceContainer();
+            container.RegisterAssembly(typeof(SampleCompositionRoot).Assembly);
+            var instance = container.GetInstance<ICompositionRoot>();
+            Assert.IsNotNull(instance);
+        }
+
 
         [TestMethod]        
         public void GetInstance_NoServices_CallsAssemblyScannerOnFirstRequest()

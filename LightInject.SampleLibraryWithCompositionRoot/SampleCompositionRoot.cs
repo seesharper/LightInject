@@ -7,7 +7,7 @@
         public void Compose(IServiceRegistry serviceRegistry)
         {
             CallCount++;
-            serviceRegistry.Register(42);
+            serviceRegistry.RegisterAssembly(typeof(SampleCompositionRoot).Assembly);
         }
     }
 }

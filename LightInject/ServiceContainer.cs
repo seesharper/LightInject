@@ -2044,6 +2044,8 @@ namespace LightInject
     /// </summary>    
     internal class AssemblyScanner : IAssemblyScanner
     {
+        private Assembly currentAssembly;
+        
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
         /// </summary>
@@ -2055,8 +2057,9 @@ namespace LightInject
         {            
             IEnumerable<Type> concreteTypes = GetConcreteTypes(assembly).ToList();
             var compositionRoots = concreteTypes.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
-            if (compositionRoots.Count > 0)
+            if (compositionRoots.Count > 0 && currentAssembly != assembly)
             {
+                currentAssembly = assembly;
                 ExecuteCompositionRoots(compositionRoots, serviceRegistry);
             }
             else
