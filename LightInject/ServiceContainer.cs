@@ -385,7 +385,7 @@ namespace LightInject
         /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
-        bool CanCreateInstance(Type serviceType, string serviceName);
+        bool CanGetInstance(Type serviceType, string serviceName);
     }
 
     /// <summary>
@@ -453,7 +453,7 @@ namespace LightInject
         /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
-        public bool CanCreateInstance(Type serviceType, string serviceName)
+        public bool CanGetInstance(Type serviceType, string serviceName)
         {
             return GetEmitMethod(serviceType, serviceName) != null;
         }
@@ -902,6 +902,12 @@ namespace LightInject
 
         private Action<DynamicMethodInfo> GetEmitMethod(Type serviceType, string serviceName)
         {
+            if (this.FirstServiceRequest())
+            {
+                EnsureThatServiceRegistryIsConfigured(serviceType);
+                CreateCustomFactories();
+            }
+
             Action<DynamicMethodInfo> emitter = GetRegisteredEmitMethod(serviceType, serviceName);
 
             IFactory factory = GetCustomFactory(serviceType, serviceName);
@@ -1306,11 +1312,7 @@ namespace LightInject
 
         private Func<object[], object> CreateDelegate(Type serviceType, string serviceName)
         {
-            if (this.FirstServiceRequest())
-            {
-                EnsureThatServiceRegistryIsConfigured(serviceType);
-                CreateCustomFactories();
-            }
+            
 
             dependencyStack.Clear();
             var serviceEmitter = this.GetEmitMethod(serviceType, serviceName);

@@ -570,6 +570,25 @@
         }
 
         [TestMethod]
+        public void CanGetInstance_KnownService_ReturnsTrue()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            var canCreateInstance = container.CanGetInstance(typeof(IFoo), string.Empty);
+            Assert.IsTrue(canCreateInstance);
+        }
+        [TestMethod]
+        public void CanGetInstance_UnknownService_ReturnFalse()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            var canCreateInstance = container.CanGetInstance(typeof(IBar), string.Empty);
+            Assert.IsFalse(canCreateInstance);
+        }
+
+
+
+        [TestMethod]
         public void Run()
         {
             for (int i = 0; i < 1; i++)
