@@ -153,6 +153,5 @@
             serviceContainer.RegisterAssembly(typeof(IFoo).Assembly,LifeCycleType.Singleton, t => true);
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), LifeCycleType.Singleton, It.IsAny<Func<Type, bool>>()), Times.Once());
         }
-
     }
 }

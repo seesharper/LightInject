@@ -341,7 +341,16 @@
             Assert.IsNotNull(instance.StringFunc);
         }
 
-       
+        [TestMethod]
+        public void GetInstance_UnknownService_UsesParameterNameAsServiceName()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>("Bar");
+            container.Register<IBar, AnotherBar>("AnotherBar");
+            container.Register<IFoo, FooWithDependency>();
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+        }
 
 
         private IBar CreateBar()

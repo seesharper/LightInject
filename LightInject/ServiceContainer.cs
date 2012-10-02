@@ -189,6 +189,59 @@ namespace LightInject
         /// <param name="serviceName">The name of the service.</param>        
         /// <param name="lifeCycle">The <see cref="LifeCycleType"/> that specifies the life cycle of the service.</param>
         void Register<TService>(Expression<Func<IServiceFactory, TService>> expression, string serviceName, LifeCycleType lifeCycle);
+        
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>        
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        void RegisterAssembly(Assembly assembly);
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        void RegisterAssembly(Assembly assembly, Func<Type, bool> shouldRegister);
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType);
+
+        /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
+        /// will be used to configure the container.
+        /// </remarks>     
+        void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType, Func<Type, bool> shouldRegister);
+
+#if NET
+
+        /// <summary>
+        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
+        /// </summary>
+        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
+        void RegisterAssembly(string searchPattern);
+#endif
     }
 
     /// <summary>
@@ -319,8 +372,7 @@ namespace LightInject
     /// Represents an inversion of control container.
     /// </summary>
     internal interface IServiceContainer : IServiceRegistry, IServiceFactory
-    {
-        
+    {        
         /// <summary>
         /// Gets a list of <see cref="ServiceInfo"/> instances that represents the 
         /// registered services.          
@@ -334,59 +386,6 @@ namespace LightInject
         /// <param name="serviceName">The name of the service.</param>
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         bool CanCreateInstance(Type serviceType, string serviceName);
-        
-        /// <summary>
-        /// Registers services from the given <paramref name="assembly"/>.
-        /// </summary>
-        /// <param name="assembly">The assembly to be scanned for services.</param>        
-        /// <remarks>
-        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
-        /// will be used to configure the container.
-        /// </remarks>     
-        void RegisterAssembly(Assembly assembly);
-
-        /// <summary>
-        /// Registers services from the given <paramref name="assembly"/>.
-        /// </summary>
-        /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        /// <remarks>
-        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
-        /// will be used to configure the container.
-        /// </remarks>     
-        void RegisterAssembly(Assembly assembly, Func<Type, bool> shouldRegister);
-
-        /// <summary>
-        /// Registers services from the given <paramref name="assembly"/>.
-        /// </summary>
-        /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
-        /// <remarks>
-        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
-        /// will be used to configure the container.
-        /// </remarks>     
-        void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType);
-
-        /// <summary>
-        /// Registers services from the given <paramref name="assembly"/>.
-        /// </summary>
-        /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="lifeCycleType">The <see cref="LifeCycleType"/> used to register the services found within the assembly.</param>
-        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        /// <remarks>
-        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
-        /// will be used to configure the container.
-        /// </remarks>     
-        void RegisterAssembly(Assembly assembly, LifeCycleType lifeCycleType, Func<Type, bool> shouldRegister);
-
-#if NET
-        
-        /// <summary>
-        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void RegisterAssembly(string searchPattern);
-#endif
     }
 
     /// <summary>
@@ -1034,7 +1033,11 @@ namespace LightInject
                 Action<DynamicMethodInfo> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);                                                
                 if (emitter == null)
                 {
-                    throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
+                    emitter = this.GetEmitMethod(dependency.ServiceType, dependency.Name);
+                    if (emitter == null)
+                    {
+                        throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));    
+                    }                    
                 }
 
                 try
@@ -1242,7 +1245,7 @@ namespace LightInject
             }
             else
             {
-                var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, LifeCycle = IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType};
+                var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, LifeCycle = IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType };
                 Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo);                    
                 GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);
             }
@@ -1253,7 +1256,7 @@ namespace LightInject
             Action<DynamicMethodInfo, Type> emitter = (dmi, closedGenericServiceType) =>
                 { 
                     Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
-                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, LifeCycle = lifeCycleType};
+                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, LifeCycle = lifeCycleType };
                     GetEmitDelegate(serviceInfo)(dmi);
                 };
             this.GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);
@@ -1625,6 +1628,11 @@ namespace LightInject
             public Expression FactoryExpression { get; set; }
 
             /// <summary>
+            /// Gets the name of the dependency accessor.
+            /// </summary>
+            public abstract string Name { get; }
+
+            /// <summary>
             /// Returns textual information about the dependency.
             /// </summary>
             /// <returns>A string that describes the dependency.</returns>
@@ -1646,6 +1654,17 @@ namespace LightInject
             public PropertyInfo Property { get; set; }
 
             /// <summary>
+            /// Gets the name of the dependency accessor.
+            /// </summary>
+            public override string Name
+            {
+                get
+                {
+                    return Property.Name;
+                }
+            }
+
+            /// <summary>
             /// Returns textual information about the dependency.
             /// </summary>
             /// <returns>A string that describes the dependency.</returns>
@@ -1664,6 +1683,17 @@ namespace LightInject
             /// Gets or sets the <see cref="ParameterInfo"/> for this <see cref="ConstructorDependency"/>.
             /// </summary>
             public ParameterInfo Parameter { get; set; }
+
+            /// <summary>
+            /// Gets the name of the dependency accessor.
+            /// </summary>
+            public override string Name
+            {
+                get
+                {
+                    return Parameter.Name;
+                }
+            }
 
             /// <summary>
             /// Returns textual information about the dependency.
