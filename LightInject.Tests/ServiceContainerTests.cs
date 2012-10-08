@@ -276,6 +276,20 @@
             Assert.AreSame(instance1, instance2);
         }
 
+        [TestMethod]
+        public void GetInstance_PerGraphService_ReturnsSingleInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>(LifeCycleType.Request);
+            using (new ResolutionScope())
+            {
+                var instance1 = container.GetInstance<IFoo>();
+                var instance2 = container.GetInstance<IFoo>();
+                Assert.AreSame(instance1, instance2);
+            }            
+        }
+
+
         #region Func Services
 
         [TestMethod]
@@ -559,7 +573,6 @@
             Assert.AreEqual(2, instances.Count());
         }
 
-
         [TestMethod]
         public void GetAllInstances_EnumerableWithRecursiveDependency_ThrowsException()
         {
@@ -584,9 +597,7 @@
             container.Register<IFoo, Foo>();
             var canCreateInstance = container.CanGetInstance(typeof(IBar), string.Empty);
             Assert.IsFalse(canCreateInstance);
-        }
-
-
+        }      
 
         [TestMethod]
         public void Run()
@@ -666,5 +677,8 @@
         {
             return new ServiceContainer();
         }
+
+        
+        
     }
 }

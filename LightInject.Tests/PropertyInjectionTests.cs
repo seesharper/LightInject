@@ -54,9 +54,17 @@
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(LifeCycleType.Request);
-            container.Register<IFoo, FooWithProperyDependency>();
-            var instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
-            var instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithProperyDependency>();            
+            FooWithProperyDependency instance1;
+            FooWithProperyDependency instance2;
+            using (new ResolutionScope())
+            {
+                instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            }
+            using (new ResolutionScope())
+            {
+                instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            }            
             Assert.AreNotEqual(instance1.Bar, instance2.Bar);
         }
 
@@ -97,8 +105,11 @@
             var container = CreateContainer();
             container.Register<IBar, Bar>(LifeCycleType.Request);
             container.Register<IFoo, FooWithSamePropertyDependencyTwice>();
-            var instance = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
-            Assert.AreEqual(instance.Bar1, instance.Bar2);
+            using (new ResolutionScope())
+            {
+                var instance = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
+                Assert.AreEqual(instance.Bar1, instance.Bar2);
+            }            
         }
 
         [TestMethod]
@@ -106,9 +117,18 @@
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(LifeCycleType.Request);
-            container.Register<IFoo, FooWithSamePropertyDependencyTwice>();
-            var instance1 = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
-            var instance2 = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithSamePropertyDependencyTwice>();           
+
+            FooWithSamePropertyDependencyTwice instance1;
+            FooWithSamePropertyDependencyTwice instance2;
+            using (new ResolutionScope())
+            {
+                instance1 = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
+            }
+            using (new ResolutionScope())
+            {
+                instance2 = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
+            }            
             Assert.AreNotEqual(instance1.Bar1, instance2.Bar2);
         }
 
@@ -178,8 +198,11 @@
             Bar.InitializeCount = 0;
             container.Register(typeof(IBar), typeof(Bar), LifeCycleType.Request);
             container.Register(typeof(IFoo), typeof(FooWithSamePropertyDependencyTwice));
-            container.GetInstance<IFoo>();
-            Assert.AreEqual(1, Bar.InitializeCount);
+            using (new ResolutionScope())
+            {
+                container.GetInstance<IFoo>();
+                Assert.AreEqual(1, Bar.InitializeCount);
+            }
         }
 
         [TestMethod]

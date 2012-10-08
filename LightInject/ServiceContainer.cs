@@ -315,6 +315,11 @@ namespace LightInject
         bool CanGetInstance(Type serviceType, string serviceName);
     }
 
+    internal interface ILifetime
+    {
+        object GetInstance(Func<object> createInstance);
+    }
+    
     /// <summary>
     /// Represents a class that acts as a composition root for an <see cref="IServiceRegistry"/> instance.
     /// </summary>
@@ -386,6 +391,14 @@ namespace LightInject
         /// <param name="serviceName">The name of the service.</param>
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         bool CanGetInstance(Type serviceType, string serviceName);
+
+        /// <summary>
+        /// Gets a function delegate used to get an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The service type.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        /// <returns></returns>
+        Func<object> GetInstanceDelegate(Type serviceType, string serviceName);
     }
 
     /// <summary>
@@ -456,6 +469,11 @@ namespace LightInject
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
             return GetEmitMethod(serviceType, serviceName) != null;
+        }
+
+        public Func<object> GetInstanceDelegate(Type serviceType, string serviceName)
+        {
+            return this.CreateDelegate(serviceType, serviceName);
         }
 
         /// <summary>
@@ -701,14 +719,14 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
         {
-            Func<object[], object> del;
+            Func<object> del;
 
             if (!delegates.TryGetValue(serviceType, out del))
             {
                 del = delegates.GetOrAdd(serviceType, t => CreateDelegate(t, string.Empty));
             }
 
-            return del(constants.Items);                       
+            return del();                       
         }
 
         /// <summary>
@@ -740,14 +758,14 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName)
         {
-            Func<object[], object> del;
+            Func<object> del;
 
             if (!namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
             {
                 del = namedDelegates.GetOrAdd(Tuple.Create(serviceType, serviceName), t => CreateDelegate(t.Item1, serviceName));
             }
 
-            return del(constants.Items);                              
+            return del();                              
         }
 
         /// <summary>
@@ -768,18 +786,6 @@ namespace LightInject
         public IEnumerable<TService> GetAllInstances<TService>()
         {
             return GetInstance<IEnumerable<TService>>();
-        }
-
-        private static Func<object[], object> CreateDynamicMethodDelegate(Action<DynamicMethodInfo> serviceEmitter, Type serviceType)
-        {
-            var dynamicMethodInfo = new DynamicMethodInfo();
-            serviceEmitter(dynamicMethodInfo);
-            if (serviceType.IsValueType)
-            {
-                dynamicMethodInfo.GetILGenerator().Emit(OpCodes.Box, serviceType);
-            }
-
-            return dynamicMethodInfo.CreateDelegate();
         }
 
         private static void EmitLoadConstant(DynamicMethodInfo dynamicMethodInfo, int index, Type type)
@@ -860,7 +866,20 @@ namespace LightInject
                 constructorInfo.GetParameters().OrderBy(p => p.Position).Select(
                     p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
         }
-       
+
+        private Func<object> CreateDynamicMethodDelegate(Action<DynamicMethodInfo> serviceEmitter, Type serviceType)
+        {
+            var dynamicMethodInfo = new DynamicMethodInfo();
+            serviceEmitter(dynamicMethodInfo);
+            if (serviceType.IsValueType)
+            {
+                dynamicMethodInfo.GetILGenerator().Emit(OpCodes.Box, serviceType);
+            }
+
+            var del = dynamicMethodInfo.CreateDelegate();
+            return () => del(constants.Items);
+        }
+
         private ConstructionInfo CreateConstructionInfo(ServiceInfo serviceInfo)
         {
             if (serviceInfo.FactoryExpression != null)
@@ -945,7 +964,7 @@ namespace LightInject
             if (emitter != null)
             {
                 var del = CreateDynamicMethodDelegate(emitter, typeof(IFactory));
-                emitter = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, () => del(constants.Items));
+                emitter = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, del);
             }
             else
             {
@@ -971,18 +990,7 @@ namespace LightInject
                 GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitter, (s, m) => emitter);
             }
         }
-
-        private void EmitRequestInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
-        {
-            if (!dynamicMethodInfo.ContainsLocalVariable(serviceInfo))
-            {
-                EmitNewInstance(serviceInfo, dynamicMethodInfo);
-                dynamicMethodInfo.EmitStoreLocalVariable(serviceInfo);
-            }
-
-            dynamicMethodInfo.EmitLoadLocalVariable(serviceInfo);
-        }
-
+        
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
             ConstructionInfo constructionInfo = this.GetConstructionInfo(serviceInfo);
@@ -1251,7 +1259,8 @@ namespace LightInject
             }
             else
             {
-                var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, LifeCycle = IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType };
+                lifeCycleType = IsFactory(serviceType) ? LifeCycleType.Singleton : lifeCycleType;
+                var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, LifeCycle = lifeCycleType, Lifetime = CreateLifeTime(lifeCycleType) };
                 Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo);                    
                 GetServiceRegistrations(serviceType).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);
             }
@@ -1262,12 +1271,30 @@ namespace LightInject
             Action<DynamicMethodInfo, Type> emitter = (dmi, closedGenericServiceType) =>
                 { 
                     Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
-                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, LifeCycle = lifeCycleType };
-                    GetEmitDelegate(serviceInfo)(dmi);
+                    //This might be called twice?
+                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, LifeCycle = lifeCycleType, Lifetime = CreateLifeTime(lifeCycleType) };
+                    var closedGenericEmitter = GetEmitDelegate(serviceInfo);
+                    UpdateServiceRegistration(closedGenericServiceType,serviceName, closedGenericEmitter);
+                    closedGenericEmitter(dmi);
                 };
-            this.GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);
+            GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);
         }
         
+        private ILifetime CreateLifeTime(LifeCycleType lifeCycleType)
+        {
+            if (lifeCycleType == LifeCycleType.Singleton)
+            {
+                return new SingletonLifetime();
+            }
+
+            if (lifeCycleType == LifeCycleType.Request)
+            {
+                return new PerGraphLifetime();
+            }
+
+            return null;
+        }
+
         private Action<DynamicMethodInfo> GetEmitDelegate(ServiceInfo serviceInfo)
         {
             Action<DynamicMethodInfo> emitter = null;
@@ -1276,44 +1303,49 @@ namespace LightInject
                 case LifeCycleType.Transient:
                     emitter = dynamicMethodInfo => EmitNewInstance(serviceInfo, dynamicMethodInfo);                    
                     break;
-                case LifeCycleType.Request:
-                    emitter = dynamicMethodInfo => EmitRequestInstance(serviceInfo, dynamicMethodInfo);                   
+                case LifeCycleType.Request:                    
+                    emitter = dynamicMethodInfo => EmitLifetime(serviceInfo, dmi => EmitNewInstance(serviceInfo, dmi), dynamicMethodInfo);
                     break;
-                case LifeCycleType.Singleton:
-                    emitter = dynamicMethodInfo => EmitSingletonInstance(serviceInfo,(dmi) => this.EmitNewInstance(serviceInfo,dmi) , dynamicMethodInfo);                   
+                case LifeCycleType.Singleton:                    
+                    emitter = dynamicMethodInfo => EmitLifetime(serviceInfo, dmi => EmitNewInstance(serviceInfo, dmi), dynamicMethodInfo);                   
                     break;
             }
 
             return emitter;
         }
-
-        private void EmitSingletonInstance(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter, DynamicMethodInfo dynamicMethodInfo)
+                
+        private void EmitLifetime(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter, DynamicMethodInfo dynamicMethodInfo)
         {
-            EmitLoadConstant(dynamicMethodInfo, this.CreateSingletonConstantIndex(serviceInfo, instanceEmitter), serviceInfo.ServiceType);
-        }
-        
-        private int CreateSingletonConstantIndex(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter)
-        {
-            return constants.Add(this.GetSingletonInstance(serviceInfo, instanceEmitter));
-        }
-               
-        private object GetSingletonInstance(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter)
-        {            
-            return this.singletons.GetOrAdd(serviceInfo, t => new Lazy<object>(() => this.CreateSingletonInstance(instanceEmitter))).Value;
+            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            int instanceDelegateIndex = this.CreateInstanceDelegateIndex(instanceEmitter);
+            int lifetimeIndex = this.CreateLifetimeIndex(serviceInfo.Lifetime);
+            var getInstanceMethod = typeof(ILifetime).GetMethod("GetInstance");
+            EmitLoadConstant(dynamicMethodInfo, lifetimeIndex, typeof(ILifetime));
+            EmitLoadConstant(dynamicMethodInfo, instanceDelegateIndex, typeof(Func<object>));
+            generator.Emit(OpCodes.Callvirt, getInstanceMethod);
+            generator.Emit(serviceInfo.ServiceType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceInfo.ServiceType);
         }
 
-        private object CreateSingletonInstance(Action<DynamicMethodInfo> instanceEmitter)
+        private int CreateInstanceDelegateIndex(Action<DynamicMethodInfo> instanceEmitter)
+        {
+            return constants.Add(CreateInstanceDelegate(instanceEmitter));
+        }
+
+        private int CreateLifetimeIndex(ILifetime lifetime)
+        {
+            return constants.Add(lifetime);
+        }
+
+        private Func<object> CreateInstanceDelegate(Action<DynamicMethodInfo> instanceEmitter)
         {
             var dynamicMethodInfo = new DynamicMethodInfo();
             instanceEmitter(dynamicMethodInfo);
-            object instance = dynamicMethodInfo.CreateDelegate()(constants.Items);
-            return instance;
+            Func<object> del = () => dynamicMethodInfo.CreateDelegate()(constants.Items);
+            return del;            
         }
 
-        private Func<object[], object> CreateDelegate(Type serviceType, string serviceName)
-        {
-            
-
+        private Func<object> CreateDelegate(Type serviceType, string serviceName)
+        {            
             dependencyStack.Clear();
             var serviceEmitter = this.GetEmitMethod(serviceType, serviceName);
             if (serviceEmitter == null)
@@ -1370,7 +1402,8 @@ namespace LightInject
         private void RegisterServiceFromLambdaExpression<TService>(
             Expression<Func<IServiceFactory, TService>> factory, LifeCycleType lifeCycleType, string serviceName)
         {
-            var serviceInfo = new ServiceInfo { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, LifeCycle = IsFactory(typeof(TService)) ? LifeCycleType.Singleton : lifeCycleType };
+            lifeCycleType = IsFactory(typeof(TService)) ? LifeCycleType.Singleton : lifeCycleType;
+            var serviceInfo = new ServiceInfo { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, LifeCycle = lifeCycleType, Lifetime = CreateLifeTime(lifeCycleType)};
             Action<DynamicMethodInfo> emitDelegate = GetEmitDelegate(serviceInfo);
             GetServiceRegistrations(typeof(TService)).AddOrUpdate(serviceName, s => emitDelegate, (s, i) => emitDelegate);            
         }
@@ -1563,6 +1596,7 @@ namespace LightInject
                 {
                     this.canParse = false;
                 }
+
                 return base.VisitUnary(node);
             }
         }
@@ -1832,22 +1866,6 @@ namespace LightInject
                 return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
             }
 
-            public bool ContainsLocalVariable(ServiceInfo serviceInfo)
-            {
-                return localVariables.ContainsKey(serviceInfo);
-            }
-
-            public void EmitLoadLocalVariable(ServiceInfo serviceInfo)
-            {
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Ldloc, localVariables[serviceInfo]);
-            }
-
-            public void EmitStoreLocalVariable(ServiceInfo serviceInfo)
-            {
-                localVariables.Add(serviceInfo, dynamicMethod.GetILGenerator().DeclareLocal(serviceInfo.ServiceType));
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Stloc, localVariables[serviceInfo]);
-            }
-
             private void CreateDynamicMethod()
             {
 #if NET                
@@ -1860,23 +1878,33 @@ namespace LightInject
 #endif
             }
         }
-#if NET
-                
-        private class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
-        {
-            public ThreadSafeDictionary()
-            {
-            }
 
-            public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
-                : base(comparer)
-            {
-            }
+        private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
+        {
         }
+
+        private class DelegateRegistry<TKey> : KeyValueStorage<TKey, Func<object>>
+        {
+        }
+    }
+
+#if NET
+
+    internal class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
+    {
+        public ThreadSafeDictionary()
+        {
+        }
+
+        public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
+            : base(comparer)
+        {
+        }
+    }
 #endif
 #if SILVERLIGHT
         
-        private class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+        internal class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         {
             private readonly Dictionary<TKey, TValue> dictionary;
             private readonly object syncObject = new object();
@@ -1957,6 +1985,22 @@ namespace LightInject
                 }
             }
 
+            public bool TryRemove(TKey key, out TValue value)
+            {
+                lock (syncObject)
+                {                    
+                    if (dictionary.TryGetValue(key, out value))
+                    {                 
+                        return true;
+                    }
+                    else
+                    {
+                        value = default(TValue);
+                        return false;
+                    }
+                }
+            }
+
             public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
             {
                 lock (syncObject)
@@ -1972,16 +2016,7 @@ namespace LightInject
         }        
 #endif
 
-        private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
-        {
-        }
-
-        private class DelegateRegistry<TKey> : KeyValueStorage<TKey, Func<object[], object>>
-        {
-        }
-    }
-
-        internal class ServiceInfo 
+    internal class ServiceInfo 
         {
             public Type ServiceType { get; set; }
 
@@ -1992,6 +2027,8 @@ namespace LightInject
             public LambdaExpression FactoryExpression { get; set; }
 
             public LifeCycleType LifeCycle { get; set; }
+
+            public ILifetime Lifetime { get; set; }
 
             public override int GetHashCode()
             {
@@ -2011,6 +2048,72 @@ namespace LightInject
             }            
         }
 
+        internal class SingletonLifetime : ILifetime, IDisposable
+        {
+            private readonly object syncRoot = new object();
+            private object singleton;
+
+            public object GetInstance(Func<object> createInstance)
+            {
+                if (singleton != null)
+                {
+                    return singleton;
+                }
+
+                lock (syncRoot)
+                {
+                    if (singleton == null)
+                    {
+                        singleton = createInstance();
+                    }
+                }
+
+                return singleton;
+            }
+
+            public void Dispose()
+            {
+                var disposable = singleton as IDisposable;
+                if (disposable != null)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+
+        internal class PerGraphLifetime : ILifetime
+        {
+            private readonly ThreadSafeDictionary<ResolutionContext, object> instances = new ThreadSafeDictionary<ResolutionContext, object>();
+
+            public PerGraphLifetime()
+            {
+                Console.WriteLine("");
+            }
+
+            public object GetInstance(Func<object> createInstance)
+            {
+                var context = ResolutionScope.Current;
+                if (context == null)
+                {
+                    throw new InvalidOperationException("No ResolutionContext");
+                }
+
+                return instances.GetOrAdd(context, s => CreateScopedInstance(s, createInstance));
+            }
+
+            private object CreateScopedInstance(ResolutionContext context, Func<object> createInstance)
+            {
+                context.Completed += this.OnContextCompleted;
+                var instance = createInstance();
+                return instance;
+            }
+
+            private void OnContextCompleted(object sender, EventArgs e)
+            {
+                object removedInstance;
+                instances.TryRemove((ResolutionContext)sender, out removedInstance);
+            }
+        }
 
     /// <summary>
     /// Contains information about a service request passed to an <see cref="IFactory"/> instance.
@@ -2039,6 +2142,63 @@ namespace LightInject
         /// Gets or sets the function delegate used to proceed.
         /// </summary>
         public Func<object> Proceed { get; internal set; }
+    }
+
+    internal class ResolutionScope : IDisposable
+    {                
+        [ThreadStatic]
+        private static ResolutionContext context;
+       
+        public ResolutionScope()
+        {
+            context = new ResolutionContext();
+        }
+        
+        public static ResolutionContext Current
+        {
+            get
+            {
+                return context;
+            }
+        }
+
+        public void Dispose()
+        {
+            context.SetComplete();
+            context = null;
+        }
+    }
+
+    internal class ResolutionContext
+    {
+        private readonly IList<IDisposable> disposableObjects = new List<IDisposable>();
+        
+        public event EventHandler<EventArgs> Completed;
+
+        public void SetComplete()
+        {
+            foreach (var disposableObject in disposableObjects)
+            {
+                disposableObject.Dispose();
+            }
+
+            disposableObjects.Clear();
+            OnCompleted();
+        }
+
+        public void RegisterForDisposal(IDisposable disposable)
+        {
+            disposableObjects.Add(disposable);
+        }
+
+        private void OnCompleted()
+        {
+            var completedHandler = Completed;
+            if (completedHandler != null)
+            {
+                completedHandler(this, new EventArgs());
+            }
+        }        
     }
 
     /// <summary>
