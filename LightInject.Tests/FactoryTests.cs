@@ -25,7 +25,7 @@
         public void GetInstance_FactoryWithRequestLifeCycle_ReturnsSingletonInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFactory), typeof(FooFactory), LifeCycleType.Request);
+            container.Register(typeof(IFactory), typeof(FooFactory), new PerGraphLifetime());
             var instance1 = container.GetInstance<IFactory>();
             var instance2 = container.GetInstance<IFactory>();
             Assert.AreSame(instance1, instance2);
@@ -35,7 +35,7 @@
         public void GetInstance_FactoryWithSingletonLifeCycle_ReturnsSingletonInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFactory), typeof(FooFactory), LifeCycleType.Singleton);
+            container.Register(typeof(IFactory), typeof(FooFactory), new SingletonLifetime());
             var instance1 = container.GetInstance<IFactory>();
             var instance2 = container.GetInstance<IFactory>();
             Assert.AreSame(instance1, instance2);

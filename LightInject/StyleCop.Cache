@@ -1,15 +1,26 @@
 <stylecopresultscache>
-  <version>11</version>
-  <project key="60861655">
-    <configuration>TRACE;DEBUG;NET</configuration>
-  </project>
+  <version>12</version>
   <sourcecode name="AssemblyInfo.cs" parser="StyleCop.CSharp.CsParser">
-    <settings>
-      <timestamp>07/31/2012 18:46:41</timestamp>
-      <milliseconds>856</milliseconds>
-    </settings>
-    <timestamp>07/25/2012 22:02:02</timestamp>
-    <milliseconds>254</milliseconds>
+    <timestamps>
+      <styleCop>2012.10.05 10:23:44.000</styleCop>
+      <settingsFile>2012.07.31 18:46:41.856</settingsFile>
+      <sourceFile>2012.08.16 20:41:43.206</sourceFile>
+      <parser>2012.10.05 10:23:44.000</parser>
+      <StyleCop.CSharp.DocumentationRules>2012.10.05 10:23:44.000</StyleCop.CSharp.DocumentationRules>
+      <StyleCop.CSharp.DocumentationRules.FilesHashCode>-577759861</StyleCop.CSharp.DocumentationRules.FilesHashCode>
+      <StyleCop.CSharp.LayoutRules>2012.10.05 10:23:44.000</StyleCop.CSharp.LayoutRules>
+      <StyleCop.CSharp.LayoutRules.FilesHashCode>0</StyleCop.CSharp.LayoutRules.FilesHashCode>
+      <StyleCop.CSharp.MaintainabilityRules>2012.10.05 10:23:44.000</StyleCop.CSharp.MaintainabilityRules>
+      <StyleCop.CSharp.MaintainabilityRules.FilesHashCode>0</StyleCop.CSharp.MaintainabilityRules.FilesHashCode>
+      <StyleCop.CSharp.NamingRules>2012.10.05 10:23:44.000</StyleCop.CSharp.NamingRules>
+      <StyleCop.CSharp.NamingRules.FilesHashCode>0</StyleCop.CSharp.NamingRules.FilesHashCode>
+      <StyleCop.CSharp.OrderingRules>2012.10.05 10:23:44.000</StyleCop.CSharp.OrderingRules>
+      <StyleCop.CSharp.OrderingRules.FilesHashCode>0</StyleCop.CSharp.OrderingRules.FilesHashCode>
+      <StyleCop.CSharp.ReadabilityRules>2012.10.05 10:23:44.000</StyleCop.CSharp.ReadabilityRules>
+      <StyleCop.CSharp.ReadabilityRules.FilesHashCode>0</StyleCop.CSharp.ReadabilityRules.FilesHashCode>
+      <StyleCop.CSharp.SpacingRules>2012.10.05 10:23:44.000</StyleCop.CSharp.SpacingRules>
+      <StyleCop.CSharp.SpacingRules.FilesHashCode>0</StyleCop.CSharp.SpacingRules.FilesHashCode>
+    </timestamps>
     <violations>
       <violation namespace="StyleCop.CSharp.DocumentationRules" rule="FileMustHaveHeader" ruleCheckId="SA1633">
         <context>The file has no header, the header Xml is invalid, or the header is not located at the top of the file.</context>
@@ -19,12 +30,29 @@
     </violations>
   </sourcecode>
   <sourcecode name="ServiceContainer.cs" parser="StyleCop.CSharp.CsParser">
-    <settings>
-      <timestamp>07/31/2012 18:46:41</timestamp>
-      <milliseconds>856</milliseconds>
-    </settings>
-    <timestamp>08/16/2012 14:40:15</timestamp>
-    <milliseconds>194</milliseconds>
+    <timestamps>
+      <styleCop>2012.10.05 10:23:44.000</styleCop>
+      <settingsFile>2012.07.31 18:46:41.856</settingsFile>
+      <sourceFile>2012.10.09 21:48:45.932</sourceFile>
+      <parser>2012.10.05 10:23:44.000</parser>
+      <StyleCop.CSharp.DocumentationRules>2012.10.05 10:23:44.000</StyleCop.CSharp.DocumentationRules>
+      <StyleCop.CSharp.DocumentationRules.FilesHashCode>-577759861</StyleCop.CSharp.DocumentationRules.FilesHashCode>
+      <StyleCop.CSharp.LayoutRules>2012.10.05 10:23:44.000</StyleCop.CSharp.LayoutRules>
+      <StyleCop.CSharp.LayoutRules.FilesHashCode>0</StyleCop.CSharp.LayoutRules.FilesHashCode>
+      <StyleCop.CSharp.MaintainabilityRules>2012.10.05 10:23:44.000</StyleCop.CSharp.MaintainabilityRules>
+      <StyleCop.CSharp.MaintainabilityRules.FilesHashCode>0</StyleCop.CSharp.MaintainabilityRules.FilesHashCode>
+      <StyleCop.CSharp.NamingRules>2012.10.05 10:23:44.000</StyleCop.CSharp.NamingRules>
+      <StyleCop.CSharp.NamingRules.FilesHashCode>0</StyleCop.CSharp.NamingRules.FilesHashCode>
+      <StyleCop.CSharp.OrderingRules>2012.10.05 10:23:44.000</StyleCop.CSharp.OrderingRules>
+      <StyleCop.CSharp.OrderingRules.FilesHashCode>0</StyleCop.CSharp.OrderingRules.FilesHashCode>
+      <StyleCop.CSharp.ReadabilityRules>2012.10.05 10:23:44.000</StyleCop.CSharp.ReadabilityRules>
+      <StyleCop.CSharp.ReadabilityRules.FilesHashCode>0</StyleCop.CSharp.ReadabilityRules.FilesHashCode>
+      <StyleCop.CSharp.SpacingRules>2012.10.05 10:23:44.000</StyleCop.CSharp.SpacingRules>
+      <StyleCop.CSharp.SpacingRules.FilesHashCode>0</StyleCop.CSharp.SpacingRules.FilesHashCode>
+    </timestamps>
     <violations />
   </sourcecode>
+  <project key="60861655">
+    <configuration>TRACE;DEBUG;NET</configuration>
+  </project>
 </stylecopresultscache>

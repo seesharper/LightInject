@@ -239,7 +239,7 @@
         public void GetInstance_OpenGenericSingleton_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo<>), typeof(Foo<>), LifeCycleType.Singleton);
+            container.Register(typeof(IFoo<>), typeof(Foo<>), new SingletonLifetime());
             var instance1 = container.GetInstance(typeof(IFoo<int>));
             var instance2 = container.GetInstance(typeof(IFoo<int>));
             Assert.AreSame(instance1, instance2);
@@ -249,7 +249,7 @@
         public void GetInstance_Singleton_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo), typeof(Foo), LifeCycleType.Singleton);
+            container.Register(typeof(IFoo), typeof(Foo), new SingletonLifetime());
             var instance1 = container.GetInstance(typeof(IFoo));
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1, instance2);
@@ -260,7 +260,7 @@
         {
             var container = CreateContainer();
             Foo.Instances = 0;
-            container.Register(typeof(IFoo), typeof(Foo), LifeCycleType.Singleton);            
+            container.Register(typeof(IFoo), typeof(Foo), new SingletonLifetime());            
             container.GetInstance(typeof(IFoo));
             container.GetInstance(typeof(IFoo));
             Assert.AreEqual(1, Foo.Instances);
@@ -270,7 +270,7 @@
         public void GetInstance_NamedSingleton_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo, Foo>("SomeFoo", LifeCycleType.Singleton);
+            container.Register<IFoo, Foo>("SomeFoo", new SingletonLifetime());
             var instance1 = container.GetInstance(typeof(IFoo), "SomeFoo");
             var instance2 = container.GetInstance(typeof(IFoo), "SomeFoo");
             Assert.AreSame(instance1, instance2);
@@ -280,7 +280,7 @@
         public void GetInstance_PerGraphService_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo, Foo>(LifeCycleType.Request);
+            container.Register<IFoo, Foo>(new PerGraphLifetime());
             using (new ResolutionScope())
             {
                 var instance1 = container.GetInstance<IFoo>();
@@ -350,7 +350,7 @@
         public void GetInstance_FuncWithSingletonTarget_ReturnsSameInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo, Foo>(LifeCycleType.Singleton);
+            container.Register<IFoo, Foo>(new SingletonLifetime());
             var factory = (Func<IFoo>)container.GetInstance(typeof(Func<IFoo>));
             var instance1 = factory();
             var instance2 = factory();
@@ -403,7 +403,7 @@
         public void GetInstance_NamedSingletonFuncFactory_ReturnsFactoryCreatedInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(c => new Foo(), "SomeFoo", LifeCycleType.Singleton);
+            container.Register<IFoo>(c => new Foo(), "SomeFoo", new SingletonLifetime());
             var firstInstance = container.GetInstance(typeof(IFoo), "SomeFoo");
             var secondInstance = container.GetInstance(typeof(IFoo), "SomeFoo");
             Assert.AreSame(firstInstance, secondInstance);
@@ -450,7 +450,7 @@
         public void GetInstance_SingletonFuncFactory_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(c => new Foo(), LifeCycleType.Singleton);
+            container.Register<IFoo>(c => new Foo(), new SingletonLifetime());
             var instance1 = container.GetInstance(typeof(IFoo));
             var instance2 = container.GetInstance(typeof(IFoo));
             Assert.AreSame(instance1, instance2);
@@ -469,7 +469,7 @@
         public void GetInstance_SingletonFuncFactoryWithMethodCall_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(factory => GetFoo(), LifeCycleType.Singleton);
+            container.Register<IFoo>(factory => GetFoo(), new SingletonLifetime());
             var instance1 = container.GetInstance<IFoo>();
             var instance2 = container.GetInstance<IFoo>();
             Assert.AreSame(instance1, instance2);
@@ -613,7 +613,7 @@
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo), typeof(Foo), LifeCycleType.Singleton);
+            container.Register(typeof(IFoo), typeof(Foo), new SingletonLifetime());
             Foo.Instances = 0;
             IList<IFoo> instances = new List<IFoo>();
             for (int i = 0; i < 100; i++)
