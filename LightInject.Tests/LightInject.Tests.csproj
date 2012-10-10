@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="AssemblyScannerTests.cs" />
     <Compile Include="ConstructorInjectionTests.cs" />
+    <Compile Include="DecoratorTests.cs" />
     <Compile Include="ErrorMessages.cs" />
     <Compile Include="ExceptionAssert.cs" />
     <Compile Include="LambdaExpressionParserTests.cs" />

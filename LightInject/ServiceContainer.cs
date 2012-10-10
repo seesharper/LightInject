@@ -222,6 +222,10 @@ namespace LightInject
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         void RegisterAssembly(string searchPattern);
 #endif
+
+        void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate);
+
+        void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory, Func<ServiceInfo, bool> shouldDecorate);
     }
 
     /// <summary>
@@ -531,6 +535,16 @@ namespace LightInject
             {
                 RegisterAssembly(assembly);
             }
+        }
+
+        public void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory, Func<ServiceInfo, bool> shouldDecorate)
+        {
+            throw new NotImplementedException();
         }
 #endif        
 
