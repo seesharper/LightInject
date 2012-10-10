@@ -1970,18 +1970,39 @@ namespace LightInject
         }        
 #endif
 
+    /// <summary>
+    /// Contains information about a registered service.
+    /// </summary>
     internal class ServiceInfo 
-    {
-        public Type ServiceType { get; set; }
+    {                        
+        /// <summary>
+        /// Gets or sets the service <see cref="Type"/>.
+        /// </summary>
+        public Type ServiceType { get; internal set; }
 
-        public string ServiceName { get; set; }
+        /// <summary>
+        /// Gets or sets the name of the service.
+        /// </summary>
+        public string ServiceName { get; internal set; }
 
-        public Type ImplementingType { get; set; }
+        /// <summary>
+        /// Gets or sets the <see cref="Type"/> that implements the <see cref="ServiceInfo.ServiceType"/>.
+        /// </summary>
+        public Type ImplementingType { get; internal set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="LambdaExpression"/> used to create an instance of the service.
+        /// </summary>
         public LambdaExpression FactoryExpression { get; set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="ILifetime"/> instance that controls the lifetime of the service.
+        /// </summary>
         public ILifetime Lifetime { get; set; }
 
+        /// <summary>
+        /// Gets or sets the value that represents the instance of the service.
+        /// </summary>
         public object Value { get; set; }
 
         public override int GetHashCode()
@@ -2053,7 +2074,7 @@ namespace LightInject
         private object CreateScopedInstance(ResolutionContext context, Func<object> createInstance)
         {
             context.Completed += OnContextCompleted;
-            var instance = createInstance();
+            var instance = createInstance();            
             return instance;
         }
 

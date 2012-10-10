@@ -289,7 +289,6 @@
             }            
         }
 
-
         #region Func Services
 
         [TestMethod]
@@ -460,7 +459,7 @@
         public void GetInstance_FuncFactoryWithMethodCall_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(factory => GetFoo());
+            container.Register(factory => GetFoo());
             var foo = container.GetInstance<IFoo>();
             Assert.IsNotNull(foo);
         }
@@ -469,7 +468,7 @@
         public void GetInstance_SingletonFuncFactoryWithMethodCall_ReturnsSingleInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(factory => GetFoo(), new SingletonLifetime());
+            container.Register(factory => GetFoo(), new SingletonLifetime());
             var instance1 = container.GetInstance<IFoo>();
             var instance2 = container.GetInstance<IFoo>();
             Assert.AreSame(instance1, instance2);
@@ -607,7 +606,6 @@
                 GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance();
             }
         }
-
         
         [TestMethod]
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
