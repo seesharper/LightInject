@@ -992,16 +992,14 @@ namespace LightInject
 
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
+            //Emit newobj Foo
+            DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo); 
+            
             var decorators = GetDecorators(serviceInfo.ServiceType).ToArray();
             if (decorators.Length > 0)
             {
                 EmitDecorators(serviceInfo,decorators,dynamicMethodInfo);
-            }
-            else
-            {
-                DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo);    
-            }
-            
+            }                        
         }
 
         private void DoEmitNewInstance(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
@@ -1058,7 +1056,7 @@ namespace LightInject
             {
                 if (dependency.ConstructionInfo != null)
                 {
-                    DoEmitNewInstance(dependency.ConstructionInfo, dynamicMethodInfo);
+                    //DoEmitNewInstance(dependency.ConstructionInfo, dynamicMethodInfo);
                 }
                 else
                 {
