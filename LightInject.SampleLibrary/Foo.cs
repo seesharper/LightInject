@@ -142,6 +142,25 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class AnotherFooDecorator : IFoo
+    {
+        private readonly IFoo foo;
+
+        public AnotherFooDecorator(IFoo foo)
+        {
+            this.foo = foo;
+        }
+
+        public IFoo DecoratedInstance
+        {
+            get
+            {
+                return this.foo;
+            }
+        }
+    }
+
+
 
     public class FooWithReferenceTypeDependency : IFoo
     {

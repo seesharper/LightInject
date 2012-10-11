@@ -397,6 +397,9 @@ namespace LightInject
         private Storage<IFactory> factories;
         private bool firstServiceRequest = true;
 
+        private readonly ThreadSafeDictionary<Type, List<ServiceInfo>> decorators = new ThreadSafeDictionary<Type, List<ServiceInfo>>();
+
+
         static ServiceContainer()
         {
             GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
@@ -537,16 +540,18 @@ namespace LightInject
             }
         }
 
+       
+#endif        
         public void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate)
         {
-            throw new NotImplementedException();
+            var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = decoratorType, IsDecorator = true, ServiceName = string.Empty };
+            GetDecorators(serviceType).Add(serviceInfo);
         }
 
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory, Func<ServiceInfo, bool> shouldDecorate)
         {
             throw new NotImplementedException();
         }
-#endif        
 
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
@@ -987,7 +992,20 @@ namespace LightInject
 
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            ConstructionInfo constructionInfo = GetConstructionInfo(serviceInfo);
+            var decorators = GetDecorators(serviceInfo.ServiceType).ToArray();
+            if (decorators.Length > 0)
+            {
+                EmitDecorators(serviceInfo,decorators,dynamicMethodInfo);
+            }
+            else
+            {
+                DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo);    
+            }
+            
+        }
+
+        private void DoEmitNewInstance(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
+        {        
             if (constructionInfo.FactoryDelegate != null)
             {
                 EmitNewInstanceUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodInfo);
@@ -995,8 +1013,24 @@ namespace LightInject
             else
             {
                 EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo);
-            }            
+            }
         }
+
+        private void EmitDecorators(ServiceInfo serviceInfo, ServiceInfo[] decorators, DynamicMethodInfo dynamicMethodInfo)
+        {            
+            foreach (ServiceInfo decorator in decorators)
+            {
+                ConstructionInfo constructionInfo = GetConstructionInfo(decorator);
+                var constructorDependency = constructionInfo.ConstructorDependencies.FirstOrDefault(cd => cd.ServiceType == serviceInfo.ServiceType);
+                if (constructorDependency != null)
+                {
+                    constructorDependency.ConstructionInfo = GetConstructionInfo(serviceInfo);
+                }
+
+                DoEmitNewInstance(constructionInfo, dynamicMethodInfo);
+            }
+        }
+
 
         private void EmitNewInstanceUsingImplementingType(DynamicMethodInfo dynamicMethodInfo, ConstructionInfo constructionInfo)
         {
@@ -1022,7 +1056,14 @@ namespace LightInject
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
-                EmitDependency(dynamicMethodInfo, dependency);
+                if (dependency.ConstructionInfo != null)
+                {
+                    DoEmitNewInstance(dependency.ConstructionInfo, dynamicMethodInfo);
+                }
+                else
+                {
+                    EmitDependency(dynamicMethodInfo, dependency);
+                }
             }
         }
 
@@ -1232,14 +1273,19 @@ namespace LightInject
 
         private ConstructionInfo GetConstructionInfo(ServiceInfo serviceInfo)
         {
-            return implementations.GetOrAdd(serviceInfo, CreateConstructionInfo);
+            return CreateConstructionInfo(serviceInfo);            
         }
 
         private ThreadSafeDictionary<string, Action<DynamicMethodInfo>> GetServiceEmitters(Type serviceType)
         {
             return emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo>>(StringComparer.InvariantCultureIgnoreCase));
         }
-        
+
+        private List<ServiceInfo> GetDecorators(Type serviceType)
+        {
+            return decorators.GetOrAdd(serviceType, s => new List<ServiceInfo>());
+        }
+
         private ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type>> GetOpenGenericRegistrations(Type serviceType)
         {
             return openGenericEmitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type>>(StringComparer.InvariantCultureIgnoreCase));
@@ -1688,6 +1734,9 @@ namespace LightInject
             /// </summary>
             public ParameterInfo Parameter { get; set; }
 
+
+            public ConstructionInfo ConstructionInfo { get; set; }
+
             /// <summary>
             /// Gets the name of the dependency accessor.
             /// </summary>
@@ -1984,6 +2033,15 @@ namespace LightInject
         }        
 #endif
 
+    internal class DecoratorInfo
+    {
+        public Type ServiceType { get; set; }
+
+        public Type DecoratorType { get; set; }
+
+        public Func<ServiceInfo, bool> Predicate { get; set; }
+    }
+
     /// <summary>
     /// Contains information about a registered service.
     /// </summary>
@@ -2021,8 +2079,10 @@ namespace LightInject
 
         public override int GetHashCode()
         {
-            return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();
+            return ServiceType.GetHashCode() ^ ServiceName.GetHashCode() ^ IsDecorator.GetHashCode();
         }
+
+        public bool IsDecorator { get; set; }
 
         public override bool Equals(object obj)
         {
@@ -2032,7 +2092,7 @@ namespace LightInject
                 return false;
             }
 
-            var result = ServiceName == other.ServiceName && ServiceType == other.ServiceType;
+            var result = ServiceName == other.ServiceName && ServiceType == other.ServiceType && other.IsDecorator == IsDecorator;
             return result;                
         }            
     }
