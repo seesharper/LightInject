@@ -124,6 +124,20 @@ namespace LightInject.SampleLibrary
     }
 
 
+    public class FooDecorator<T> : IFoo<T>
+    {
+        public FooDecorator(IFoo<T> foo)
+        {
+        }
+    }
+
+    public class AnotherFooDecorator<T> : IFoo<T>
+    {
+        public AnotherFooDecorator(IFoo<T> foo)
+        {
+        }
+    }
+
     public class FooDecorator : IFoo
     {
         private readonly IFoo foo;

@@ -545,7 +545,7 @@ namespace LightInject
         public void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate)
         {
             var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = decoratorType, IsDecorator = true, ServiceName = string.Empty };
-            GetDecorators(serviceType).Add(serviceInfo);
+            GetRegisteredDecorators(serviceType).Add(serviceInfo);
         }
 
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory, Func<ServiceInfo, bool> shouldDecorate)
@@ -991,16 +991,36 @@ namespace LightInject
         }
 
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
-        {
-            //Emit newobj Foo
-            DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo); 
-            
-            var decorators = GetDecorators(serviceInfo.ServiceType).ToArray();
+        {            
+            DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo);
+            var decorators = GetDecorators(serviceInfo.ServiceType);
             if (decorators.Length > 0)
             {
                 EmitDecorators(serviceInfo,decorators,dynamicMethodInfo);
             }                        
         }
+
+        private ServiceInfo[] GetDecorators(Type serviceType)
+        {
+            var decorators = GetRegisteredDecorators(serviceType);
+            if (decorators.Count == 0 && serviceType.IsGenericType)
+            {
+                var openGenericServiceType = serviceType.GetGenericTypeDefinition();
+                var openGenericDecorators = GetRegisteredDecorators(openGenericServiceType);
+                if (openGenericDecorators.Count >= 0)
+                {                    
+                    foreach (ServiceInfo openGenericDecorator in openGenericDecorators)
+                    {
+                        var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
+                        ServiceInfo serviceInfo = new ServiceInfo()
+                            { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, IsDecorator = true };
+                        decorators.Add(serviceInfo);
+                    }
+                }
+            }
+            return decorators.ToArray();
+        }
+
 
         private void DoEmitNewInstance(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
         {        
@@ -1279,7 +1299,7 @@ namespace LightInject
             return emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo>>(StringComparer.InvariantCultureIgnoreCase));
         }
 
-        private List<ServiceInfo> GetDecorators(Type serviceType)
+        private List<ServiceInfo> GetRegisteredDecorators(Type serviceType)
         {
             return decorators.GetOrAdd(serviceType, s => new List<ServiceInfo>());
         }
