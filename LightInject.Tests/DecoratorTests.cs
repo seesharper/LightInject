@@ -1,9 +1,7 @@
 ﻿namespace LightInject.Tests
 {
     using System.Linq;
-
     using LightInject.SampleLibrary;
-
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -85,8 +83,18 @@
             Assert.IsInstanceOfType(instances.First(), typeof(FooDecorator<int>));
             Assert.IsInstanceOfType(instances.Last(), typeof(FooDecorator<int>));
         }
-        
 
+        [TestMethod]
+        public void GetAllInstances_OpenAndClosedGenericServiceWithOpenGenericDecorator_ReturnsDecoratedInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<int>), typeof(Foo<int>));
+            container.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo");
+            container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>), si => true);
+            var instances = container.GetAllInstances<IFoo<int>>();
+            Assert.IsInstanceOfType(instances.First(), typeof(FooDecorator<int>));
+            Assert.IsInstanceOfType(instances.Last(), typeof(FooDecorator<int>));
+        }
 
 
         private static IServiceContainer CreateContainer()

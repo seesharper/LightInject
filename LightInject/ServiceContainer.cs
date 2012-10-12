@@ -880,17 +880,17 @@ namespace LightInject
                 return CreateConstructionInfoFromLambdaExpression(serviceInfo.FactoryExpression);                
             }
             
-            return CreateConstructionInfoFromImplementingType(serviceInfo);
+            return CreateConstructionInfoFromImplementingType(serviceInfo.ImplementingType);
         }
 
-        private ConstructionInfo CreateConstructionInfoFromImplementingType(ServiceInfo serviceInfo)
+        private ConstructionInfo CreateConstructionInfoFromImplementingType(Type implementingType)
         {
             var constructionInfo = new ConstructionInfo();
-            ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(serviceInfo.ImplementingType);
-            constructionInfo.ImplementingType = serviceInfo.ImplementingType;
+            ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(implementingType);
+            constructionInfo.ImplementingType = implementingType;
             constructionInfo.Constructor = constructorInfo;
             constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructorInfo));
-            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(serviceInfo.ImplementingType));
+            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
             return constructionInfo;
         }
 
@@ -1042,13 +1042,12 @@ namespace LightInject
                 var constructorDependency = constructionInfo.ConstructorDependencies.FirstOrDefault(cd => cd.ServiceType == serviceInfo.ServiceType);
                 if (constructorDependency != null)
                 {
-                    constructorDependency.ConstructionInfo = GetConstructionInfo(serviceInfo);
+                    constructorDependency.IsDecoratee = true;
                 }
 
                 DoEmitNewInstance(constructionInfo, dynamicMethodInfo);
             }
         }
-
 
         private void EmitNewInstanceUsingImplementingType(DynamicMethodInfo dynamicMethodInfo, ConstructionInfo constructionInfo)
         {
@@ -1074,14 +1073,10 @@ namespace LightInject
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
-                if (dependency.ConstructionInfo != null)
+                if (!dependency.IsDecoratee)
                 {
-                    //DoEmitNewInstance(dependency.ConstructionInfo, dynamicMethodInfo);
-                }
-                else
-                {
-                    EmitDependency(dynamicMethodInfo, dependency);
-                }
+                    EmitDependency(dynamicMethodInfo, dependency);                    
+                }                
             }
         }
 
@@ -1752,8 +1747,11 @@ namespace LightInject
             /// </summary>
             public ParameterInfo Parameter { get; set; }
 
-
-            public ConstructionInfo ConstructionInfo { get; set; }
+            /// <summary>
+            /// Gets or sets a <see cref="bool"/> value that indicates that this parameter represents  
+            /// the decoratee passed into a decorator instance. 
+            /// </summary>
+            public bool IsDecoratee { get; set; }
 
             /// <summary>
             /// Gets the name of the dependency accessor.
