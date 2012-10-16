@@ -55,7 +55,7 @@
             var container = CreateContainer();
             container.Register(typeof(IBar<>), typeof(Bar<>), new PerGraphLifetime());
             container.Register(typeof(IFoo<>), typeof(FooWithSameOpenGenericDependencyTwice<>));
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 var instance = (FooWithSameOpenGenericDependencyTwice<int>)container.GetInstance<IFoo<int>>();
                 Assert.AreSame(instance.Bar1, instance.Bar2);
@@ -82,11 +82,11 @@
             
             FooWithDependency instance1;
             FooWithDependency instance2;
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 instance1 = (FooWithDependency)container.GetInstance<IFoo>();
             }
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 instance2 = (FooWithDependency)container.GetInstance<IFoo>();
             }            
@@ -142,7 +142,7 @@
             var container = CreateContainer();
             container.Register<IBar, Bar>(new PerGraphLifetime());
             container.Register<IFoo, FooWithSameDependencyTwice>();
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 var instance = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
                 Assert.AreEqual(instance.Bar1, instance.Bar2);
@@ -157,7 +157,7 @@
             container.Register<IBar, BarWithSampleServiceDependency>();
             container.Register<ISampleService, SampleService>(new PerGraphLifetime());
             container.Register<IFoo, FooWithSampleServiceDependency>();
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 var instance = (FooWithSampleServiceDependency)container.GetInstance<IFoo>();
                 Assert.AreSame(((BarWithSampleServiceDependency)instance.Bar).SampleService, instance.SampleService);
@@ -172,11 +172,11 @@
             container.Register<IFoo, FooWithSameDependencyTwice>();
             FooWithSameDependencyTwice instance1;
             FooWithSameDependencyTwice instance2;
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 instance1 = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
             }
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 instance2 = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
             }            
@@ -220,7 +220,7 @@
             Bar.InitializeCount = 0;
             container.Register(typeof(IBar), typeof(Bar), new PerGraphLifetime());
             container.Register(typeof(IFoo), typeof(FooWithSameDependencyTwice));
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 container.GetInstance<IFoo>();
                 Assert.AreEqual(1, Bar.InitializeCount);    
@@ -319,7 +319,7 @@
             var container = CreateContainer();
             container.Register(typeof(IBar), typeof(Bar), new PerGraphLifetime());
             container.Register(typeof(IFoo), typeof(FooWithEnumerableAndRegularDependency));
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 var instance = (FooWithEnumerableAndRegularDependency)container.GetInstance<IFoo>();
                 Assert.AreSame(instance.Bar, instance.Bars.First());
@@ -390,7 +390,7 @@
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo<>), typeof(Foo<>), new PerGraphLifetime());
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 var instance1 = container.GetInstance<IFoo<int>>();
                 var instance2 = container.GetInstance<IFoo<int>>();

@@ -16,8 +16,10 @@ function PreProcess([string] $framework, [string] $nameSpace, [string]$sourceFil
 	{
 		if($line.Contains("namespace LightInject"))
 		{
-			$line = $line.Replace('LightInject', $nameSpace)
+			$line = $line.Replace('LightInject', $nameSpace)			
 		}
+		
+		
 						
 		if($line.StartsWith("#if") -or $line.StartsWith("#endif"))
 		{		
@@ -39,6 +41,10 @@ function PreProcess([string] $framework, [string] $nameSpace, [string]$sourceFil
 	
 		if($shouldWrite -and -not $line.StartsWith("#") -and -not $line.StartsWith("//#"))
 		{
+			if($line.Contains("internal class"))
+			{
+				$writer.WriteLine("    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]")
+			}
 			$writer.WriteLine($line)
 		}		
 	}

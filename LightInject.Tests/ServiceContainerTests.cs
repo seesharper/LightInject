@@ -281,7 +281,7 @@
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>(new PerGraphLifetime());
-            using (new ResolutionScope())
+            using (container.BeginResolutionScope())
             {
                 var instance1 = container.GetInstance<IFoo>();
                 var instance2 = container.GetInstance<IFoo>();

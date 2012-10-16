@@ -29,11 +29,14 @@
       </violation>
     </violations>
   </sourcecode>
+  <project key="60861655">
+    <configuration>TRACE;DEBUG;NET</configuration>
+  </project>
   <sourcecode name="ServiceContainer.cs" parser="StyleCop.CSharp.CsParser">
     <timestamps>
       <styleCop>2012.10.05 10:23:44.000</styleCop>
       <settingsFile>2012.07.31 18:46:41.856</settingsFile>
-      <sourceFile>2012.10.09 21:48:45.932</sourceFile>
+      <sourceFile>2012.10.16 14:17:46.427</sourceFile>
       <parser>2012.10.05 10:23:44.000</parser>
       <StyleCop.CSharp.DocumentationRules>2012.10.05 10:23:44.000</StyleCop.CSharp.DocumentationRules>
       <StyleCop.CSharp.DocumentationRules.FilesHashCode>-577759861</StyleCop.CSharp.DocumentationRules.FilesHashCode>
@@ -52,7 +55,4 @@
     </timestamps>
     <violations />
   </sourcecode>
-  <project key="60861655">
-    <configuration>TRACE;DEBUG;NET</configuration>
-  </project>
 </stylecopresultscache>

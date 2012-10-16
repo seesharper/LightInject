@@ -5,7 +5,18 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
+    public class FooWithCompilerGeneratedType : IFoo
+    {      
+        public Func<string> SomeAction
+        {
+            get
+            {
+                string someString = "Somestring";
+                return () => someString;
+            }
+        }
 
+    }
 
 
     public interface IFoo { }

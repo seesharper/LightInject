@@ -38,7 +38,8 @@ namespace LightInject
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Reflection.Emit;    
+    using System.Reflection.Emit;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.RegularExpressions;
   
@@ -200,19 +201,19 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        void RegisterAssembly(Assembly assembly, ILifetime lifetime);
+        void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetime);
         
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
         /// <remarks>
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        void RegisterAssembly(Assembly assembly, ILifetime lifetime, Func<Type, bool> shouldRegister);
+        void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, bool> shouldRegister);
 
 #if NET
 
@@ -224,6 +225,8 @@ namespace LightInject
 #endif
 
         void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate);
+
+        void Decorate(Type serviceType, Type decoratorType);
 
         void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory, Func<ServiceInfo, bool> shouldDecorate);
     }
@@ -354,7 +357,7 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, ILifetime lifetime, Func<Type, bool> shouldRegister);
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, bool> shouldRegister);
     }
 
     /// <summary>
@@ -374,7 +377,9 @@ namespace LightInject
         /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
-        bool CanGetInstance(Type serviceType, string serviceName);       
+        bool CanGetInstance(Type serviceType, string serviceName);
+
+        ResolutionScope BeginResolutionScope();
     }
 
     /// <summary>
@@ -392,13 +397,12 @@ namespace LightInject
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>();
         private readonly ThreadSafeDictionary<Tuple<Type, string>, ServiceInfo> availableServices =
-            new ThreadSafeDictionary<Tuple<Type, string>, ServiceInfo>();         
-        
-        private Storage<IFactory> factories;
-        private bool firstServiceRequest = true;
+            new ThreadSafeDictionary<Tuple<Type, string>, ServiceInfo>();
 
         private readonly ThreadSafeDictionary<Type, List<ServiceInfo>> decorators = new ThreadSafeDictionary<Type, List<ServiceInfo>>();
 
+        private Storage<IFactory> factories;
+        private bool firstServiceRequest = true;
 
         static ServiceContainer()
         {
@@ -442,7 +446,7 @@ namespace LightInject
         {
             get
             {
-                return null;
+                return availableServices.Values;
             }
         }
 
@@ -455,6 +459,11 @@ namespace LightInject
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
             return GetEmitMethod(serviceType, serviceName) != null;
+        }
+
+        public ResolutionScope BeginResolutionScope()
+        {
+            return new ResolutionScope();
         }
 
         /// <summary>
@@ -494,36 +503,36 @@ namespace LightInject
         /// </remarks>     
         public void RegisterAssembly(Assembly assembly, Func<Type, bool> shouldRegister)
         {
-            AssemblyScanner.Scan(assembly, this, null, shouldRegister);
+            AssemblyScanner.Scan(assembly, this, () => null, shouldRegister);
         }
         
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <remarks>
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        public void RegisterAssembly(Assembly assembly, ILifetime lifetime)
+        public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory)
         {
-            AssemblyScanner.Scan(assembly, this, lifetime, t => true);
+            AssemblyScanner.Scan(assembly, this, lifetimeFactory, t => true);
         }
         
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
         /// <remarks>
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        public void RegisterAssembly(Assembly assembly, ILifetime lifetime, Func<Type, bool> shouldRegister)
+        public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, bool> shouldRegister)
         {
-            AssemblyScanner.Scan(assembly, this, lifetime, shouldRegister);
+            AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
         }
 
 #if NET
@@ -538,14 +547,17 @@ namespace LightInject
             {
                 RegisterAssembly(assembly);
             }
-        }
-
-       
+        }       
 #endif        
         public void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate)
         {
             var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = decoratorType, IsDecorator = true, ServiceName = string.Empty };
             GetRegisteredDecorators(serviceType).Add(serviceInfo);
+        }
+
+        public void Decorate(Type serviceType, Type decoratorType)
+        {
+            Decorate(serviceType, decoratorType, si => true);
         }
 
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory, Func<ServiceInfo, bool> shouldDecorate)
@@ -993,10 +1005,10 @@ namespace LightInject
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {            
             DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo);
-            var decorators = GetDecorators(serviceInfo.ServiceType);
-            if (decorators.Length > 0)
+            var serviceDecorators = GetDecorators(serviceInfo.ServiceType);
+            if (serviceDecorators.Length > 0)
             {
-                EmitDecorators(serviceInfo,decorators,dynamicMethodInfo);
+                EmitDecorators(serviceInfo, serviceDecorators, dynamicMethodInfo);
             }                        
         }
 
@@ -1012,15 +1024,15 @@ namespace LightInject
                     foreach (ServiceInfo openGenericDecorator in openGenericDecorators)
                     {
                         var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-                        ServiceInfo serviceInfo = new ServiceInfo()
+                        var serviceInfo = new ServiceInfo()
                             { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, IsDecorator = true };
                         decorators.Add(serviceInfo);
                     }
                 }
             }
+
             return decorators.ToArray();
         }
-
 
         private void DoEmitNewInstance(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
         {        
@@ -1042,7 +1054,7 @@ namespace LightInject
                 var constructorDependency = constructionInfo.ConstructorDependencies.FirstOrDefault(cd => cd.ServiceType == serviceInfo.ServiceType);
                 if (constructorDependency != null)
                 {
-                    constructorDependency.IsDecoratee = true;
+                    constructorDependency.IsDecoratorTarget = true;
                 }
 
                 DoEmitNewInstance(constructionInfo, dynamicMethodInfo);
@@ -1073,7 +1085,7 @@ namespace LightInject
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
-                if (!dependency.IsDecoratee)
+                if (!dependency.IsDecoratorTarget)
                 {
                     EmitDependency(dynamicMethodInfo, dependency);                    
                 }                
@@ -1411,7 +1423,7 @@ namespace LightInject
         {
             if (ServiceRegistryIsEmpty())
             {
-                RegisterAssembly(serviceType.Assembly);
+                RegisterAssembly(serviceType.Assembly, () => null);
             }
         }
          
@@ -1748,10 +1760,10 @@ namespace LightInject
             public ParameterInfo Parameter { get; set; }
 
             /// <summary>
-            /// Gets or sets a <see cref="bool"/> value that indicates that this parameter represents  
-            /// the decoratee passed into a decorator instance. 
+            /// Gets or sets a value indicating whether that this parameter represents  
+            /// the decoration target passed into a decorator instance. 
             /// </summary>
-            public bool IsDecoratee { get; set; }
+            public bool IsDecoratorTarget { get; set; }
 
             /// <summary>
             /// Gets the name of the dependency accessor.
@@ -2062,7 +2074,7 @@ namespace LightInject
     /// Contains information about a registered service.
     /// </summary>
     internal class ServiceInfo 
-    {                        
+    {                                
         /// <summary>
         /// Gets or sets the service <see cref="Type"/>.
         /// </summary>
@@ -2093,13 +2105,13 @@ namespace LightInject
         /// </summary>
         public object Value { get; set; }
 
+        public bool IsDecorator { get; set; }
+
         public override int GetHashCode()
         {
             return ServiceType.GetHashCode() ^ ServiceName.GetHashCode() ^ IsDecorator.GetHashCode();
         }
-
-        public bool IsDecorator { get; set; }
-
+        
         public override bool Equals(object obj)
         {
             var other = obj as ServiceInfo;
@@ -2266,16 +2278,37 @@ namespace LightInject
     /// </summary>    
     internal class AssemblyScanner : IAssemblyScanner
     {
+        private static List<Type> internalInterfaces = new List<Type>();
+        private static List<Type> internalTypes = new List<Type>();
         private Assembly currentAssembly;
+
+        static AssemblyScanner()
+        {
+            internalInterfaces.Add(typeof(IServiceContainer));
+            internalInterfaces.Add(typeof(IServiceFactory));
+            internalInterfaces.Add(typeof(IServiceRegistry));
+            internalInterfaces.Add(typeof(IPropertySelector));
+            internalInterfaces.Add(typeof(IAssemblyLoader));
+            internalInterfaces.Add(typeof(IAssemblyScanner));
+            internalInterfaces.Add(typeof(ILifetime));
+            internalTypes.Add(typeof(ServiceContainer.LambdaExpressionParser));
+            internalTypes.Add(typeof(ServiceContainer.LambdaExpressionValidator));
+            internalTypes.Add(typeof(ServiceContainer.ConstructorDependency));
+            internalTypes.Add(typeof(ServiceContainer.PropertyDependecy));
+            internalTypes.Add(typeof(ThreadSafeDictionary<,>));
+            internalTypes.Add(typeof(ResolutionScope)); 
+            internalTypes.Add(typeof(SingletonLifetime));
+            internalTypes.Add(typeof(PerGraphLifetime));            
+        }
 
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
-        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, ILifetime lifetime, Func<Type, bool> shouldRegister)
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, bool> shouldRegister)
         {            
             IEnumerable<Type> concreteTypes = GetConcreteTypes(assembly).ToList();
             var compositionRoots = concreteTypes.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
@@ -2288,7 +2321,7 @@ namespace LightInject
             {
                 foreach (Type type in concreteTypes.Where(shouldRegister))
                 {
-                    BuildImplementationMap(type, serviceRegistry, lifetime);
+                    BuildImplementationMap(type, serviceRegistry, lifetimeFactory);
                 }
             }
         }
@@ -2322,7 +2355,7 @@ namespace LightInject
 
         private static IEnumerable<Type> GetBaseTypes(Type concreteType)
         {
-            Type baseType = concreteType;
+            Type baseType = concreteType.BaseType;
             while (baseType != typeof(object) && baseType != null)
             {
                 yield return baseType;
@@ -2332,20 +2365,28 @@ namespace LightInject
 
         private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
         {            
-            return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && !(t.Namespace ?? string.Empty).StartsWith("System"));
+            return assembly.GetTypes().Where(t => t.IsClass && !t.IsNestedPrivate && !t.IsAbstract && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t) && internalTypes.All(it => it != t));
         }
 
-        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, ILifetime lifetime)
+        private static bool IsCompilerGenerated(Type type)
+        {
+            return Attribute.IsDefined(type, typeof(CompilerGeneratedAttribute), false);
+        }
+
+        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory)
         {
             Type[] interfaces = implementingType.GetInterfaces();
             foreach (Type interfaceType in interfaces)
             {
-                RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetime);
+                if (internalInterfaces.All(i => i != interfaceType))
+                {
+                    RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory());
+                }
             }
 
             foreach (Type baseType in GetBaseTypes(implementingType))
             {
-                RegisterInternal(baseType, implementingType, serviceRegistry, lifetime);
+                RegisterInternal(baseType, implementingType, serviceRegistry, lifetimeFactory());
             }
         }
 
