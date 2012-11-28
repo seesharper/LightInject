@@ -96,6 +96,15 @@
             Assert.IsInstanceOfType(instances.Last(), typeof(FooDecorator<int>));
         }
 
+        [TestMethod]
+        public void GetInstance_WithDecoratorFactory_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate<IFoo>((serviceFactory, target) => new FooDecorator(target));
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+        }
 
         private static IServiceContainer CreateContainer()
         {

@@ -339,58 +339,6 @@ namespace LightInject.SampleLibrary
 
 
 
-    internal class FooFactory : IFactory
-    {
-
-        public static int Instances { get; set; }
-
-        public FooFactory()
-        {
-            Instances++;
-        }
-
-        public object GetInstance(ServiceRequest serviceRequest)
-        {
-            ServiceRequest = serviceRequest;
-            CallCount++;
-            ServiceName = serviceRequest.ServiceName;
-            if (serviceRequest.CanProceed)
-                return new FooDecorator((IFoo)serviceRequest.Proceed());
-
-            return new Foo();
-
-
-        }
-
-        public bool CanGetInstance(Type serviceType, string serviceName)
-        {
-            return typeof(IFoo).IsAssignableFrom(serviceType);
-        }
-
-        public ServiceRequest ServiceRequest { get; private set; }
-
-        public string ServiceName { get; private set; }
-
-        public int CallCount { get; private set; }
-    }
-
-    internal class GenericFooFactory : IFactory
-    {
-
-
-        public object GetInstance(ServiceRequest serviceRequest)
-        {
-            ServiceRequest = serviceRequest;
-            return serviceRequest.CanProceed ? serviceRequest.Proceed() : new AnotherFoo<int>();
-        }
-
-        public bool CanGetInstance(Type serviceType, string serviceName)
-        {
-            return serviceType.IsGenericType;
-        }
-
-        public ServiceRequest ServiceRequest { get; private set; }
-    }
 
 
     public class FooWithMultipleConstructors : IFoo

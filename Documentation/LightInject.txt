@@ -97,7 +97,7 @@ Register all services found within the target assembly applying the **Transient*
 
 Register all services found within the target assembly providing a default lifecycle.
 
-	container.RegisterAssembly(someAssembly, LifeCycleType.Singleton);
+	container.RegisterAssembly(someAssembly, () => new SingletonLifetime());
 
 Register all services found within the target assembly providing a type filter.
 
@@ -245,36 +245,86 @@ Finally we need to register the factory and the related services
 Alternatively, we could use the same factory to return a dynamic proxy object using a third-party proxy library such as Caste DynamicProxy or LinFu DynamicProxy to provide interceptable services.
 
 
-**Note:** Custom factories are treated as singleton services and we have this in mind with regards to multi-threading.  
+**Note:** Custom factories are treated as singleton services and we need to have this in mind with regards to multi-threading.  
 
 
-## LifeCycle ##
+## ResolutionScope ##
+
+A **ResolutionScope** represents a context in which services are resolved.
+
+	using(container.BeginResolutionScope())
+	{
+		var instance = container.GetInstance<IFoo>();		
+	} 
+
+
+
+
+
+## Disposable services ##
+
+A service instance implementing **IDisposable** will be disposed when the service goes out of scope.
+
+    var disposableMock = new Mock<IDisposable>();
+    container.Register<IDisposable>(factory => disposableMock.Object, new PerGraphLifetime());
+    using (container.BeginResolutionScope())
+    {
+        var instance = container.GetInstance<IDisposable>();
+    }
+    disposableMock.Verify(d => d.Dispose(), Times.Once());
+	
+
+
+
+
+
+## Object Lifetime ##
 - - - 
+
 ### Transient ###
 
 A new instance is returned for each service request.
 
 	container.Register(typeof(IFoo),typeof(Foo));
 	var firstinstance = container.GetInstance<IFoo>();
-	var secondInstance = container.GetInstance<IService>();
+	var secondInstance = container.GetInstance<IFoo>();
 	Assert.AreNotSame(firstInstance,secondInstance);
 
+**Note:** Transient instances are **NOT** tracked by the container and will **NOT** be disposed
+
+### TrackedTransient ###
+
+A new instance is returned for each service request and is disposed when the service instance goes out of scope.
+
+	var disposableMock = new Mock<IDisposable>();
+    container.Register<IDisposable>(factory => disposableMock.Object, new TrackedTransientLifetime());
+    using (container.BeginResolutionScope())
+    {
+        var instance = container.GetInstance<IDisposable>();
+    }
+    disposableMock.Verify(d => d.Dispose(), Times.Once());
 
 ### Singleton ###
 
 The same instance is returned for each service request.
 
-	container.Register(typeof(IFoo),typeof(Foo), LifeCycleType.Singleton);
+	container.Register(typeof(IFoo),typeof(Foo), new SingeltonLifetime());
 	var firstinstance = container.GetInstance<IFoo>();
-	var secondInstance = container.GetInstance<IService>();
+	var secondInstance = container.GetInstance<IFoo>();
 	Assert.AreSame(firstInstance,secondInstance);
 
-### Request ###
+Singleton instances are disposed when the service container itself is disposed.
 
-This life cycle type ensures that the same service instance is injected throughout the dependency graph.
-This can be used when we want to share an instance, but do not want to use a singleton. 
+	var disposableMock = new Mock<IDisposable>();
+	using(IServiceContainer container = new ServiceContainer())
+	{
+		container.Register<IDisposable>(factory => disposableMock.Object, new SingletonLifetime());
+	} 
+	disposableMock.Verify(d => d.Dispose(), Times.Once());
 
-As an example we have these services where we want the same instance of the **ISampleService** dependency to be injected into both the **FooWithSampleServiceDependency** and the **BarWithSampleServiceDependency** class.
+### PerGraph ###
+
+The same instance is returned throughout the dependency graph.
 
     public class FooWithSampleServiceDependency : IFoo
     {
@@ -298,19 +348,16 @@ As an example we have these services where we want the same instance of the **IS
     }
 
 
-If we was to do this manually we would first have to create an instance of the SampleService class and then pass that instance to both constructors.
-
-    var sampleService = new SampleService();
-    var bar = new BarWithSampleServiceDependency(sampleService);
-    var foo = new FooWithSampleServiceDependency(bar, sampleService);
-
-With LightInject we can register the SampleService with the Request life cycle.
+With LightInject we can register the **SampleService** with the **PerGraphLifetime**.
 
     container.Register<IBar, BarWithSampleServiceDependency>();
-    container.Register<ISampleService, SampleService>(LifeCycleType.Request);
+    container.Register<ISampleService, SampleService>(new PerGraphLifetime());
     container.Register<IFoo, FooWithSampleServiceDependency>();
-    var instance = (FooWithSampleServiceDependency)container.GetInstance<IFoo>();
-    Assert.AreSame(((BarWithSampleServiceDependency)instance.Bar).SampleService, instance.SampleService);
+	using (container.BeginResolutionScope())
+	{
+    	var instance = (FooWithSampleServiceDependency)container.GetInstance<IFoo>();
+    	Assert.AreSame(((BarWithSampleServiceDependency)instance.Bar).SampleService, instance.SampleService);
+	}
 
 ### Custom LifeCycle ###
 

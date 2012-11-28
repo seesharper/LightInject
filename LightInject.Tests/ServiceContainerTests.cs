@@ -289,6 +289,30 @@
             }            
         }
 
+        [TestMethod]
+        public void GetInstance_GenericServiceWithPerGraphLifetime_DoesNotShareLifetimeInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>), new PerGraphLifetime());
+            using(container.BeginResolutionScope())
+            {
+                var intInstance = container.GetInstance<IFoo<int>>();
+                var stringInstance = container.GetInstance<IFoo<string>>();
+                Assert.IsInstanceOfType(intInstance, typeof(IFoo<int>));
+                Assert.IsInstanceOfType(stringInstance, typeof(IFoo<string>));
+            }            
+        }
+        
+        [TestMethod]
+        public void GetInstance_ServiceWithPerGraphLifeTimeOutSideResolutionScope_ReturnsTransientInstances()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>(new PerGraphLifetime());
+            var firstInstance = container.GetInstance<IFoo>();
+            var secondInstance = container.GetInstance<IFoo>();
+            Assert.AreNotSame(firstInstance, secondInstance);
+        }
+
         #region Func Services
 
         [TestMethod]
@@ -621,6 +645,38 @@
                       
             Assert.AreEqual(1,Foo.Instances);
         }
+
+        [TestMethod]
+        public void GetInstance_UnknownDependencyService_DoesNotThrowRecursiveDependencyExceptionOnSecondAttempt()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            try
+            {
+                container.GetInstance<IFoo>();
+            }
+            catch (Exception)
+            {
+                var ex = ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>(), e => !e.InnerException.Message.Contains("Recursive"));
+            }
+        }
+
+        [TestMethod]
+        public void BeginResolutionScope_TwoContainers_ResolutionContextIsScopedPerContainer()
+        {
+            var firstContainer = CreateContainer();
+            var secondContainer = CreateContainer();
+            
+            using (ResolutionScope firstResolutionScope = firstContainer.BeginResolutionScope())
+            {
+                using (ResolutionScope secondResolutionScope = secondContainer.BeginResolutionScope())
+                {
+                    Assert.AreNotSame(firstResolutionScope, secondResolutionScope);
+                }
+            }
+        }
+
+
 
         private static void RunParallel(IServiceContainer container)
         {

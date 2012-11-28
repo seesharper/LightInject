@@ -42,7 +42,8 @@ namespace LightInject
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.RegularExpressions;
-  
+    using System.Threading;
+
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
@@ -228,7 +229,7 @@ namespace LightInject
 
         void Decorate(Type serviceType, Type decoratorType);
 
-        void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory, Func<ServiceInfo, bool> shouldDecorate);
+        void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);
     }
 
     /// <summary>
@@ -280,31 +281,10 @@ namespace LightInject
         /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
         IEnumerable<TService> GetAllInstances<TService>();
     }
-
-    /// <summary>
-    /// Represents a factory class that is capable of returning an object instance.
-    /// </summary>    
-    internal interface IFactory
-    {
-        /// <summary>
-        /// Returns an instance of the given type indicated by the <paramref name="serviceRequest"/>. 
-        /// </summary>        
-        /// <param name="serviceRequest">The <see cref="ServiceRequest"/> instance that contains information about the service request.</param>
-        /// <returns>An object instance corresponding to the <paramref name="serviceRequest"/>.</returns>
-        object GetInstance(ServiceRequest serviceRequest);
-
-        /// <summary>
-        /// Determines if this factory can return an instance of the given <paramref name="serviceType"/> and <paramref name="serviceName"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns><b>true</b>, if the instance can be created, otherwise <b>false</b>.</returns>
-        bool CanGetInstance(Type serviceType, string serviceName);
-    }
-
+  
     internal interface ILifetime
     {
-        object GetInstance(Func<object> createInstance);
+        object GetInstance(Func<object> createInstance, ResolutionContext resolutionContext);        
     }
     
     /// <summary>
@@ -387,8 +367,9 @@ namespace LightInject
     /// </summary>
     internal class ServiceContainer : IServiceContainer
     {        
-        private const string UnresolvedDependencyError = "Unresolved dependency {0}";        
-        private static readonly MethodInfo GetInstanceMethod;
+        private const string UnresolvedDependencyError = "Unresolved dependency {0}";                
+        private static readonly MethodInfo GetCurrentMethod;        
+
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> emitters = new ServiceRegistry<Action<DynamicMethodInfo>>();        
         private readonly ServiceRegistry<Action<DynamicMethodInfo, Type>> openGenericEmitters = new ServiceRegistry<Action<DynamicMethodInfo, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
@@ -401,19 +382,25 @@ namespace LightInject
 
         private readonly ThreadSafeDictionary<Type, List<ServiceInfo>> decorators = new ThreadSafeDictionary<Type, List<ServiceInfo>>();
 
-        private Storage<IFactory> factories;
+
+
+        
         private bool firstServiceRequest = true;
 
+        private ScopeManager scopeManager = new ScopeManager();
+        
+
+
         static ServiceContainer()
-        {
-            GetInstanceMethod = typeof(IFactory).GetMethod("GetInstance");
+        {            
+            GetCurrentMethod = typeof(ScopeManager).GetProperty("Current").GetGetMethod();
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
         public ServiceContainer()
-        {
+        {            
             AssemblyScanner = new AssemblyScanner();
             PropertySelector = new PropertySelector();
 #if NET
@@ -463,7 +450,7 @@ namespace LightInject
 
         public ResolutionScope BeginResolutionScope()
         {
-            return new ResolutionScope();
+            return scopeManager.BeginScope(ScopeOption.Required);
         }
 
         /// <summary>
@@ -551,7 +538,7 @@ namespace LightInject
 #endif        
         public void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate)
         {
-            var serviceInfo = new ServiceInfo() { ServiceType = serviceType, ImplementingType = decoratorType, IsDecorator = true, ServiceName = string.Empty };
+            var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = decoratorType, IsDecorator = true, ServiceName = string.Empty };
             GetRegisteredDecorators(serviceType).Add(serviceInfo);
         }
 
@@ -560,9 +547,10 @@ namespace LightInject
             Decorate(serviceType, decoratorType, si => true);
         }
 
-        public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory, Func<ServiceInfo, bool> shouldDecorate)
+        public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
         {
-            throw new NotImplementedException();
+            var serviceInfo = new ServiceInfo { ServiceType = typeof(TService), FactoryExpression = factory, IsDecorator = true, ServiceName = string.Empty };
+            GetRegisteredDecorators(typeof(TService)).Add(serviceInfo);
         }
 
         /// <summary>
@@ -821,19 +809,7 @@ namespace LightInject
 
             generator.Emit(OpCodes.Ldloc, array);
         }
-
-        private static void EmitCallCustomFactory(DynamicMethodInfo dynamicMethodInfo, int serviceRequestConstantIndex, int factoryConstantIndex, Type serviceType)
-        {
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            EmitLoadConstant(dynamicMethodInfo, factoryConstantIndex, typeof(IFactory));
-            EmitLoadConstant(dynamicMethodInfo, serviceRequestConstantIndex, typeof(ServiceRequest));
-            generator.Emit(OpCodes.Callvirt, GetInstanceMethod);
-            if (serviceType.IsValueType)
-            {
-                generator.Emit(OpCodes.Unbox_Any, serviceType);
-            }
-        }
-
+       
         private static bool IsEnumerableOfT(Type serviceType)
         {
             return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
@@ -859,17 +835,17 @@ namespace LightInject
         {
             return implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
         }
-
-        private static bool IsFactory(Type type)
-        {
-            return typeof(IFactory).IsAssignableFrom(type);
-        }
-
+        
         private static IEnumerable<ConstructorDependency> GetConstructorDependencies(ConstructorInfo constructorInfo)
         {
             return
                 constructorInfo.GetParameters().OrderBy(p => p.Position).Select(
                     p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
+        }
+
+        private static ILifetime CloneLifeTime(ILifetime lifetime)
+        {
+            return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
         }
 
         private Func<object> CreateDynamicMethodDelegate(Action<DynamicMethodInfo> serviceEmitter, Type serviceType)
@@ -928,18 +904,11 @@ namespace LightInject
         {
             if (FirstServiceRequest())
             {
-                EnsureThatServiceRegistryIsConfigured(serviceType);
-                CreateCustomFactories();
+                EnsureThatServiceRegistryIsConfigured(serviceType);                
             }
 
             Action<DynamicMethodInfo> emitter = GetRegisteredEmitMethod(serviceType, serviceName);
-
-            IFactory factory = GetCustomFactory(serviceType, serviceName);
-            if (factory != null)
-            {
-                emitter = GetCustomFactoryEmitMethod(serviceType, serviceName, factory, emitter);
-            }
-            
+                        
             return CreateEmitMethodWrapper(emitter, serviceType, serviceName);
         }
 
@@ -953,31 +922,15 @@ namespace LightInject
             return dmi =>
                 {
                     if (dependencyStack.Contains(emitter))
-                    {
+                    {                        
                         throw new InvalidOperationException(
-                            string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceType, serviceName));
+                            string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceType, serviceName));                                                
                     }
 
                     dependencyStack.Push(emitter);
                     emitter(dmi);
                     dependencyStack.Pop();
                 };
-        }
-
-        private Action<DynamicMethodInfo> GetCustomFactoryEmitMethod(Type serviceType, string serviceName, IFactory factory, Action<DynamicMethodInfo> emitter)
-        {
-            if (emitter != null)
-            {
-                var del = CreateDynamicMethodDelegate(emitter, typeof(IFactory));
-                emitter = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, del);
-            }
-            else
-            {
-                emitter = CreateEmitMethodBasedOnCustomFactory(serviceType, serviceName, factory, null);
-            }
-
-            UpdateServiceEmitter(serviceType, serviceName, emitter);
-            return emitter;
         }
 
         private Action<DynamicMethodInfo> GetRegisteredEmitMethod(Type serviceType, string serviceName)
@@ -1003,19 +956,19 @@ namespace LightInject
         }
 
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
-        {            
+        {
             DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo);
             var serviceDecorators = GetDecorators(serviceInfo.ServiceType);
             if (serviceDecorators.Length > 0)
             {
                 EmitDecorators(serviceInfo, serviceDecorators, dynamicMethodInfo);
-            }                        
+            }
         }
-
+        
         private ServiceInfo[] GetDecorators(Type serviceType)
         {
-            var decorators = GetRegisteredDecorators(serviceType);
-            if (decorators.Count == 0 && serviceType.IsGenericType)
+            var registeredDecorators = GetRegisteredDecorators(serviceType);
+            if (registeredDecorators.Count == 0 && serviceType.IsGenericType)
             {
                 var openGenericServiceType = serviceType.GetGenericTypeDefinition();
                 var openGenericDecorators = GetRegisteredDecorators(openGenericServiceType);
@@ -1024,14 +977,13 @@ namespace LightInject
                     foreach (ServiceInfo openGenericDecorator in openGenericDecorators)
                     {
                         var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-                        var serviceInfo = new ServiceInfo()
-                            { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, IsDecorator = true };
-                        decorators.Add(serviceInfo);
+                        var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, IsDecorator = true };
+                        registeredDecorators.Add(serviceInfo);
                     }
                 }
             }
 
-            return decorators.ToArray();
+            return registeredDecorators.ToArray();
         }
 
         private void DoEmitNewInstance(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
@@ -1046,9 +998,9 @@ namespace LightInject
             }
         }
 
-        private void EmitDecorators(ServiceInfo serviceInfo, ServiceInfo[] decorators, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitDecorators(ServiceInfo serviceInfo, IEnumerable<ServiceInfo> serviceDecorators, DynamicMethodInfo dynamicMethodInfo)
         {            
-            foreach (ServiceInfo decorator in decorators)
+            foreach (ServiceInfo decorator in serviceDecorators)
             {
                 ConstructionInfo constructionInfo = GetConstructionInfo(decorator);
                 var constructorDependency = constructionInfo.ConstructorDependencies.FirstOrDefault(cd => cd.ServiceType == serviceInfo.ServiceType);
@@ -1174,36 +1126,6 @@ namespace LightInject
             return emitter;
         }
 
-        private Action<DynamicMethodInfo> CreateEmitMethodBasedOnCustomFactory(Type serviceType, string serviceName, IFactory factory, Func<object> proceed)
-        {
-            int serviceRequestConstantIndex = CreateServiceRequestConstant(serviceType, serviceName, proceed);
-            var factoryConstantIndex = CreateFactoryConstant(factory);
-            return dmi => EmitCallCustomFactory(dmi, serviceRequestConstantIndex, factoryConstantIndex, serviceType);
-        }
-
-        private int CreateFactoryConstant(IFactory factory)
-        {
-            int factoryConstantIndex = constants.Add(factory);
-            return factoryConstantIndex;
-        }
-
-        private int CreateServiceRequestConstant(Type serviceType, string serviceName, Func<object> proceed)
-        {
-            var serviceRequest = new ServiceRequest { ServiceType = serviceType, ServiceName = serviceName, Proceed = proceed };
-            return constants.Add(serviceRequest);
-        }
-
-        private IFactory GetCustomFactory(Type serviceType, string serviceName)
-        {
-            if (IsFactory(serviceType) ||
-                (IsEnumerableOfT(serviceType) && IsFactory(serviceType.GetGenericArguments().First())))
-            {
-                return null;
-            }
-
-            return factories.Items.FirstOrDefault(f => f.CanGetInstance(serviceType, serviceName));            
-        }
-
         private Action<DynamicMethodInfo> CreateEnumerableServiceEmitter(Type serviceType)
         {
             Type actualServiceType = serviceType.GetGenericArguments()[0];
@@ -1323,8 +1245,7 @@ namespace LightInject
                 RegisterOpenGenericService(serviceType, implementingType, lifetime, serviceName);
             }
             else
-            {
-                lifetime = IsFactory(serviceType) ? new SingletonLifetime() : lifetime;
+            {                
                 var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime };                
                 UpdateServiceEmitter(serviceType, serviceName, GetEmitDelegate(serviceInfo));    
                 UpdateServiceRegistration(serviceInfo);
@@ -1336,7 +1257,7 @@ namespace LightInject
             Action<DynamicMethodInfo, Type> emitter = (dmi, closedGenericServiceType) =>
                 { 
                     Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
-                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, Lifetime = lifetime };
+                    var serviceInfo = new ServiceInfo { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, Lifetime = CloneLifeTime(lifetime) };
                     var closedGenericEmitter = GetEmitDelegate(serviceInfo);
                     UpdateServiceEmitter(closedGenericServiceType, serviceName, closedGenericEmitter);
                     UpdateServiceRegistration(serviceInfo);
@@ -1344,7 +1265,7 @@ namespace LightInject
                 };
             GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);            
         }
-                
+        
         private Action<DynamicMethodInfo> GetEmitDelegate(ServiceInfo serviceInfo)
         {
             if (serviceInfo.Lifetime == null)
@@ -1356,15 +1277,23 @@ namespace LightInject
         }
                 
         private void EmitLifetime(ServiceInfo serviceInfo, Action<DynamicMethodInfo> instanceEmitter, DynamicMethodInfo dynamicMethodInfo)
-        {
+        {                        
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
             int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter);
             int lifetimeIndex = CreateLifetimeIndex(serviceInfo.Lifetime);
+            int scopeManagerIndex = CreateScopeManagerIndex();
             var getInstanceMethod = typeof(ILifetime).GetMethod("GetInstance");
             EmitLoadConstant(dynamicMethodInfo, lifetimeIndex, typeof(ILifetime));
-            EmitLoadConstant(dynamicMethodInfo, instanceDelegateIndex, typeof(Func<object>));
+            EmitLoadConstant(dynamicMethodInfo, instanceDelegateIndex, typeof(Func<object>));            
+            EmitLoadConstant(dynamicMethodInfo, scopeManagerIndex, typeof(ScopeManager));
+            generator.Emit(OpCodes.Callvirt, GetCurrentMethod);
             generator.Emit(OpCodes.Callvirt, getInstanceMethod);
             generator.Emit(serviceInfo.ServiceType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceInfo.ServiceType);
+        }
+
+        private int CreateScopeManagerIndex()
+        {
+            return constants.Add(scopeManager);
         }
 
         private int CreateInstanceDelegateIndex(Action<DynamicMethodInfo> instanceEmitter)
@@ -1389,7 +1318,7 @@ namespace LightInject
         {                        
             var serviceEmitter = GetEmitMethod(serviceType, serviceName);
             if (serviceEmitter == null)
-            {
+            {                
                 throw new InvalidOperationException(string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
             }
 
@@ -1399,6 +1328,7 @@ namespace LightInject
             }
             catch (InvalidOperationException ex)
             {
+                dependencyStack.Clear();
                 throw new InvalidOperationException(string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName), ex);
             }            
         }
@@ -1412,11 +1342,6 @@ namespace LightInject
             }
 
             return false;
-        }
-
-        private void CreateCustomFactories()
-        {            
-            factories = new Storage<IFactory>(GetInstance<IEnumerable<IFactory>>());            
         }
 
         private void EnsureThatServiceRegistryIsConfigured(Type serviceType)
@@ -1440,8 +1365,7 @@ namespace LightInject
 
         private void RegisterServiceFromLambdaExpression<TService>(
             Expression<Func<IServiceFactory, TService>> factory, ILifetime lifetime, string serviceName)
-        {
-            lifetime = IsFactory(typeof(TService)) ? new SingletonLifetime() : lifetime;
+        {            
             var serviceInfo = new ServiceInfo { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, Lifetime = lifetime };                        
             UpdateServiceEmitter(typeof(TService), serviceName, GetEmitDelegate(serviceInfo));
             UpdateServiceRegistration(serviceInfo);
@@ -2130,7 +2054,7 @@ namespace LightInject
         private readonly object syncRoot = new object();
         private object singleton;
 
-        public object GetInstance(Func<object> createInstance)
+        public object GetInstance(Func<object> createInstance, ResolutionContext resolutionContext)
         {
             if (singleton != null)
             {
@@ -2161,87 +2085,180 @@ namespace LightInject
     internal class PerGraphLifetime : ILifetime
     {
         private readonly ThreadSafeDictionary<ResolutionContext, object> instances = new ThreadSafeDictionary<ResolutionContext, object>();
-           
-        public object GetInstance(Func<object> createInstance)
-        {
-            var context = ResolutionScope.Current;
-            if (context == null)
+       
+        public object GetInstance(Func<object> createInstance, ResolutionContext resolutionContext)
+        {            
+            if (resolutionContext == null)
             {
-                throw new InvalidOperationException("No ResolutionContext");
+                return createInstance();
             }
 
-            return instances.GetOrAdd(context, s => CreateScopedInstance(s, createInstance));
+            return instances.GetOrAdd(resolutionContext, s => CreateScopedInstance(s, createInstance));
+        }
+
+        private static void RegisterForDisposal(ResolutionContext context, object instance)
+        {
+            var disposable = instance as IDisposable;
+            if (disposable != null)
+            {
+                context.RegisterForDisposal(disposable);
+            }
         }
 
         private object CreateScopedInstance(ResolutionContext context, Func<object> createInstance)
         {
             context.Completed += OnContextCompleted;
-            var instance = createInstance();            
+            var instance = createInstance();
+            RegisterForDisposal(context, instance);
             return instance;
         }
-
+       
         private void OnContextCompleted(object sender, EventArgs e)
         {
             object removedInstance;
             instances.TryRemove((ResolutionContext)sender, out removedInstance);
+        }      
+    }
+
+    internal enum ScopeOption
+    {
+        Required,
+        RequiresNew,
+        Suppress
+    }
+
+    internal class ScopeHolder
+    {
+        internal ResolutionScope Value { get; set; }
+
+        internal bool IsRootScope { get; set; }
+    }
+
+
+    internal class ScopeManager
+    {
+        private ResolutionScope currentScope { get; set; }
+
+
+        public ResolutionContext Current
+        {
+            get
+            {
+                return currentScope.Context;
+            }
+        }
+
+        public ScopeManager()
+        {
+            CreateSuppressScope();
+        }
+
+        public ResolutionScope BeginScope(ScopeOption scopeOption)
+        {                        
+            if (scopeOption == ScopeOption.Suppress)
+            {
+                CreateSuppressScope();
+            }
+
+            if (scopeOption == ScopeOption.Required)
+            {
+                CreateRequiredScope();
+            }
+
+            if (scopeOption == ScopeOption.RequiresNew)
+            {
+                CreateRequiresNewScope();
+            }
+                        
+            return currentScope;
+        }
+
+        private void CreateRequiresNewScope()
+        {            
+            currentScope = new ResolutionScope(this, currentScope, new ResolutionContext());
+        }
+
+        private void CreateRequiredScope()
+        {
+            if (currentScope.Context == null)
+            {
+                CreateRequiresNewScope();
+            }
+            else
+            {
+                currentScope = new ResolutionScope(this, currentScope, currentScope.Context);
+            }
+        }
+
+        private void CreateSuppressScope()
+        {
+            currentScope = new ResolutionScope(this, currentScope, null);
+        }
+
+        public void EndScope(ResolutionScope scope)
+        {
+            if (scope.Context != null)
+            {
+                scope.Context.SetComplete();
+            }
+
+            currentScope = scope.ParentScope;
+        }
+
+    }
+
+    internal class ResolutionScope : IDisposable
+    {
+        private readonly ScopeManager scopeManager;
+
+        private readonly ResolutionScope parentScope;
+
+        public ResolutionScope(ScopeManager scopeManager, ResolutionScope parentScope, ResolutionContext resolutionContext)
+        {
+            this.scopeManager = scopeManager;
+            this.parentScope = parentScope;
+            Context = resolutionContext;
+            
+        }
+
+        public ResolutionScope ParentScope
+        {
+            get
+            {
+                return parentScope;
+            }
+        }
+
+        public ResolutionContext Context { get; private set; }
+        
+        public void Dispose()
+        {
+            if (parentScope.Context == null)
+            {
+                scopeManager.EndScope(this);
+            }
         }
     }
 
     /// <summary>
-    /// Contains information about a service request passed to an <see cref="IFactory"/> instance.
-    /// </summary>    
-    internal class ServiceRequest
+    /// Represents a context in which services are resolved.
+    /// </summary>
+    internal interface IResolutionContext
     {
         /// <summary>
-        /// Gets a value indicating whether the service request can be resolved by the underlying container.  
+        /// Fired when the current <see cref="IResolutionContext"/> is completed.
         /// </summary>
-        public bool CanProceed
-        {
-            get { return Proceed != null; }
-        }
+        event EventHandler<EventArgs> Completed;
 
         /// <summary>
-        /// Gets or sets the requested service type.
+        /// 
         /// </summary>
-        public Type ServiceType { get; internal set; }
+        void SetComplete();
 
-        /// <summary>
-        /// Gets or sets the requested service name.
-        /// </summary>
-        public string ServiceName { get; internal set; }
-
-        /// <summary>
-        /// Gets or sets the function delegate used to proceed.
-        /// </summary>
-        public Func<object> Proceed { get; internal set; }
+        void RegisterForDisposal(IDisposable disposable);
     }
 
-    internal class ResolutionScope : IDisposable
-    {                
-        [ThreadStatic]
-        private static ResolutionContext context;
-       
-        public ResolutionScope()
-        {
-            context = new ResolutionContext();
-        }
-        
-        public static ResolutionContext Current
-        {
-            get
-            {
-                return context;
-            }
-        }
-
-        public void Dispose()
-        {
-            context.SetComplete();
-            context = null;
-        }
-    }
-
-    internal class ResolutionContext
+    internal class ResolutionContext : IResolutionContext
     {
         private readonly IList<IDisposable> disposableObjects = new List<IDisposable>();
         
@@ -2270,7 +2287,8 @@ namespace LightInject
             {
                 completedHandler(this, new EventArgs());
             }
-        }        
+        }
+        
     }
 
     /// <summary>
@@ -2278,27 +2296,30 @@ namespace LightInject
     /// </summary>    
     internal class AssemblyScanner : IAssemblyScanner
     {
-        private static List<Type> internalInterfaces = new List<Type>();
-        private static List<Type> internalTypes = new List<Type>();
+        private static readonly List<Type> InternalInterfaces = new List<Type>();
+        private static readonly List<Type> InternalTypes = new List<Type>();
         private Assembly currentAssembly;
 
         static AssemblyScanner()
         {
-            internalInterfaces.Add(typeof(IServiceContainer));
-            internalInterfaces.Add(typeof(IServiceFactory));
-            internalInterfaces.Add(typeof(IServiceRegistry));
-            internalInterfaces.Add(typeof(IPropertySelector));
-            internalInterfaces.Add(typeof(IAssemblyLoader));
-            internalInterfaces.Add(typeof(IAssemblyScanner));
-            internalInterfaces.Add(typeof(ILifetime));
-            internalTypes.Add(typeof(ServiceContainer.LambdaExpressionParser));
-            internalTypes.Add(typeof(ServiceContainer.LambdaExpressionValidator));
-            internalTypes.Add(typeof(ServiceContainer.ConstructorDependency));
-            internalTypes.Add(typeof(ServiceContainer.PropertyDependecy));
-            internalTypes.Add(typeof(ThreadSafeDictionary<,>));
-            internalTypes.Add(typeof(ResolutionScope)); 
-            internalTypes.Add(typeof(SingletonLifetime));
-            internalTypes.Add(typeof(PerGraphLifetime));            
+            InternalInterfaces.Add(typeof(IServiceContainer));
+            InternalInterfaces.Add(typeof(IServiceFactory));
+            InternalInterfaces.Add(typeof(IServiceRegistry));
+            InternalInterfaces.Add(typeof(IPropertySelector));
+            InternalInterfaces.Add(typeof(IAssemblyLoader));
+            InternalInterfaces.Add(typeof(IAssemblyScanner));
+            InternalInterfaces.Add(typeof(ILifetime));
+            InternalInterfaces.Add(typeof(IResolutionContext));
+            InternalTypes.Add(typeof(ServiceContainer.LambdaExpressionParser));
+            InternalTypes.Add(typeof(ServiceContainer.LambdaExpressionValidator));
+            InternalTypes.Add(typeof(ServiceContainer.ConstructorDependency));
+            InternalTypes.Add(typeof(ServiceContainer.PropertyDependecy));
+            InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
+            InternalTypes.Add(typeof(ResolutionScope)); 
+            InternalTypes.Add(typeof(SingletonLifetime));
+            InternalTypes.Add(typeof(PerGraphLifetime));
+            InternalTypes.Add(typeof(ResolutionScope));
+            InternalTypes.Add(typeof(ScopeManager));    
         }
 
         /// <summary>
@@ -2365,7 +2386,7 @@ namespace LightInject
 
         private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
         {            
-            return assembly.GetTypes().Where(t => t.IsClass && !t.IsNestedPrivate && !t.IsAbstract && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t) && internalTypes.All(it => it != t));
+            return assembly.GetTypes().Where(t => t.IsClass && !t.IsNestedPrivate && !t.IsAbstract && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t) && InternalTypes.All(it => it != t));
         }
 
         private static bool IsCompilerGenerated(Type type)
@@ -2378,7 +2399,7 @@ namespace LightInject
             Type[] interfaces = implementingType.GetInterfaces();
             foreach (Type interfaceType in interfaces)
             {
-                if (internalInterfaces.All(i => i != interfaceType))
+                if (InternalInterfaces.All(i => i != interfaceType))
                 {
                     RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory());
                 }
