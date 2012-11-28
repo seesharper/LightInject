@@ -41,8 +41,7 @@ namespace LightInject
     using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
     using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Threading;
+    using System.Text.RegularExpressions;    
 
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
@@ -382,15 +381,9 @@ namespace LightInject
         private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>();
         private readonly ThreadSafeDictionary<Tuple<Type, string>, ServiceInfo> availableServices =
             new ThreadSafeDictionary<Tuple<Type, string>, ServiceInfo>();
-
-        private readonly ThreadSafeDictionary<Type, List<DecoratorRegistration>> decorators = new ThreadSafeDictionary<Type, List<DecoratorRegistration>>();
-
-
-
-        
+        private readonly ThreadSafeDictionary<Type, List<DecoratorRegistration>> decorators = new ThreadSafeDictionary<Type, List<DecoratorRegistration>>();        
         private bool firstServiceRequest = true;
-
-        private ScopeManager scopeManager = new ScopeManager();
+        private readonly ScopeManager scopeManager = new ScopeManager();
         
 
 
@@ -546,7 +539,7 @@ namespace LightInject
 #endif        
         public void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate)
         {
-            var decoratorInfo = new DecoratorRegistration() { ServiceType = serviceType, ImplementingType = decoratorType, Predicate = shouldDecorate };                
+            var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = decoratorType, CanDecorate = shouldDecorate };                
             GetRegisteredDecorators(serviceType).Add(decoratorInfo);
         }
 
@@ -557,7 +550,7 @@ namespace LightInject
 
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
         {
-            var decoratorInfo = new DecoratorRegistration() { FactoryExpression = factory, ServiceType = typeof(TService), Predicate = si => true};            
+            var decoratorInfo = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true};            
             GetRegisteredDecorators(typeof(TService)).Add(decoratorInfo);
         }
 
@@ -989,7 +982,7 @@ namespace LightInject
                     foreach (DecoratorRegistration openGenericDecorator in openGenericDecorators)
                     {
                         var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-                        var decoratorInfo = new DecoratorRegistration() { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, Predicate = openGenericDecorator.Predicate};                        
+                        var decoratorInfo = new DecoratorRegistration() { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, CanDecorate = openGenericDecorator.CanDecorate};                        
                         registeredDecorators.Add(decoratorInfo);
                     }
                 }
@@ -1043,39 +1036,22 @@ namespace LightInject
                 EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo, null);
             }
         }
-
-        private void EmitDecorators_old(ServiceInfo serviceInfo, IEnumerable<DecoratorRegistration> serviceDecorators, DynamicMethodInfo dynamicMethodInfo, Action pushInstance)
-        {                                   
+     
+        private void EmitDecorators(ServiceInfo serviceInfo, IEnumerable<DecoratorRegistration> serviceDecorators, DynamicMethodInfo dynamicMethodInfo, Action decoratorTargetEmitter)
+        {
+            Action decoratorChainEmitter = decoratorTargetEmitter;            
             foreach (DecoratorRegistration decorator in serviceDecorators)
             {
-                if (decorator.Predicate(serviceInfo))
-                {                    
-                    DoEmitDecoratorInstance(decorator, dynamicMethodInfo, pushInstance);
-                }
-            }
-        }
-
-        private void EmitDecorators(ServiceInfo serviceInfo, DecoratorRegistration[] serviceDecorators, DynamicMethodInfo dynamicMethodInfo, Action targetEmitter)
-        {
-            var actions = new List<Action>();
-            actions.Add(targetEmitter);
-            for (int index = 0; index < serviceDecorators.Length; index++)
-            {
-                DecoratorRegistration decorator = serviceDecorators[index];
-                if (decorator.Predicate(serviceInfo))
+                if (!decorator.CanDecorate(serviceInfo))
                 {
-                    int index1 = index;
-                    Action action = () => DoEmitDecoratorInstance(decorator, dynamicMethodInfo, actions[index1]);
-                    actions.Add(action);
-                    //DoEmitDecoratorInstance(decorator, dynamicMethodInfo, targetEmitter);
+                    continue;
                 }
+                Action currentDecoratorTargetEmitter = decoratorTargetEmitter;
+                DecoratorRegistration currentDecorator = decorator;
+                decoratorTargetEmitter = () => DoEmitDecoratorInstance(currentDecorator, dynamicMethodInfo, currentDecoratorTargetEmitter);
             }
 
-            actions.Last()();
-            //foreach (var action in actions.Skip(1).Reverse())
-            //{
-            //    action();
-            //}
+            decoratorTargetEmitter();
         }
 
         private void EmitNewInstanceUsingImplementingType(DynamicMethodInfo dynamicMethodInfo, ConstructionInfo constructionInfo, Action decoratorTargetEmitter)
@@ -1098,7 +1074,7 @@ namespace LightInject
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
-        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo, Action targetEmitter)
+        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo, Action decoratorTargetEmitter)
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
@@ -1108,7 +1084,7 @@ namespace LightInject
                 }
                 else
                 {
-                    targetEmitter();
+                    decoratorTargetEmitter();
                 }
             }
         }
@@ -1783,16 +1759,7 @@ namespace LightInject
         {
             private readonly object lockObject = new object();
             private T[] items = new T[0];
-
-            public Storage()
-            {
-            }
-            
-            public Storage(IEnumerable<T> collection)
-            {
-                items = collection.ToArray();
-            }
-
+                              
             public T[] Items
             {
                 get
@@ -2074,7 +2041,7 @@ namespace LightInject
     
     internal class DecoratorRegistration : Registration
     {       
-        public Func<ServiceInfo, bool> Predicate { get; set; }
+        public Func<ServiceInfo, bool> CanDecorate { get; set; }
     }
 
     /// <summary>
