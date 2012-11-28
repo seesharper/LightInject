@@ -172,6 +172,9 @@ namespace LightInject
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
         void Register<TService>(Expression<Func<IServiceFactory, TService>> expression, string serviceName, ILifetime lifetime);
 
+        void Register(Func<Type, string, bool> servicePredicate, Func<Type, string, IServiceFactory, object> factory);
+
+
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
@@ -380,7 +383,7 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Tuple<Type, string>, ServiceInfo> availableServices =
             new ThreadSafeDictionary<Tuple<Type, string>, ServiceInfo>();
 
-        private readonly ThreadSafeDictionary<Type, List<ServiceInfo>> decorators = new ThreadSafeDictionary<Type, List<ServiceInfo>>();
+        private readonly ThreadSafeDictionary<Type, List<DecoratorRegistration>> decorators = new ThreadSafeDictionary<Type, List<DecoratorRegistration>>();
 
 
 
@@ -466,6 +469,11 @@ namespace LightInject
             RegisterServiceFromLambdaExpression(expression, lifetime, serviceName);
         }
 
+        public void Register(Func<Type, string, bool> servicePredicate, Func<Type, string, IServiceFactory, object> factory)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
@@ -538,8 +546,8 @@ namespace LightInject
 #endif        
         public void Decorate(Type serviceType, Type decoratorType, Func<ServiceInfo, bool> shouldDecorate)
         {
-            var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = decoratorType, IsDecorator = true, ServiceName = string.Empty };
-            GetRegisteredDecorators(serviceType).Add(serviceInfo);
+            var decoratorInfo = new DecoratorRegistration() { ServiceType = serviceType, ImplementingType = decoratorType, Predicate = shouldDecorate };                
+            GetRegisteredDecorators(serviceType).Add(decoratorInfo);
         }
 
         public void Decorate(Type serviceType, Type decoratorType)
@@ -549,8 +557,8 @@ namespace LightInject
 
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
         {
-            var serviceInfo = new ServiceInfo { ServiceType = typeof(TService), FactoryExpression = factory, IsDecorator = true, ServiceName = string.Empty };
-            GetRegisteredDecorators(typeof(TService)).Add(serviceInfo);
+            var decoratorInfo = new DecoratorRegistration() { FactoryExpression = factory, ServiceType = typeof(TService), Predicate = si => true};            
+            GetRegisteredDecorators(typeof(TService)).Add(decoratorInfo);
         }
 
         /// <summary>
@@ -861,14 +869,14 @@ namespace LightInject
             return () => del(constants.Items);
         }
 
-        private ConstructionInfo CreateConstructionInfo(ServiceInfo serviceInfo)
+        private ConstructionInfo CreateConstructionInfo(Registration registration)
         {
-            if (serviceInfo.FactoryExpression != null)
+            if (registration.FactoryExpression != null)
             {
-                return CreateConstructionInfoFromLambdaExpression(serviceInfo.FactoryExpression);                
+                return CreateConstructionInfoFromLambdaExpression(registration.FactoryExpression);                
             }
             
-            return CreateConstructionInfoFromImplementingType(serviceInfo.ImplementingType);
+            return CreateConstructionInfoFromImplementingType(registration.ImplementingType);
         }
 
         private ConstructionInfo CreateConstructionInfoFromImplementingType(Type implementingType)
@@ -957,15 +965,19 @@ namespace LightInject
 
         private void EmitNewInstance(ServiceInfo serviceInfo, DynamicMethodInfo dynamicMethodInfo)
         {
-            DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo);
+            
             var serviceDecorators = GetDecorators(serviceInfo.ServiceType);
             if (serviceDecorators.Length > 0)
             {
-                EmitDecorators(serviceInfo, serviceDecorators, dynamicMethodInfo);
+                EmitDecorators(serviceInfo, serviceDecorators, dynamicMethodInfo, () => DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo));
+            }
+            else
+            {
+                DoEmitNewInstance(GetConstructionInfo(serviceInfo), dynamicMethodInfo);    
             }
         }
         
-        private ServiceInfo[] GetDecorators(Type serviceType)
+        private DecoratorRegistration[] GetDecorators(Type serviceType)
         {
             var registeredDecorators = GetRegisteredDecorators(serviceType);
             if (registeredDecorators.Count == 0 && serviceType.IsGenericType)
@@ -974,16 +986,50 @@ namespace LightInject
                 var openGenericDecorators = GetRegisteredDecorators(openGenericServiceType);
                 if (openGenericDecorators.Count >= 0)
                 {                    
-                    foreach (ServiceInfo openGenericDecorator in openGenericDecorators)
+                    foreach (DecoratorRegistration openGenericDecorator in openGenericDecorators)
                     {
                         var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-                        var serviceInfo = new ServiceInfo { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, IsDecorator = true };
-                        registeredDecorators.Add(serviceInfo);
+                        var decoratorInfo = new DecoratorRegistration() { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, Predicate = openGenericDecorator.Predicate};                        
+                        registeredDecorators.Add(decoratorInfo);
                     }
                 }
             }
 
             return registeredDecorators.ToArray();
+        }
+
+        private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, DynamicMethodInfo dynamicMethodInfo, Action pushInstance)
+        {
+
+            ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
+            var constructorDependency =
+                constructionInfo.ConstructorDependencies.FirstOrDefault(cd => cd.ServiceType == decoratorRegistration.ServiceType);
+            if (constructorDependency != null)
+            {
+                constructorDependency.IsDecoratorTarget = true;
+            }
+            
+            if (constructionInfo.FactoryDelegate != null)
+            {                
+                EmitNewDecoratorUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodInfo, pushInstance);
+            }
+            else
+            {                
+                EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo);
+            }
+        }
+
+        private void EmitNewDecoratorUsingFactoryDelegate(Delegate factoryDelegate, DynamicMethodInfo dynamicMethodInfo, Action pushInstance)
+        {
+            var factoryDelegateIndex = constants.Add(factoryDelegate);
+            var serviceFactoryIndex = constants.Add(this);
+            Type funcType = factoryDelegate.GetType();
+            EmitLoadConstant(dynamicMethodInfo, factoryDelegateIndex, funcType);
+            EmitLoadConstant(dynamicMethodInfo, serviceFactoryIndex, typeof(IServiceFactory));
+            pushInstance();
+            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            MethodInfo invokeMethod = funcType.GetMethod("Invoke");
+            generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
         private void DoEmitNewInstance(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
@@ -998,18 +1044,35 @@ namespace LightInject
             }
         }
 
-        private void EmitDecorators(ServiceInfo serviceInfo, IEnumerable<ServiceInfo> serviceDecorators, DynamicMethodInfo dynamicMethodInfo)
-        {            
-            foreach (ServiceInfo decorator in serviceDecorators)
+        private void EmitDecorators_old(ServiceInfo serviceInfo, IEnumerable<DecoratorRegistration> serviceDecorators, DynamicMethodInfo dynamicMethodInfo, Action pushInstance)
+        {                                   
+            foreach (DecoratorRegistration decorator in serviceDecorators)
             {
-                ConstructionInfo constructionInfo = GetConstructionInfo(decorator);
-                var constructorDependency = constructionInfo.ConstructorDependencies.FirstOrDefault(cd => cd.ServiceType == serviceInfo.ServiceType);
-                if (constructorDependency != null)
-                {
-                    constructorDependency.IsDecoratorTarget = true;
+                if (decorator.Predicate(serviceInfo))
+                {                    
+                    DoEmitDecoratorInstance(decorator, dynamicMethodInfo, pushInstance);
                 }
+            }
+        }
 
-                DoEmitNewInstance(constructionInfo, dynamicMethodInfo);
+        private void EmitDecorators(ServiceInfo serviceInfo, DecoratorRegistration[] serviceDecorators, DynamicMethodInfo dynamicMethodInfo, Action targetEmitter)
+        {
+            var actions = new List<Action>();
+            actions.Add(targetEmitter);
+            for (int index = 0; index < serviceDecorators.Length; index++)
+            {
+                DecoratorRegistration decorator = serviceDecorators[index];
+                if (decorator.Predicate(serviceInfo))
+                {
+                    Action action = () => DoEmitDecoratorInstance(decorator, dynamicMethodInfo, actions[index]);
+                    actions.Add(action);
+                    //DoEmitDecoratorInstance(decorator, dynamicMethodInfo, targetEmitter);
+                }
+            }
+
+            foreach (var action in actions)
+            {
+                action();
             }
         }
 
@@ -1218,9 +1281,9 @@ namespace LightInject
             return string.IsNullOrEmpty(serviceName) && GetOpenGenericRegistrations(serviceType).Count == 1;
         }
 
-        private ConstructionInfo GetConstructionInfo(ServiceInfo serviceInfo)
+        private ConstructionInfo GetConstructionInfo(Registration registration)
         {
-            return CreateConstructionInfo(serviceInfo);            
+            return CreateConstructionInfo(registration);            
         }
 
         private ThreadSafeDictionary<string, Action<DynamicMethodInfo>> GetServiceEmitters(Type serviceType)
@@ -1228,9 +1291,9 @@ namespace LightInject
             return emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo>>(StringComparer.InvariantCultureIgnoreCase));
         }
 
-        private List<ServiceInfo> GetRegisteredDecorators(Type serviceType)
+        private List<DecoratorRegistration> GetRegisteredDecorators(Type serviceType)
         {
-            return decorators.GetOrAdd(serviceType, s => new List<ServiceInfo>());
+            return decorators.GetOrAdd(serviceType, s => new List<DecoratorRegistration>());
         }
 
         private ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type>> GetOpenGenericRegistrations(Type serviceType)
@@ -1985,40 +2048,40 @@ namespace LightInject
         }        
 #endif
 
-    internal class DecoratorInfo
+    internal class Registration
     {
-        public Type ServiceType { get; set; }
-
-        public Type DecoratorType { get; set; }
-
-        public Func<ServiceInfo, bool> Predicate { get; set; }
-    }
-
-    /// <summary>
-    /// Contains information about a registered service.
-    /// </summary>
-    internal class ServiceInfo 
-    {                                
         /// <summary>
         /// Gets or sets the service <see cref="Type"/>.
         /// </summary>
         public Type ServiceType { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the name of the service.
-        /// </summary>
-        public string ServiceName { get; internal set; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="Type"/> that implements the <see cref="ServiceInfo.ServiceType"/>.
+        /// Gets or sets the <see cref="Type"/> that implements the <see cref="Registration.ServiceType"/>.
         /// </summary>
         public Type ImplementingType { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="LambdaExpression"/> used to create an instance of the service.
+        /// Gets or sets the <see cref="LambdaExpression"/> used to create an instance of the decorator.
         /// </summary>
         public LambdaExpression FactoryExpression { get; set; }
+    }
+    
+    internal class DecoratorRegistration : Registration
+    {       
+        public Func<ServiceInfo, bool> Predicate { get; set; }
+    }
 
+    /// <summary>
+    /// Contains information about a registered service.
+    /// </summary>
+    internal class ServiceInfo : Registration
+    {                                
+     
+        /// <summary>
+        /// Gets or sets the name of the service.
+        /// </summary>
+        public string ServiceName { get; internal set; }
+         
         /// <summary>
         /// Gets or sets the <see cref="ILifetime"/> instance that controls the lifetime of the service.
         /// </summary>
@@ -2315,11 +2378,13 @@ namespace LightInject
             InternalTypes.Add(typeof(ServiceContainer.ConstructorDependency));
             InternalTypes.Add(typeof(ServiceContainer.PropertyDependecy));
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
-            InternalTypes.Add(typeof(ResolutionScope)); 
+            InternalTypes.Add(typeof(ResolutionScope));
             InternalTypes.Add(typeof(SingletonLifetime));
             InternalTypes.Add(typeof(PerGraphLifetime));
             InternalTypes.Add(typeof(ResolutionScope));
             InternalTypes.Add(typeof(ScopeManager));    
+            InternalTypes.Add(typeof(ServiceInfo));
+            InternalTypes.Add(typeof(DecoratorRegistration));
         }
 
         /// <summary>

@@ -91,7 +91,7 @@
         public void Scan_HostAssembly_DoesNotConfigureInternalServices()
         {
             var container = new ServiceContainer();
-            container.RegisterAssembly(typeof(ServiceContainer).Assembly);
+            container.RegisterAssembly(typeof(ServiceContainer).Assembly);            
             Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject"));
         }
 
