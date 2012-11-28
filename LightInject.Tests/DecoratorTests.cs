@@ -118,7 +118,7 @@
             Assert.IsInstanceOfType(instance, typeof(FooDecorator));
         }
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void GetInstance_DecoratorFactoryWithMethodCall_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();

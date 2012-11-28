@@ -1015,7 +1015,7 @@ namespace LightInject
             }
             else
             {                
-                EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo);
+                EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo, pushInstance);
             }
         }
 
@@ -1040,7 +1040,7 @@ namespace LightInject
             }
             else
             {
-                EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo);
+                EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo, null);
             }
         }
 
@@ -1064,22 +1064,24 @@ namespace LightInject
                 DecoratorRegistration decorator = serviceDecorators[index];
                 if (decorator.Predicate(serviceInfo))
                 {
-                    Action action = () => DoEmitDecoratorInstance(decorator, dynamicMethodInfo, actions[index]);
+                    int index1 = index;
+                    Action action = () => DoEmitDecoratorInstance(decorator, dynamicMethodInfo, actions[index1]);
                     actions.Add(action);
                     //DoEmitDecoratorInstance(decorator, dynamicMethodInfo, targetEmitter);
                 }
             }
 
-            foreach (var action in actions)
-            {
-                action();
-            }
+            actions.Last()();
+            //foreach (var action in actions.Skip(1).Reverse())
+            //{
+            //    action();
+            //}
         }
 
-        private void EmitNewInstanceUsingImplementingType(DynamicMethodInfo dynamicMethodInfo, ConstructionInfo constructionInfo)
+        private void EmitNewInstanceUsingImplementingType(DynamicMethodInfo dynamicMethodInfo, ConstructionInfo constructionInfo, Action decoratorTargetEmitter)
         {
             ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            EmitConstructorDependencies(constructionInfo, dynamicMethodInfo);
+            EmitConstructorDependencies(constructionInfo, dynamicMethodInfo, decoratorTargetEmitter);
             generator.Emit(OpCodes.Newobj, constructionInfo.Constructor);
             EmitPropertyDependencies(constructionInfo, dynamicMethodInfo);
         }
@@ -1096,14 +1098,18 @@ namespace LightInject
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
-        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo, Action targetEmitter)
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
                 if (!dependency.IsDecoratorTarget)
                 {
                     EmitDependency(dynamicMethodInfo, dependency);                    
-                }                
+                }
+                else
+                {
+                    targetEmitter();
+                }
             }
         }
 
