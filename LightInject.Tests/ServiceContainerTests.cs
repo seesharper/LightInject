@@ -605,11 +605,13 @@
                 () => container.GetAllInstances<IFoo>(), ex => ex.InnerException.InnerException.InnerException.Message == ErrorMessages.RecursiveDependency);
         }
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void GetInstance_UsingServicePredicate_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register((type, s) => type == typeof(IFoo), (type, serviceName, serviceFactory) => new Foo());
+            container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(IFoo));
         }
 
         [TestMethod]
@@ -628,6 +630,8 @@
             var canCreateInstance = container.CanGetInstance(typeof(IBar), string.Empty);
             Assert.IsFalse(canCreateInstance);
         }      
+
+
 
 
 

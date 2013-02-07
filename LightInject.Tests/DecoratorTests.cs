@@ -18,16 +18,52 @@
         }
 
         [TestMethod]
+        public void GetInstance_DecoratorWithDependency_ReturnsDecoratedInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Register<IBar, Bar>();
+            container.Decorate(typeof(IFoo), typeof(FooDecoratorWithDependency));
+            var instance = (FooDecoratorWithDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
+            Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
+        }
+
+        [TestMethod]
+        public void GetInstance_DecoratorWithDependencyFirst_ReturnsDecoratedInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Register<IBar, Bar>();
+            container.Decorate(typeof(IFoo), typeof(FooDecoratorWithDependencyFirst));
+            var instance = (FooDecoratorWithDependencyFirst)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
+            Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
+        }
+
+
+        [TestMethod]
+        public void GetInstance_SingletonWithDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>(new SingletonLifetime());
+            container.Decorate(typeof(IFoo), typeof(FooDecorator));
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+        }
+
+        [TestMethod]
         public void GetInstance_WithDecorator_DecoratesServicesAccordingToPredicate()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
             container.Register<IFoo, AnotherFoo>("AnotherFoo");
-            container.Decorate(typeof(IFoo), typeof(FooDecorator), si => si.ServiceName == "AnotherFoo");
+            container.Decorate(typeof(IFoo), typeof(FooDecorator), service => service.ServiceName == "AnotherFoo");
             var instance = container.GetInstance<IFoo>();
+            var decoratedInstance = container.GetInstance<IFoo>("AnotherFoo");
             Assert.IsInstanceOfType(instance, typeof(Foo));
+            Assert.IsInstanceOfType(decoratedInstance, typeof(FooDecorator));
         }
-
 
         [TestMethod]
         public void GetInstance_WithNestedDecorator_ReturnsDecoratedInstance()
@@ -51,7 +87,6 @@
             Assert.IsInstanceOfType(instances.First(), typeof(FooDecorator));
             Assert.IsInstanceOfType(instances.Last(), typeof(FooDecorator));
         }
-
 
         [TestMethod]
         public void GetInstance_WithOpenGenericDecorator_ReturnsDecoratedInstance()
@@ -119,6 +154,32 @@
         }
 
         [TestMethod]
+        public void GetInstance_DecoratorFactoryWithDependency_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Register<IBar, Bar>();
+            container.Decorate<IFoo>((serviceFactory, target) 
+                => new FooDecoratorWithDependency(target, serviceFactory.GetInstance<IBar>()));
+            var instance = (FooDecoratorWithDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
+            Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
+        }
+
+        [TestMethod]
+        public void GetInstance_DecoratorFactoryWithDependencyFirst_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Register<IBar, Bar>();
+            container.Decorate<IFoo>((serviceFactory, target)
+                => new FooDecoratorWithDependencyFirst(serviceFactory.GetInstance<IBar>(), target));
+            var instance = (FooDecoratorWithDependencyFirst)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
+            Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
+        }
+
+        [TestMethod]
         public void GetInstance_DecoratorFactoryWithMethodCall_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
@@ -138,6 +199,4 @@
             return new ServiceContainer();
         } 
     }
-
-
 }

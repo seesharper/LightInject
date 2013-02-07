@@ -167,6 +167,33 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class FooDecoratorWithDependency : IFoo
+    {        
+        public FooDecoratorWithDependency(IFoo foo, IBar bar)
+        {
+            Foo = foo;
+            Bar = bar;
+        }
+
+        public IFoo Foo { get; private set; }
+
+        public IBar Bar { get; private set; }
+    }
+
+    public class FooDecoratorWithDependencyFirst : IFoo
+    {
+        public FooDecoratorWithDependencyFirst(IBar bar, IFoo foo)
+        {
+            Foo = foo;
+            Bar = bar;
+        }
+
+        public IFoo Foo { get; private set; }
+
+        public IBar Bar { get; private set; }
+    }
+
+
     public class AnotherFooDecorator : IFoo
     {
         private readonly IFoo foo;

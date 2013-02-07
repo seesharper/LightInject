@@ -171,7 +171,20 @@ namespace LightInject
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
         void Register<TService>(Expression<Func<IServiceFactory, TService>> expression, string serviceName, ILifetime lifetime);
 
-        void Register(Func<Type, string, bool> servicePredicate, Func<Type, string, IServiceFactory, object> factory);
+        /// <summary>
+        /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
+        /// </summary>
+        /// <param name="canCreateInstance">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
+        /// <param name="factory">Creates a service instance according to the <paramref name="canCreateInstance"/> predicate.</param>
+        void Register(Func<Type, string, bool> canCreateInstance, Func<ServiceRequest, object> factory);
+
+        /// <summary>
+        /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
+        /// </summary>
+        /// <param name="canCreateInstance">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
+        /// <param name="factory">Creates a service instance according to the <paramref name="canCreateInstance"/> predicate.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        void Register(Func<Type, string, bool> canCreateInstance, Func<ServiceRequest, object> factory, ILifetime lifetime);
 
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
@@ -375,8 +388,9 @@ namespace LightInject
         private readonly ServiceRegistry<Action<DynamicMethodInfo, Type>> openGenericEmitters = new ServiceRegistry<Action<DynamicMethodInfo, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
-        private readonly ThreadSafeDictionary<ServiceRegistration, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceRegistration, ConstructionInfo>();                
+        private readonly ThreadSafeDictionary<ServiceRegistration, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceRegistration, ConstructionInfo>();                        
         private readonly Storage<object> constants = new Storage<object>();
+        private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
         private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>();
         private readonly ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration> availableServices =
             new ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration>();
@@ -460,7 +474,12 @@ namespace LightInject
             RegisterServiceFromLambdaExpression(expression, lifetime, serviceName);
         }
 
-        public void Register(Func<Type, string, bool> servicePredicate, Func<Type, string, IServiceFactory, object> factory)
+        public void Register(Func<Type, string, bool> servicePredicate, Func<ServiceRequest, object> factory)
+        {
+            factoryRules.Add(new FactoryRule { CanCreateInstance = servicePredicate, Factory = factory });
+        }
+
+        public void Register(Func<Type, string, bool> canCreateInstance, Func<ServiceRequest, object> factory, ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
@@ -1071,6 +1090,17 @@ namespace LightInject
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
+        private void EmitNewInstanceUsingRuleFactoryDelegate(Delegate factoryDelegate, int serviceRequestIndex, DynamicMethodInfo dynamicMethodInfo)
+        {
+            var factoryDelegateIndex = constants.Add(factoryDelegate);                        
+            Type funcType = factoryDelegate.GetType();
+            EmitLoadConstant(dynamicMethodInfo, factoryDelegateIndex, funcType);
+            EmitLoadConstant(dynamicMethodInfo, serviceRequestIndex, typeof(ServiceRequest));
+            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            MethodInfo invokeMethod = funcType.GetMethod("Invoke");
+            generator.Emit(OpCodes.Callvirt, invokeMethod);
+        }
+
         private void EmitConstructorDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo, Action decoratorTargetEmitter)
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
@@ -1142,7 +1172,13 @@ namespace LightInject
         private Action<DynamicMethodInfo> ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
         {
             Action<DynamicMethodInfo> emitter = null;
-            if (IsFunc(serviceType))
+
+            var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
+            if (rule != null)
+            {
+                emitter = CreateServiceEmitterBasedOnFactoryRule(rule.Factory, serviceType, serviceName);
+            }
+            else if (IsFunc(serviceType))
             {
                 emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, false);
             }
@@ -1153,7 +1189,7 @@ namespace LightInject
             else if (IsFuncWithStringArgument(serviceType))
             {
                 emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, true);
-            }
+            }            
             else if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
             {
                 emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
@@ -1166,6 +1202,12 @@ namespace LightInject
             UpdateServiceEmitter(serviceType, serviceName, emitter);
             
             return emitter;
+        }
+
+        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnFactoryRule(Delegate factoryDelegate, Type serviceType, string serviceName)
+        {            
+            int serviceRequestIndex = constants.Add(new ServiceRequest(serviceType, serviceName, this));
+            return dmi => EmitNewInstanceUsingRuleFactoryDelegate(factoryDelegate, serviceRequestIndex, dmi);
         }
 
         private Action<DynamicMethodInfo> CreateEnumerableServiceEmitter(Type serviceType)
@@ -1396,7 +1438,7 @@ namespace LightInject
          
         private bool ServiceRegistryIsEmpty()
         {
-            return emitters.Count == 0 && openGenericEmitters.Count == 0;
+            return emitters.Count == 0 && openGenericEmitters.Count == 0 && factoryRules.Items.Length == 0;
         }
 
         private void RegisterValue(Type serviceType, object value, string serviceName)
@@ -1807,44 +1849,44 @@ namespace LightInject
             }
         }
 
-        private class KeyValueStorage<TKey, TValue>
-        {
-            private readonly object lockObject = new object();
-            private Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
-
-            public bool TryGetValue(TKey key, out TValue value)
+            private class KeyValueStorage<TKey, TValue>
             {
-                return dictionary.TryGetValue(key, out value);                
-            }
+                private readonly object lockObject = new object();
+                private Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
 
-            public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
-            {
-                TValue value;
-                if (!dictionary.TryGetValue(key, out value))
+                public bool TryGetValue(TKey key, out TValue value)
                 {
-                    lock (lockObject)
+                    return dictionary.TryGetValue(key, out value);                
+                }
+
+                public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
+                {
+                    TValue value;
+                    if (!dictionary.TryGetValue(key, out value))
                     {
-                        value = TryAddValue(key, valueFactory);
+                        lock (lockObject)
+                        {
+                            value = TryAddValue(key, valueFactory);
+                        }
                     }
+
+                   return value;
                 }
 
-               return value;
-            }
-
-            private TValue TryAddValue(TKey key, Func<TKey, TValue> valueFactory)
-            {
-                TValue value;
-                if (!dictionary.TryGetValue(key, out value))
+                private TValue TryAddValue(TKey key, Func<TKey, TValue> valueFactory)
                 {
-                    var snapshot = new Dictionary<TKey, TValue>(dictionary);
-                    value = valueFactory(key);
-                    snapshot.Add(key, value);
-                    dictionary = snapshot;
-                }
+                    TValue value;
+                    if (!dictionary.TryGetValue(key, out value))
+                    {
+                        var snapshot = new Dictionary<TKey, TValue>(dictionary);
+                        value = valueFactory(key);
+                        snapshot.Add(key, value);
+                        dictionary = snapshot;
+                    }
 
-                return value;
+                    return value;
+                }
             }
-        }
 
         private class DynamicMethodInfo
         {
@@ -2017,6 +2059,40 @@ namespace LightInject
             }
         }        
 #endif
+        
+    /// <summary>
+    /// Contains information about a service request that originates from a rule based service registration.
+    /// </summary>    
+    internal class ServiceRequest
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceRequest"/> class.
+        /// </summary>
+        /// <param name="serviceType">The <see cref="Type"/> of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with this <see cref="ServiceRequest"/>.</param>
+        public ServiceRequest(Type serviceType, string serviceName, IServiceFactory serviceFactory)
+        {
+            ServiceType = serviceType;
+            ServiceName = serviceName;
+            ServiceFactory = serviceFactory;
+        }
+
+        /// <summary>
+        /// Gets the service type.
+        /// </summary>
+        public Type ServiceType { get; private set; }
+
+        /// <summary>
+        /// Gets the service name.
+        /// </summary>
+        public string ServiceName { get; private set; }
+
+        /// <summary>
+        /// Gets the <see cref="IServiceFactory"/> that is associated with this <see cref="ServiceRequest"/>.
+        /// </summary>
+        public IServiceFactory ServiceFactory { get; private set; } 
+    }
 
     /// <summary>
     /// Base class for concrete registrations within the service container.
@@ -2039,6 +2115,15 @@ namespace LightInject
         public LambdaExpression FactoryExpression { get; set; }
     }
     
+    internal class FactoryRule
+    {
+        public Func<Type, string, bool> CanCreateInstance { get; internal set; }
+
+        public Func<ServiceRequest, object> Factory { get; internal set; }
+
+        public ILifetime LifeTime { get; set; }        
+    }
+
     /// <summary>
     /// Contains information about a registered decorator.
     /// </summary>
@@ -2149,6 +2234,7 @@ namespace LightInject
         {
             context.Completed += OnContextCompleted;
             var instance = createInstance();
+            
             RegisterForDisposal(context, instance);
             return instance;
         }
@@ -2257,8 +2343,7 @@ namespace LightInject
         {
             this.scopeManager = scopeManager;
             this.parentScope = parentScope;
-            Context = resolutionContext;
-            
+            Context = resolutionContext;            
         }
 
         public ResolutionScope ParentScope
