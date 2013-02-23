@@ -999,7 +999,11 @@ namespace LightInject
         private void UpdateServiceRegistration(ServiceRegistration serviceRegistration)
         {
             var key = Tuple.Create(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
-            availableServices.AddOrUpdate(key, k => serviceRegistration, (k, s) => serviceRegistration);
+            availableServices.AddOrUpdate(key, k => serviceRegistration, (k, s) =>
+                {
+                    Invalidate();
+                    return serviceRegistration;
+                });
         }
 
         private void EmitNewInstance(ServiceRegistration serviceRegistration, DynamicMethodInfo dynamicMethodInfo)
@@ -1358,9 +1362,9 @@ namespace LightInject
                 RegisterOpenGenericService(serviceType, implementingType, lifetime, serviceName);
             }
             else
-            {                
-                var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime };                
-                UpdateServiceEmitter(serviceType, serviceName, GetEmitDelegate(serviceRegistration));    
+            {
+                var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime };
+                UpdateServiceEmitter(serviceType, serviceName, GetEmitDelegate(serviceRegistration));
                 UpdateServiceRegistration(serviceRegistration);
             }
         }
@@ -1370,10 +1374,10 @@ namespace LightInject
             Action<DynamicMethodInfo, Type> emitter = (dmi, closedGenericServiceType) =>
                 { 
                     Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
-                    var serviceInfo = new ServiceRegistration { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, Lifetime = CloneLifeTime(lifetime) };
-                    var closedGenericEmitter = GetEmitDelegate(serviceInfo);
+                    var serviceRegistration = new ServiceRegistration { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, Lifetime = CloneLifeTime(lifetime) };
+                    var closedGenericEmitter = GetEmitDelegate(serviceRegistration);
                     UpdateServiceEmitter(closedGenericServiceType, serviceName, closedGenericEmitter);
-                    UpdateServiceRegistration(serviceInfo);
+                    UpdateServiceRegistration(serviceRegistration);
                     closedGenericEmitter(dmi);
                 };
             GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);            
@@ -2200,7 +2204,7 @@ namespace LightInject
         /// Gets or sets the value that represents the instance of the service.
         /// </summary>
         public object Value { get; set; }
-       
+               
         public override int GetHashCode()
         {
             return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();

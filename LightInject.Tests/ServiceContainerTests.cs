@@ -631,7 +631,7 @@
             Assert.IsFalse(canCreateInstance);
         }      
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void GetInstance_RegisterAfterGetInstance_ReturnsInstanceOfSecondRegistration()
         {
             var container = CreateContainer();
@@ -644,7 +644,7 @@
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
         }
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void GetInstance_RegisterAfterGetInstance_ReturnsDependencyOfSecondRegistration()
         {
             var container = CreateContainer();
@@ -658,7 +658,7 @@
             Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
         }
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void GetInstance_SingletonRegisterAfterInvalidate_ReturnsInstanceOfSecondRegistration()
         {
             var container = CreateContainer();
