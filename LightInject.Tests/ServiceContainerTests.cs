@@ -11,7 +11,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class ServiceContainerTests
+    public class    ServiceContainerTests
     {
         #region Values
 
@@ -631,10 +631,45 @@
             Assert.IsFalse(canCreateInstance);
         }      
 
+        [TestMethod, Ignore]
+        public void GetInstance_RegisterAfterGetInstance_ReturnsInstanceOfSecondRegistration()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.GetInstance<IFoo>();            
+            container.Register<IFoo, AnotherFoo>();
 
+            var instance = container.GetInstance<IFoo>();
+            
+            Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
+        }
 
+        [TestMethod, Ignore]
+        public void GetInstance_RegisterAfterGetInstance_ReturnsDependencyOfSecondRegistration()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IBar, Bar>();
+            container.GetInstance<IFoo>();            
+            container.Register<IBar, AnotherBar>();
 
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
 
+            Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
+        }
+
+        [TestMethod, Ignore]
+        public void GetInstance_SingletonRegisterAfterInvalidate_ReturnsInstanceOfSecondRegistration()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>(new SingletonLifetime());
+            container.GetInstance<IFoo>();
+            container.Register<IFoo, AnotherFoo>(new SingletonLifetime());
+
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
+            
+        }
 
         [TestMethod]
         public void Run()

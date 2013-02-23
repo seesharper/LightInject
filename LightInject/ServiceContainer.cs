@@ -187,6 +187,12 @@ namespace LightInject
         void Register(Func<Type, string, bool> canCreateInstance, Func<ServiceRequest, object> factory, ILifetime lifetime);
 
         /// <summary>
+        /// Registers a service based on a <see cref="ServiceRegistration"/> instance.
+        /// </summary>
+        /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> instance that contains service metadata.</param>
+        void Register(ServiceRegistration serviceRegistration);
+
+        /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>        
@@ -244,6 +250,14 @@ namespace LightInject
         void Decorate(Type serviceType, Type decoratorType);
 
         void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);
+        
+        void Remove(ServiceRegistration serviceRegistration);
+ 
+        /// <summary>
+        /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
+        /// registered services.          
+        /// </summary>
+        IEnumerable<ServiceRegistration> AvailableServices { get; }
     }
 
     /// <summary>
@@ -359,11 +373,7 @@ namespace LightInject
     /// </summary>
     internal interface IServiceContainer : IServiceRegistry, IServiceFactory
     {        
-        /// <summary>
-        /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
-        /// registered services.          
-        /// </summary>
-        IEnumerable<ServiceRegistration> AvailableServices { get; }
+       
 
         /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
@@ -382,8 +392,7 @@ namespace LightInject
     internal class ServiceContainer : IServiceContainer
     {        
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";                
-        private static readonly MethodInfo GetCurrentMethod;        
-
+        private static readonly MethodInfo GetCurrentMethod;                  
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> emitters = new ServiceRegistry<Action<DynamicMethodInfo>>();        
         private readonly ServiceRegistry<Action<DynamicMethodInfo, Type>> openGenericEmitters = new ServiceRegistry<Action<DynamicMethodInfo, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
@@ -434,6 +443,13 @@ namespace LightInject
         public IAssemblyLoader AssemblyLoader { get; set; }
 #endif
 
+        public void Remove(ServiceRegistration serviceRegistration)
+        {
+            Invalidate();
+            ServiceRegistration deletedRegistration;
+            availableServices.TryRemove(Tuple.Create(serviceRegistration.ServiceType, serviceRegistration.ServiceName), out deletedRegistration);
+        }
+       
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the registered services.           
         /// </summary>
@@ -482,6 +498,12 @@ namespace LightInject
         public void Register(Func<Type, string, bool> canCreateInstance, Func<ServiceRequest, object> factory, ILifetime lifetime)
         {
             throw new NotImplementedException();
+        }
+
+        public void Register(ServiceRegistration serviceRegistration)
+        {
+            UpdateServiceEmitter(serviceRegistration.ServiceType, serviceRegistration.ServiceName, GetEmitDelegate(serviceRegistration));
+            UpdateServiceRegistration(serviceRegistration);            
         }
 
         /// <summary>
@@ -569,6 +591,13 @@ namespace LightInject
         {
             var decoratorInfo = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
             GetRegisteredDecorators(typeof(TService)).Add(decoratorInfo);
+        }
+
+        public void Invalidate()
+        {           
+            delegates.Clear();
+            namedDelegates.Clear();
+            constants.Clear();
         }
 
         /// <summary>
@@ -1818,6 +1847,14 @@ namespace LightInject
                 return index;
             }
 
+            public void Clear()
+            {
+                lock (lockObject)
+                {
+                    T[] items = new T[0];
+                }
+            }
+
             private int TryAddValue(T value)
             {
                 lock (lockObject)
@@ -1885,6 +1922,14 @@ namespace LightInject
                     }
 
                     return value;
+                }
+
+                public void Clear()
+                {
+                    lock (lockObject)
+                    {
+                        dictionary.Clear();
+                    }
                 }
             }
 
@@ -2173,7 +2218,7 @@ namespace LightInject
             return result;                
         }            
     }
-
+    
     internal class SingletonLifetime : ILifetime, IDisposable
     {
         private readonly object syncRoot = new object();

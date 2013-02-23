@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Silverlight", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Web", "LightInject.Web\LightInject.Web.csproj", "{E389D6A4-EE01-4101-A69F-8EE55E791968}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Integration.Moq", "LightInject.Integration.Moq\LightInject.Integration.Moq.csproj", "{934FFAC6-9422-42FA-AB75-637A93C2A93A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.CommonServiceLocator", "LightInject.CommonServiceLocator\LightInject.CommonServiceLocator.csproj", "{D5E71688-B410-4E83-9167-129E371262C6}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = LightInject.vsmdi
@@ -54,6 +58,14 @@ Global
 		{E389D6A4-EE01-4101-A69F-8EE55E791968}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E389D6A4-EE01-4101-A69F-8EE55E791968}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E389D6A4-EE01-4101-A69F-8EE55E791968}.Release|Any CPU.Build.0 = Release|Any CPU
+		{934FFAC6-9422-42FA-AB75-637A93C2A93A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{934FFAC6-9422-42FA-AB75-637A93C2A93A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{934FFAC6-9422-42FA-AB75-637A93C2A93A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{934FFAC6-9422-42FA-AB75-637A93C2A93A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5E71688-B410-4E83-9167-129E371262C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5E71688-B410-4E83-9167-129E371262C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5E71688-B410-4E83-9167-129E371262C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5E71688-B410-4E83-9167-129E371262C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
