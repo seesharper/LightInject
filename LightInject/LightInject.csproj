@@ -35,7 +35,7 @@
     <DocumentationFile>bin\Release\LightInject.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>LightInject.snk</AssemblyOriginatorKeyFile>

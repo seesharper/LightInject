@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Moq;
+
 namespace LightInject.Integration.Moq
 {
     using System.Collections.Concurrent;

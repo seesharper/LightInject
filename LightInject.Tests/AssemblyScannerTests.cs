@@ -8,6 +8,7 @@
     using LightInject;
     using LightInject.SampleLibrary;
     using LightInject.SampleLibraryWithCompositionRoot;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -21,10 +22,10 @@
             assemblyScanner.Scan(typeof(IFoo).Assembly, containerMock.Object, lifetimeFactory, shouldRegister);
             return containerMock;
         }
-        
+
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresDefaultService()
-        {            
+        {
             this.GetContainerMock(() => null, t => true).Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty, null), Times.Once());
         }
 
@@ -33,7 +34,7 @@
         {
             this.GetContainerMock(() => new PerGraphLifetime(), t => true).Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty, It.IsAny<PerGraphLifetime>()), Times.Once());
         }
-        
+
         [TestMethod]
         public void Scan_SampleAssembly_DoesNotConfigureServiceFilteredByDelegate()
         {
@@ -61,7 +62,7 @@
 
         [TestMethod]
         public void Scan_SampleAssemblyWithCompositionRoot_CallsComposeMethodOnce()
-        {            
+        {
             var assemblyScanner = new AssemblyScanner();
             var containerMock = new Mock<IServiceContainer>();
             SampleCompositionRoot.CallCount = 0;
@@ -84,18 +85,18 @@
             FooWithCompilerGeneratedType foo = new FooWithCompilerGeneratedType();
             var container = new ServiceContainer();
             container.RegisterAssembly(typeof(Foo).Assembly);
-            Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.IsDefined(typeof(CompilerGeneratedAttribute),false)));
+            Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.IsDefined(typeof(CompilerGeneratedAttribute), false)));
         }
 
         [TestMethod]
         public void Scan_HostAssembly_DoesNotConfigureInternalServices()
         {
             var container = new ServiceContainer();
-            container.RegisterAssembly(typeof(ServiceContainer).Assembly);            
+            container.RegisterAssembly(typeof(ServiceContainer).Assembly);
             Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject"));
         }
 
-        [TestMethod]        
+        [TestMethod]
         public void GetInstance_NoServices_CallsAssemblyScannerOnFirstRequest()
         {
             var scannerMock = new Mock<IAssemblyScanner>();
@@ -107,13 +108,13 @@
             }
             catch
             {
-                
+
             }
 
-            finally 
+            finally
             {
-                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type,bool>>()), Times.Once());                     
-            }                             
+                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, bool>>()), Times.Once());
+            }
         }
 
         [TestMethod]
@@ -179,7 +180,7 @@
             var scannerMock = new Mock<IAssemblyScanner>();
             var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
-            serviceContainer.RegisterAssembly(typeof(IFoo).Assembly,() => new SingletonLifetime(), t => true);
+            serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new SingletonLifetime(), t => true);
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, bool>>()), Times.Once());
         }
     }

@@ -33,7 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>LightInject.snk</AssemblyOriginatorKeyFile>
@@ -72,7 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
-      <Project>{65FF0CEB-76B4-44FD-898A-00C32C21738C}</Project>
+      <Project>{65ff0ceb-76b4-44fd-898a-00c32c21738c}</Project>
       <Name>LightInject.SampleLibraryWithCompositionRoot</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
