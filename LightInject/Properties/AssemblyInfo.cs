@@ -45,5 +45,5 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.SampleLibrary")]
 [assembly: InternalsVisibleTo("LightInject.Web")]
 [assembly: InternalsVisibleTo("SampleLibraryWithCompositionRoot")]
-[assembly: InternalsVisibleTo("LightInject.Integration.Moq")]
+[assembly: InternalsVisibleTo("LightInject.Mocking")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
