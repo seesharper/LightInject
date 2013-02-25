@@ -8,7 +8,7 @@
     /// <summary>
     /// Extends the <see cref="IServiceRegistry"/> interface.
     /// </summary>
-    internal static class ServiceRegistryExtensions
+    internal static class MockingExtensions
     {
         private static readonly ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration> MockedServices
             = new ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration>();
@@ -25,25 +25,21 @@
         /// <param name="serviceName">The name of the service to mock.</param>
         public static void StartMocking<TService>(this IServiceRegistry serviceRegistry, Func<TService> mockFactory, string serviceName) where TService : class
         {
-            var key = Tuple.Create(serviceRegistry, typeof(TService), serviceName);
+            Tuple<IServiceRegistry, Type, string> key = CreateServiceKey<TService>(serviceRegistry, serviceName);
             ILifetime lifeTime = null;
-            var serviceRegistration = serviceRegistry.AvailableServices.FirstOrDefault(sr => sr.ServiceType == typeof(TService) && sr.ServiceName == serviceName);
+            var serviceRegistration = GetExistingServiceRegistration<TService>(serviceRegistry, serviceName);
+            
             if (serviceRegistration != null)
             {
                 MockedServices.TryAdd(key, serviceRegistration);
-                if (serviceRegistration.Lifetime != null)
-                {
-                    lifeTime = (ILifetime)Activator.CreateInstance(serviceRegistration.Lifetime.GetType());
-                }
+                lifeTime = CreateLifeTimeBasedOnExistingServiceRegistration(serviceRegistration);
             }
 
-            var mockServiceRegistration = new ServiceRegistration { ServiceType = typeof(TService), ServiceName = serviceName, Lifetime = lifeTime };
-            Expression<Func<IServiceFactory, TService>> factoryExpression = factory => mockFactory();
-            mockServiceRegistration.FactoryExpression = factoryExpression;
+            var mockServiceRegistration = CreateMockServiceRegistration(mockFactory, serviceName, lifeTime);
             serviceRegistry.Register(mockServiceRegistration);
             ServicesMocks.TryAdd(key, mockServiceRegistration);
         }
-
+       
         /// <summary>
         /// Allows a named service to be mocked using the given <paramref name="mockFactory"/>.
         /// </summary>
@@ -84,6 +80,36 @@
         public static void EndMocking<TService>(this IServiceRegistry serviceRegistry)
         {
             EndMocking<TService>(serviceRegistry, string.Empty);
-        }     
+        }
+
+        private static ServiceRegistration CreateMockServiceRegistration<TService>(Func<TService> mockFactory, string serviceName, ILifetime lifeTime)
+           where TService : class
+        {
+            var mockServiceRegistration = new ServiceRegistration { ServiceType = typeof(TService), ServiceName = serviceName, Lifetime = lifeTime };
+            Expression<Func<IServiceFactory, TService>> factoryExpression = factory => mockFactory();
+            mockServiceRegistration.FactoryExpression = factoryExpression;
+            return mockServiceRegistration;
+        }
+
+        private static Tuple<IServiceRegistry, Type, string> CreateServiceKey<TService>(IServiceRegistry serviceRegistry, string serviceName) where TService : class
+        {
+            return Tuple.Create(serviceRegistry, typeof(TService), serviceName);
+        }
+
+        private static ILifetime CreateLifeTimeBasedOnExistingServiceRegistration(ServiceRegistration serviceRegistration)
+        {
+            ILifetime lifeTime = null;
+            if (serviceRegistration.Lifetime != null)
+            {
+                lifeTime = (ILifetime)Activator.CreateInstance(serviceRegistration.Lifetime.GetType());
+            }
+
+            return lifeTime;
+        }
+
+        private static ServiceRegistration GetExistingServiceRegistration<TService>(IServiceRegistry serviceRegistry, string serviceName) where TService : class
+        {
+            return serviceRegistry.AvailableServices.FirstOrDefault(sr => sr.ServiceType == typeof(TService) && sr.ServiceName == serviceName);
+        }
     }
 }
