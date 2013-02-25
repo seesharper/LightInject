@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace LightInject.Mocking
+﻿namespace LightInject.Mocking
 {
+    using System;
     using System.Collections.Concurrent;
+    using System.Linq;
     using System.Linq.Expressions;
 
     /// <summary>
@@ -19,9 +16,15 @@ namespace LightInject.Mocking
         private static readonly ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration> ServicesMocks
             = new ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration>();
 
-        public static void StartMocking<TService>(this IServiceRegistry serviceRegistry, string serviceName, Func<TService> mockFactory) where TService : class
+        /// <summary>
+        /// Allows a named service to be mocked using the given <paramref name="mockFactory"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of service to mock.</typeparam>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="mockFactory">The factory delegate that creates the mock instance.</param>
+        /// <param name="serviceName">The name of the service to mock.</param>
+        public static void StartMocking<TService>(this IServiceRegistry serviceRegistry, Func<TService> mockFactory, string serviceName) where TService : class
         {
-
             var key = Tuple.Create(serviceRegistry, typeof(TService), serviceName);
             ILifetime lifeTime = null;
             var serviceRegistration = serviceRegistry.AvailableServices.FirstOrDefault(sr => sr.ServiceType == typeof(TService) && sr.ServiceName == serviceName);
@@ -34,16 +37,30 @@ namespace LightInject.Mocking
                 }
             }
 
-            var mockServiceRegistration = new ServiceRegistration();
-            mockServiceRegistration.ServiceType = typeof(TService);
-            mockServiceRegistration.ServiceName = serviceName;
-            mockServiceRegistration.Lifetime = lifeTime;
+            var mockServiceRegistration = new ServiceRegistration { ServiceType = typeof(TService), ServiceName = serviceName, Lifetime = lifeTime };
             Expression<Func<IServiceFactory, TService>> factoryExpression = factory => mockFactory();
             mockServiceRegistration.FactoryExpression = factoryExpression;
             serviceRegistry.Register(mockServiceRegistration);
             ServicesMocks.TryAdd(key, mockServiceRegistration);
         }
 
+        /// <summary>
+        /// Allows a named service to be mocked using the given <paramref name="mockFactory"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of service to mock.</typeparam>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="mockFactory">The factory delegate that creates the mock instance.</param>        
+        public static void StartMocking<TService>(this IServiceRegistry serviceRegistry, Func<TService> mockFactory) where TService : class
+        {
+            StartMocking(serviceRegistry, mockFactory, string.Empty);
+        }
+
+        /// <summary>
+        /// Ends mocking the <typeparamref name="TService"/> with the given <paramref name="serviceName"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of service for which to end mocking.</typeparam>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="serviceName">The name of the service for which to end mocking.</param>
         public static void EndMocking<TService>(this IServiceRegistry serviceRegistry, string serviceName)
         {
             var key = Tuple.Create(serviceRegistry, typeof(TService), serviceName);
@@ -59,39 +76,14 @@ namespace LightInject.Mocking
             }
         }
 
-
-
-        ///// <summary>
-        ///// Allows a a service to be mocked using the given <paramref name="mockFactory"/>.
-        ///// </summary>
-        ///// <typeparam name="TService">The type of service to mock.</typeparam>
-        ///// <param name="mockFactory">The factory delegate that creates the mock instance.</param>
-        //void StartMocking<TService>(Func<TService> mockFactory);
-
-        ///// <summary>
-        ///// Allows a a service to be mocked using the given <paramref name="mockFactory"/>.
-        ///// </summary>
-        ///// <typeparam name="TService">The type of service to mock.</typeparam>
-        ///// <param name="serviceName">The name of the service to mock.</param>
-        ///// <param name="mockFactory">The factory delegate that creates the mock instance.</param>
-        //void StartMocking<TService>(string serviceName, Func<TService> mockFactory);
-
-        ///// <summary>
-        ///// Stops mocking the <typeparamref name="TService"/> and installs the original <see cref="ServiceRegistration"/>.
-        ///// </summary>
-        ///// <typeparam name="TService">The type of service for which to stop mocking.</typeparam>
-        ///// <param name="serviceName">The name of the service for which to stop mocking.</param>
-        //void StopMocking<TService>(string serviceName);
-
-        ///// <summary>
-        ///// Stops mocking the <typeparamref name="TService"/> and installs the original <see cref="ServiceRegistration"/>.
-        ///// </summary>
-        ///// <typeparam name="TService">The type of service for which to stop mocking.</typeparam>
-        //void StopMocking<TService>();
-
-        ///// <summary>
-        ///// Stops mocking all services and installs the original <see cref="ServiceRegistration"/> for all mocked services.
-        ///// </summary>
-        //void StopMocking();
+        /// <summary>
+        /// Ends mocking the <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of service for which to end mocking.</typeparam>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>        
+        public static void EndMocking<TService>(this IServiceRegistry serviceRegistry)
+        {
+            EndMocking<TService>(serviceRegistry, string.Empty);
+        }     
     }
 }

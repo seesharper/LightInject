@@ -64,6 +64,7 @@
     <Compile Include="ErrorMessages.cs" />
     <Compile Include="ExceptionAssert.cs" />
     <Compile Include="LambdaExpressionParserTests.cs" />
+    <Compile Include="MockingTests.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="PropertyInjectionTests.cs" />
     <Compile Include="ResolutionScopeTests.cs" />
@@ -72,6 +73,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LightInject.Mocking\LightInject.Mocking.csproj">
+      <Project>{3f020ff3-63fb-45f1-ad16-1116d63cc770}</Project>
+      <Name>LightInject.Mocking</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
       <Project>{65ff0ceb-76b4-44fd-898a-00c32c21738c}</Project>
       <Name>LightInject.SampleLibraryWithCompositionRoot</Name>

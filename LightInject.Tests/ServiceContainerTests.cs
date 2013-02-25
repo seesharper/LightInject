@@ -11,7 +11,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class    ServiceContainerTests
+    public class ServiceContainerTests
     {
         #region Values
 
