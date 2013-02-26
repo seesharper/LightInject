@@ -46,7 +46,7 @@
         public void GetInstance_SingletonWithDecorator_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo, Foo>(new SingletonLifetime());
+            container.Register<IFoo, Foo>(new PerContainerLifetime());
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(FooDecorator));

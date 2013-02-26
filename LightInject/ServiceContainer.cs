@@ -1860,7 +1860,7 @@ namespace LightInject
             {
                 lock (lockObject)
                 {
-                    T[] items = new T[0];
+                    var items = new T[0];
                 }
             }
 
@@ -2272,7 +2272,7 @@ namespace LightInject
         }            
     }
     
-    internal class SingletonLifetime : ILifetime, IDisposable
+    internal class PerContainerLifetime : ILifetime, IDisposable
     {
         private readonly object syncRoot = new object();
         private object singleton;
@@ -2305,7 +2305,7 @@ namespace LightInject
         }
     }
 
-    internal class PerGraphLifetime : ILifetime
+    internal class PerScopeLifetime : ILifetime
     {
         private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
        
@@ -2504,8 +2504,8 @@ namespace LightInject
             InternalTypes.Add(typeof(ServiceContainer.PropertyDependecy));
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
             InternalTypes.Add(typeof(Scope));
-            InternalTypes.Add(typeof(SingletonLifetime));
-            InternalTypes.Add(typeof(PerGraphLifetime));            
+            InternalTypes.Add(typeof(PerContainerLifetime));
+            InternalTypes.Add(typeof(PerScopeLifetime));            
             InternalTypes.Add(typeof(ScopeManager));    
             InternalTypes.Add(typeof(ServiceRegistration));
             InternalTypes.Add(typeof(DecoratorRegistration));

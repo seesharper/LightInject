@@ -14,7 +14,7 @@
         {
             var container = CreateContainer();
             var disposableMock = new Mock<IDisposable>();
-            container.Register<IDisposable>(factory => disposableMock.Object, new PerGraphLifetime());
+            container.Register<IDisposable>(factory => disposableMock.Object, new PerScopeLifetime());
             using (container.BeginScope())
             {
                 var instance = container.GetInstance<IDisposable>();
