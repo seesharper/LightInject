@@ -1125,18 +1125,7 @@ namespace LightInject
             MethodInfo invokeMethod = funcType.GetMethod("Invoke");
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
-
-        private void EmitNewInstanceUsingRuleFactoryDelegate(Delegate factoryDelegate, int serviceRequestIndex, DynamicMethodInfo dynamicMethodInfo)
-        {
-            var factoryDelegateIndex = constants.Add(factoryDelegate);                        
-            Type funcType = factoryDelegate.GetType();
-            EmitLoadConstant(dynamicMethodInfo, factoryDelegateIndex, funcType);
-            EmitLoadConstant(dynamicMethodInfo, serviceRequestIndex, typeof(ServiceRequest));
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            MethodInfo invokeMethod = funcType.GetMethod("Invoke");
-            generator.Emit(OpCodes.Callvirt, invokeMethod);
-        }
-
+      
         private void EmitConstructorDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo, Action decoratorTargetEmitter)
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
@@ -1212,11 +1201,7 @@ namespace LightInject
             var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
             if (rule != null)
             {
-                //if (rule.LifeTime != null)
-                //{
-                //    emitter = EmitLifetime()
-                //}
-                emitter = CreateServiceEmitterBasedOnFactoryRule(rule.Factory, serviceType, serviceName);
+                emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
             }
             else if (IsFunc(serviceType))
             {
@@ -1244,12 +1229,21 @@ namespace LightInject
             return emitter;
         }
 
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnFactoryRule(Delegate factoryDelegate, Type serviceType, string serviceName)
-        {            
-            int serviceRequestIndex = constants.Add(new ServiceRequest(serviceType, serviceName, this));
-            return dmi => EmitNewInstanceUsingRuleFactoryDelegate(factoryDelegate, serviceRequestIndex, dmi);
+        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
+        {
+            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = rule.LifeTime };
+            Expression<Func<IServiceFactory, object>> factoryExpression = 
+                serviceFactory => rule.Factory(new ServiceRequest(serviceType, serviceName, this));
+            serviceRegistration.FactoryExpression = factoryExpression;
+            
+            if (rule.LifeTime != null)
+            {
+                return dynamicMethodInfo => EmitLifetime(serviceRegistration, dmi => EmitNewInstance(serviceRegistration, dmi), dynamicMethodInfo);
+            }
+            
+            return dynamicMethodInfo => EmitNewInstance(serviceRegistration, dynamicMethodInfo);
         }
-
+        
         private Action<DynamicMethodInfo> CreateEnumerableServiceEmitter(Type serviceType)
         {
             Type actualServiceType = serviceType.GetGenericArguments()[0];
