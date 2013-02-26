@@ -10,7 +10,7 @@
     public class DisposableTests
     {
         [TestMethod]
-        public void Dispose_ServiceWithPerGraphLifetime_IsDisposed()
+        public void Dispose_ServiceWithPerScopeLifetime_IsDisposed()
         {
             var container = CreateContainer();
             var disposableMock = new Mock<IDisposable>();

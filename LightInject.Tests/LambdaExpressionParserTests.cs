@@ -11,77 +11,77 @@
     public class LambdaExpressionParserTests
     {
         [TestMethod]
-        public void CreateServiceInfo_NewOperatorInConstructor_ReturnsServiceInfo()
+        public void CreateConstructionInfo_NewOperatorInConstructor_ReturnsConstructionInfo()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithDependency(new Bar());
-            var serviceInfo = parser.Parse(e);
-            Assert.AreEqual(typeof(FooWithDependency), serviceInfo.ImplementingType);
+            var ConstructionInfo = parser.Parse(e);
+            Assert.AreEqual(typeof(FooWithDependency), ConstructionInfo.ImplementingType);
         }
                 
         [TestMethod]
-        public void CreateServiceInfo_GetInstanceInConstructor_ReturnsServiceInfoWithServiceType()
+        public void CreateConstructionInfo_GetInstanceInConstructor_ReturnsConstructionInfoWithServiceType()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithDependency(f.GetInstance<IBar>());
-            var serviceInfo = parser.Parse(e);
-            Assert.IsTrue(serviceInfo.ConstructorDependencies[0].ServiceType == typeof(IBar));            
+            var ConstructionInfo = parser.Parse(e);
+            Assert.IsTrue(ConstructionInfo.ConstructorDependencies[0].ServiceType == typeof(IBar));            
         }
 
         [TestMethod]
-        public void CreateServiceInfo_NamedGetInstanceInConstructor_ReturnsServiceInfoWithServiceName()
+        public void CreateConstructionInfo_NamedGetInstanceInConstructor_ReturnsConstructionInfoWithServiceName()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithDependency(f.GetInstance<IBar>("SomeBar"));
-            var serviceInfo = parser.Parse(e);
-            Assert.IsTrue(serviceInfo.ConstructorDependencies[0].ServiceType == typeof(IBar));
-            Assert.IsTrue(serviceInfo.ConstructorDependencies[0].ServiceName == "SomeBar");
+            var ConstructionInfo = parser.Parse(e);
+            Assert.IsTrue(ConstructionInfo.ConstructorDependencies[0].ServiceType == typeof(IBar));
+            Assert.IsTrue(ConstructionInfo.ConstructorDependencies[0].ServiceName == "SomeBar");
         }
 
         [TestMethod]
-        public void CreateServiceInfo_GetInstanceInObjectInitializer_ReturnsServiceInfoWithServiceType()
+        public void CreateConstructionInfo_GetInstanceInObjectInitializer_ReturnsConstructionInfoWithServiceType()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithProperyDependency { Bar = f.GetInstance<IBar>() };
-            var serviceInfo = parser.Parse(e);
-            Assert.IsTrue(serviceInfo.PropertyDependencies[0].ServiceType == typeof(IBar));            
+            var ConstructionInfo = parser.Parse(e);
+            Assert.IsTrue(ConstructionInfo.PropertyDependencies[0].ServiceType == typeof(IBar));            
         }
 
         [TestMethod]
-        public void CreateServiceInfo_NamedGetInstanceInObjectInitializer_ReturnsServiceInfoWithServiceName()
+        public void CreateConstructionInfo_NamedGetInstanceInObjectInitializer_ReturnsConstructionInfoWithServiceName()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithProperyDependency { Bar = f.GetInstance<IBar>("SomeBar") };
-            var serviceInfo = parser.Parse(e);
-            Assert.IsTrue(serviceInfo.PropertyDependencies[0].ServiceType == typeof(IBar));
-            Assert.IsTrue(serviceInfo.PropertyDependencies[0].ServiceName == "SomeBar");
+            var ConstructionInfo = parser.Parse(e);
+            Assert.IsTrue(ConstructionInfo.PropertyDependencies[0].ServiceType == typeof(IBar));
+            Assert.IsTrue(ConstructionInfo.PropertyDependencies[0].ServiceName == "SomeBar");
         }
 
         [TestMethod]
-        public void CreateServiceInfo_ExternalMethodCallInObjectInitializer_ReturnsDependencyAsExpression()
+        public void CreateConstructionInfo_ExternalMethodCallInObjectInitializer_ReturnsDependencyAsExpression()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithProperyDependency { Bar = this.GetInstance() };
-            var serviceInfo = parser.Parse(e);
-            Assert.IsTrue(serviceInfo.PropertyDependencies[0].FactoryExpression != null);
+            var ConstructionInfo = parser.Parse(e);
+            Assert.IsTrue(ConstructionInfo.PropertyDependencies[0].FactoryExpression != null);
         }
        
         [TestMethod]
-        public void CreateServiceInfo_GetAllInstancesInObjectInitializer_ReturnsServiceInfoWithServiceType()
+        public void CreateConstructionInfo_GetAllInstancesInObjectInitializer_ReturnsConstructionInfoWithServiceType()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithEnumerablePropertyDependency { Bars = f.GetAllInstances<IBar>() };
-            var serviceInfo = parser.Parse(e);
-            Assert.IsTrue(serviceInfo.PropertyDependencies[0].ServiceType == typeof(IEnumerable<IBar>));
+            var ConstructionInfo = parser.Parse(e);
+            Assert.IsTrue(ConstructionInfo.PropertyDependencies[0].ServiceType == typeof(IEnumerable<IBar>));
         }
 
         [TestMethod]
-        public void CreateServiceInfo_GetAllInstancesInConstructor_ReturnsServiceInfoWithServiceType()
+        public void CreateConstructionInfo_GetAllInstancesInConstructor_ReturnsConstructionInfoWithServiceType()
         {
             var parser = new ServiceContainer.LambdaExpressionParser();
             Expression<Func<IServiceFactory, IFoo>> e = f => new FooWithEnumerableDependency(f.GetAllInstances<IBar>());
-            var serviceInfo = parser.Parse(e);
-            Assert.IsTrue(serviceInfo.ConstructorDependencies[0].ServiceType == typeof(IEnumerable<IBar>));
+            var ConstructionInfo = parser.Parse(e);
+            Assert.IsTrue(ConstructionInfo.ConstructorDependencies[0].ServiceType == typeof(IEnumerable<IBar>));
         }
                 
         private IBar GetInstance()

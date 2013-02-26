@@ -382,6 +382,10 @@ namespace LightInject
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         bool CanGetInstance(Type serviceType, string serviceName);
 
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns><see cref="Scope"/></returns>
         Scope BeginScope();
     }
 
@@ -390,10 +394,7 @@ namespace LightInject
     /// </summary>
     internal class ServiceContainer : IServiceContainer
     {        
-        private const string UnresolvedDependencyError = "Unresolved dependency {0}";                        
-        private static readonly MethodInfo GetCurrentScopeManagerMethod;
-        private static readonly MethodInfo GetCurrentScopeMethod;
-
+        private const string UnresolvedDependencyError = "Unresolved dependency {0}";                                        
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> emitters = new ServiceRegistry<Action<DynamicMethodInfo>>();        
         private readonly ServiceRegistry<Action<DynamicMethodInfo, Type>> openGenericEmitters = new ServiceRegistry<Action<DynamicMethodInfo, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
@@ -410,13 +411,7 @@ namespace LightInject
         private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
         private bool firstServiceRequest = true;
-               
-        static ServiceContainer()
-        {            
-            GetCurrentScopeManagerMethod = typeof(ThreadLocal<ScopeManager>).GetProperty("Value").GetGetMethod();
-            GetCurrentScopeMethod = typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod();
-        }
-
+                       
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
@@ -499,9 +494,9 @@ namespace LightInject
             factoryRules.Add(new FactoryRule { CanCreateInstance = servicePredicate, Factory = factory });
         }
 
-        public void Register(Func<Type, string, bool> canCreateInstance, Func<ServiceRequest, object> factory, ILifetime lifetime)
+        public void Register(Func<Type, string, bool> servicePredicate, Func<ServiceRequest, object> factory, ILifetime lifetime)
         {
-            throw new NotImplementedException();
+            factoryRules.Add(new FactoryRule { CanCreateInstance = servicePredicate, Factory = factory, LifeTime = lifetime });
         }
 
         public void Register(ServiceRegistration serviceRegistration)
@@ -1003,11 +998,15 @@ namespace LightInject
         private void UpdateServiceRegistration(ServiceRegistration serviceRegistration)
         {
             var key = Tuple.Create(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
-            availableServices.AddOrUpdate(key, k => serviceRegistration, (k, s) =>
-                {
-                    Invalidate();
+            var sr = serviceRegistration;
+            availableServices.AddOrUpdate(
+                key,
+                k => sr,
+                (k, s) =>
+                    {
+                        Invalidate();
                     return serviceRegistration;
-                });
+                });            
         }
 
         private void EmitNewInstance(ServiceRegistration serviceRegistration, DynamicMethodInfo dynamicMethodInfo)
@@ -1035,7 +1034,7 @@ namespace LightInject
                     foreach (DecoratorRegistration openGenericDecorator in openGenericDecorators)
                     {
                         var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(serviceType.GetGenericArguments());
-                        var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, CanDecorate = openGenericDecorator.CanDecorate};                        
+                        var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, CanDecorate = openGenericDecorator.CanDecorate };                        
                         registeredDecorators.Add(decoratorInfo);
                     }
                 }
@@ -1213,6 +1212,10 @@ namespace LightInject
             var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
             if (rule != null)
             {
+                //if (rule.LifeTime != null)
+                //{
+                //    emitter = EmitLifetime()
+                //}
                 emitter = CreateServiceEmitterBasedOnFactoryRule(rule.Factory, serviceType, serviceName);
             }
             else if (IsFunc(serviceType))
@@ -1274,30 +1277,18 @@ namespace LightInject
                 GetRegisteredEmitMethod(actualServiceType, openGenericEmitterEntry);
             }
         }
-
+         
         private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
         {
             var actualServiceType = serviceType.GetGenericArguments().Last();
-            var methodInfo = typeof(ServiceContainer).GetMethod("CreateFuncGetInstanceDelegate", BindingFlags.Instance | BindingFlags.NonPublic);
-            var del = methodInfo.MakeGenericMethod(actualServiceType).Invoke(this, new object[] { namedService });
-            var constantIndex = constants.Add(del);
+
+            Delegate getInstanceDelegate = namedService ? ReflectionHelper.CreateGetNamedInstanceDelegate(actualServiceType, this) 
+                                               : ReflectionHelper.CreateGetInstanceDelegate(actualServiceType, this);
+            
+            var constantIndex = constants.Add(getInstanceDelegate);
             return dmi => EmitLoadConstant(dmi, constantIndex, serviceType);
         }
-
-        private Delegate CreateFuncGetInstanceDelegate<TServiceType>(bool namedService)
-        {
-            if (namedService)
-            {
-                Func<string, TServiceType> func = GetInstance<TServiceType>;
-                return func;
-            }
-            else
-            {
-                Func<TServiceType> func = GetInstance<TServiceType>;
-                return func;
-            }
-        }
-        
+         
         private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnClosedGenericServiceRequest(Type closedGenericServiceType, string serviceName)
         {
             Type openGenericServiceType = closedGenericServiceType.GetGenericTypeDefinition();
@@ -1403,12 +1394,12 @@ namespace LightInject
             int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter);
             int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
             int scopeManagerIndex = CreateScopeManagerIndex();
-            var getInstanceMethod = typeof(ILifetime).GetMethod("GetInstance");
+            var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
             EmitLoadConstant(dynamicMethodInfo, lifetimeIndex, typeof(ILifetime));
             EmitLoadConstant(dynamicMethodInfo, instanceDelegateIndex, typeof(Func<object>));            
             EmitLoadConstant(dynamicMethodInfo, scopeManagerIndex, typeof(ThreadLocal<ScopeManager>));
-            generator.Emit(OpCodes.Callvirt, GetCurrentScopeManagerMethod);
-            generator.Emit(OpCodes.Callvirt, GetCurrentScopeMethod);
+            generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
+            generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
             generator.Emit(OpCodes.Callvirt, getInstanceMethod);
             generator.Emit(serviceRegistration.ServiceType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
         }
@@ -1488,9 +1479,9 @@ namespace LightInject
         private void RegisterServiceFromLambdaExpression<TService>(
             Expression<Func<IServiceFactory, TService>> factory, ILifetime lifetime, string serviceName)
         {            
-            var serviceInfo = new ServiceRegistration { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, Lifetime = lifetime };                        
-            UpdateServiceEmitter(typeof(TService), serviceName, GetEmitDelegate(serviceInfo));
-            UpdateServiceRegistration(serviceInfo);
+            var serviceRegistration = new ServiceRegistration { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, Lifetime = lifetime };                        
+            UpdateServiceEmitter(typeof(TService), serviceName, GetEmitDelegate(serviceRegistration));
+            UpdateServiceRegistration(serviceRegistration);
         }
                
         /// <summary>
@@ -1509,54 +1500,54 @@ namespace LightInject
                 
                 if (!lambdaExpressionValidator.CanParse(lambdaExpression))
                 {
-                    return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);
+                    return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
                 }
                 
                 switch (lambdaExpression.Body.NodeType)
                 {
                     case ExpressionType.New:
-                        return CreateServiceInfoBasedOnNewExpression((NewExpression)lambdaExpression.Body);
+                        return CreateConstructionInfoBasedOnNewExpression((NewExpression)lambdaExpression.Body);
                     case ExpressionType.MemberInit:
-                        return CreateServiceInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                                      
+                        return CreateConstructionInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                                      
                     default:
-                        return CreateServiceInfoBasedOnLambdaExpression(lambdaExpression);
+                        return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
                 }                
             }
 
-            private static ConstructionInfo CreateServiceInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
+            private static ConstructionInfo CreateConstructionInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
             {
                 return new ConstructionInfo { FactoryDelegate = lambdaExpression.Compile() };
             }
 
-            private static ConstructionInfo CreateServiceInfoBasedOnNewExpression(NewExpression newExpression)
+            private static ConstructionInfo CreateConstructionInfoBasedOnNewExpression(NewExpression newExpression)
             {
-                var serviceInfo = CreateServiceInfo(newExpression);
+                var constructionInfo = CreateConstructionInfo(newExpression);
                 ParameterInfo[] parameters = newExpression.Constructor.GetParameters();
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     ConstructorDependency constructorDependency = CreateConstructorDependency(parameters[i]);
                     ApplyDependencyDetails(newExpression.Arguments[i], constructorDependency);
-                    serviceInfo.ConstructorDependencies.Add(constructorDependency);
+                    constructionInfo.ConstructorDependencies.Add(constructorDependency);
                 }
 
-                return serviceInfo;
+                return constructionInfo;
             }
 
-            private static ConstructionInfo CreateServiceInfo(NewExpression newExpression)
+            private static ConstructionInfo CreateConstructionInfo(NewExpression newExpression)
             {
-                var serviceInfo = new ConstructionInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
-                return serviceInfo;
+                var constructionInfo = new ConstructionInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
+                return constructionInfo;
             }
 
-            private static ConstructionInfo CreateServiceInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
+            private static ConstructionInfo CreateConstructionInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
             {
-                var serviceInfo = CreateServiceInfoBasedOnNewExpression(memberInitExpression.NewExpression);
+                var constructionInfo = CreateConstructionInfoBasedOnNewExpression(memberInitExpression.NewExpression);
                 foreach (MemberBinding memberBinding in memberInitExpression.Bindings)
                 {
-                    HandleMemberAssignment((MemberAssignment)memberBinding, serviceInfo);
+                    HandleMemberAssignment((MemberAssignment)memberBinding, constructionInfo);
                 }
 
-                return serviceInfo;
+                return constructionInfo;
             }
            
             private static void HandleMemberAssignment(MemberAssignment memberAssignment, ConstructionInfo constructionInfo)
@@ -1832,6 +1823,76 @@ namespace LightInject
             }
         }
 
+        private static class ReflectionHelper
+        {
+            private static readonly Lazy<MethodInfo> LazyLifetimeGetInstanceMethod;
+            private static readonly Lazy<MethodInfo> LazyServiceFactoryGetInstanceMethod;
+            private static readonly Lazy<MethodInfo> LazyServiceFactoryGetNamedInstanceMethod;
+            private static readonly Lazy<MethodInfo[]> LazyGetInstanceMethods;
+            private static readonly Lazy<MethodInfo> LazyGetCurrentScopeMethod;
+            private static readonly Lazy<MethodInfo> LazyGetCurrentScopeManagerMethod;
+            
+            static ReflectionHelper()
+            {
+                LazyLifetimeGetInstanceMethod = new Lazy<MethodInfo>(() => typeof(ILifetime).GetMethod("GetInstance"));
+                LazyGetInstanceMethods = new Lazy<MethodInfo[]>(
+                    () => typeof(IServiceFactory).GetMethods().Where(IsGenericGetInstanceMethod).ToArray());
+                LazyServiceFactoryGetInstanceMethod = new Lazy<MethodInfo>(
+                    () => LazyGetInstanceMethods.Value.FirstOrDefault(m => !m.GetParameters().Any()));
+                LazyServiceFactoryGetNamedInstanceMethod = new Lazy<MethodInfo>(
+                    () => LazyGetInstanceMethods.Value.FirstOrDefault(m => m.GetParameters().Any()));
+                LazyGetCurrentScopeMethod = new Lazy<MethodInfo>(
+                    () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
+                LazyGetCurrentScopeManagerMethod = new Lazy<MethodInfo>(
+                    () => typeof(ThreadLocal<ScopeManager>).GetProperty("Value").GetGetMethod());                                
+            }
+
+            public static MethodInfo LifetimeGetInstanceMethod
+            {
+                get
+                {
+                    return LazyLifetimeGetInstanceMethod.Value;
+                }
+            }
+
+            public static MethodInfo GetCurrentScopeMethod
+            {
+                get
+                {
+                    return LazyGetCurrentScopeMethod.Value;
+                }
+            }
+
+            public static MethodInfo GetCurrentScopeManagerMethod
+            {
+                get
+                {
+                    return LazyGetCurrentScopeManagerMethod.Value;
+                }
+            }
+
+            public static Delegate CreateGetInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
+            {
+                Type delegateType = typeof(Func<>).MakeGenericType(serviceType);
+                MethodInfo openGenericGetInstanceMethod = LazyServiceFactoryGetInstanceMethod.Value;
+                MethodInfo closedGenericGetInstanceMethod = openGenericGetInstanceMethod.MakeGenericMethod(serviceType);
+                return Delegate.CreateDelegate(delegateType, serviceFactory, closedGenericGetInstanceMethod);
+            }
+
+            public static Delegate CreateGetNamedInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
+            {
+                Type delegateType = typeof(Func<,>).MakeGenericType(typeof(string), serviceType);
+                MethodInfo openGenericGetNamedInstanceMethod = LazyServiceFactoryGetNamedInstanceMethod.Value;
+                MethodInfo closedGenericGetNamedInstanceMethod = openGenericGetNamedInstanceMethod.MakeGenericMethod(serviceType);
+                return Delegate.CreateDelegate(delegateType, serviceFactory, closedGenericGetNamedInstanceMethod);
+            }
+
+            private static bool IsGenericGetInstanceMethod(MethodInfo m)
+            {
+                return m.Name == "GetInstance" && m.IsGenericMethodDefinition;
+            }
+        }
+
         private class Storage<T>
         {
             private readonly object lockObject = new object();
@@ -1860,7 +1921,7 @@ namespace LightInject
             {
                 lock (lockObject)
                 {
-                    var items = new T[0];
+                    items = new T[0];
                 }
             }
 
@@ -2208,7 +2269,7 @@ namespace LightInject
         public Type ImplementingType { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="LambdaExpression"/> used to create an instance of the decorator.
+        /// Gets or sets the <see cref="LambdaExpression"/> used to create a service instance.
         /// </summary>
         public LambdaExpression FactoryExpression { get; set; }
     }

@@ -53,7 +53,7 @@
         public void GetInstance_OpenGenericDependencyWithRequestLifeCycle_InjectsSameDependenciesForSingleRequest()
         {
             var container = CreateContainer();
-            container.Register(typeof(IBar<>), typeof(Bar<>), new PerGraphLifetime());
+            container.Register(typeof(IBar<>), typeof(Bar<>), new PerScopeLifetime());
             container.Register(typeof(IFoo<>), typeof(FooWithSameOpenGenericDependencyTwice<>));
             using (container.BeginScope())
             {
@@ -77,7 +77,7 @@
         public void GetInstance_DependencyWithRequestLifeCycle_InjectsTransientDependency()
         {
             var container = CreateContainer();
-            container.Register<IBar, Bar>(new PerGraphLifetime());
+            container.Register<IBar, Bar>(new PerScopeLifetime());
             container.Register<IFoo, FooWithDependency>();
             
             FooWithDependency instance1;
@@ -97,7 +97,7 @@
         public void GetInstance_DependencyWithSingletonLifeCycle_InjectsSingleonDependency()
         {
             var container = CreateContainer();
-            container.Register<IBar, Bar>(new SingletonLifetime());
+            container.Register<IBar, Bar>(new PerContainerLifetime());
             container.Register<IFoo, FooWithDependency>();
             var instance1 = (FooWithDependency)container.GetInstance<IFoo>();
             var instance2 = (FooWithDependency)container.GetInstance<IFoo>();
@@ -109,7 +109,7 @@
         {
             var container = CreateContainer();
             Bar.InitializeCount = 0;
-            container.Register<IBar>(c => new Bar(), new SingletonLifetime());            
+            container.Register<IBar>(c => new Bar(), new PerContainerLifetime());            
             container.Register<IFoo>(c => new FooWithDependency(c.GetInstance<IBar>()));
             container.GetInstance<IFoo>();
             container.GetInstance<IFoo>();
@@ -130,7 +130,7 @@
         public void GetInstance_DependencyWithSingletonLifeCycle_InjectsSingletonDependenciesForSingleRequest()
         {
             var container = CreateContainer();
-            container.Register<IBar, Bar>(new SingletonLifetime());
+            container.Register<IBar, Bar>(new PerContainerLifetime());
             container.Register<IFoo, FooWithSameDependencyTwice>();
             var instance = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
             Assert.AreEqual(instance.Bar1, instance.Bar2);
@@ -140,7 +140,7 @@
         public void GetInstance_DependencyWithRequestLifeCycle_InjectsSameDependencyForSingleClass()
         {
             var container = CreateContainer();
-            container.Register<IBar, Bar>(new PerGraphLifetime());
+            container.Register<IBar, Bar>(new PerScopeLifetime());
             container.Register<IFoo, FooWithSameDependencyTwice>();
             using (container.BeginScope())
             {
@@ -155,7 +155,7 @@
         {
             var container = CreateContainer();
             container.Register<IBar, BarWithSampleServiceDependency>();
-            container.Register<ISampleService, SampleService>(new PerGraphLifetime());
+            container.Register<ISampleService, SampleService>(new PerScopeLifetime());
             container.Register<IFoo, FooWithSampleServiceDependency>();
             using (container.BeginScope())
             {
@@ -168,7 +168,7 @@
         public void GetInstance_DependencyWithRequestLifeCycle_InjectsTransientDependenciesForMultipleRequest()
         {
             var container = CreateContainer();
-            container.Register<IBar, Bar>(new PerGraphLifetime());
+            container.Register<IBar, Bar>(new PerScopeLifetime());
             container.Register<IFoo, FooWithSameDependencyTwice>();
             FooWithSameDependencyTwice instance1;
             FooWithSameDependencyTwice instance2;
@@ -218,7 +218,7 @@
         {
             var container = CreateContainer();
             Bar.InitializeCount = 0;
-            container.Register(typeof(IBar), typeof(Bar), new PerGraphLifetime());
+            container.Register(typeof(IBar), typeof(Bar), new PerScopeLifetime());
             container.Register(typeof(IFoo), typeof(FooWithSameDependencyTwice));
             using (container.BeginScope())
             {
@@ -317,7 +317,7 @@
         public void GetInstance_RequestLifeCycle_FirstIEnumerableAndArgumentAreSame()
          {
             var container = CreateContainer();
-            container.Register(typeof(IBar), typeof(Bar), new PerGraphLifetime());
+            container.Register(typeof(IBar), typeof(Bar), new PerScopeLifetime());
             container.Register(typeof(IFoo), typeof(FooWithEnumerableAndRegularDependency));
             using (container.BeginScope())
             {
@@ -330,7 +330,7 @@
         public void GetInstance_SingletonLifeCycle_FirstIEnumerableAndArgumentAreSame()
         {
             var container = CreateContainer();
-            container.Register(typeof(IBar), typeof(Bar), new SingletonLifetime());
+            container.Register(typeof(IBar), typeof(Bar), new PerContainerLifetime());
             container.Register(typeof(IFoo), typeof(FooWithEnumerableAndRegularDependency));
             var instance = (FooWithEnumerableAndRegularDependency)container.GetInstance<IFoo>();
             Assert.AreSame(instance.Bar, instance.Bars.First());
@@ -386,10 +386,10 @@
         }
 
         [TestMethod]
-        public void GetInstance_OpenGenericPerGraphService_ReturnsSameInstance()
+        public void GetInstance_OpenGenericPerScopeService_ReturnsSameInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo<>), typeof(Foo<>), new PerGraphLifetime());
+            container.Register(typeof(IFoo<>), typeof(Foo<>), new PerScopeLifetime());
             using (container.BeginScope())
             {
                 var instance1 = container.GetInstance<IFoo<int>>();
@@ -402,7 +402,7 @@
         public void GetInstance_TransientDependencyWithSingletonDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register<IFoo, Foo>(new SingletonLifetime());
+            container.Register<IFoo, Foo>(new PerContainerLifetime());
             container.Register<IBar, BarWithFooDependency>();
             container.Register<IFoo, FooWithDependency>("FooWithDependency");
             container.GetInstance<IFoo>("FooWithDependency");

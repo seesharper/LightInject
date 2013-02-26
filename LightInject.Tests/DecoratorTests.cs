@@ -189,6 +189,16 @@
             Assert.IsInstanceOfType(instance, typeof(FooDecorator));
         }
 
+        [TestMethod]
+        public void GetInstance_ServicePredicate_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
+            container.Decorate(typeof(IFoo), typeof(FooDecorator));
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+        }
+
         private static FooDecorator GetFooDecorator(IFoo target)
         {
             return new FooDecorator(target);

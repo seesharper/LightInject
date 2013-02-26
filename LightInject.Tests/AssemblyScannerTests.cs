@@ -32,13 +32,13 @@
         [TestMethod]
         public void Scan_SampleAssembly_ConfiguresServiceWithGivenLifeCycleType()
         {
-            this.GetContainerMock(() => new PerGraphLifetime(), t => true).Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty, It.IsAny<PerGraphLifetime>()), Times.Once());
+            this.GetContainerMock(() => new PerScopeLifetime(), t => true).Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty, It.IsAny<PerScopeLifetime>()), Times.Once());
         }
 
         [TestMethod]
         public void Scan_SampleAssembly_DoesNotConfigureServiceFilteredByDelegate()
         {
-            this.GetContainerMock(() => new PerGraphLifetime(), t => t.Name != "Foo").Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty, It.IsAny<PerGraphLifetime>()), Times.Never());
+            this.GetContainerMock(() => new PerScopeLifetime(), t => t.Name != "Foo").Verify(sc => sc.Register(typeof(IFoo), typeof(Foo), string.Empty, It.IsAny<PerScopeLifetime>()), Times.Never());
         }
 
 
@@ -180,7 +180,7 @@
             var scannerMock = new Mock<IAssemblyScanner>();
             var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
-            serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new SingletonLifetime(), t => true);
+            serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), t => true);
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, bool>>()), Times.Once());
         }
     }
