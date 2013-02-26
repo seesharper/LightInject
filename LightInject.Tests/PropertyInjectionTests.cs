@@ -57,11 +57,11 @@
             container.Register<IFoo, FooWithProperyDependency>();            
             FooWithProperyDependency instance1;
             FooWithProperyDependency instance2;
-            using (container.BeginResolutionScope())
+            using (container.BeginScope())
             {
                 instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
             }
-            using (container.BeginResolutionScope())
+            using (container.BeginScope())
             {
                 instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
             }            
@@ -105,7 +105,7 @@
             var container = CreateContainer();
             container.Register<IBar, Bar>(new PerGraphLifetime());
             container.Register<IFoo, FooWithSamePropertyDependencyTwice>();
-            using (container.BeginResolutionScope())
+            using (container.BeginScope())
             {
                 var instance = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
                 Assert.AreEqual(instance.Bar1, instance.Bar2);
@@ -121,11 +121,11 @@
 
             FooWithSamePropertyDependencyTwice instance1;
             FooWithSamePropertyDependencyTwice instance2;
-            using (container.BeginResolutionScope())
+            using (container.BeginScope())
             {
                 instance1 = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
             }
-            using (container.BeginResolutionScope())
+            using (container.BeginScope())
             {
                 instance2 = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
             }            
@@ -198,7 +198,7 @@
             Bar.InitializeCount = 0;
             container.Register(typeof(IBar), typeof(Bar), new PerGraphLifetime());
             container.Register(typeof(IFoo), typeof(FooWithSamePropertyDependencyTwice));
-            using (container.BeginResolutionScope())
+            using (container.BeginScope())
             {
                 container.GetInstance<IFoo>();
                 Assert.AreEqual(1, Bar.InitializeCount);

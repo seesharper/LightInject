@@ -41,13 +41,20 @@ namespace LightInject
     using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
     using System.Text;
-    using System.Text.RegularExpressions;    
+    using System.Text.RegularExpressions;
+    using System.Threading;
 
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
     internal interface IServiceRegistry
     {
+        /// <summary>
+        /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
+        /// registered services.          
+        /// </summary>
+        IEnumerable<ServiceRegistration> AvailableServices { get; }
+        
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -251,13 +258,7 @@ namespace LightInject
 
         void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);
         
-        void Remove(ServiceRegistration serviceRegistration);
- 
-        /// <summary>
-        /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
-        /// registered services.          
-        /// </summary>
-        IEnumerable<ServiceRegistration> AvailableServices { get; }
+        void Remove(ServiceRegistration serviceRegistration);         
     }
 
     /// <summary>
@@ -312,7 +313,7 @@ namespace LightInject
   
     internal interface ILifetime
     {
-        object GetInstance(Func<object> createInstance, ResolutionContext resolutionContext);        
+        object GetInstance(Func<object> createInstance, Scope scope);        
     }
     
     /// <summary>
@@ -372,9 +373,7 @@ namespace LightInject
     /// Represents an inversion of control container.
     /// </summary>
     internal interface IServiceContainer : IServiceRegistry, IServiceFactory
-    {        
-       
-
+    {               
         /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
         /// </summary>
@@ -383,7 +382,7 @@ namespace LightInject
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         bool CanGetInstance(Type serviceType, string serviceName);
 
-        ResolutionScope BeginResolutionScope();
+        Scope BeginScope();
     }
 
     /// <summary>
@@ -391,8 +390,10 @@ namespace LightInject
     /// </summary>
     internal class ServiceContainer : IServiceContainer
     {        
-        private const string UnresolvedDependencyError = "Unresolved dependency {0}";                
-        private static readonly MethodInfo GetCurrentMethod;                  
+        private const string UnresolvedDependencyError = "Unresolved dependency {0}";                        
+        private static readonly MethodInfo GetCurrentScopeManagerMethod;
+        private static readonly MethodInfo GetCurrentScopeMethod;
+
         private readonly ServiceRegistry<Action<DynamicMethodInfo>> emitters = new ServiceRegistry<Action<DynamicMethodInfo>>();        
         private readonly ServiceRegistry<Action<DynamicMethodInfo, Type>> openGenericEmitters = new ServiceRegistry<Action<DynamicMethodInfo, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
@@ -405,12 +406,15 @@ namespace LightInject
             new ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration>();
         
         private readonly ThreadSafeDictionary<Type, List<DecoratorRegistration>> decorators = new ThreadSafeDictionary<Type, List<DecoratorRegistration>>();
-        private readonly ScopeManager scopeManager = new ScopeManager();
+        
+        private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
+
         private bool firstServiceRequest = true;
                
         static ServiceContainer()
         {            
-            GetCurrentMethod = typeof(ScopeManager).GetProperty("Current").GetGetMethod();
+            GetCurrentScopeManagerMethod = typeof(ThreadLocal<ScopeManager>).GetProperty("Value").GetGetMethod();
+            GetCurrentScopeMethod = typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod();
         }
 
         /// <summary>
@@ -443,13 +447,6 @@ namespace LightInject
         public IAssemblyLoader AssemblyLoader { get; set; }
 #endif
 
-        public void Remove(ServiceRegistration serviceRegistration)
-        {
-            Invalidate();
-            ServiceRegistration deletedRegistration;
-            availableServices.TryRemove(Tuple.Create(serviceRegistration.ServiceType, serviceRegistration.ServiceName), out deletedRegistration);
-        }
-       
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the registered services.           
         /// </summary>
@@ -461,6 +458,13 @@ namespace LightInject
             }
         }
 
+        public void Remove(ServiceRegistration serviceRegistration)
+        {
+            Invalidate();
+            ServiceRegistration deletedRegistration;
+            availableServices.TryRemove(Tuple.Create(serviceRegistration.ServiceType, serviceRegistration.ServiceName), out deletedRegistration);
+        }
+             
         /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
         /// </summary>
@@ -472,9 +476,9 @@ namespace LightInject
             return GetEmitMethod(serviceType, serviceName) != null;
         }
 
-        public ResolutionScope BeginResolutionScope()
+        public Scope BeginScope()
         {
-            return scopeManager.BeginScope(ScopeOption.Required);
+            return scopeManagers.Value.BeginScope();
         }
 
         /// <summary>
@@ -1402,15 +1406,16 @@ namespace LightInject
             var getInstanceMethod = typeof(ILifetime).GetMethod("GetInstance");
             EmitLoadConstant(dynamicMethodInfo, lifetimeIndex, typeof(ILifetime));
             EmitLoadConstant(dynamicMethodInfo, instanceDelegateIndex, typeof(Func<object>));            
-            EmitLoadConstant(dynamicMethodInfo, scopeManagerIndex, typeof(ScopeManager));
-            generator.Emit(OpCodes.Callvirt, GetCurrentMethod);
+            EmitLoadConstant(dynamicMethodInfo, scopeManagerIndex, typeof(ThreadLocal<ScopeManager>));
+            generator.Emit(OpCodes.Callvirt, GetCurrentScopeManagerMethod);
+            generator.Emit(OpCodes.Callvirt, GetCurrentScopeMethod);
             generator.Emit(OpCodes.Callvirt, getInstanceMethod);
             generator.Emit(serviceRegistration.ServiceType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
         }
 
         private int CreateScopeManagerIndex()
         {
-            return constants.Add(scopeManager);
+            return constants.Add(scopeManagers);
         }
 
         private int CreateInstanceDelegateIndex(Action<DynamicMethodInfo> instanceEmitter)
@@ -1914,6 +1919,14 @@ namespace LightInject
                    return value;
                 }
 
+                public void Clear()
+                {
+                    lock (lockObject)
+                    {
+                        dictionary.Clear();
+                    }
+                }
+
                 private TValue TryAddValue(TKey key, Func<TKey, TValue> valueFactory)
                 {
                     TValue value;
@@ -1926,15 +1939,7 @@ namespace LightInject
                     }
 
                     return value;
-                }
-
-                public void Clear()
-                {
-                    lock (lockObject)
-                    {
-                        dictionary.Clear();
-                    }
-                }
+                }             
             }
 
         private class DynamicMethodInfo
@@ -1997,6 +2002,50 @@ namespace LightInject
 #endif
 #if SILVERLIGHT
         
+        public class ThreadLocal<T>
+{
+    private readonly Func<T> valueCreator;
+
+    public class Holder
+     {
+         public T Val;
+     }
+
+    [ThreadStatic]
+    private static ConditionalWeakTable<object, Holder> _state;
+
+    public ThreadLocal():this(() => default(T))
+    {
+    }
+
+    public ThreadLocal(Func<T> valueCreator)
+    {
+        this.valueCreator = valueCreator;
+    }
+
+    public T Value
+    {
+        get
+        {
+            Holder value;
+            if (_state == null || _state.TryGetValue(this, out value) == false)
+            {
+                var val = valueCreator();
+                Value = val;
+                return val;
+            }
+            return value.Val;
+        }
+        set
+        {
+            if (_state == null)
+                _state = new ConditionalWeakTable<object, Holder>();
+            var holder = _state.GetOrCreateValue(this);
+            holder.Val = value;
+        }
+    }
+}
+    
         internal class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         {
             private readonly Dictionary<TKey, TValue> dictionary;
@@ -2108,7 +2157,7 @@ namespace LightInject
             }
         }        
 #endif
-        
+
     /// <summary>
     /// Contains information about a service request that originates from a rule based service registration.
     /// </summary>    
@@ -2228,7 +2277,7 @@ namespace LightInject
         private readonly object syncRoot = new object();
         private object singleton;
 
-        public object GetInstance(Func<object> createInstance, ResolutionContext resolutionContext)
+        public object GetInstance(Func<object> createInstance, Scope scope)
         {
             if (singleton != null)
             {
@@ -2258,210 +2307,177 @@ namespace LightInject
 
     internal class PerGraphLifetime : ILifetime
     {
-        private readonly ThreadSafeDictionary<ResolutionContext, object> instances = new ThreadSafeDictionary<ResolutionContext, object>();
+        private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
        
-        public object GetInstance(Func<object> createInstance, ResolutionContext resolutionContext)
+        public object GetInstance(Func<object> createInstance, Scope scope)
         {            
-            if (resolutionContext == null)
+            if (scope == null)
             {
                 return createInstance();
             }
 
-            return instances.GetOrAdd(resolutionContext, s => CreateScopedInstance(s, createInstance));
+            return instances.GetOrAdd(scope, s => CreateScopedInstance(s, createInstance));
         }
 
-        private static void RegisterForDisposal(ResolutionContext context, object instance)
+        private static void RegisterForDisposal(Scope scope, object instance)
         {
             var disposable = instance as IDisposable;
             if (disposable != null)
             {
-                context.RegisterForDisposal(disposable);
+                scope.TrackInstance(disposable);
             }
         }
 
-        private object CreateScopedInstance(ResolutionContext context, Func<object> createInstance)
+        private object CreateScopedInstance(Scope scope, Func<object> createInstance)
         {
-            context.Completed += OnContextCompleted;
+            scope.Completed += OnContextCompleted;
             var instance = createInstance();
             
-            RegisterForDisposal(context, instance);
+            RegisterForDisposal(scope, instance);
             return instance;
         }
        
         private void OnContextCompleted(object sender, EventArgs e)
         {
             object removedInstance;
-            instances.TryRemove((ResolutionContext)sender, out removedInstance);
+            instances.TryRemove((Scope)sender, out removedInstance);
         }      
     }
-
-    internal enum ScopeOption
-    {
-        Required,
-        RequiresNew,
-        Suppress
-    }
-
-    internal class ScopeHolder
-    {
-        internal ResolutionScope Value { get; set; }
-
-        internal bool IsRootScope { get; set; }
-    }
-
-
+    
+    /// <summary>
+    /// Manages a set of <see cref="Scope"/> instances.
+    /// </summary>
     internal class ScopeManager
     {
-        private ResolutionScope currentScope { get; set; }
+        private readonly object syncRoot = new object();
 
+        private Scope currentScope;
 
-        public ResolutionContext Current
+        /// <summary>
+        /// Gets the current <see cref="Scope"/>.
+        /// </summary>
+        public Scope CurrentScope
         {
             get
             {
-                return currentScope.Context;
+                lock (syncRoot)
+                {
+                    return currentScope;
+                }
             }
         }
 
-        public ScopeManager()
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>. 
+        /// </summary>
+        /// <returns>A new <see cref="Scope"/>.</returns>
+        public Scope BeginScope()
         {
-            CreateSuppressScope();
+            lock (syncRoot)
+            {
+                var scope = new Scope(this, currentScope);
+                if (currentScope != null)
+                {
+                    currentScope.ChildScope = scope;
+                }
+
+                currentScope = scope;
+                return scope;
+            }
         }
 
-        public ResolutionScope BeginScope(ScopeOption scopeOption)
-        {                        
-            if (scopeOption == ScopeOption.Suppress)
-            {
-                CreateSuppressScope();
-            }
-
-            if (scopeOption == ScopeOption.Required)
-            {
-                CreateRequiredScope();
-            }
-
-            if (scopeOption == ScopeOption.RequiresNew)
-            {
-                CreateRequiresNewScope();
-            }
-                        
-            return currentScope;
-        }
-
-        private void CreateRequiresNewScope()
-        {            
-            currentScope = new ResolutionScope(this, currentScope, new ResolutionContext());
-        }
-
-        private void CreateRequiredScope()
+        /// <summary>
+        /// Ends the given <paramref name="scope"/> and updates the <see cref="CurrentScope"/> property.
+        /// </summary>
+        /// <param name="scope">The scope that is completed.</param>
+        public void EndScope(Scope scope)
         {
-            if (currentScope.Context == null)
+            lock (syncRoot)
             {
-                CreateRequiresNewScope();
-            }
-            else
-            {
-                currentScope = new ResolutionScope(this, currentScope, currentScope.Context);
-            }
-        }
+                if (scope.ChildScope != null)
+                {
+                    throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
+                }
 
-        private void CreateSuppressScope()
-        {
-            currentScope = new ResolutionScope(this, currentScope, null);
-        }
-
-        public void EndScope(ResolutionScope scope)
-        {
-            if (scope.Context != null)
-            {
-                scope.Context.SetComplete();
-            }
-
-            currentScope = scope.ParentScope;
-        }
-
-    }
-
-    internal class ResolutionScope : IDisposable
-    {
-        private readonly ScopeManager scopeManager;
-
-        private readonly ResolutionScope parentScope;
-
-        public ResolutionScope(ScopeManager scopeManager, ResolutionScope parentScope, ResolutionContext resolutionContext)
-        {
-            this.scopeManager = scopeManager;
-            this.parentScope = parentScope;
-            Context = resolutionContext;            
-        }
-
-        public ResolutionScope ParentScope
-        {
-            get
-            {
-                return parentScope;
-            }
-        }
-
-        public ResolutionContext Context { get; private set; }
-        
-        public void Dispose()
-        {
-            if (parentScope.Context == null)
-            {
-                scopeManager.EndScope(this);
+                currentScope = scope.ParentScope;
+                if (currentScope != null)
+                {
+                    currentScope.ChildScope = null;
+                }
             }
         }
     }
 
     /// <summary>
-    /// Represents a context in which services are resolved.
+    /// Represents a scope 
     /// </summary>
-    internal interface IResolutionContext
-    {
-        /// <summary>
-        /// Fired when the current <see cref="IResolutionContext"/> is completed.
-        /// </summary>
-        event EventHandler<EventArgs> Completed;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        void SetComplete();
-
-        void RegisterForDisposal(IDisposable disposable);
-    }
-
-    internal class ResolutionContext : IResolutionContext
+    internal class Scope : IDisposable
     {
         private readonly IList<IDisposable> disposableObjects = new List<IDisposable>();
-        
+
+        private readonly ScopeManager scopeManager;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Scope"/> class.
+        /// </summary>
+        /// <param name="scopeManager">The <see cref="scopeManager"/> that manages this <see cref="Scope"/>.</param>
+        /// <param name="parentScope">The parent <see cref="Scope"/>.</param>
+        public Scope(ScopeManager scopeManager, Scope parentScope)
+        {
+            this.scopeManager = scopeManager;
+            ParentScope = parentScope;
+        }
+
+        /// <summary>
+        /// Raised when the <see cref="Scope"/> is completed.
+        /// </summary>
         public event EventHandler<EventArgs> Completed;
 
-        public void SetComplete()
+        /// <summary>
+        /// Gets or sets the parent <see cref="Scope"/>.
+        /// </summary>
+        public Scope ParentScope { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets the child <see cref="Scope"/>.
+        /// </summary>
+        public Scope ChildScope { get; internal set; }
+
+        /// <summary>
+        /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
+        /// </summary>
+        /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
+        public void TrackInstance(IDisposable disposable)
+        {
+            disposableObjects.Add(disposable);
+        }
+
+        /// <summary>
+        /// Disposes all instances tracked by this scope.
+        /// </summary>
+        public void Dispose()
+        {
+            DisposeTrackedInstances();
+            OnCompleted();
+        }
+
+        private void DisposeTrackedInstances()
         {
             foreach (var disposableObject in disposableObjects)
             {
                 disposableObject.Dispose();
             }
-
-            disposableObjects.Clear();
-            OnCompleted();
-        }
-
-        public void RegisterForDisposal(IDisposable disposable)
-        {
-            disposableObjects.Add(disposable);
         }
 
         private void OnCompleted()
         {
+            scopeManager.EndScope(this);
             var completedHandler = Completed;
             if (completedHandler != null)
             {
                 completedHandler(this, new EventArgs());
             }
-        }        
+        }
     }
 
     /// <summary>
@@ -2481,17 +2497,15 @@ namespace LightInject
             InternalInterfaces.Add(typeof(IPropertySelector));
             InternalInterfaces.Add(typeof(IAssemblyLoader));
             InternalInterfaces.Add(typeof(IAssemblyScanner));
-            InternalInterfaces.Add(typeof(ILifetime));
-            InternalInterfaces.Add(typeof(IResolutionContext));
+            InternalInterfaces.Add(typeof(ILifetime));            
             InternalTypes.Add(typeof(ServiceContainer.LambdaExpressionParser));
             InternalTypes.Add(typeof(ServiceContainer.LambdaExpressionValidator));
             InternalTypes.Add(typeof(ServiceContainer.ConstructorDependency));
             InternalTypes.Add(typeof(ServiceContainer.PropertyDependecy));
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
-            InternalTypes.Add(typeof(ResolutionScope));
+            InternalTypes.Add(typeof(Scope));
             InternalTypes.Add(typeof(SingletonLifetime));
-            InternalTypes.Add(typeof(PerGraphLifetime));
-            InternalTypes.Add(typeof(ResolutionScope));
+            InternalTypes.Add(typeof(PerGraphLifetime));            
             InternalTypes.Add(typeof(ScopeManager));    
             InternalTypes.Add(typeof(ServiceRegistration));
             InternalTypes.Add(typeof(DecoratorRegistration));

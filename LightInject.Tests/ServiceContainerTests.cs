@@ -281,7 +281,7 @@
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>(new PerGraphLifetime());
-            using (container.BeginResolutionScope())
+            using (container.BeginScope())
             {
                 var instance1 = container.GetInstance<IFoo>();
                 var instance2 = container.GetInstance<IFoo>();
@@ -294,7 +294,7 @@
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo<>), typeof(Foo<>), new PerGraphLifetime());
-            using(container.BeginResolutionScope())
+            using(container.BeginScope())
             {
                 var intInstance = container.GetInstance<IFoo<int>>();
                 var stringInstance = container.GetInstance<IFoo<string>>();
@@ -716,9 +716,9 @@
             var firstContainer = CreateContainer();
             var secondContainer = CreateContainer();
             
-            using (ResolutionScope firstResolutionScope = firstContainer.BeginResolutionScope())
+            using (Scope firstResolutionScope = firstContainer.BeginScope())
             {
-                using (ResolutionScope secondResolutionScope = secondContainer.BeginResolutionScope())
+                using (Scope secondResolutionScope = secondContainer.BeginScope())
                 {
                     Assert.AreNotSame(firstResolutionScope, secondResolutionScope);
                 }

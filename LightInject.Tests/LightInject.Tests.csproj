@@ -67,7 +67,7 @@
     <Compile Include="MockingTests.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="PropertyInjectionTests.cs" />
-    <Compile Include="ResolutionScopeTests.cs" />
+    <Compile Include="ScopeTests.cs" />
     <Compile Include="ServiceContainerTests.cs" />
     <Compile Include="ExpressionExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
