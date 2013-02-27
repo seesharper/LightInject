@@ -1,5 +1,5 @@
 /*****************************************************************************   
-   Copyright 2012 bernhard.richter@gmail.com
+   Copyright 2013 bernhard.richter@gmail.com
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 2.0.0.1 
+   LightInject version 3.0.0.0 
    https://github.com/seesharper/LightInject/wiki/Getting-started
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -135,20 +135,12 @@ namespace LightInject
         void Register<TService>(TService instance, string serviceName);
 
         /// <summary>
-        /// Registers the <typeparamref name="TService"/> with the <paramref name="expression"/> that 
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
-        /// <param name="expression">The lambdaExpression that describes the dependencies of the service.</param>
-        /// <example>
-        /// The following example shows how to register a new IFoo service.
-        /// <code>
-        /// <![CDATA[
-        /// container.Register<IFoo>(r => new FooWithDependency(r.GetInstance<IBar>()))
-        /// ]]>
-        /// </code>
-        /// </example>
-        void Register<TService>(Expression<Func<IServiceFactory, TService>> expression);
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        void Register<TService>(Expression<Func<IServiceFactory, TService>> factory);
         
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="expression"/> that 
@@ -181,17 +173,17 @@ namespace LightInject
         /// <summary>
         /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
         /// </summary>
-        /// <param name="canCreateInstance">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
-        /// <param name="factory">Creates a service instance according to the <paramref name="canCreateInstance"/> predicate.</param>
-        void Register(Func<Type, string, bool> canCreateInstance, Func<ServiceRequest, object> factory);
+        /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
+        /// <param name="factory">Creates a service instance according to the <paramref name="predicate"/> predicate.</param>
+        void Register(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory);
 
         /// <summary>
         /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
         /// </summary>
-        /// <param name="canCreateInstance">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
-        /// <param name="factory">Creates a service instance according to the <paramref name="canCreateInstance"/> predicate.</param>
+        /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
+        /// <param name="factory">Creates a service instance according to the <paramref name="predicate"/> predicate.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-        void Register(Func<Type, string, bool> canCreateInstance, Func<ServiceRequest, object> factory, ILifetime lifetime);
+        void Register(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory, ILifetime lifetime);
 
         /// <summary>
         /// Registers a service based on a <see cref="ServiceRegistration"/> instance.
@@ -252,12 +244,33 @@ namespace LightInject
         void RegisterAssembly(string searchPattern);
 #endif
 
-        void Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> shouldDecorate);
+        /// <summary>
+        /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
+        /// </summary>
+        /// <param name="serviceType">The target service type.</param>
+        /// <param name="decoratorType">The decorator type used to decorate the <paramref name="serviceType"/>.</param>
+        /// <param name="predicate">A function delegate that determines if the <paramref name="decoratorType"/>
+        /// should be applied to the target <paramref name="serviceType"/>.</param>
+        void Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate);
 
+        /// <summary>
+        /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
+        /// </summary>
+        /// <param name="serviceType">The target service type.</param>
+        /// <param name="decoratorType">The decorator type used to decorate the <paramref name="serviceType"/>.</param>        
         void Decorate(Type serviceType, Type decoratorType);
 
+        /// <summary>
+        /// Decorates the <typeparamref name="TService"/> using the given decorator <paramref name="factory"/>.
+        /// </summary>
+        /// <typeparam name="TService">The target service type.</typeparam>
+        /// <param name="factory">A factory delegate used to create a decorator instance.</param>
         void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);
         
+        /// <summary>
+        /// Removes a <see cref="ServiceRegistration"/> from the current <see cref="IServiceRegistry"/>.
+        /// </summary>
+        /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> to remove.</param>
         void Remove(ServiceRegistration serviceRegistration);         
     }
 
@@ -311,8 +324,17 @@ namespace LightInject
         IEnumerable<TService> GetAllInstances<TService>();
     }
   
+    /// <summary>
+    /// Represents a class that manages the lifetime of a service instance.
+    /// </summary>
     internal interface ILifetime
     {
+        /// <summary>
+        /// Returns a service instance according to the specific lifetime characteristics.
+        /// </summary>
+        /// <param name="createInstance">The function delegate used to create a new service instance.</param>
+        /// <param name="scope">The <see cref="Scope"/> of the current service request.</param>
+        /// <returns>The requested services instance.</returns>
         object GetInstance(Func<object> createInstance, Scope scope);        
     }
     
@@ -444,7 +466,7 @@ namespace LightInject
 
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the registered services.           
-        /// </summary>
+        /// </summary>                  
         public IEnumerable<ServiceRegistration> AvailableServices
         {
             get
@@ -453,6 +475,10 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Removes a <see cref="ServiceRegistration"/> from the current <see cref="IServiceRegistry"/>.
+        /// </summary>
+        /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> to remove.</param>
         public void Remove(ServiceRegistration serviceRegistration)
         {
             Invalidate();
@@ -471,6 +497,10 @@ namespace LightInject
             return GetEmitMethod(serviceType, serviceName) != null;
         }
 
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns><see cref="Scope"/></returns>
         public Scope BeginScope()
         {
             return scopeManagers.Value.BeginScope();
@@ -489,16 +519,31 @@ namespace LightInject
             RegisterServiceFromLambdaExpression(expression, lifetime, serviceName);
         }
 
-        public void Register(Func<Type, string, bool> servicePredicate, Func<ServiceRequest, object> factory)
+        /// <summary>
+        /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
+        /// </summary>
+        /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
+        /// <param name="factory">Creates a service instance according to the <paramref name="predicate"/> predicate.</param>
+        public void Register(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
         {
-            factoryRules.Add(new FactoryRule { CanCreateInstance = servicePredicate, Factory = factory });
+            factoryRules.Add(new FactoryRule { CanCreateInstance = predicate, Factory = factory });
         }
 
-        public void Register(Func<Type, string, bool> servicePredicate, Func<ServiceRequest, object> factory, ILifetime lifetime)
+        /// <summary>
+        /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
+        /// </summary>
+        /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
+        /// <param name="factory">Creates a service instance according to the <paramref name="predicate"/> predicate.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        public void Register(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory, ILifetime lifetime)
         {
-            factoryRules.Add(new FactoryRule { CanCreateInstance = servicePredicate, Factory = factory, LifeTime = lifetime });
+            factoryRules.Add(new FactoryRule { CanCreateInstance = predicate, Factory = factory, LifeTime = lifetime });
         }
 
+        /// <summary>
+        /// Registers a service based on a <see cref="ServiceRegistration"/> instance.
+        /// </summary>
+        /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> instance that contains service metadata.</param>
         public void Register(ServiceRegistration serviceRegistration)
         {
             UpdateServiceEmitter(serviceRegistration.ServiceType, serviceRegistration.ServiceName, GetEmitDelegate(serviceRegistration));
@@ -574,29 +619,40 @@ namespace LightInject
                 RegisterAssembly(assembly);
             }
         }       
-#endif        
-        public void Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> shouldDecorate)
+#endif
+
+        /// <summary>
+        /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
+        /// </summary>
+        /// <param name="serviceType">The target service type.</param>
+        /// <param name="decoratorType">The decorator type used to decorate the <paramref name="serviceType"/>.</param>
+        /// <param name="predicate">A function delegate that determines if the <paramref name="decoratorType"/>
+        /// should be applied to the target <paramref name="serviceType"/>.</param>
+        public void Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate)
         {
-            var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = decoratorType, CanDecorate = shouldDecorate };                
+            var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = decoratorType, CanDecorate = predicate };                
             GetRegisteredDecorators(serviceType).Add(decoratorInfo);
         }
 
+        /// <summary>
+        /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
+        /// </summary>
+        /// <param name="serviceType">The target service type.</param>
+        /// <param name="decoratorType">The decorator type used to decorate the <paramref name="serviceType"/>.</param>        
         public void Decorate(Type serviceType, Type decoratorType)
         {
             Decorate(serviceType, decoratorType, si => true);
         }
 
+        /// <summary>
+        /// Decorates the <typeparamref name="TService"/> using the given decorator <paramref name="factory"/>.
+        /// </summary>
+        /// <typeparam name="TService">The target service type.</typeparam>
+        /// <param name="factory">A factory delegate used to create a decorator instance.</param>
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
         {
             var decoratorInfo = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
             GetRegisteredDecorators(typeof(TService)).Add(decoratorInfo);
-        }
-
-        public void Invalidate()
-        {           
-            delegates.Clear();
-            namedDelegates.Clear();
-            constants.Clear();
         }
 
         /// <summary>
@@ -716,15 +772,7 @@ namespace LightInject
         /// describes the dependencies of the service. 
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
-        /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
-        /// <example>
-        /// The following example shows how to register a new IFoo service.
-        /// <code>
-        /// <![CDATA[
-        /// container.Register<IFoo>(r => new FooWithDependency(r.GetInstance<IBar>()))
-        /// ]]>
-        /// </code>
-        /// </example>
+        /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>       
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory)
         {
             RegisterServiceFromLambdaExpression(factory, null, string.Empty);
@@ -1451,6 +1499,13 @@ namespace LightInject
             return false;
         }
 
+        private void Invalidate()
+        {
+            delegates.Clear();
+            namedDelegates.Clear();
+            constants.Clear();
+        }
+
         private void EnsureThatServiceRegistryIsConfigured(Type serviceType)
         {
             if (ServiceRegistryIsEmpty())
@@ -1644,22 +1699,44 @@ namespace LightInject
             }
         }
  
+        /// <summary>
+        /// Inspects the body of a <see cref="LambdaExpression"/> and determines if the expression can be parsed.
+        /// </summary>
         public class LambdaExpressionValidator : ExpressionVisitor
         {
             private bool canParse = true;
 
+            /// <summary>
+            /// Determines if the <paramref name="lambdaExpression"/> can be parsed.
+            /// </summary>
+            /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to validate.</param>
+            /// <returns><b>true</b>, if the expression can be parsed, otherwise <b>false</b>.</returns>
             public bool CanParse(LambdaExpression lambdaExpression)
             {
                 Visit(lambdaExpression.Body);                
                 return canParse;
             }
 
+            /// <summary>
+            /// Visits the children of the <see cref="T:System.Linq.Expressions.Expression`1"/>.
+            /// </summary>
+            /// <returns>
+            /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
+            /// </returns>
+            /// <param name="node">The expression to visit.</param><typeparam name="T">The type of the delegate.</typeparam>
             protected override Expression VisitLambda<T>(Expression<T> node)
             {
                 canParse = false;
                 return base.VisitLambda(node);
             }
 
+            /// <summary>
+            /// Visits the children of the <see cref="T:System.Linq.Expressions.UnaryExpression"/>.
+            /// </summary>
+            /// <returns>
+            /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
+            /// </returns>
+            /// <param name="node">The expression to visit.</param>
             protected override Expression VisitUnary(UnaryExpression node)
             {
                 if (node.NodeType == ExpressionType.Convert)
@@ -2039,6 +2116,15 @@ namespace LightInject
         private class DelegateRegistry<TKey> : KeyValueStorage<TKey, Func<object>>
         {
         }
+
+        private class FactoryRule
+        {
+            public Func<Type, string, bool> CanCreateInstance { get; internal set; }
+
+            public Func<ServiceRequest, object> Factory { get; internal set; }
+
+            public ILifetime LifeTime { get; set; }
+        }
     }
 
 #if NET
@@ -2268,15 +2354,6 @@ namespace LightInject
         public LambdaExpression FactoryExpression { get; set; }
     }
     
-    internal class FactoryRule
-    {
-        public Func<Type, string, bool> CanCreateInstance { get; internal set; }
-
-        public Func<ServiceRequest, object> Factory { get; internal set; }
-
-        public ILifetime LifeTime { get; set; }        
-    }
-
     /// <summary>
     /// Contains information about a registered decorator.
     /// </summary>
@@ -2308,12 +2385,26 @@ namespace LightInject
         /// Gets or sets the value that represents the instance of the service.
         /// </summary>
         public object Value { get; set; }
-               
+
+        /// <summary>
+        /// Serves as a hash function for a particular type. 
+        /// </summary>
+        /// <returns>
+        /// A hash code for the current <see cref="T:System.Object"/>.
+        /// </returns>
+        /// <filterpriority>2</filterpriority>
         public override int GetHashCode()
         {
             return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();
         }
-        
+
+        /// <summary>
+        /// Determines whether the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>.
+        /// </summary>
+        /// <returns>
+        /// true if the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>; otherwise, false.
+        /// </returns>
+        /// <param name="obj">The <see cref="T:System.Object"/> to compare with the current <see cref="T:System.Object"/>. </param><filterpriority>2</filterpriority>
         public override bool Equals(object obj)
         {
             var other = obj as ServiceRegistration;
@@ -2327,11 +2418,20 @@ namespace LightInject
         }            
     }
     
+    /// <summary>
+    /// Ensures that only one instance of a given service can exist within the current <see cref="IServiceContainer"/>.
+    /// </summary>
     internal class PerContainerLifetime : ILifetime, IDisposable
     {
         private readonly object syncRoot = new object();
         private object singleton;
 
+        /// <summary>
+        /// Returns a service instance according to the specific lifetime characteristics.
+        /// </summary>
+        /// <param name="createInstance">The function delegate used to create a new service instance.</param>
+        /// <param name="scope">The <see cref="Scope"/> of the current service request.</param>
+        /// <returns>The requested services instance.</returns>
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
             if (singleton != null)
@@ -2350,6 +2450,9 @@ namespace LightInject
             return singleton;
         }
 
+        /// <summary>
+        /// Disposes the service instances managed by this <see cref="PerContainerLifetime"/> instance.
+        /// </summary>
         public void Dispose()
         {
             var disposable = singleton as IDisposable;
@@ -2360,10 +2463,23 @@ namespace LightInject
         }
     }
 
+    /// <summary>
+    /// Ensures that only one service instance can exist within a given <see cref="Scope"/>.
+    /// </summary>
+    /// <remarks>
+    /// If the service instance implements <see cref="IDisposable"/>, 
+    /// it will be disposed when the <see cref="Scope"/> ends.
+    /// </remarks>
     internal class PerScopeLifetime : ILifetime
     {
         private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
-       
+
+        /// <summary>
+        /// Returns the same service instance within the current <see cref="Scope"/>.
+        /// </summary>
+        /// <param name="createInstance">The function delegate used to create a new service instance.</param>
+        /// <param name="scope">The <see cref="Scope"/> of the current service request.</param>
+        /// <returns>The requested services instance.</returns>
         public object GetInstance(Func<object> createInstance, Scope scope)
         {            
             if (scope == null)
