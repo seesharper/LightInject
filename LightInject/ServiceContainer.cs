@@ -394,7 +394,7 @@ namespace LightInject
     /// <summary>
     /// Represents an inversion of control container.
     /// </summary>
-    internal interface IServiceContainer : IServiceRegistry, IServiceFactory
+    internal interface IServiceContainer : IServiceRegistry, IServiceFactory, IDisposable
     {               
         /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
@@ -2124,6 +2124,21 @@ namespace LightInject
             public Func<ServiceRequest, object> Factory { get; internal set; }
 
             public ILifetime LifeTime { get; set; }
+        }
+
+        /// <summary>
+        /// Disposes any services registered using the <see cref="PerContainerLifetime"/>.
+        /// </summary>
+        public void Dispose()
+        {
+            var disposableLifetimeInstances = availableServices.Values
+                .Where(sr => sr.Lifetime != null)
+                .Select(sr => sr.Lifetime)
+                .Where(lt => lt is IDisposable).Cast<IDisposable>();
+            foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
+            {
+                disposableLifetimeInstance.Dispose();
+            }
         }
     }
 

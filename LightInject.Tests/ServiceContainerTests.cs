@@ -10,6 +10,8 @@
     using LightInject.SampleLibrary;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    using Moq;
+
     [TestClass]
     public class ServiceContainerTests
     {
@@ -733,6 +735,35 @@
                     Assert.AreNotSame(firstResolutionScope, secondResolutionScope);
                 }
             }
+        }
+
+        [TestMethod]
+        public void Dispose_ServiceContainer_DisposesDisposableLifeTimeInstances()
+        {
+            var lifetimeMock = new Mock<ILifetime>();
+            var disposableLifeTimeMock = lifetimeMock.As<IDisposable>();
+            
+            using (var container = new ServiceContainer())
+            {               
+                container.Register<IFoo, Foo>(lifetimeMock.Object);                
+            }
+
+            disposableLifeTimeMock.Verify(d => d.Dispose(), Times.Once());
+        }
+
+        [TestMethod]
+        public void Dispose_ServiceContainerWithDisposablePerContainerLifetimeService_DisposesInstance()
+        {
+            var fooMock = new Mock<IFoo>();
+            var disposableFooMock = fooMock.As<IDisposable>();
+
+            using (var container = new ServiceContainer())
+            {
+                container.Register(f => fooMock.Object, new PerContainerLifetime());
+                container.GetInstance<IFoo>();
+            }
+
+            disposableFooMock.Verify(d => d.Dispose(), Times.Once());
         }
 
 
