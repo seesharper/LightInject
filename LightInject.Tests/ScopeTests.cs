@@ -68,7 +68,6 @@
             Assert.IsNull(scopeManagers.Value.CurrentScope);
         }
 
-
         [TestMethod]
         public void Dispose_WithTrackedInstances_DisposesTrackedInstances()
         {
