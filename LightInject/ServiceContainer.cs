@@ -323,7 +323,27 @@ namespace LightInject
         /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
         IEnumerable<TService> GetAllInstances<TService>();
     }
-  
+
+    /// <summary>
+    /// Represents an inversion of control container.
+    /// </summary>
+    internal interface IServiceContainer : IServiceRegistry, IServiceFactory, IDisposable
+    {
+        /// <summary>
+        /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
+        /// </summary>
+        /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
+        bool CanGetInstance(Type serviceType, string serviceName);
+
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns><see cref="Scope"/></returns>
+        Scope BeginScope();
+    }
+
     /// <summary>
     /// Represents a class that manages the lifetime of a service instance.
     /// </summary>
@@ -392,23 +412,21 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents an inversion of control container.
+    /// Represents a dynamic method skeleton for emitting the code needed to resolve a service instance.
     /// </summary>
-    internal interface IServiceContainer : IServiceRegistry, IServiceFactory, IDisposable
-    {               
+    internal interface IMethodSkeleton
+    {
         /// <summary>
-        /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
+        /// Gets the <see cref="ILGenerator"/> for the this dynamic method.
         /// </summary>
-        /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
-        /// <param name="serviceName">The name of the service.</param>
-        /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
-        bool CanGetInstance(Type serviceType, string serviceName);
+        /// <returns>The <see cref="ILGenerator"/> for the this dynamic method</returns>
+        ILGenerator GetILGenerator();
 
         /// <summary>
-        /// Starts a new <see cref="Scope"/>.
+        /// Creates a delegate used to invoke this method.
         /// </summary>
-        /// <returns><see cref="Scope"/></returns>
-        Scope BeginScope();
+        /// <returns>A delegate used to invoke this method.</returns>
+        Func<object[], object> CreateDelegate();
     }
 
     /// <summary>
@@ -417,14 +435,14 @@ namespace LightInject
     internal class ServiceContainer : IServiceContainer
     {        
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";                                        
-        private readonly ServiceRegistry<Action<DynamicMethodInfo>> emitters = new ServiceRegistry<Action<DynamicMethodInfo>>();        
-        private readonly ServiceRegistry<Action<DynamicMethodInfo, Type>> openGenericEmitters = new ServiceRegistry<Action<DynamicMethodInfo, Type>>(); 
+        private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();        
+        private readonly ServiceRegistry<Action<IMethodSkeleton, Type>> openGenericEmitters = new ServiceRegistry<Action<IMethodSkeleton, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
         private readonly ThreadSafeDictionary<ServiceRegistration, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceRegistration, ConstructionInfo>();                        
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
-        private readonly Stack<Action<DynamicMethodInfo>> dependencyStack = new Stack<Action<DynamicMethodInfo>>();
+        private readonly Stack<Action<IMethodSkeleton>> dependencyStack = new Stack<Action<IMethodSkeleton>>();
         private readonly ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration> availableServices =
             new ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration>();
         
@@ -433,6 +451,8 @@ namespace LightInject
         private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
         private bool firstServiceRequest = true;
+
+        private Func<IMethodSkeleton> methodSkeletonFactory;
                        
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
@@ -441,10 +461,18 @@ namespace LightInject
         {            
             AssemblyScanner = new AssemblyScanner();
             PropertySelector = new PropertySelector();
+            methodSkeletonFactory = () => new DynamicMethodSkeleton();
 #if NET
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
+
+#if TEST
+        public ServiceContainer(Func<IMethodSkeleton> methodSkeletonFactory) :this()
+        {
+            this.methodSkeletonFactory = methodSkeletonFactory;
+        }
+#endif
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
@@ -875,18 +903,33 @@ namespace LightInject
             return GetInstance<IEnumerable<TService>>();
         }
 
-        private static void EmitLoadConstant(DynamicMethodInfo dynamicMethodInfo, int index, Type type)
+        /// <summary>
+        /// Disposes any services registered using the <see cref="PerContainerLifetime"/>.
+        /// </summary>
+        public void Dispose()
+        {
+            var disposableLifetimeInstances = availableServices.Values
+                .Where(sr => sr.Lifetime != null)
+                .Select(sr => sr.Lifetime)
+                .Where(lt => lt is IDisposable).Cast<IDisposable>();
+            foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
+            {
+                disposableLifetimeInstance.Dispose();
+            }
+        }
+
+        private static void EmitLoadConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
         {           
-            var generator = dynamicMethodInfo.GetILGenerator();
+            var generator = dynamicMethodSkeleton.GetILGenerator();
             generator.Emit(OpCodes.Ldarg_0);
             generator.Emit(OpCodes.Ldc_I4, index);
             generator.Emit(OpCodes.Ldelem_Ref);
             generator.Emit(type.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
         }
 
-        private static void EmitEnumerable(IList<Action<DynamicMethodInfo>> serviceEmitters, Type elementType, DynamicMethodInfo dynamicMethodInfo)
+        private static void EmitEnumerable(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
         {
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             LocalBuilder array = generator.DeclareLocal(elementType.MakeArrayType());
             generator.Emit(OpCodes.Ldc_I4, serviceEmitters.Count);
             generator.Emit(OpCodes.Newarr, elementType);
@@ -897,7 +940,7 @@ namespace LightInject
                 generator.Emit(OpCodes.Ldloc, array);
                 generator.Emit(OpCodes.Ldc_I4, index);
                 var serviceEmitter = serviceEmitters[index];
-                serviceEmitter(dynamicMethodInfo);
+                serviceEmitter(dynamicMethodSkeleton);
                 generator.Emit(OpCodes.Stelem, elementType);
             }
 
@@ -942,16 +985,16 @@ namespace LightInject
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
         }
 
-        private Func<object> CreateDynamicMethodDelegate(Action<DynamicMethodInfo> serviceEmitter, Type serviceType)
+        private Func<object> CreateDynamicMethodDelegate(Action<IMethodSkeleton> serviceEmitter, Type serviceType)
         {
-            var dynamicMethodInfo = new DynamicMethodInfo();
-            serviceEmitter(dynamicMethodInfo);
+            var methodSkeleton = methodSkeletonFactory();
+            serviceEmitter(methodSkeleton);
             if (serviceType.IsValueType)
             {
-                dynamicMethodInfo.GetILGenerator().Emit(OpCodes.Box, serviceType);
+                methodSkeleton.GetILGenerator().Emit(OpCodes.Box, serviceType);
             }
 
-            var del = dynamicMethodInfo.CreateDelegate();
+            var del = methodSkeleton.CreateDelegate();
             return () => del(constants.Items);
         }
 
@@ -994,26 +1037,26 @@ namespace LightInject
             return constructionInfo;
         }
 
-        private Action<DynamicMethodInfo> GetEmitMethod(Type serviceType, string serviceName)
+        private Action<IMethodSkeleton> GetEmitMethod(Type serviceType, string serviceName)
         {
             if (FirstServiceRequest())
             {
                 EnsureThatServiceRegistryIsConfigured(serviceType);                
             }
 
-            Action<DynamicMethodInfo> emitter = GetRegisteredEmitMethod(serviceType, serviceName);
+            Action<IMethodSkeleton> emitter = GetRegisteredEmitMethod(serviceType, serviceName);
                         
             return CreateEmitMethodWrapper(emitter, serviceType, serviceName);
         }
 
-        private Action<DynamicMethodInfo> CreateEmitMethodWrapper(Action<DynamicMethodInfo> emitter, Type serviceType, string serviceName)
+        private Action<IMethodSkeleton> CreateEmitMethodWrapper(Action<IMethodSkeleton> emitter, Type serviceType, string serviceName)
         {
             if (emitter == null)
             {
                 return null;
             }
 
-            return dmi =>
+            return ms =>
                 {
                     if (dependencyStack.Contains(emitter))
                     {                        
@@ -1022,20 +1065,20 @@ namespace LightInject
                     }
 
                     dependencyStack.Push(emitter);
-                    emitter(dmi);
+                    emitter(ms);
                     dependencyStack.Pop();
                 };
         }
 
-        private Action<DynamicMethodInfo> GetRegisteredEmitMethod(Type serviceType, string serviceName)
+        private Action<IMethodSkeleton> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
-            Action<DynamicMethodInfo> emitter;
+            Action<IMethodSkeleton> emitter;
             var registrations = GetServiceEmitters(serviceType);
             registrations.TryGetValue(serviceName, out emitter);
             return emitter ?? ResolveUnknownServiceEmitter(serviceType, serviceName);
         }
 
-        private void UpdateServiceEmitter(Type serviceType, string serviceName, Action<DynamicMethodInfo> emitter)
+        private void UpdateServiceEmitter(Type serviceType, string serviceName, Action<IMethodSkeleton> emitter)
         {
             if (emitter != null)
             {
@@ -1057,16 +1100,16 @@ namespace LightInject
                 });            
         }
 
-        private void EmitNewInstance(ServiceRegistration serviceRegistration, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitNewInstance(ServiceRegistration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
         {            
             var serviceDecorators = GetDecorators(serviceRegistration.ServiceType);
             if (serviceDecorators.Length > 0)
             {
-                EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodInfo, () => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodInfo));
+                EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, () => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton));
             }
             else
             {
-                DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodInfo);    
+                DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton);    
             }
         }
         
@@ -1091,7 +1134,7 @@ namespace LightInject
             return registeredDecorators.ToArray();
         }
 
-        private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, DynamicMethodInfo dynamicMethodInfo, Action pushInstance)
+        private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IMethodSkeleton dynamicMethodSkeleton, Action pushInstance)
         {
             ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
             var constructorDependency =
@@ -1103,40 +1146,40 @@ namespace LightInject
             
             if (constructionInfo.FactoryDelegate != null)
             {                
-                EmitNewDecoratorUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodInfo, pushInstance);
+                EmitNewDecoratorUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodSkeleton, pushInstance);
             }
             else
             {                
-                EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo, pushInstance);
+                EmitNewInstanceUsingImplementingType(dynamicMethodSkeleton, constructionInfo, pushInstance);
             }
         }
 
-        private void EmitNewDecoratorUsingFactoryDelegate(Delegate factoryDelegate, DynamicMethodInfo dynamicMethodInfo, Action pushInstance)
+        private void EmitNewDecoratorUsingFactoryDelegate(Delegate factoryDelegate, IMethodSkeleton dynamicMethodSkeleton, Action pushInstance)
         {
             var factoryDelegateIndex = constants.Add(factoryDelegate);
             var serviceFactoryIndex = constants.Add(this);
             Type funcType = factoryDelegate.GetType();
-            EmitLoadConstant(dynamicMethodInfo, factoryDelegateIndex, funcType);
-            EmitLoadConstant(dynamicMethodInfo, serviceFactoryIndex, typeof(IServiceFactory));
+            EmitLoadConstant(dynamicMethodSkeleton, factoryDelegateIndex, funcType);
+            EmitLoadConstant(dynamicMethodSkeleton, serviceFactoryIndex, typeof(IServiceFactory));
             pushInstance();
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             MethodInfo invokeMethod = funcType.GetMethod("Invoke");
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
-        private void DoEmitNewInstance(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
+        private void DoEmitNewInstance(ConstructionInfo constructionInfo, IMethodSkeleton dynamicMethodSkeleton)
         {        
             if (constructionInfo.FactoryDelegate != null)
             {
-                EmitNewInstanceUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodInfo);
+                EmitNewInstanceUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodSkeleton);
             }
             else
             {
-                EmitNewInstanceUsingImplementingType(dynamicMethodInfo, constructionInfo, null);
+                EmitNewInstanceUsingImplementingType(dynamicMethodSkeleton, constructionInfo, null);
             }
         }
      
-        private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, DynamicMethodInfo dynamicMethodInfo, Action decoratorTargetEmitter)
+        private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IMethodSkeleton dynamicMethodSkeleton, Action decoratorTargetEmitter)
         {
             Action decoratorChainEmitter = decoratorTargetEmitter;            
             foreach (DecoratorRegistration decorator in serviceDecorators)
@@ -1148,39 +1191,39 @@ namespace LightInject
 
                 Action currentDecoratorTargetEmitter = decoratorTargetEmitter;
                 DecoratorRegistration currentDecorator = decorator;
-                decoratorTargetEmitter = () => DoEmitDecoratorInstance(currentDecorator, dynamicMethodInfo, currentDecoratorTargetEmitter);
+                decoratorTargetEmitter = () => DoEmitDecoratorInstance(currentDecorator, dynamicMethodSkeleton, currentDecoratorTargetEmitter);
             }
 
             decoratorTargetEmitter();
         }
 
-        private void EmitNewInstanceUsingImplementingType(DynamicMethodInfo dynamicMethodInfo, ConstructionInfo constructionInfo, Action decoratorTargetEmitter)
+        private void EmitNewInstanceUsingImplementingType(IMethodSkeleton dynamicMethodSkeleton, ConstructionInfo constructionInfo, Action decoratorTargetEmitter)
         {
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
-            EmitConstructorDependencies(constructionInfo, dynamicMethodInfo, decoratorTargetEmitter);
+            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
+            EmitConstructorDependencies(constructionInfo, dynamicMethodSkeleton, decoratorTargetEmitter);
             generator.Emit(OpCodes.Newobj, constructionInfo.Constructor);
-            EmitPropertyDependencies(constructionInfo, dynamicMethodInfo);
+            EmitPropertyDependencies(constructionInfo, dynamicMethodSkeleton);
         }
 
-        private void EmitNewInstanceUsingFactoryDelegate(Delegate factoryDelegate, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitNewInstanceUsingFactoryDelegate(Delegate factoryDelegate, IMethodSkeleton dynamicMethodSkeleton)
         {            
             var factoryDelegateIndex = constants.Add(factoryDelegate);
             var serviceFactoryIndex = constants.Add(this);
             Type funcType = factoryDelegate.GetType();            
-            EmitLoadConstant(dynamicMethodInfo, factoryDelegateIndex, funcType);
-            EmitLoadConstant(dynamicMethodInfo, serviceFactoryIndex, typeof(IServiceFactory));
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            EmitLoadConstant(dynamicMethodSkeleton, factoryDelegateIndex, funcType);
+            EmitLoadConstant(dynamicMethodSkeleton, serviceFactoryIndex, typeof(IServiceFactory));
+            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             MethodInfo invokeMethod = funcType.GetMethod("Invoke");
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
       
-        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo, Action decoratorTargetEmitter)
+        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, IMethodSkeleton dynamicMethodSkeleton, Action decoratorTargetEmitter)
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
                 if (!dependency.IsDecoratorTarget)
                 {
-                    EmitDependency(dynamicMethodInfo, dependency);                    
+                    EmitDependency(dynamicMethodSkeleton, dependency);                    
                 }
                 else
                 {
@@ -1189,19 +1232,19 @@ namespace LightInject
             }
         }
 
-        private void EmitDependency(DynamicMethodInfo dynamicMethodInfo, Dependency dependency)
+        private void EmitDependency(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
         {
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             if (dependency.FactoryExpression != null)
             {
                 var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
                 MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                EmitLoadConstant(dynamicMethodInfo, constants.Add(lambda), lambda.GetType());
+                EmitLoadConstant(dynamicMethodSkeleton, constants.Add(lambda), lambda.GetType());
                 generator.Emit(OpCodes.Callvirt, methodInfo);
             }
             else
             {
-                Action<DynamicMethodInfo> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);                                                
+                Action<IMethodSkeleton> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);                                                
                 if (emitter == null)
                 {
                     emitter = GetEmitMethod(dependency.ServiceType, dependency.Name);
@@ -1213,7 +1256,7 @@ namespace LightInject
 
                 try
                 {
-                    emitter(dynamicMethodInfo);
+                    emitter(dynamicMethodSkeleton);
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -1222,29 +1265,29 @@ namespace LightInject
             }
         }
 
-        private void EmitPropertyDependencies(ConstructionInfo constructionInfo, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IMethodSkeleton dynamicMethodSkeleton)
         {
             if (constructionInfo.PropertyDependencies.Count == 0)
             {
                 return;
             }
 
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             LocalBuilder instance = generator.DeclareLocal(constructionInfo.ImplementingType);
             generator.Emit(OpCodes.Stloc, instance);
             foreach (var propertyDependency in constructionInfo.PropertyDependencies)
             {
                 generator.Emit(OpCodes.Ldloc, instance);
-                EmitDependency(dynamicMethodInfo, propertyDependency);
-                dynamicMethodInfo.GetILGenerator().Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
+                EmitDependency(dynamicMethodSkeleton, propertyDependency);
+                dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
             }
 
             generator.Emit(OpCodes.Ldloc, instance);
         }
 
-        private Action<DynamicMethodInfo> ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
+        private Action<IMethodSkeleton> ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
         {
-            Action<DynamicMethodInfo> emitter = null;
+            Action<IMethodSkeleton> emitter = null;
 
             var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
             if (rule != null)
@@ -1277,7 +1320,7 @@ namespace LightInject
             return emitter;
         }
 
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
+        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = rule.LifeTime };
             Expression<Func<IServiceFactory, object>> factoryExpression = 
@@ -1286,13 +1329,13 @@ namespace LightInject
             
             if (rule.LifeTime != null)
             {
-                return dynamicMethodInfo => EmitLifetime(serviceRegistration, dmi => EmitNewInstance(serviceRegistration, dmi), dynamicMethodInfo);
+                return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstance(serviceRegistration, ms), methodSkeleton);
             }
             
-            return dynamicMethodInfo => EmitNewInstance(serviceRegistration, dynamicMethodInfo);
+            return methodSkeleton => EmitNewInstance(serviceRegistration, methodSkeleton);
         }
         
-        private Action<DynamicMethodInfo> CreateEnumerableServiceEmitter(Type serviceType)
+        private Action<IMethodSkeleton> CreateEnumerableServiceEmitter(Type serviceType)
         {
             Type actualServiceType = serviceType.GetGenericArguments()[0];
             if (actualServiceType.IsGenericType)
@@ -1300,14 +1343,14 @@ namespace LightInject
                 EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
             }
 
-            IList<Action<DynamicMethodInfo>> serviceEmitters = GetServiceEmitters(actualServiceType).Values.ToList();
+            IList<Action<IMethodSkeleton>> serviceEmitters = GetServiceEmitters(actualServiceType).Values.ToList();
             
             if (dependencyStack.Count > 0 && serviceEmitters.Contains(dependencyStack.Peek()))
             {
                 serviceEmitters.Remove(dependencyStack.Peek());
             }
 
-            return dmi => EmitEnumerable(serviceEmitters, actualServiceType, dmi);
+            return ms => EmitEnumerable(serviceEmitters, actualServiceType, ms);
         }
 
         private void EnsureEmitMethodsForOpenGenericTypesAreCreated(Type actualServiceType)
@@ -1320,7 +1363,7 @@ namespace LightInject
             }
         }
          
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
+        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
         {
             var actualServiceType = serviceType.GetGenericArguments().Last();
 
@@ -1328,23 +1371,23 @@ namespace LightInject
                                                : ReflectionHelper.CreateGetInstanceDelegate(actualServiceType, this);
             
             var constantIndex = constants.Add(getInstanceDelegate);
-            return dmi => EmitLoadConstant(dmi, constantIndex, serviceType);
+            return ms => EmitLoadConstant(ms, constantIndex, serviceType);
         }
          
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnClosedGenericServiceRequest(Type closedGenericServiceType, string serviceName)
+        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnClosedGenericServiceRequest(Type closedGenericServiceType, string serviceName)
         {
             Type openGenericServiceType = closedGenericServiceType.GetGenericTypeDefinition();
 
-            Action<DynamicMethodInfo, Type> openGenericEmitter = GetOpenGenericTypeInfo(openGenericServiceType, serviceName);
+            Action<IMethodSkeleton, Type> openGenericEmitter = GetOpenGenericTypeInfo(openGenericServiceType, serviceName);
             if (openGenericEmitter == null)
             {
                 return null;
             }
             
-            return dmi => openGenericEmitter(dmi, closedGenericServiceType);
+            return ms => openGenericEmitter(ms, closedGenericServiceType);
         }
   
-        private Action<DynamicMethodInfo, Type> GetOpenGenericTypeInfo(Type openGenericServiceType, string serviceName)
+        private Action<IMethodSkeleton, Type> GetOpenGenericTypeInfo(Type openGenericServiceType, string serviceName)
         {
             var openGenericRegistrations = GetOpenGenericRegistrations(openGenericServiceType);
             if (CanRedirectRequestForDefaultOpenGenericServiceToSingleNamedService(openGenericServiceType, serviceName))
@@ -1352,12 +1395,12 @@ namespace LightInject
                 return openGenericRegistrations.First().Value;
             }
 
-            Action<DynamicMethodInfo, Type> openGenericEmitter;
+            Action<IMethodSkeleton, Type> openGenericEmitter;
             openGenericRegistrations.TryGetValue(serviceName, out openGenericEmitter);
             return openGenericEmitter;
         }
 
-        private Action<DynamicMethodInfo> CreateServiceEmitterBasedOnSingleNamedInstance(Type serviceType)
+        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnSingleNamedInstance(Type serviceType)
         {
             return GetEmitMethod(serviceType, GetServiceEmitters(serviceType).First().Key);
         }
@@ -1377,9 +1420,9 @@ namespace LightInject
             return CreateConstructionInfo(registration);            
         }
 
-        private ThreadSafeDictionary<string, Action<DynamicMethodInfo>> GetServiceEmitters(Type serviceType)
+        private ThreadSafeDictionary<string, Action<IMethodSkeleton>> GetServiceEmitters(Type serviceType)
         {
-            return emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo>>(StringComparer.InvariantCultureIgnoreCase));
+            return emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<IMethodSkeleton>>(StringComparer.InvariantCultureIgnoreCase));
         }
 
         private List<DecoratorRegistration> GetRegisteredDecorators(Type serviceType)
@@ -1387,9 +1430,9 @@ namespace LightInject
             return decorators.GetOrAdd(serviceType, s => new List<DecoratorRegistration>());
         }
 
-        private ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type>> GetOpenGenericRegistrations(Type serviceType)
+        private ThreadSafeDictionary<string, Action<IMethodSkeleton, Type>> GetOpenGenericRegistrations(Type serviceType)
         {
-            return openGenericEmitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<DynamicMethodInfo, Type>>(StringComparer.InvariantCultureIgnoreCase));
+            return openGenericEmitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<IMethodSkeleton, Type>>(StringComparer.InvariantCultureIgnoreCase));
         }
 
         private void RegisterService(Type serviceType, Type implementingType, ILifetime lifetime, string serviceName)
@@ -1408,38 +1451,38 @@ namespace LightInject
 
         private void RegisterOpenGenericService(Type openGenericServiceType, Type openGenericImplementingType, ILifetime lifetime, string serviceName)
         {
-            Action<DynamicMethodInfo, Type> emitter = (dmi, closedGenericServiceType) =>
+            Action<IMethodSkeleton, Type> emitter = (ms, closedGenericServiceType) =>
                 { 
                     Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
                     var serviceRegistration = new ServiceRegistration { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, Lifetime = CloneLifeTime(lifetime) };
                     var closedGenericEmitter = GetEmitDelegate(serviceRegistration);
                     UpdateServiceEmitter(closedGenericServiceType, serviceName, closedGenericEmitter);
                     UpdateServiceRegistration(serviceRegistration);
-                    closedGenericEmitter(dmi);
+                    closedGenericEmitter(ms);
                 };
             GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);            
         }
         
-        private Action<DynamicMethodInfo> GetEmitDelegate(ServiceRegistration serviceRegistration)
+        private Action<IMethodSkeleton> GetEmitDelegate(ServiceRegistration serviceRegistration)
         {
             if (serviceRegistration.Lifetime == null)
             {
-                return dynamicMethodInfo => EmitNewInstance(serviceRegistration, dynamicMethodInfo);
+                return methodSkeleton => EmitNewInstance(serviceRegistration, methodSkeleton);
             }
             
-            return dynamicMethodInfo => EmitLifetime(serviceRegistration, dmi => EmitNewInstance(serviceRegistration, dmi), dynamicMethodInfo);
+            return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstance(serviceRegistration, ms), methodSkeleton);
         }
                 
-        private void EmitLifetime(ServiceRegistration serviceRegistration, Action<DynamicMethodInfo> instanceEmitter, DynamicMethodInfo dynamicMethodInfo)
+        private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IMethodSkeleton> instanceEmitter, IMethodSkeleton dynamicMethodSkeleton)
         {                        
-            ILGenerator generator = dynamicMethodInfo.GetILGenerator();
+            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter);
             int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
             int scopeManagerIndex = CreateScopeManagerIndex();
             var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
-            EmitLoadConstant(dynamicMethodInfo, lifetimeIndex, typeof(ILifetime));
-            EmitLoadConstant(dynamicMethodInfo, instanceDelegateIndex, typeof(Func<object>));            
-            EmitLoadConstant(dynamicMethodInfo, scopeManagerIndex, typeof(ThreadLocal<ScopeManager>));
+            EmitLoadConstant(dynamicMethodSkeleton, lifetimeIndex, typeof(ILifetime));
+            EmitLoadConstant(dynamicMethodSkeleton, instanceDelegateIndex, typeof(Func<object>));            
+            EmitLoadConstant(dynamicMethodSkeleton, scopeManagerIndex, typeof(ThreadLocal<ScopeManager>));
             generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
             generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
             generator.Emit(OpCodes.Callvirt, getInstanceMethod);
@@ -1451,7 +1494,7 @@ namespace LightInject
             return constants.Add(scopeManagers);
         }
 
-        private int CreateInstanceDelegateIndex(Action<DynamicMethodInfo> instanceEmitter)
+        private int CreateInstanceDelegateIndex(Action<IMethodSkeleton> instanceEmitter)
         {
             return constants.Add(CreateInstanceDelegate(instanceEmitter));
         }
@@ -1461,11 +1504,11 @@ namespace LightInject
             return constants.Add(lifetime);
         }
 
-        private Func<object> CreateInstanceDelegate(Action<DynamicMethodInfo> instanceEmitter)
+        private Func<object> CreateInstanceDelegate(Action<IMethodSkeleton> instanceEmitter)
         {
-            var dynamicMethodInfo = new DynamicMethodInfo();
-            instanceEmitter(dynamicMethodInfo);
-            Func<object> del = () => dynamicMethodInfo.CreateDelegate()(constants.Items);
+            var methodSkeleton = methodSkeletonFactory();
+            instanceEmitter(methodSkeleton);
+            Func<object> del = () => methodSkeleton.CreateDelegate()(constants.Items);
             return del;            
         }
 
@@ -1522,7 +1565,7 @@ namespace LightInject
         private void RegisterValue(Type serviceType, object value, string serviceName)
         {
             int index = constants.Add(value);
-            UpdateServiceEmitter(serviceType, serviceName, dmi => EmitLoadConstant(dmi, index, serviceType));            
+            UpdateServiceEmitter(serviceType, serviceName, ms => EmitLoadConstant(ms, index, serviceType));            
         }
 
         private void RegisterServiceFromLambdaExpression<TService>(
@@ -2074,40 +2117,41 @@ namespace LightInject
                 }             
             }
 
-        private class DynamicMethodInfo
-        {
-            private readonly IDictionary<ServiceRegistration, LocalBuilder> localVariables = new Dictionary<ServiceRegistration, LocalBuilder>();
-
-            private DynamicMethod dynamicMethod;
-
-            public DynamicMethodInfo()
+            private class DynamicMethodSkeleton : IMethodSkeleton
             {
-                CreateDynamicMethod();
-            }
+                private DynamicMethod dynamicMethod;
 
-            public ILGenerator GetILGenerator()
-            {
-                return dynamicMethod.GetILGenerator();
-            }
+                public DynamicMethodSkeleton()
+                {
+                    CreateDynamicMethod();
+                }
 
-            public Func<object[], object> CreateDelegate()
-            {
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
-                return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
-            }
+                public ILGenerator GetILGenerator()
+                {
+                    return dynamicMethod.GetILGenerator();
+                }
 
-            private void CreateDynamicMethod()
-            {
-#if NET                
-                dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
+                public Func<object[], object> CreateDelegate()
+                {
+                    dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
+                    return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
+                }
+
+                private void CreateDynamicMethod()
+                {
+#if NET
+                    dynamicMethod = new DynamicMethod(
+                        "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
 #endif
 #if SILVERLIGHT
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", typeof(object), new[] { typeof(List<object>) });
 #endif
+                }
             }
-        }
+
+ 
+
 
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
         {
@@ -2124,21 +2168,6 @@ namespace LightInject
             public Func<ServiceRequest, object> Factory { get; internal set; }
 
             public ILifetime LifeTime { get; set; }
-        }
-
-        /// <summary>
-        /// Disposes any services registered using the <see cref="PerContainerLifetime"/>.
-        /// </summary>
-        public void Dispose()
-        {
-            var disposableLifetimeInstances = availableServices.Values
-                .Where(sr => sr.Lifetime != null)
-                .Select(sr => sr.Lifetime)
-                .Where(lt => lt is IDisposable).Cast<IDisposable>();
-            foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
-            {
-                disposableLifetimeInstance.Dispose();
-            }
         }
     }
 

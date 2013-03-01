@@ -817,11 +817,15 @@
 
         #endregion
 
-        private static IServiceContainer CreateContainer()
+        private IServiceContainer CreateContainer()
+        {
+            return (IServiceContainer)DoCreateContainer();
+        }
+
+        protected virtual object DoCreateContainer()
         {
             return new ServiceContainer();
         }
-
         
         
     }

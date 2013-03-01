@@ -47,3 +47,4 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("SampleLibraryWithCompositionRoot")]
 [assembly: InternalsVisibleTo("LightInject.Mocking")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+[assembly: InternalsVisibleTo("DynamicAssembly")]
