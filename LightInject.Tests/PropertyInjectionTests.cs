@@ -7,7 +7,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class PropertyInjectionTests
+    public class PropertyInjectionTests : TestBase
     {
         [TestMethod]
         public void GetInstance_KnownDependency_InjectsPropertyDependency()
@@ -212,11 +212,6 @@
             container.Register<IFoo, FooWithStaticDependency>();
             container.GetInstance<IFoo>();
             Assert.IsNull(FooWithStaticDependency.Bar);
-        }
-
-        private static IServiceContainer CreateContainer()
-        {
-            return new ServiceContainer();
-        }
+        }    
     }
 }

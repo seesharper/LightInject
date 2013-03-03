@@ -8,7 +8,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class ConstructorInjectionTests
+    public class ConstructorInjectionTests : TestBase
     {
         [TestMethod]
         public void GetInstance_KnownDependency_InjectsDependency()
@@ -412,11 +412,6 @@
         private IBar CreateBar()
         {
             return new Bar();
-        }
-
-        private static IServiceContainer CreateContainer()
-        { 
-            return new ServiceContainer();
-        }
+        }       
     }
 }

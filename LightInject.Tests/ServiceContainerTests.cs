@@ -13,7 +13,7 @@
     using Moq;
 
     [TestClass]
-    public class ServiceContainerTests
+    public class ServiceContainerTests : TestBase
     {
         #region Values
 
@@ -815,18 +815,7 @@
                 () => container.GetInstance<IFoo>());
         }
 
-        #endregion
-
-        private IServiceContainer CreateContainer()
-        {
-            return (IServiceContainer)DoCreateContainer();
-        }
-
-        protected virtual object DoCreateContainer()
-        {
-            return new ServiceContainer();
-        }
-        
+        #endregion        
         
     }
 }

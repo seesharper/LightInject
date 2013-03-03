@@ -5,7 +5,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class DecoratorTests
+    public class DecoratorTests : TestBase
     {
         [TestMethod]
         public void GetInstance_WithDecorator_ReturnsDecoratedInstance()
@@ -203,10 +203,5 @@
         {
             return new FooDecorator(target);
         }
-
-        private static IServiceContainer CreateContainer()
-        {
-            return new ServiceContainer();
-        } 
     }
 }

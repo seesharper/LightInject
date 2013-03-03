@@ -1319,22 +1319,28 @@ namespace LightInject
             
             return emitter;
         }
-
+      
         private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = rule.LifeTime };
-            Expression<Func<IServiceFactory, object>> factoryExpression = 
-                serviceFactory => rule.Factory(new ServiceRequest(serviceType, serviceName, this));
-            serviceRegistration.FactoryExpression = factoryExpression;
+            ParameterExpression serviceFactoryParameterExpression = Expression.Parameter(typeof(IServiceFactory));
+            ConstantExpression serviceRequestConstantExpression = Expression.Constant(new ServiceRequest(serviceType, serviceName, this));            
+            ConstantExpression delegateConstantExpression = Expression.Constant(rule.Factory);                      
+            Type delegateType = typeof(Func<,>).MakeGenericType(typeof(IServiceFactory), serviceType);
+            UnaryExpression convertExpression = Expression.Convert(
+                Expression.Invoke(delegateConstantExpression, serviceRequestConstantExpression), serviceType);
+
+            LambdaExpression lambdaExpression = Expression.Lambda(delegateType, convertExpression, serviceFactoryParameterExpression);            
+            serviceRegistration.FactoryExpression = lambdaExpression;
             
             if (rule.LifeTime != null)
             {
                 return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstance(serviceRegistration, ms), methodSkeleton);
             }
-            
+
             return methodSkeleton => EmitNewInstance(serviceRegistration, methodSkeleton);
         }
-        
+
         private Action<IMethodSkeleton> CreateEnumerableServiceEmitter(Type serviceType)
         {
             Type actualServiceType = serviceType.GetGenericArguments()[0];
@@ -1508,7 +1514,8 @@ namespace LightInject
         {
             var methodSkeleton = methodSkeletonFactory();
             instanceEmitter(methodSkeleton);
-            Func<object> del = () => methodSkeleton.CreateDelegate()(constants.Items);
+            var instanceDelegate = methodSkeleton.CreateDelegate();
+            Func<object> del = () => instanceDelegate(constants.Items);
             return del;            
         }
 
@@ -1958,7 +1965,7 @@ namespace LightInject
                 LazyGetCurrentScopeMethod = new Lazy<MethodInfo>(
                     () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
                 LazyGetCurrentScopeManagerMethod = new Lazy<MethodInfo>(
-                    () => typeof(ThreadLocal<ScopeManager>).GetProperty("Value").GetGetMethod());                                
+                    () => typeof(ThreadLocal<ScopeManager>).GetProperty("Value").GetGetMethod());  
             }
 
             public static MethodInfo LifetimeGetInstanceMethod
@@ -1984,7 +1991,7 @@ namespace LightInject
                     return LazyGetCurrentScopeManagerMethod.Value;
                 }
             }
-
+          
             public static Delegate CreateGetInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
             {
                 Type delegateType = typeof(Func<>).MakeGenericType(serviceType);
@@ -2149,9 +2156,6 @@ namespace LightInject
 #endif
                 }
             }
-
- 
-
 
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
         {
@@ -2712,7 +2716,9 @@ namespace LightInject
             InternalInterfaces.Add(typeof(IPropertySelector));
             InternalInterfaces.Add(typeof(IAssemblyLoader));
             InternalInterfaces.Add(typeof(IAssemblyScanner));
-            InternalInterfaces.Add(typeof(ILifetime));            
+            InternalInterfaces.Add(typeof(ILifetime));
+            InternalInterfaces.Add(typeof(IMethodSkeleton));
+
             InternalTypes.Add(typeof(ServiceContainer.LambdaExpressionParser));
             InternalTypes.Add(typeof(ServiceContainer.LambdaExpressionValidator));
             InternalTypes.Add(typeof(ServiceContainer.ConstructorDependency));
@@ -2724,6 +2730,9 @@ namespace LightInject
             InternalTypes.Add(typeof(ScopeManager));    
             InternalTypes.Add(typeof(ServiceRegistration));
             InternalTypes.Add(typeof(DecoratorRegistration));
+            InternalTypes.Add(typeof(ServiceRequest));
+            InternalTypes.Add(typeof(PropertySelector));
+            InternalTypes.Add(typeof(ServiceContainer));
         }
 
         /// <summary>
@@ -2790,7 +2799,7 @@ namespace LightInject
 
         private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
         {            
-            return assembly.GetTypes().Where(t => t.IsClass && !t.IsNestedPrivate && !t.IsAbstract && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t) && InternalTypes.All(it => it != t));
+            return assembly.GetTypes().Where(t => t.IsClass && !t.IsNestedPrivate && !t.IsAbstract && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t)).Except(InternalTypes);
         }
 
         private static bool IsCompilerGenerated(Type type)

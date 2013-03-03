@@ -1,14 +1,11 @@
-﻿namespace LightInject.Tests
+using System;
+using System.IO;
+
+namespace LightInject.Tests
 {
-    using System;
-    using System.IO;
-
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    [TestClass]
-    public class VerificationTests : ServiceContainerTests
+    internal static class ContainerFactory
     {
-        protected override object DoCreateContainer()
+        internal static IServiceContainer CreateContainerForAssemblyVerification()
         {
             var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DynamicAssembly.dll");
             if (File.Exists(path))
@@ -18,6 +15,11 @@
 
             var serviceContainer = new ServiceContainer(() => new MethodBuilderMethodSkeleton(path));
             return serviceContainer;
-        } 
+        }
+
+        internal static IServiceContainer CreateContainer()
+        {
+            return new ServiceContainer();
+        }
     }
 }

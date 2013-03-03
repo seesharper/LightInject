@@ -66,7 +66,5 @@
             methodBuilder.InitLocals = true;
 
         }
-
-
     }
 }
