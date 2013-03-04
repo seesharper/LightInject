@@ -24,7 +24,7 @@
         /// <param name="mockFactory">The factory delegate that creates the mock instance.</param>
         /// <param name="serviceName">The name of the service to mock.</param>
         public static void StartMocking<TService>(this IServiceRegistry serviceRegistry, Func<TService> mockFactory, string serviceName) where TService : class
-        {
+        {            
             Tuple<IServiceRegistry, Type, string> key = CreateServiceKey<TService>(serviceRegistry, serviceName);
             ILifetime lifeTime = null;
             var serviceRegistration = GetExistingServiceRegistration<TService>(serviceRegistry, serviceName);

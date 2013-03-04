@@ -236,7 +236,6 @@ namespace LightInject
         void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, bool> shouldRegister);
 
 #if NET
-
         /// <summary>
         /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -434,12 +433,13 @@ namespace LightInject
     /// </summary>
     internal class ServiceContainer : IServiceContainer
     {        
-        private const string UnresolvedDependencyError = "Unresolved dependency {0}";                                        
+        private const string UnresolvedDependencyError = "Unresolved dependency {0}";
+        private readonly Func<IMethodSkeleton> methodSkeletonFactory;
         private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();        
         private readonly ServiceRegistry<Action<IMethodSkeleton, Type>> openGenericEmitters = new ServiceRegistry<Action<IMethodSkeleton, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
-        private readonly ThreadSafeDictionary<ServiceRegistration, ConstructionInfo> implementations = new ThreadSafeDictionary<ServiceRegistration, ConstructionInfo>();                        
+        private readonly ThreadSafeDictionary<Registration, ConstructionInfo> constructionInfoCache = new ThreadSafeDictionary<Registration, ConstructionInfo>();                        
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
         private readonly Stack<Action<IMethodSkeleton>> dependencyStack = new Stack<Action<IMethodSkeleton>>();
@@ -451,9 +451,7 @@ namespace LightInject
         private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
         private bool firstServiceRequest = true;
-
-        private Func<IMethodSkeleton> methodSkeletonFactory;
-                       
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
@@ -466,7 +464,6 @@ namespace LightInject
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
-
 #if TEST
         public ServiceContainer(Func<IMethodSkeleton> methodSkeletonFactory) :this()
         {
@@ -634,8 +631,7 @@ namespace LightInject
             AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
         }
 
-#if NET
-       
+#if NET       
         /// <summary>
         /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -648,7 +644,7 @@ namespace LightInject
             }
         }       
 #endif
-
+        
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
         /// </summary>
@@ -751,7 +747,7 @@ namespace LightInject
         }
         
         /// <summary>
-        /// Registers the <typeparamref name="TService"/> with the <paramref name="expression"/> that 
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
@@ -916,6 +912,8 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
+
+            scopeManagers.Dispose();
         }
 
         private static void EmitLoadConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
@@ -1181,7 +1179,6 @@ namespace LightInject
      
         private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IMethodSkeleton dynamicMethodSkeleton, Action decoratorTargetEmitter)
         {
-            Action decoratorChainEmitter = decoratorTargetEmitter;            
             foreach (DecoratorRegistration decorator in serviceDecorators)
             {
                 if (!decorator.CanDecorate(serviceRegistration))
@@ -1423,7 +1420,7 @@ namespace LightInject
 
         private ConstructionInfo GetConstructionInfo(Registration registration)
         {
-            return CreateConstructionInfo(registration);            
+            return constructionInfoCache.GetOrAdd(registration, this.CreateConstructionInfo);
         }
 
         private ThreadSafeDictionary<string, Action<IMethodSkeleton>> GetServiceEmitters(Type serviceType)
@@ -1554,6 +1551,7 @@ namespace LightInject
             delegates.Clear();
             namedDelegates.Clear();
             constants.Clear();
+            constructionInfoCache.Clear();
         }
 
         private void EnsureThatServiceRegistryIsConfigured(Type serviceType)
@@ -2176,7 +2174,6 @@ namespace LightInject
     }
 
 #if NET
-
     internal class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
     {
         public ThreadSafeDictionary()
@@ -2878,7 +2875,7 @@ namespace LightInject
         /// <param name="searchPattern">The search pattern to use.</param>
         /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
         public IEnumerable<Assembly> Load(string searchPattern)
-        {
+        {            
             string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
             if (directory != null)
             {
