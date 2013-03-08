@@ -370,7 +370,7 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a class that is responsible for selecting properties that represents a dependency to the target <see cref="Type"/>.
+    /// Represents a class that is responsible for selecting injectable properties.
     /// </summary>
     internal interface IPropertySelector
     {
@@ -378,8 +378,109 @@ namespace LightInject
         /// Selects properties that represents a dependency from the given <paramref name="type"/>.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> for which to select the properties.</param>
-        /// <returns>A list of properties that represents a dependency to the target <paramref name="type"/></returns>
-        IEnumerable<PropertyInfo> Select(Type type);
+        /// <returns>A list of injectable properties.</returns>
+        IEnumerable<PropertyInfo> Execute(Type type);
+    }
+
+    /// <summary>
+    /// Represents a class that is responsible for selecting the property dependencies for a given <see cref="Type"/>.
+    /// </summary>
+    internal interface IPropertyDependencySelector
+    {
+        /// <summary>
+        /// Selects the property dependencies for the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> for which to select the property dependencies.</param>
+        /// <returns>A list of <see cref="PropertyDependecy"/> instances that represents the property
+        /// dependencies for the given <paramref name="type"/>.</returns>
+        IEnumerable<PropertyDependecy> Execute(Type type);
+    }
+
+    /// <summary>
+    /// Represents a class that is responsible for selecting the constructor dependencies for a given <see cref="ConstructorInfo"/>.
+    /// </summary>
+    internal interface IConstructorDependencySelector
+    {
+        /// <summary>
+        /// Selects the constructor dependencies for the given <paramref name="constructor"/>.
+        /// </summary>
+        /// <param name="constructor">The <see cref="ConstructionInfo"/> for which to select the constructor dependencies.</param>
+        /// <returns>A list of <see cref="ConstructorDependency"/> instances that represents the constructor
+        /// dependencies for the given <paramref name="constructor"/>.</returns>
+        IEnumerable<ConstructorDependency> Execute(ConstructorInfo constructor);
+    }
+
+    /// <summary>
+    /// Represents a class that is capable of building a <see cref="ConstructorInfo"/> instance 
+    /// based on a <see cref="Registration"/>.
+    /// </summary>
+    internal interface IConstructionInfoBuilder
+    {
+        /// <summary>
+        /// Returns a <see cref="ConstructionInfo"/> instance based on the given <see cref="Registration"/>.
+        /// </summary>
+        /// <param name="registration">The <see cref="Registration"/> for which to return a <see cref="ConstructionInfo"/> instance.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance that describes how to create a service instance.</returns>
+        ConstructionInfo Execute(Registration registration);
+    }
+
+    /// <summary>
+    /// Represents a class that keeps track of a <see cref="ConstructionInfo"/> instance for each <see cref="Registration"/>.
+    /// </summary>
+    internal interface IConstructionInfoProvider
+    {
+        /// <summary>
+        /// Gets a <see cref="ConstructionInfo"/> instance for the given <paramref name="registration"/>.
+        /// </summary>
+        /// <param name="registration">The <see cref="Registration"/> for which to get a <see cref="ConstructionInfo"/> instance.</param>
+        /// <returns>The <see cref="ConstructionInfo"/> instance that describes how to create an instance of the given <paramref name="registration"/>.</returns>
+        ConstructionInfo GetConstructionInfo(Registration registration);
+
+        /// <summary>
+        /// Invalidates the <see cref="IConstructionInfoProvider"/> and causes new <see cref="ConstructionInfo"/> instances 
+        /// to be created when the <see cref="GetConstructionInfo"/> method is called.
+        /// </summary>
+        void Invalidate();
+    }
+
+    /// <summary>
+    /// Represents a class that builds a <see cref="ConstructionInfo"/> instance based on a <see cref="LambdaExpression"/>.
+    /// </summary>
+    internal interface ILambdaConstructionInfoBuilder
+    {
+        /// <summary>
+        /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
+        /// </summary>
+        /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
+        ConstructionInfo Execute(LambdaExpression lambdaExpression);
+    }
+
+    /// <summary>
+    /// Represents a class that builds a <see cref="ConstructionInfo"/> instance based on the implementing <see cref="Type"/>.
+    /// </summary>
+    internal interface ITypeConstructionInfoBuilder
+    {
+        /// <summary>
+        /// Analyzes the <paramref name="implementingType"/> and returns a <see cref="ConstructionInfo"/> instance.
+        /// </summary>
+        /// <param name="implementingType">The <see cref="Type"/> to analyze.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
+        ConstructionInfo Execute(Type implementingType);
+    }
+
+    /// <summary>
+    /// Represents a class that selects the constructor to be used for creating a new service instance. 
+    /// </summary>
+    internal interface IConstructorSelector
+    {
+        /// <summary>
+        /// Selects the constructor to be used when creating a new instance of the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="implementingType">The <see cref="Type"/> for which to return a <see cref="ConstructionInfo"/>.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance that represents the constructor to be used
+        /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
+        ConstructorInfo Execute(Type implementingType);
     }
 
     /// <summary>
@@ -438,8 +539,7 @@ namespace LightInject
         private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();        
         private readonly ServiceRegistry<Action<IMethodSkeleton, Type>> openGenericEmitters = new ServiceRegistry<Action<IMethodSkeleton, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
-        private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
-        private readonly ThreadSafeDictionary<Registration, ConstructionInfo> constructionInfoCache = new ThreadSafeDictionary<Registration, ConstructionInfo>();                        
+        private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();        
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
         private readonly Stack<Action<IMethodSkeleton>> dependencyStack = new Stack<Action<IMethodSkeleton>>();
@@ -457,13 +557,14 @@ namespace LightInject
         /// </summary>
         public ServiceContainer()
         {            
-            AssemblyScanner = new AssemblyScanner();
-            PropertySelector = new PropertySelector();
+            AssemblyScanner = new AssemblyScanner();            
+            ConstructionInfoProvider = CreateConstructionInfoProvider();
             methodSkeletonFactory = () => new DynamicMethodSkeleton();
 #if NET
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
+
 #if TEST
         public ServiceContainer(Func<IMethodSkeleton> methodSkeletonFactory) :this()
         {
@@ -472,15 +573,16 @@ namespace LightInject
 #endif
 
         /// <summary>
+        /// Gets or sets the <see cref="IConstructionInfoProvider"/> that is responsible 
+        /// for providing a <see cref="ConstructionInfo"/> instance for a given <see cref="Registration"/>.
+        /// </summary>
+        public IConstructionInfoProvider ConstructionInfoProvider { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="IPropertySelector"/> instance that is responsible selecting the properties
-        /// that represents a dependency for a given <see cref="Type"/>.
-        /// </summary>
-        public IPropertySelector PropertySelector { get; set; }
+    
 #if NET
         
         /// <summary>
@@ -916,6 +1018,26 @@ namespace LightInject
             scopeManagers.Dispose();
         }
 
+        private static ConstructionInfoProvider CreateConstructionInfoProvider()
+        {
+            return new ConstructionInfoProvider(CreateConstructionInfoBuilder());
+        }
+
+        private static ConstructionInfoBuilder CreateConstructionInfoBuilder()
+        {
+            return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
+        }
+
+        private static TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
+        {
+            return new TypeConstructionInfoBuilder(new ConstructorSelector(), new ConstructorDependencySelector(), CreatePropertyDependencySelector());
+        }
+
+        private static PropertyDependencySelector CreatePropertyDependencySelector()
+        {
+            return new PropertyDependencySelector(new PropertySelector());
+        }
+
         private static void EmitLoadConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
         {           
             var generator = dynamicMethodSkeleton.GetILGenerator();
@@ -965,19 +1087,7 @@ namespace LightInject
             return serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(Func<,>)
                 && serviceType.GetGenericArguments()[0] == typeof(string);
         }
-
-        private static ConstructorInfo GetConstructorWithTheMostParameters(Type implementingType)
-        {
-            return implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
-        }
         
-        private static IEnumerable<ConstructorDependency> GetConstructorDependencies(ConstructorInfo constructorInfo)
-        {
-            return
-                constructorInfo.GetParameters().OrderBy(p => p.Position).Select(
-                    p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
-        }
-
         private static ILifetime CloneLifeTime(ILifetime lifetime)
         {
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
@@ -994,45 +1104,6 @@ namespace LightInject
 
             var del = methodSkeleton.CreateDelegate();
             return () => del(constants.Items);
-        }
-
-        private ConstructionInfo CreateConstructionInfo(Registration registration)
-        {
-            if (registration.FactoryExpression != null)
-            {
-                return CreateConstructionInfoFromLambdaExpression(registration.FactoryExpression);                
-            }
-            
-            return CreateConstructionInfoFromImplementingType(registration.ImplementingType);
-        }
-
-        private ConstructionInfo CreateConstructionInfoFromImplementingType(Type implementingType)
-        {
-            var constructionInfo = new ConstructionInfo();
-            ConstructorInfo constructorInfo = GetConstructorWithTheMostParameters(implementingType);
-            constructionInfo.ImplementingType = implementingType;
-            constructionInfo.Constructor = constructorInfo;
-            constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructorInfo));
-            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
-            return constructionInfo;
-        }
-
-        private IEnumerable<PropertyDependecy> GetPropertyDependencies(Type implementingType)
-        {
-            return GetInjectableProperties(implementingType).Select(
-                p => new PropertyDependecy { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
-        }
-
-        private IEnumerable<PropertyInfo> GetInjectableProperties(Type implementingType)
-        {
-            return PropertySelector.Select(implementingType);
-        }
-
-        private ConstructionInfo CreateConstructionInfoFromLambdaExpression(LambdaExpression lambdaExpression)
-        {
-            var lambdaExpressionParser = new LambdaExpressionParser();
-            ConstructionInfo constructionInfo = lambdaExpressionParser.Parse(lambdaExpression);
-            return constructionInfo;
         }
 
         private Action<IMethodSkeleton> GetEmitMethod(Type serviceType, string serviceName)
@@ -1420,7 +1491,7 @@ namespace LightInject
 
         private ConstructionInfo GetConstructionInfo(Registration registration)
         {
-            return constructionInfoCache.GetOrAdd(registration, this.CreateConstructionInfo);
+            return ConstructionInfoProvider.GetConstructionInfo(registration);
         }
 
         private ThreadSafeDictionary<string, Action<IMethodSkeleton>> GetServiceEmitters(Type serviceType)
@@ -1551,7 +1622,7 @@ namespace LightInject
             delegates.Clear();
             namedDelegates.Clear();
             constants.Clear();
-            constructionInfoCache.Clear();
+            ConstructionInfoProvider.Invalidate();
         }
 
         private void EnsureThatServiceRegistryIsConfigured(Type serviceType)
@@ -1580,368 +1651,7 @@ namespace LightInject
             UpdateServiceEmitter(typeof(TService), serviceName, GetEmitDelegate(serviceRegistration));
             UpdateServiceRegistration(serviceRegistration);
         }
-               
-        /// <summary>
-        /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
-        /// </summary>
-        public class LambdaExpressionParser
-        {                                                            
-            /// <summary>
-            /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
-            /// </summary>
-            /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
-            /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
-            public ConstructionInfo Parse(LambdaExpression lambdaExpression)
-            {                                                                
-                var lambdaExpressionValidator = new LambdaExpressionValidator();
-                
-                if (!lambdaExpressionValidator.CanParse(lambdaExpression))
-                {
-                    return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
-                }
-                
-                switch (lambdaExpression.Body.NodeType)
-                {
-                    case ExpressionType.New:
-                        return CreateConstructionInfoBasedOnNewExpression((NewExpression)lambdaExpression.Body);
-                    case ExpressionType.MemberInit:
-                        return CreateConstructionInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);                                      
-                    default:
-                        return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
-                }                
-            }
-
-            private static ConstructionInfo CreateConstructionInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
-            {
-                return new ConstructionInfo { FactoryDelegate = lambdaExpression.Compile() };
-            }
-
-            private static ConstructionInfo CreateConstructionInfoBasedOnNewExpression(NewExpression newExpression)
-            {
-                var constructionInfo = CreateConstructionInfo(newExpression);
-                ParameterInfo[] parameters = newExpression.Constructor.GetParameters();
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    ConstructorDependency constructorDependency = CreateConstructorDependency(parameters[i]);
-                    ApplyDependencyDetails(newExpression.Arguments[i], constructorDependency);
-                    constructionInfo.ConstructorDependencies.Add(constructorDependency);
-                }
-
-                return constructionInfo;
-            }
-
-            private static ConstructionInfo CreateConstructionInfo(NewExpression newExpression)
-            {
-                var constructionInfo = new ConstructionInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
-                return constructionInfo;
-            }
-
-            private static ConstructionInfo CreateConstructionInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
-            {
-                var constructionInfo = CreateConstructionInfoBasedOnNewExpression(memberInitExpression.NewExpression);
-                foreach (MemberBinding memberBinding in memberInitExpression.Bindings)
-                {
-                    HandleMemberAssignment((MemberAssignment)memberBinding, constructionInfo);
-                }
-
-                return constructionInfo;
-            }
-           
-            private static void HandleMemberAssignment(MemberAssignment memberAssignment, ConstructionInfo constructionInfo)
-            {
-                var propertyDependency = CreatePropertyDependency(memberAssignment);
-                ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
-                constructionInfo.PropertyDependencies.Add(propertyDependency);
-            }
-
-            private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
-            {
-                var constructorDependency = new ConstructorDependency
-                {
-                    Parameter = parameterInfo,
-                    ServiceType = parameterInfo.ParameterType
-                };
-                return constructorDependency;
-            }
-
-            private static PropertyDependecy CreatePropertyDependency(MemberAssignment memberAssignment)
-            {
-                var propertyDependecy = new PropertyDependecy
-                {
-                    Property = (PropertyInfo)memberAssignment.Member,
-                    ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType
-                };
-                return propertyDependecy;
-            }
-
-            private static void ApplyDependencyDetails(Expression expression, Dependency dependency)
-            {                
-                if (RepresentsServiceFactoryMethod(expression))
-                {
-                    ApplyDependencyDetailsFromMethodCall((MethodCallExpression)expression, dependency);
-                }
-                else
-                {
-                    ApplyDependecyDetailsFromExpression(expression, dependency);
-                }
-            }
-
-            private static bool RepresentsServiceFactoryMethod(Expression expression)
-            {
-                return IsMethodCall(expression) &&
-                    IsServiceFactoryMethod(((MethodCallExpression)expression).Method);
-            }
-
-            private static bool IsMethodCall(Expression expression)
-            {
-                return expression.NodeType == ExpressionType.Call;
-            }
-
-            private static bool IsServiceFactoryMethod(MethodInfo methodInfo)
-            {
-                return methodInfo.DeclaringType == typeof(IServiceFactory);
-            }
-
-            private static void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
-            {                
-                dependency.FactoryExpression = expression;
-                dependency.ServiceName = string.Empty;
-            }
-
-            private static void ApplyDependencyDetailsFromMethodCall(MethodCallExpression methodCallExpression, Dependency dependency)
-            {
-                dependency.ServiceType = methodCallExpression.Method.ReturnType;
-                if (RepresentsGetNamedInstanceMethod(methodCallExpression))
-                {
-                    dependency.ServiceName = (string)((ConstantExpression)methodCallExpression.Arguments[0]).Value;
-                }
-                else
-                {
-                    dependency.ServiceName = string.Empty;
-                }
-            }
-
-            private static bool RepresentsGetNamedInstanceMethod(MethodCallExpression node)
-            {
-                return IsGetInstanceMethod(node.Method) && HasOneArgumentRepresentingServiceName(node);
-            }
-
-            private static bool IsGetInstanceMethod(MethodInfo methodInfo)
-            {
-                return methodInfo.Name == "GetInstance";
-            }
-
-            private static bool HasOneArgumentRepresentingServiceName(MethodCallExpression node)
-            {
-                return HasOneArgument(node) && IsConstantExpression(node.Arguments[0]);
-            }
-
-            private static bool HasOneArgument(MethodCallExpression node)
-            {
-                return node.Arguments.Count == 1;
-            }
-
-            private static bool IsConstantExpression(Expression argument)
-            {                
-                return argument.NodeType == ExpressionType.Constant;
-            }
-        }
- 
-        /// <summary>
-        /// Inspects the body of a <see cref="LambdaExpression"/> and determines if the expression can be parsed.
-        /// </summary>
-        public class LambdaExpressionValidator : ExpressionVisitor
-        {
-            private bool canParse = true;
-
-            /// <summary>
-            /// Determines if the <paramref name="lambdaExpression"/> can be parsed.
-            /// </summary>
-            /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to validate.</param>
-            /// <returns><b>true</b>, if the expression can be parsed, otherwise <b>false</b>.</returns>
-            public bool CanParse(LambdaExpression lambdaExpression)
-            {
-                Visit(lambdaExpression.Body);                
-                return canParse;
-            }
-
-            /// <summary>
-            /// Visits the children of the <see cref="T:System.Linq.Expressions.Expression`1"/>.
-            /// </summary>
-            /// <returns>
-            /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
-            /// </returns>
-            /// <param name="node">The expression to visit.</param><typeparam name="T">The type of the delegate.</typeparam>
-            protected override Expression VisitLambda<T>(Expression<T> node)
-            {
-                canParse = false;
-                return base.VisitLambda(node);
-            }
-
-            /// <summary>
-            /// Visits the children of the <see cref="T:System.Linq.Expressions.UnaryExpression"/>.
-            /// </summary>
-            /// <returns>
-            /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
-            /// </returns>
-            /// <param name="node">The expression to visit.</param>
-            protected override Expression VisitUnary(UnaryExpression node)
-            {
-                if (node.NodeType == ExpressionType.Convert)
-                {
-                    canParse = false;
-                }
-
-                return base.VisitUnary(node);
-            }
-        }
-
-        /// <summary>
-        /// Contains information about how to create a service instance.
-        /// </summary>
-        public class ConstructionInfo
-        {
-            /// <summary>
-            /// Initializes a new instance of the <see cref="ConstructionInfo"/> class.
-            /// </summary>
-            public ConstructionInfo()
-            {
-                PropertyDependencies = new List<PropertyDependecy>();
-                ConstructorDependencies = new List<ConstructorDependency>();
-            }
-
-            /// <summary>
-            /// Gets or sets the implementing type that represents the concrete class to create.
-            /// </summary>
-            public Type ImplementingType { get; set; }
-            
-            /// <summary>
-            /// Gets or sets the <see cref="ConstructorInfo"/> that is used to create a service instance.
-            /// </summary>
-            public ConstructorInfo Constructor { get; set; }
-
-            /// <summary>
-            /// Gets a list of <see cref="PropertyDependecy"/> instances that represent 
-            /// the property dependencies for the target service instance. 
-            /// </summary>
-            public List<PropertyDependecy> PropertyDependencies { get; private set; }
-
-            /// <summary>
-            /// Gets a list of <see cref="ConstructorDependency"/> instances that represent 
-            /// the property dependencies for the target service instance. 
-            /// </summary>
-            public List<ConstructorDependency> ConstructorDependencies { get; private set; }
-
-            /// <summary>
-            /// Gets or sets the function delegate to be used to create the service instance.
-            /// </summary>
-            public Delegate FactoryDelegate { get; set; }
-        }
-
-        /// <summary>
-        /// Represents a class dependency.
-        /// </summary>
-        public abstract class Dependency
-        {
-            /// <summary>
-            /// Gets or sets the service <see cref="Type"/> of the <see cref="Dependency"/>.
-            /// </summary>
-            public Type ServiceType { get; set; }
-
-            /// <summary>
-            /// Gets or sets the service name of the <see cref="Dependency"/>.
-            /// </summary>
-            public string ServiceName { get; set; }
-
-            /// <summary>
-            /// Gets or sets the <see cref="FactoryExpression"/> that represent getting the value of the <see cref="Dependency"/>.
-            /// </summary>            
-            public Expression FactoryExpression { get; set; }
-
-            /// <summary>
-            /// Gets the name of the dependency accessor.
-            /// </summary>
-            public abstract string Name { get; }
-
-            /// <summary>
-            /// Returns textual information about the dependency.
-            /// </summary>
-            /// <returns>A string that describes the dependency.</returns>
-            public override string ToString()
-            {
-                var sb = new StringBuilder();
-                return sb.AppendFormat("[Requested dependency: ServiceType:{0}, ServiceName:{1}]", ServiceType, ServiceName).ToString();                                
-            }
-        }
-
-        /// <summary>
-        /// Represents a property dependency.
-        /// </summary>
-        public class PropertyDependecy : Dependency
-        {
-            /// <summary>
-            /// Gets or sets the <see cref="MethodInfo"/> that is used to set the property value.
-            /// </summary>
-            public PropertyInfo Property { get; set; }
-
-            /// <summary>
-            /// Gets the name of the dependency accessor.
-            /// </summary>
-            public override string Name
-            {
-                get
-                {
-                    return Property.Name;
-                }
-            }
-
-            /// <summary>
-            /// Returns textual information about the dependency.
-            /// </summary>
-            /// <returns>A string that describes the dependency.</returns>
-            public override string ToString()
-            {
-                return string.Format("[Target Type: {0}], [Property: {1}({2})]", Property.DeclaringType, Property.Name, Property.PropertyType) + ", " + base.ToString();
-            }
-        }
-
-        /// <summary>
-        /// Represents a constructor dependency.
-        /// </summary>
-        public class ConstructorDependency : Dependency
-        {
-            /// <summary>
-            /// Gets or sets the <see cref="ParameterInfo"/> for this <see cref="ConstructorDependency"/>.
-            /// </summary>
-            public ParameterInfo Parameter { get; set; }
-
-            /// <summary>
-            /// Gets or sets a value indicating whether that this parameter represents  
-            /// the decoration target passed into a decorator instance. 
-            /// </summary>
-            public bool IsDecoratorTarget { get; set; }
-
-            /// <summary>
-            /// Gets the name of the dependency accessor.
-            /// </summary>
-            public override string Name
-            {
-                get
-                {
-                    return Parameter.Name;
-                }
-            }
-
-            /// <summary>
-            /// Returns textual information about the dependency.
-            /// </summary>
-            /// <returns>A string that describes the dependency.</returns>
-            public override string ToString()
-            {
-                return string.Format("[Target Type: {0}], [Parameter: {1}({2})]", Parameter.Member.DeclaringType, Parameter.Name, Parameter.ParameterType) + ", " + base.ToString();
-            }
-        }
-
+                         
         private static class ReflectionHelper
         {
             private static readonly Lazy<MethodInfo> LazyLifetimeGetInstanceMethod;
@@ -2345,6 +2055,409 @@ namespace LightInject
 #endif
 
     /// <summary>
+    /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
+    /// </summary>
+    internal class ConstructorSelector : IConstructorSelector
+    {
+        /// <summary>
+        /// Selects the constructor to be used when creating a new instance of the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="implementingType">The <see cref="Type"/> for which to return a <see cref="ConstructionInfo"/>.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance that represents the constructor to be used
+        /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
+        public ConstructorInfo Execute(Type implementingType)
+        {
+            return implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
+        }
+    }
+
+    /// <summary>
+    /// Selects the constructor dependencies for a given <see cref="ConstructorInfo"/>.
+    /// </summary>
+    internal class ConstructorDependencySelector : IConstructorDependencySelector
+    {
+        /// <summary>
+        /// Selects the constructor dependencies for the given <paramref name="constructor"/>.
+        /// </summary>
+        /// <param name="constructor">The <see cref="ConstructionInfo"/> for which to select the constructor dependencies.</param>
+        /// <returns>A list of <see cref="ConstructorDependency"/> instances that represents the constructor
+        /// dependencies for the given <paramref name="constructor"/>.</returns>
+        public IEnumerable<ConstructorDependency> Execute(ConstructorInfo constructor)
+        {
+            return
+                constructor.GetParameters().OrderBy(p => p.Position).Select(
+                    p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
+        }
+    }
+
+    /// <summary>
+    /// Selects the property dependencies for a given <see cref="Type"/>.
+    /// </summary>
+    internal class PropertyDependencySelector : IPropertyDependencySelector
+    {
+        private readonly IPropertySelector propertySelector;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PropertyDependencySelector"/> class.
+        /// </summary>
+        /// <param name="propertySelector">The <see cref="IPropertySelector"/> that is 
+        /// responsible for selecting a list of injectable properties.</param>
+        public PropertyDependencySelector(IPropertySelector propertySelector)
+        {
+            this.propertySelector = propertySelector;
+        }
+
+        /// <summary>
+        /// Selects the property dependencies for the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> for which to select the property dependencies.</param>
+        /// <returns>A list of <see cref="PropertyDependecy"/> instances that represents the property
+        /// dependencies for the given <paramref name="type"/>.</returns>
+        public IEnumerable<PropertyDependecy> Execute(Type type)
+        {
+            return propertySelector.Execute(type).Select(
+                p => new PropertyDependecy { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
+        }
+    }
+
+    /// <summary>
+    /// Builds a <see cref="ConstructionInfo"/> instance based on the implementing <see cref="Type"/>.
+    /// </summary>
+    internal class TypeConstructionInfoBuilder : ITypeConstructionInfoBuilder
+    {
+        private readonly IConstructorSelector constructorSelector;
+        private readonly IConstructorDependencySelector constructorDependencySelector;
+        private readonly IPropertyDependencySelector propertyDependencySelector;
+
+        public TypeConstructionInfoBuilder(
+            IConstructorSelector constructorSelector, 
+            IConstructorDependencySelector constructorDependencySelector,
+            IPropertyDependencySelector propertyDependencySelector)
+        {
+            this.constructorSelector = constructorSelector;
+            this.constructorDependencySelector = constructorDependencySelector;
+            this.propertyDependencySelector = propertyDependencySelector;
+        }
+
+        /// <summary>
+        /// Analyzes the <paramref name="implementingType"/> and returns a <see cref="ConstructionInfo"/> instance.
+        /// </summary>
+        /// <param name="implementingType">The <see cref="Type"/> to analyze.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
+        public ConstructionInfo Execute(Type implementingType)
+        {
+            var constructionInfo = new ConstructionInfo();
+            constructionInfo.Constructor = constructorSelector.Execute(implementingType);
+            constructionInfo.ImplementingType = implementingType;
+            constructionInfo.PropertyDependencies.AddRange(propertyDependencySelector.Execute(implementingType));
+            constructionInfo.ConstructorDependencies.AddRange(constructorDependencySelector.Execute(constructionInfo.Constructor));
+            return constructionInfo;
+        }
+    }
+
+    /// <summary>
+    /// Keeps track of a <see cref="ConstructionInfo"/> instance for each <see cref="Registration"/>.
+    /// </summary>
+    internal class ConstructionInfoProvider : IConstructionInfoProvider
+    {
+        private readonly IConstructionInfoBuilder constructionInfoBuilder;
+        private readonly ThreadSafeDictionary<Registration, ConstructionInfo> cache = new ThreadSafeDictionary<Registration, ConstructionInfo>();                        
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConstructionInfoProvider"/> class.
+        /// </summary>
+        /// <param name="constructionInfoBuilder">The <see cref="IConstructionInfoBuilder"/> that 
+        /// is responsible for building a <see cref="ConstructionInfo"/> instance based on a given <see cref="Registration"/>.</param>
+        public ConstructionInfoProvider(IConstructionInfoBuilder constructionInfoBuilder)
+        {
+            this.constructionInfoBuilder = constructionInfoBuilder;
+        }
+
+        /// <summary>
+        /// Gets a <see cref="ConstructionInfo"/> instance for the given <paramref name="registration"/>.
+        /// </summary>
+        /// <param name="registration">The <see cref="Registration"/> for which to get a <see cref="ConstructionInfo"/> instance.</param>
+        /// <returns>The <see cref="ConstructionInfo"/> instance that describes how to create an instance of the given <paramref name="registration"/>.</returns>
+        public ConstructionInfo GetConstructionInfo(Registration registration)
+        {
+            return cache.GetOrAdd(registration, constructionInfoBuilder.Execute);
+        }
+
+        /// <summary>
+        /// Invalidates the <see cref="IConstructionInfoProvider"/> and causes new <see cref="ConstructionInfo"/> instances 
+        /// to be created when the <see cref="IConstructionInfoProvider.GetConstructionInfo"/> method is called.
+        /// </summary>
+        public void Invalidate()
+        {
+            cache.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Provides a <see cref="ConstructorInfo"/> instance 
+    /// that describes how to create a service instance.
+    /// </summary>
+    internal class ConstructionInfoBuilder : IConstructionInfoBuilder
+    {        
+        private readonly Lazy<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilder;
+        private readonly Lazy<ITypeConstructionInfoBuilder> typeConstructionInfoBuilder;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.             
+        /// </summary>
+        /// <param name="lambdaConstructionInfoBuilderFactory">
+        /// A function delegate used to provide a <see cref="ILambdaConstructionInfoBuilder"/> instance.
+        /// </param>
+        /// <param name="typeConstructionInfoBuilderFactory">
+        /// A function delegate used to provide a <see cref="ITypeConstructionInfoBuilder"/> instance.
+        /// </param>
+        public ConstructionInfoBuilder(
+            Func<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilderFactory, 
+            Func<ITypeConstructionInfoBuilder> typeConstructionInfoBuilderFactory)
+        {
+            this.typeConstructionInfoBuilder = new Lazy<ITypeConstructionInfoBuilder>(typeConstructionInfoBuilderFactory);
+            this.lambdaConstructionInfoBuilder = new Lazy<ILambdaConstructionInfoBuilder>(lambdaConstructionInfoBuilderFactory);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="ConstructionInfo"/> instance based on the given <see cref="Registration"/>.
+        /// </summary>
+        /// <param name="registration">The <see cref="Registration"/> for which to return a <see cref="ConstructionInfo"/> instance.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance that describes how to create a service instance.</returns>
+        public ConstructionInfo Execute(Registration registration)
+        {
+            return registration.FactoryExpression != null 
+                ? CreateConstructionInfoFromLambdaExpression(registration.FactoryExpression) 
+                : CreateConstructionInfoFromImplementingType(registration.ImplementingType);
+        }
+
+        private ConstructionInfo CreateConstructionInfoFromLambdaExpression(LambdaExpression lambdaExpression)
+        {
+            return lambdaConstructionInfoBuilder.Value.Execute(lambdaExpression);
+        }
+
+        private ConstructionInfo CreateConstructionInfoFromImplementingType(Type implementingType)
+        {
+            return typeConstructionInfoBuilder.Value.Execute(implementingType);            
+        }       
+    }
+    
+    /// <summary>
+    /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
+    /// </summary>
+    internal class LambdaConstructionInfoBuilder : ILambdaConstructionInfoBuilder
+    {
+        /// <summary>
+        /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
+        /// </summary>
+        /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
+        public ConstructionInfo Execute(LambdaExpression lambdaExpression)
+        {
+            var lambdaExpressionValidator = new LambdaExpressionValidator();
+
+            if (!lambdaExpressionValidator.CanParse(lambdaExpression))
+            {
+                return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
+            }
+
+            switch (lambdaExpression.Body.NodeType)
+            {
+                case ExpressionType.New:
+                    return CreateConstructionInfoBasedOnNewExpression((NewExpression)lambdaExpression.Body);
+                case ExpressionType.MemberInit:
+                    return CreateConstructionInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);
+                default:
+                    return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
+            }
+        }
+
+        private static ConstructionInfo CreateConstructionInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
+        {
+            return new ConstructionInfo { FactoryDelegate = lambdaExpression.Compile() };
+        }
+
+        private static ConstructionInfo CreateConstructionInfoBasedOnNewExpression(NewExpression newExpression)
+        {
+            var constructionInfo = CreateConstructionInfo(newExpression);
+            ParameterInfo[] parameters = newExpression.Constructor.GetParameters();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                ConstructorDependency constructorDependency = CreateConstructorDependency(parameters[i]);
+                ApplyDependencyDetails(newExpression.Arguments[i], constructorDependency);
+                constructionInfo.ConstructorDependencies.Add(constructorDependency);
+            }
+
+            return constructionInfo;
+        }
+
+        private static ConstructionInfo CreateConstructionInfo(NewExpression newExpression)
+        {
+            var constructionInfo = new ConstructionInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
+            return constructionInfo;
+        }
+
+        private static ConstructionInfo CreateConstructionInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
+        {
+            var constructionInfo = CreateConstructionInfoBasedOnNewExpression(memberInitExpression.NewExpression);
+            foreach (MemberBinding memberBinding in memberInitExpression.Bindings)
+            {
+                HandleMemberAssignment((MemberAssignment)memberBinding, constructionInfo);
+            }
+
+            return constructionInfo;
+        }
+
+        private static void HandleMemberAssignment(MemberAssignment memberAssignment, ConstructionInfo constructionInfo)
+        {
+            var propertyDependency = CreatePropertyDependency(memberAssignment);
+            ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
+            constructionInfo.PropertyDependencies.Add(propertyDependency);
+        }
+
+        private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
+        {
+            var constructorDependency = new ConstructorDependency
+            {
+                Parameter = parameterInfo,
+                ServiceType = parameterInfo.ParameterType
+            };
+            return constructorDependency;
+        }
+
+        private static PropertyDependecy CreatePropertyDependency(MemberAssignment memberAssignment)
+        {
+            var propertyDependecy = new PropertyDependecy
+            {
+                Property = (PropertyInfo)memberAssignment.Member,
+                ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType
+            };
+            return propertyDependecy;
+        }
+
+        private static void ApplyDependencyDetails(Expression expression, Dependency dependency)
+        {
+            if (RepresentsServiceFactoryMethod(expression))
+            {
+                ApplyDependencyDetailsFromMethodCall((MethodCallExpression)expression, dependency);
+            }
+            else
+            {
+                ApplyDependecyDetailsFromExpression(expression, dependency);
+            }
+        }
+
+        private static bool RepresentsServiceFactoryMethod(Expression expression)
+        {
+            return IsMethodCall(expression) &&
+                IsServiceFactoryMethod(((MethodCallExpression)expression).Method);
+        }
+
+        private static bool IsMethodCall(Expression expression)
+        {
+            return expression.NodeType == ExpressionType.Call;
+        }
+
+        private static bool IsServiceFactoryMethod(MethodInfo methodInfo)
+        {
+            return methodInfo.DeclaringType == typeof(IServiceFactory);
+        }
+
+        private static void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
+        {
+            dependency.FactoryExpression = expression;
+            dependency.ServiceName = string.Empty;
+        }
+
+        private static void ApplyDependencyDetailsFromMethodCall(MethodCallExpression methodCallExpression, Dependency dependency)
+        {
+            dependency.ServiceType = methodCallExpression.Method.ReturnType;
+            if (RepresentsGetNamedInstanceMethod(methodCallExpression))
+            {
+                dependency.ServiceName = (string)((ConstantExpression)methodCallExpression.Arguments[0]).Value;
+            }
+            else
+            {
+                dependency.ServiceName = string.Empty;
+            }
+        }
+
+        private static bool RepresentsGetNamedInstanceMethod(MethodCallExpression node)
+        {
+            return IsGetInstanceMethod(node.Method) && HasOneArgumentRepresentingServiceName(node);
+        }
+
+        private static bool IsGetInstanceMethod(MethodInfo methodInfo)
+        {
+            return methodInfo.Name == "GetInstance";
+        }
+
+        private static bool HasOneArgumentRepresentingServiceName(MethodCallExpression node)
+        {
+            return HasOneArgument(node) && IsConstantExpression(node.Arguments[0]);
+        }
+
+        private static bool HasOneArgument(MethodCallExpression node)
+        {
+            return node.Arguments.Count == 1;
+        }
+
+        private static bool IsConstantExpression(Expression argument)
+        {
+            return argument.NodeType == ExpressionType.Constant;
+        }
+    }
+
+    /// <summary>
+    /// Inspects the body of a <see cref="LambdaExpression"/> and determines if the expression can be parsed.
+    /// </summary>
+    internal class LambdaExpressionValidator : ExpressionVisitor
+    {
+        private bool canParse = true;
+
+        /// <summary>
+        /// Determines if the <paramref name="lambdaExpression"/> can be parsed.
+        /// </summary>
+        /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to validate.</param>
+        /// <returns><b>true</b>, if the expression can be parsed, otherwise <b>false</b>.</returns>
+        public bool CanParse(LambdaExpression lambdaExpression)
+        {
+            Visit(lambdaExpression.Body);
+            return canParse;
+        }
+
+        /// <summary>
+        /// Visits the children of the <see cref="T:System.Linq.Expressions.Expression`1"/>.
+        /// </summary>
+        /// <returns>
+        /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
+        /// </returns>
+        /// <param name="node">The expression to visit.</param><typeparam name="T">The type of the delegate.</typeparam>
+        protected override Expression VisitLambda<T>(Expression<T> node)
+        {
+            canParse = false;
+            return base.VisitLambda(node);
+        }
+
+        /// <summary>
+        /// Visits the children of the <see cref="T:System.Linq.Expressions.UnaryExpression"/>.
+        /// </summary>
+        /// <returns>
+        /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
+        /// </returns>
+        /// <param name="node">The expression to visit.</param>
+        protected override Expression VisitUnary(UnaryExpression node)
+        {
+            if (node.NodeType == ExpressionType.Convert)
+            {
+                canParse = false;
+            }
+
+            return base.VisitUnary(node);
+        }
+    }
+
+    /// <summary>
     /// Contains information about a service request that originates from a rule based service registration.
     /// </summary>    
     internal class ServiceRequest
@@ -2462,7 +2575,153 @@ namespace LightInject
             return result;                
         }            
     }
-    
+
+    /// <summary>
+    /// Contains information about how to create a service instance.
+    /// </summary>
+    internal class ConstructionInfo
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConstructionInfo"/> class.
+        /// </summary>
+        public ConstructionInfo()
+        {
+            PropertyDependencies = new List<PropertyDependecy>();
+            ConstructorDependencies = new List<ConstructorDependency>();
+        }
+
+        /// <summary>
+        /// Gets or sets the implementing type that represents the concrete class to create.
+        /// </summary>
+        public Type ImplementingType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ConstructorInfo"/> that is used to create a service instance.
+        /// </summary>
+        public ConstructorInfo Constructor { get; set; }
+
+        /// <summary>
+        /// Gets a list of <see cref="PropertyDependecy"/> instances that represent 
+        /// the property dependencies for the target service instance. 
+        /// </summary>
+        public List<PropertyDependecy> PropertyDependencies { get; private set; }
+
+        /// <summary>
+        /// Gets a list of <see cref="ConstructorDependency"/> instances that represent 
+        /// the property dependencies for the target service instance. 
+        /// </summary>
+        public List<ConstructorDependency> ConstructorDependencies { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the function delegate to be used to create the service instance.
+        /// </summary>
+        public Delegate FactoryDelegate { get; set; }
+    }
+
+    /// <summary>
+    /// Represents a class dependency.
+    /// </summary>
+    internal abstract class Dependency
+    {
+        /// <summary>
+        /// Gets or sets the service <see cref="Type"/> of the <see cref="Dependency"/>.
+        /// </summary>
+        public Type ServiceType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the service name of the <see cref="Dependency"/>.
+        /// </summary>
+        public string ServiceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="FactoryExpression"/> that represent getting the value of the <see cref="Dependency"/>.
+        /// </summary>            
+        public Expression FactoryExpression { get; set; }
+
+        /// <summary>
+        /// Gets the name of the dependency accessor.
+        /// </summary>
+        public abstract string Name { get; }
+
+        /// <summary>
+        /// Returns textual information about the dependency.
+        /// </summary>
+        /// <returns>A string that describes the dependency.</returns>
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            return sb.AppendFormat("[Requested dependency: ServiceType:{0}, ServiceName:{1}]", ServiceType, ServiceName).ToString();
+        }
+    }
+
+    /// <summary>
+    /// Represents a property dependency.
+    /// </summary>
+    internal class PropertyDependecy : Dependency
+    {
+        /// <summary>
+        /// Gets or sets the <see cref="MethodInfo"/> that is used to set the property value.
+        /// </summary>
+        public PropertyInfo Property { get; set; }
+
+        /// <summary>
+        /// Gets the name of the dependency accessor.
+        /// </summary>
+        public override string Name
+        {
+            get
+            {
+                return Property.Name;
+            }
+        }
+
+        /// <summary>
+        /// Returns textual information about the dependency.
+        /// </summary>
+        /// <returns>A string that describes the dependency.</returns>
+        public override string ToString()
+        {
+            return string.Format("[Target Type: {0}], [Property: {1}({2})]", Property.DeclaringType, Property.Name, Property.PropertyType) + ", " + base.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Represents a constructor dependency.
+    /// </summary>
+    internal class ConstructorDependency : Dependency
+    {
+        /// <summary>
+        /// Gets or sets the <see cref="ParameterInfo"/> for this <see cref="ConstructorDependency"/>.
+        /// </summary>
+        public ParameterInfo Parameter { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether that this parameter represents  
+        /// the decoration target passed into a decorator instance. 
+        /// </summary>
+        public bool IsDecoratorTarget { get; set; }
+
+        /// <summary>
+        /// Gets the name of the dependency accessor.
+        /// </summary>
+        public override string Name
+        {
+            get
+            {
+                return Parameter.Name;
+            }
+        }
+
+        /// <summary>
+        /// Returns textual information about the dependency.
+        /// </summary>
+        /// <returns>A string that describes the dependency.</returns>
+        public override string ToString()
+        {
+            return string.Format("[Target Type: {0}], [Parameter: {1}({2})]", Parameter.Member.DeclaringType, Parameter.Name, Parameter.ParameterType) + ", " + base.ToString();
+        }
+    }
+
     /// <summary>
     /// Ensures that only one instance of a given service can exist within the current <see cref="IServiceContainer"/>.
     /// </summary>
@@ -2715,11 +2974,19 @@ namespace LightInject
             InternalInterfaces.Add(typeof(IAssemblyScanner));
             InternalInterfaces.Add(typeof(ILifetime));
             InternalInterfaces.Add(typeof(IMethodSkeleton));
+            InternalInterfaces.Add(typeof(IPropertySelector));
+            InternalInterfaces.Add(typeof(IPropertyDependencySelector));
+            InternalInterfaces.Add(typeof(IConstructorSelector));
+            InternalInterfaces.Add(typeof(IConstructorDependencySelector));
+            InternalInterfaces.Add(typeof(IConstructionInfoProvider));
+            InternalInterfaces.Add(typeof(IConstructionInfoBuilder));
+            InternalInterfaces.Add(typeof(IConstructorSelector));
+            InternalInterfaces.Add(typeof(ITypeConstructionInfoBuilder));
 
-            InternalTypes.Add(typeof(ServiceContainer.LambdaExpressionParser));
-            InternalTypes.Add(typeof(ServiceContainer.LambdaExpressionValidator));
-            InternalTypes.Add(typeof(ServiceContainer.ConstructorDependency));
-            InternalTypes.Add(typeof(ServiceContainer.PropertyDependecy));
+            InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
+            InternalTypes.Add(typeof(LambdaExpressionValidator));
+            InternalTypes.Add(typeof(ConstructorDependency));
+            InternalTypes.Add(typeof(PropertyDependecy));
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
             InternalTypes.Add(typeof(Scope));
             InternalTypes.Add(typeof(PerContainerLifetime));
@@ -2727,9 +2994,9 @@ namespace LightInject
             InternalTypes.Add(typeof(ScopeManager));    
             InternalTypes.Add(typeof(ServiceRegistration));
             InternalTypes.Add(typeof(DecoratorRegistration));
-            InternalTypes.Add(typeof(ServiceRequest));
-            InternalTypes.Add(typeof(PropertySelector));
-            InternalTypes.Add(typeof(ServiceContainer));
+            InternalTypes.Add(typeof(ServiceRequest));                        
+            InternalTypes.Add(typeof(Registration));
+            InternalTypes.Add(typeof(ServiceContainer));            
         }
 
         /// <summary>
@@ -2842,7 +3109,7 @@ namespace LightInject
         /// </summary>
         /// <param name="type">The <see cref="Type"/> for which to select the properties.</param>
         /// <returns>A list of properties that represents a dependency to the target <paramref name="type"/></returns>
-        public IEnumerable<PropertyInfo> Select(Type type)
+        public IEnumerable<PropertyInfo> Execute(Type type)
         {
             return type.GetProperties().Where(IsInjectable).ToList();
         }

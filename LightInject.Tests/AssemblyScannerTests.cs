@@ -93,7 +93,7 @@
         {
             var container = new ServiceContainer();
             container.RegisterAssembly(typeof(ServiceContainer).Assembly);
-            var result = container.AvailableServices.Where(si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject");
+            var result = container.AvailableServices.Where(si => si.ImplementingType.Namespace == "LightInject");
             Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject"));
         }
 
