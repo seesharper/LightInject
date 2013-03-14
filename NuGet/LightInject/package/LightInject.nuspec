@@ -1,0 +1,11 @@
+﻿<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>LightInject</id>
+        <version>3.0.0.0</version>
+        <authors>Bernhard Richter</authors>
+        <owners>Bernhard Richter</owners>      
+        <description>An ultra lightweight single file Inversion of Control container for the .Net framework.</description>
+        <tags>Ioc</tags>
+    </metadata>    
+</package>
