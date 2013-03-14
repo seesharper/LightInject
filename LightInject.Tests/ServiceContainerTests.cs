@@ -54,6 +54,7 @@
             var value = (int)container.GetInstance(typeof(int));
             Assert.AreEqual(42, value);
         }
+        
 
         [TestMethod]
         public void GetInstance_NamedValue_ReturnsNamedValue()
@@ -292,6 +293,16 @@
         }
 
         [TestMethod]
+        public void GetInstance_PerScopeServiceOutSideOfScope_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>(new PerScopeLifetime());
+
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.GetInstance<IFoo>(), e => e.Message == ErrorMessages.GetInstanceOutSideScope);
+        }
+
+        [TestMethod]
         public void GetInstance_GenericServiceWithPerScopeLifetime_DoesNotShareLifetimeInstance()
         {
             var container = CreateContainer();
@@ -304,16 +315,32 @@
                 Assert.IsInstanceOfType(stringInstance, typeof(IFoo<string>));
             }            
         }
-        
+
         [TestMethod]
-        public void GetInstance_ServiceWithPerScopeLifeTimeOutSideResolutionScope_ReturnsTransientInstances()
+        public void GetInstance_PerRequestService_ReturnsTransientInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo, Foo>(new PerScopeLifetime());
-            var firstInstance = container.GetInstance<IFoo>();
-            var secondInstance = container.GetInstance<IFoo>();
-            Assert.AreNotSame(firstInstance, secondInstance);
+            container.Register<IFoo, Foo>(new PerRequestLifeTime());
+            using (container.BeginScope())
+            {
+                var instance1 = container.GetInstance<IFoo>();
+                var instance2 = container.GetInstance<IFoo>();
+                Assert.AreNotSame(instance1, instance2);
+            }
         }
+
+        [TestMethod]
+        public void GetInstance_DisposablePerRequestServiceOutsideScope_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, DisposableFoo>(new PerRequestLifeTime());
+
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.GetInstance<IFoo>(),
+                exception => exception.Message == ErrorMessages.DisposableOutsideScope);
+
+        }
+
 
         #region Func Services
 
@@ -395,6 +422,40 @@
         #endregion
 
         #region Func Factory
+
+        [TestMethod]
+        public void GetInstance_FuncFactoryValueType_ReturnsFactoryCreatedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int>(c => 42);
+            var instance = container.GetInstance(typeof(int));
+            Assert.AreEqual(42, instance);
+        }
+
+        [TestMethod]
+        public void GetInstance_FuncFactoryValueTypeWithLifetime_ReturnsFactoryCreatedInstance()
+        {
+            var container = CreateContainer();
+            using (container.BeginScope())
+            {
+                container.Register<int>(c => 42, new PerContainerLifetime());
+                var instance = container.GetInstance(typeof(int));
+                Assert.AreEqual(42, instance);    
+            }            
+        }
+
+        [TestMethod]
+        public void GetInstance_FuncFactoryReferenceTypeWithLifetime_ReturnsFactoryCreatedInstance()
+        {
+            var container = CreateContainer();
+            using (container.BeginScope())
+            {
+                container.Register<string>(c => "SomeValue", new PerContainerLifetime());
+                var instance = container.GetInstance(typeof(string));
+                Assert.AreEqual("SomeValue", instance);
+            }
+        }
+
 
         [TestMethod]
         public void GetInstance_FuncFactory_ReturnsFactoryCreatedInstance()

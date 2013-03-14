@@ -61,15 +61,13 @@
         {
             var key = Tuple.Create(serviceRegistry, typeof(TService), serviceName);
             ServiceRegistration serviceRegistration;
-            if (MockedServices.TryGetValue(key, out serviceRegistration))
+            
+            if (MockedServices.TryRemove(key, out serviceRegistration))
             {
                 serviceRegistry.Register(serviceRegistration);
             }
 
-            if (MockedServices.TryGetValue(key, out serviceRegistration))
-            {
-                MockedServices.TryRemove(key, out serviceRegistration);
-            }
+            ServicesMocks.TryRemove(key, out serviceRegistration);
         }
 
         /// <summary>

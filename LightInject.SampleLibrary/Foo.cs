@@ -415,4 +415,12 @@ namespace LightInject.SampleLibrary
             StringFunc = stringFunc;
         }
     }
+
+    public class DisposableFoo : IFoo, IDisposable
+    {
+        public void Dispose()
+        {
+            
+        }
+    }
 }

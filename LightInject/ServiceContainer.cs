@@ -264,13 +264,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The target service type.</typeparam>
         /// <param name="factory">A factory delegate used to create a decorator instance.</param>
-        void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);
-        
-        /// <summary>
-        /// Removes a <see cref="ServiceRegistration"/> from the current <see cref="IServiceRegistry"/>.
-        /// </summary>
-        /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> to remove.</param>
-        void Remove(ServiceRegistration serviceRegistration);         
+        void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);        
     }
 
     /// <summary>
@@ -601,18 +595,7 @@ namespace LightInject
                 return availableServices.Values;
             }
         }
-
-        /// <summary>
-        /// Removes a <see cref="ServiceRegistration"/> from the current <see cref="IServiceRegistry"/>.
-        /// </summary>
-        /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> to remove.</param>
-        public void Remove(ServiceRegistration serviceRegistration)
-        {
-            Invalidate();
-            ServiceRegistration deletedRegistration;
-            availableServices.TryRemove(Tuple.Create(serviceRegistration.ServiceType, serviceRegistration.ServiceName), out deletedRegistration);
-        }
-             
+        
         /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
         /// </summary>
@@ -1550,7 +1533,7 @@ namespace LightInject
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IMethodSkeleton> instanceEmitter, IMethodSkeleton dynamicMethodSkeleton)
         {                        
             ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
-            int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter);
+            int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter, serviceRegistration.ServiceType);
             int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
             int scopeManagerIndex = CreateScopeManagerIndex();
             var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
@@ -1568,25 +1551,17 @@ namespace LightInject
             return constants.Add(scopeManagers);
         }
 
-        private int CreateInstanceDelegateIndex(Action<IMethodSkeleton> instanceEmitter)
-        {
-            return constants.Add(CreateInstanceDelegate(instanceEmitter));
+        private int CreateInstanceDelegateIndex(Action<IMethodSkeleton> instanceEmitter, Type serviceType)
+        {            
+            return constants.Add(
+                CreateDynamicMethodDelegate(instanceEmitter, serviceType));
         }
 
         private int CreateLifetimeIndex(ILifetime lifetime)
         {
             return constants.Add(lifetime);
         }
-
-        private Func<object> CreateInstanceDelegate(Action<IMethodSkeleton> instanceEmitter)
-        {
-            var methodSkeleton = methodSkeletonFactory();
-            instanceEmitter(methodSkeleton);
-            var instanceDelegate = methodSkeleton.CreateDelegate();
-            Func<object> del = () => instanceDelegate(constants.Items);
-            return del;            
-        }
-
+        
         private Func<object> CreateDelegate(Type serviceType, string serviceName)
         {                        
             var serviceEmitter = GetEmitMethod(serviceType, serviceName);
@@ -2094,9 +2069,7 @@ namespace LightInject
     /// Selects the property dependencies for a given <see cref="Type"/>.
     /// </summary>
     internal class PropertyDependencySelector : IPropertyDependencySelector
-    {
-        private readonly IPropertySelector propertySelector;
-
+    {        
         /// <summary>
         /// Initializes a new instance of the <see cref="PropertyDependencySelector"/> class.
         /// </summary>
@@ -2104,8 +2077,10 @@ namespace LightInject
         /// responsible for selecting a list of injectable properties.</param>
         public PropertyDependencySelector(IPropertySelector propertySelector)
         {
-            this.propertySelector = propertySelector;
+            PropertySelector = propertySelector;
         }
+
+        protected IPropertySelector PropertySelector { get; private set; }
 
         /// <summary>
         /// Selects the property dependencies for the given <paramref name="type"/>.
@@ -2113,9 +2088,9 @@ namespace LightInject
         /// <param name="type">The <see cref="Type"/> for which to select the property dependencies.</param>
         /// <returns>A list of <see cref="PropertyDependecy"/> instances that represents the property
         /// dependencies for the given <paramref name="type"/>.</returns>
-        public IEnumerable<PropertyDependecy> Execute(Type type)
+        public virtual IEnumerable<PropertyDependecy> Execute(Type type)
         {
-            return propertySelector.Execute(type).Select(
+            return this.PropertySelector.Execute(type).Select(
                 p => new PropertyDependecy { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
         }
     }
@@ -2768,6 +2743,40 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Ensures that a new instance is created for each request in addition to tracking disposable instances.
+    /// </summary>
+    internal class PerRequestLifeTime : ILifetime
+    {
+        /// <summary>
+        /// Returns a service instance according to the specific lifetime characteristics.
+        /// </summary>
+        /// <param name="createInstance">The function delegate used to create a new service instance.</param>
+        /// <param name="scope">The <see cref="Scope"/> of the current service request.</param>
+        /// <returns>The requested services instance.</returns>
+        public object GetInstance(Func<object> createInstance, Scope scope)
+        {
+            var instance = createInstance();
+            var disposable = instance as IDisposable;
+            if (disposable != null)
+            {
+                TrackInstance(scope, disposable);
+            }
+
+            return instance;
+        }
+
+        private static void TrackInstance(Scope scope, IDisposable disposable)
+        {
+            if (scope == null)
+            {
+                throw new InvalidOperationException("Attempt to create a disposable instance without a current scope.");
+            }
+
+            scope.TrackInstance(disposable);
+        }
+    }
+
+    /// <summary>
     /// Ensures that only one service instance can exist within a given <see cref="Scope"/>.
     /// </summary>
     /// <remarks>
@@ -2785,12 +2794,13 @@ namespace LightInject
         /// <param name="scope">The <see cref="Scope"/> of the current service request.</param>
         /// <returns>The requested services instance.</returns>
         public object GetInstance(Func<object> createInstance, Scope scope)
-        {            
+        {
             if (scope == null)
             {
-                return createInstance();
+                throw new InvalidOperationException(
+                    "Attempt to create a scoped instance without a current scope.");
             }
-
+            
             return instances.GetOrAdd(scope, s => CreateScopedInstance(s, createInstance));
         }
 
@@ -2798,24 +2808,26 @@ namespace LightInject
         {
             var disposable = instance as IDisposable;
             if (disposable != null)
-            {
+            {               
                 scope.TrackInstance(disposable);
             }
         }
 
         private object CreateScopedInstance(Scope scope, Func<object> createInstance)
         {
-            scope.Completed += OnContextCompleted;
+            scope.Completed += OnScopeCompleted;
             var instance = createInstance();
             
             RegisterForDisposal(scope, instance);
             return instance;
         }
        
-        private void OnContextCompleted(object sender, EventArgs e)
+        private void OnScopeCompleted(object sender, EventArgs e)
         {
+            var scope = (Scope)sender;
+            scope.Completed -= OnScopeCompleted;
             object removedInstance;
-            instances.TryRemove((Scope)sender, out removedInstance);
+            instances.TryRemove(scope, out removedInstance);
         }      
     }
     
