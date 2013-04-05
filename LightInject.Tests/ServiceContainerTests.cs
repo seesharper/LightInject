@@ -878,5 +878,29 @@
 
         #endregion        
         
+
+        [TestMethod]
+        public void TryGetInstance_UnknownService_ReturnsNull()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+
+            var instance = container.TryGetInstance<IFoo>();
+
+            Assert.IsNull(instance);
+        }
+
+        [TestMethod]
+        public void TryGetInstance_KnownService_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+
+            var instance = container.TryGetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+
     }
 }

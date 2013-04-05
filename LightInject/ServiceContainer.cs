@@ -303,6 +303,36 @@ namespace LightInject
         TService GetInstance<TService>(string serviceName);
 
         /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise null.</returns>
+        object TryGetInstance(Type serviceType);
+
+        /// <summary>
+        /// Gets a named instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise null.</returns>
+        object TryGetInstance(Type serviceType, string serviceName);
+
+        /// <summary>
+        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <returns>The requested service instance if available, otherwise default(T).</returns>
+        TService TryGetInstance<TService>();
+
+        /// <summary>
+        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise default(T).</returns>
+        TService TryGetInstance<TService>(string serviceName);        
+
+        /// <summary>
         /// Gets all instances of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of services to resolve.</param>
@@ -314,7 +344,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The type of services to resolve.</typeparam>
         /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
-        IEnumerable<TService> GetAllInstances<TService>();
+        IEnumerable<TService> GetAllInstances<TService>();       
     }
 
     /// <summary>
@@ -334,7 +364,7 @@ namespace LightInject
         /// Starts a new <see cref="Scope"/>.
         /// </summary>
         /// <returns><see cref="Scope"/></returns>
-        Scope BeginScope();
+        Scope BeginScope();        
     }
 
     /// <summary>
@@ -915,16 +945,9 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
         {
-            Func<object> del;
-
-            if (!delegates.TryGetValue(serviceType, out del))
-            {
-                del = delegates.GetOrAdd(serviceType, t => CreateDelegate(t, string.Empty));
-            }
-
-            return del();                       
+            return GetDefaultDelegate(serviceType, true)();            
         }
-
+        
         /// <summary>
         /// Gets an instance of the given <typeparamref name="TService"/> type.
         /// </summary>
@@ -947,6 +970,48 @@ namespace LightInject
         }
 
         /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise null.</returns>
+        public object TryGetInstance(Type serviceType)
+        {
+            return GetDefaultDelegate(serviceType, false)();            
+        }
+
+        /// <summary>
+        /// Gets a named instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise null.</returns>
+        public object TryGetInstance(Type serviceType, string serviceName)
+        {
+            return GetNamedDelegate(serviceType, serviceName, false)(); 
+        }
+
+        /// <summary>
+        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <returns>The requested service instance if available, otherwise default(T).</returns>
+        public TService TryGetInstance<TService>()
+        {
+            return (TService)TryGetInstance(typeof(TService));
+        }
+
+        /// <summary>
+        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise default(T).</returns>
+        public TService TryGetInstance<TService>(string serviceName)
+        {
+            return (TService)TryGetInstance(typeof(TService), serviceName);
+        }
+
+        /// <summary>
         /// Gets a named instance of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
@@ -954,16 +1019,9 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName)
         {
-            Func<object> del;
-
-            if (!namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
-            {
-                del = namedDelegates.GetOrAdd(Tuple.Create(serviceType, serviceName), t => CreateDelegate(t.Item1, serviceName));
-            }
-
-            return del();                              
+            return GetNamedDelegate(serviceType, serviceName, true)();
         }
-
+        
         /// <summary>
         /// Gets all instances of the given <paramref name="serviceType"/>.
         /// </summary>
@@ -1074,6 +1132,31 @@ namespace LightInject
         private static ILifetime CloneLifeTime(ILifetime lifetime)
         {
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
+        }
+
+        private Func<object> GetDefaultDelegate(Type serviceType, bool throwError)
+        {
+            Func<object> del;
+
+            if (!this.delegates.TryGetValue(serviceType, out del))
+            {
+                del = this.delegates.GetOrAdd(serviceType, t => this.CreateDelegate(t, string.Empty, throwError));
+            }
+
+            return del;
+        }
+
+        private Func<object> GetNamedDelegate(Type serviceType, string serviceName, bool throwError)
+        {
+            Func<object> del;
+
+            if (!this.namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
+            {
+                del = this.namedDelegates.GetOrAdd(
+                    Tuple.Create(serviceType, serviceName), t => this.CreateDelegate(t.Item1, serviceName, throwError));
+            }
+
+            return del;
         }
 
         private Func<object> CreateDynamicMethodDelegate(Action<IMethodSkeleton> serviceEmitter, Type serviceType)
@@ -1562,23 +1645,29 @@ namespace LightInject
             return constants.Add(lifetime);
         }
         
-        private Func<object> CreateDelegate(Type serviceType, string serviceName)
+        private Func<object> CreateDelegate(Type serviceType, string serviceName, bool throwError)
         {                        
             var serviceEmitter = GetEmitMethod(serviceType, serviceName);
-            if (serviceEmitter == null)
+            if (serviceEmitter == null && throwError)
             {                
                 throw new InvalidOperationException(string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
             }
 
-            try
+            if (serviceEmitter != null)
             {
-                return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
+                try
+                {
+                    return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    dependencyStack.Clear();
+                    throw new InvalidOperationException(
+                        string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName), ex);
+                }
             }
-            catch (InvalidOperationException ex)
-            {
-                dependencyStack.Clear();
-                throw new InvalidOperationException(string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName), ex);
-            }            
+            
+            return () => null;
         }
 
         private bool FirstServiceRequest()
