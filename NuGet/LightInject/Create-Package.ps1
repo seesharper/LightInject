@@ -132,6 +132,7 @@ $nugetpath = resolve-path "$scriptpath/../../nuget/nuget.exe"
 $sourcepath = resolve-path "$scriptpath../../../LightInject/ServiceContainer.cs"
 
 PreProcess "NET" "`$rootnamespace`$" $sourcepath "$scriptpath\package\content\net40\ServiceContainer.cs.pp"
+PreProcess "NET" "`$rootnamespace`$" $sourcepath "$scriptpath\package\content\net45\ServiceContainer.cs.pp"
 
 PreProcess "SILVERLIGHT" "`$rootnamespace`$" $sourcepath "$scriptpath\package\content\sl40\ServiceContainer.cs.pp"
 

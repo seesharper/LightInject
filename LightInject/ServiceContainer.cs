@@ -588,7 +588,6 @@ namespace LightInject
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
-
 #if TEST
         public ServiceContainer(Func<IMethodSkeleton> methodSkeletonFactory) :this()
         {
@@ -605,8 +604,7 @@ namespace LightInject
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
-        public IAssemblyScanner AssemblyScanner { get; set; }
-    
+        public IAssemblyScanner AssemblyScanner { get; set; }    
 #if NET
         
         /// <summary>
