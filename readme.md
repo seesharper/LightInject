@@ -156,13 +156,37 @@ A recursive dependency graph is when a service depends directly or indirectly on
         }
     }
 
-The folling code will throw an **InvalidOperationException** stating that there are existing recursive dependencies. 
+The following code will throw an **InvalidOperationException** stating that there are existing recursive dependencies. 
 
 	container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
 	container.GetInstance<IFoo>()
 
 
 ## Service Resolution
+
+###GetInstance ###
+
+The service container will throw an **InvalidOperationException** if the service container is unable to resolve the service or any of its dependencies.
+
+	container.Register<IFoo, Foo>();	
+	ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IBar>());
+
+
+###TryGetInstance###
+
+The service container will **NOT** throw an exception when resolving an unknown service.
+	
+	container.Register<IBar, Bar>();	
+	var instance = container.TryGetInstance<IFoo>();	
+	Assert.IsNull(instance);
+
+
+The container will still throw an exception for a known service resolved via the **TryGetInstance** method if any of its dependencies can not be resolved.
+
+	var container = CreateContainer();
+	container.Register<IFoo, FooWithDependency>();	
+	ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+
 
 ### Basic Types ###
 
@@ -567,7 +591,7 @@ The following example uses the [Moq](http://code.google.com/p/moq/) library to p
 	Assert.IsNotInstanceOfType(foo.Bar, typeof(Bar));
 	container.EndMocking<IBar>()
 
-When the **StartMocking** method is called, the container will replace the orginal service registration with a new service registration that uses our mock instance. 
+When the **StartMocking** method is called, the container will replace the original service registration with a new service registration that uses our mock instance. 
 
 **Note:** *The mock instance uses the same lifetime as the original registration.*
 

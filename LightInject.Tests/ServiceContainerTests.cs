@@ -66,6 +66,17 @@
         }
 
         #endregion
+        
+        [TestMethod]
+        public void GetInstance_UnknownService_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IBar>());
+        }
+        
+        
         [TestMethod]
         public void GetInstance_OneService_ReturnsInstance()
         {
@@ -899,6 +910,15 @@
             var instance = container.TryGetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+        [TestMethod]
+        public void TryGetInstance_KnownServiceWithUnknownDependency_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+           
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());            
         }
 
 
