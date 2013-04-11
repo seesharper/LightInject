@@ -15,8 +15,8 @@
     [TestClass]
     public class ServiceContainerTests : TestBase
     {
-        #region Values
-
+        #region Values       
+        
         [TestMethod]
         public void GetInstance_ReferenceTypeValue_ReturnsValue()
         {
@@ -66,7 +66,30 @@
         }
 
         #endregion
-        
+
+        [TestMethod]
+        public void GetInstance_ConcreteService_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<Foo>();
+
+            var instance = container.GetInstance<Foo>();
+
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+        [TestMethod]
+        public void GetInstance_ConcreteServiceAsSingleton_ReturnsSameInstance()
+        {
+            var container = CreateContainer();
+            container.Register<Foo>(new PerContainerLifetime());
+
+            var firstInstance = container.GetInstance<Foo>();
+            var secondInstance = container.GetInstance<Foo>();
+
+            Assert.AreSame(firstInstance, secondInstance);
+        }
+
         [TestMethod]
         public void GetInstance_UnknownService_ThrowsException()
         {
@@ -897,6 +920,17 @@
             container.Register<IBar, Bar>();
 
             var instance = container.TryGetInstance<IFoo>();
+
+            Assert.IsNull(instance);
+        }
+
+        [TestMethod]
+        public void TryGetInstance_UnknownNamedService_ReturnsNull()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+
+            var instance = container.TryGetInstance<IFoo>("SomeFoo");
 
             Assert.IsNull(instance);
         }

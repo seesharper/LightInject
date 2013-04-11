@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace LightInject.SampleLibrary
 {
+    using LightInject.Annotation;
+
     public class FooWithCompilerGeneratedType : IFoo
     {      
         public Func<string> SomeAction
@@ -42,6 +43,26 @@ namespace LightInject.SampleLibrary
     public class FooWithDependency : IFoo
     {
         public FooWithDependency(IBar bar)
+        {
+            Bar = bar;
+        }
+
+        public IBar Bar { get; private set; }
+    }
+
+    public class FooWithAnnotatedDependency : IFoo
+    {
+        public FooWithAnnotatedDependency([Inject]IBar bar)
+        {
+            Bar = bar;
+        }
+
+        public IBar Bar { get; private set; }
+    }
+
+    public class FooWithNamedAnnotatedDependency : IFoo
+    {
+        public FooWithNamedAnnotatedDependency([Inject("AnotherBar")]IBar bar)
         {
             Bar = bar;
         }
@@ -387,6 +408,17 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; set; }
     }
 
+    public class FooWithAnnotatedProperyDependency : IFoo
+    {
+        [Inject]
+        public IBar Bar { get; set; }
+    }
+
+    public class FooWithNamedAnnotatedProperyDependency : IFoo
+    {
+        [Inject("AnotherBar")]
+        public IBar Bar { get; set; }
+    }
 
     public class FooWithFuncDependency : IFoo
     {

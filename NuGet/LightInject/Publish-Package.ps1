@@ -1,6 +1,5 @@
 ﻿param([string] $package)
-
-$scriptPath = (Split-Path $MyInvocation.MyCommand.Path)
+$scriptpath = split-path -parent $MyInvocation.MyCommand.Path
 $nugetpath = resolve-path "$scriptpath/.."
 
 

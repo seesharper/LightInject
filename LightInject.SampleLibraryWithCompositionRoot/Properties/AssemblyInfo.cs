@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("LightInject.SampleLibraryWithCompositionRoot")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("DIPS ASA")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("LightInject.SampleLibraryWithCompositionRoot")]
-[assembly: AssemblyCopyright("Copyright © DIPS ASA 2012")]
+[assembly: AssemblyCopyright("Copyright © Bernhard Richter 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

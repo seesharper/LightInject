@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.1 
+   LightInject version 3.0.0.2 
    https://github.com/seesharper/LightInject/wiki/Getting-started
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -32,7 +32,8 @@ namespace LightInject
     using System.Collections;
 #endif
     using System.Collections.Generic;
-#if NET    
+#if NET
+    using System.Diagnostics;
     using System.IO;
 #endif
     using System.Linq;
@@ -125,6 +126,19 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="instance">The instance returned when this service is requested.</param>
         void Register<TService>(TService instance);
+
+        /// <summary>
+        /// Registers a concrete type as a service.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        void Register<TService>();
+
+        /// <summary>
+        /// Registers a concrete type as a service.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        void Register<TService>(ILifetime lifetime);
 
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
@@ -415,9 +429,9 @@ namespace LightInject
         /// Selects the property dependencies for the given <paramref name="type"/>.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> for which to select the property dependencies.</param>
-        /// <returns>A list of <see cref="PropertyDependecy"/> instances that represents the property
+        /// <returns>A list of <see cref="PropertyDependency"/> instances that represents the property
         /// dependencies for the given <paramref name="type"/>.</returns>
-        IEnumerable<PropertyDependecy> Execute(Type type);
+        IEnumerable<PropertyDependency> Execute(Type type);
     }
 
     /// <summary>
@@ -574,6 +588,8 @@ namespace LightInject
         
         private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
+        private Lazy<IConstructionInfoProvider> constructionInfoProvider;
+
         private bool firstServiceRequest = true;
         
         /// <summary>
@@ -581,8 +597,10 @@ namespace LightInject
         /// </summary>
         public ServiceContainer()
         {            
-            AssemblyScanner = new AssemblyScanner();            
-            ConstructionInfoProvider = CreateConstructionInfoProvider();
+            AssemblyScanner = new AssemblyScanner();
+            PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
+            ConstructorDependencySelector = new ConstructorDependencySelector();
+            constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);            
             methodSkeletonFactory = () => new DynamicMethodSkeleton();
 #if NET
             AssemblyLoader = new AssemblyLoader();
@@ -594,13 +612,18 @@ namespace LightInject
             this.methodSkeletonFactory = methodSkeletonFactory;
         }
 #endif
+        /// <summary>
+        /// Gets or sets the <see cref="IPropertyDependencySelector"/> instance that 
+        /// is responsible for selecting the property dependencies for a given type.
+        /// </summary>
+        public IPropertyDependencySelector PropertyDependencySelector { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="IConstructionInfoProvider"/> that is responsible 
-        /// for providing a <see cref="ConstructionInfo"/> instance for a given <see cref="Registration"/>.
+        /// Gets or sets the <see cref="IConstructorDependencySelector"/> instance that 
+        /// is responsible for selecting the constructor dependencies for a given constructor.
         /// </summary>
-        public IConstructionInfoProvider ConstructionInfoProvider { get; set; }
-
+        public IConstructorDependencySelector ConstructorDependencySelector { get; set; }
+                
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
@@ -894,6 +917,25 @@ namespace LightInject
         }
 
         /// <summary>
+        /// Registers a concrete type as a service.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        public void Register<TService>()
+        {
+            Register<TService, TService>();
+        }
+
+        /// <summary>
+        /// Registers a concrete type as a service.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        public void Register<TService>(ILifetime lifetime)
+        {
+            Register<TService, TService>(lifetime);
+        }
+
+        /// <summary>
         /// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
@@ -1057,26 +1099,21 @@ namespace LightInject
             scopeManagers.Dispose();
         }
 
-        private static ConstructionInfoProvider CreateConstructionInfoProvider()
+        private ConstructionInfoProvider CreateConstructionInfoProvider()
         {
             return new ConstructionInfoProvider(CreateConstructionInfoBuilder());
         }
 
-        private static ConstructionInfoBuilder CreateConstructionInfoBuilder()
+        private ConstructionInfoBuilder CreateConstructionInfoBuilder()
         {
             return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
         }
 
-        private static TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
+        private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
-            return new TypeConstructionInfoBuilder(new ConstructorSelector(), new ConstructorDependencySelector(), CreatePropertyDependencySelector());
+            return new TypeConstructionInfoBuilder(new ConstructorSelector(), ConstructorDependencySelector, PropertyDependencySelector);
         }
-
-        private static PropertyDependencySelector CreatePropertyDependencySelector()
-        {
-            return new PropertyDependencySelector(new PropertySelector());
-        }
-
+      
         private static void EmitLoadConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
         {           
             var generator = dynamicMethodSkeleton.GetILGenerator();
@@ -1363,38 +1400,61 @@ namespace LightInject
                 }
             }
         }
-
+       
         private void EmitDependency(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
+        {            
+            var emitter = this.GetEmitMethodForDependency(dependency);
+
+            try
+            {
+                emitter(dynamicMethodSkeleton);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency), ex);
+            }            
+        }
+
+        private void EmitPropertyDependency(IMethodSkeleton dynamicMethodSkeleton, PropertyDependency propertyDependency, LocalBuilder instance)
+        {                       
+            var emitter = GetEmitMethodForDependency(propertyDependency);
+            var generator = dynamicMethodSkeleton.GetILGenerator();
+            
+            if (emitter != null)
+            {
+                generator.Emit(OpCodes.Ldloc, instance);
+                emitter(dynamicMethodSkeleton);
+                dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
+            }                            
+        }
+
+        private Action<IMethodSkeleton> GetEmitMethodForDependency(Dependency dependency)
         {
-            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             if (dependency.FactoryExpression != null)
             {
-                var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
-                MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                EmitLoadConstant(dynamicMethodSkeleton, constants.Add(lambda), lambda.GetType());
-                generator.Emit(OpCodes.Callvirt, methodInfo);
+                return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
             }
-            else
+                        
+            Action<IMethodSkeleton> emitter = this.GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
+            if (emitter == null)
             {
-                Action<IMethodSkeleton> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);                                                
-                if (emitter == null)
+                emitter = this.GetEmitMethod(dependency.ServiceType, dependency.Name);
+                if (emitter == null && dependency.IsRequired)
                 {
-                    emitter = GetEmitMethod(dependency.ServiceType, dependency.Name);
-                    if (emitter == null)
-                    {
-                        throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));    
-                    }                    
+                    throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
                 }
-
-                try
-                {
-                    emitter(dynamicMethodSkeleton);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency), ex);
-                }                
             }
+
+            return emitter;
+        }
+
+        private void EmitDependencyUsingFactoryExpression(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
+        {
+            var generator = dynamicMethodSkeleton.GetILGenerator();
+            var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
+            MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
+            EmitLoadConstant(dynamicMethodSkeleton, constants.Add(lambda), lambda.GetType());
+            generator.Emit(OpCodes.Callvirt, methodInfo);
         }
 
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IMethodSkeleton dynamicMethodSkeleton)
@@ -1408,10 +1468,8 @@ namespace LightInject
             LocalBuilder instance = generator.DeclareLocal(constructionInfo.ImplementingType);
             generator.Emit(OpCodes.Stloc, instance);
             foreach (var propertyDependency in constructionInfo.PropertyDependencies)
-            {
-                generator.Emit(OpCodes.Ldloc, instance);
-                EmitDependency(dynamicMethodSkeleton, propertyDependency);
-                dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
+            {                
+                EmitPropertyDependency(dynamicMethodSkeleton, propertyDependency, instance);                
             }
 
             generator.Emit(OpCodes.Ldloc, instance);
@@ -1425,7 +1483,7 @@ namespace LightInject
             if (rule != null)
             {
                 emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
-            }
+            }            
             else if (IsFunc(serviceType))
             {
                 emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, false);
@@ -1441,7 +1499,7 @@ namespace LightInject
             else if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
             {
                 emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
-            }
+            }            
             else if (IsClosedGeneric(serviceType))
             {
                 emitter = CreateServiceEmitterBasedOnClosedGenericServiceRequest(serviceType, serviceName);
@@ -1555,7 +1613,7 @@ namespace LightInject
 
         private ConstructionInfo GetConstructionInfo(Registration registration)
         {
-            return ConstructionInfoProvider.GetConstructionInfo(registration);
+            return constructionInfoProvider.Value.GetConstructionInfo(registration);
         }
 
         private ThreadSafeDictionary<string, Action<IMethodSkeleton>> GetServiceEmitters(Type serviceType)
@@ -1684,7 +1742,7 @@ namespace LightInject
             delegates.Clear();
             namedDelegates.Clear();
             constants.Clear();
-            ConstructionInfoProvider.Invalidate();
+            constructionInfoProvider.Value.Invalidate();
         }
 
         private void EnsureThatServiceRegistryIsConfigured(Type serviceType)
@@ -2144,11 +2202,11 @@ namespace LightInject
         /// <param name="constructor">The <see cref="ConstructionInfo"/> for which to select the constructor dependencies.</param>
         /// <returns>A list of <see cref="ConstructorDependency"/> instances that represents the constructor
         /// dependencies for the given <paramref name="constructor"/>.</returns>
-        public IEnumerable<ConstructorDependency> Execute(ConstructorInfo constructor)
+        public virtual IEnumerable<ConstructorDependency> Execute(ConstructorInfo constructor)
         {
             return
                 constructor.GetParameters().OrderBy(p => p.Position).Select(
-                    p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p });
+                    p => new ConstructorDependency { ServiceName = string.Empty, ServiceType = p.ParameterType, Parameter = p, IsRequired = true });
         }
     }
 
@@ -2167,18 +2225,22 @@ namespace LightInject
             PropertySelector = propertySelector;
         }
 
+        /// <summary>
+        /// Gets the <see cref="IPropertySelector"/> that is responsible for selecting a 
+        /// list of injectable properties.
+        /// </summary>
         protected IPropertySelector PropertySelector { get; private set; }
 
         /// <summary>
         /// Selects the property dependencies for the given <paramref name="type"/>.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> for which to select the property dependencies.</param>
-        /// <returns>A list of <see cref="PropertyDependecy"/> instances that represents the property
+        /// <returns>A list of <see cref="PropertyDependency"/> instances that represents the property
         /// dependencies for the given <paramref name="type"/>.</returns>
-        public virtual IEnumerable<PropertyDependecy> Execute(Type type)
+        public virtual IEnumerable<PropertyDependency> Execute(Type type)
         {
             return this.PropertySelector.Execute(type).Select(
-                p => new PropertyDependecy { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
+                p => new PropertyDependency { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
         }
     }
 
@@ -2387,9 +2449,9 @@ namespace LightInject
             return constructorDependency;
         }
 
-        private static PropertyDependecy CreatePropertyDependency(MemberAssignment memberAssignment)
+        private static PropertyDependency CreatePropertyDependency(MemberAssignment memberAssignment)
         {
-            var propertyDependecy = new PropertyDependecy
+            var propertyDependecy = new PropertyDependency
             {
                 Property = (PropertyInfo)memberAssignment.Member,
                 ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType
@@ -2648,7 +2710,7 @@ namespace LightInject
         /// </summary>
         public ConstructionInfo()
         {
-            PropertyDependencies = new List<PropertyDependecy>();
+            PropertyDependencies = new List<PropertyDependency>();
             ConstructorDependencies = new List<ConstructorDependency>();
         }
 
@@ -2663,10 +2725,10 @@ namespace LightInject
         public ConstructorInfo Constructor { get; set; }
 
         /// <summary>
-        /// Gets a list of <see cref="PropertyDependecy"/> instances that represent 
+        /// Gets a list of <see cref="PropertyDependency"/> instances that represent 
         /// the property dependencies for the target service instance. 
         /// </summary>
-        public List<PropertyDependecy> PropertyDependencies { get; private set; }
+        public List<PropertyDependency> PropertyDependencies { get; private set; }
 
         /// <summary>
         /// Gets a list of <see cref="ConstructorDependency"/> instances that represent 
@@ -2706,6 +2768,11 @@ namespace LightInject
         public abstract string Name { get; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether this dependency is required.
+        /// </summary>
+        public bool IsRequired { get; set; }
+
+        /// <summary>
         /// Returns textual information about the dependency.
         /// </summary>
         /// <returns>A string that describes the dependency.</returns>
@@ -2719,7 +2786,7 @@ namespace LightInject
     /// <summary>
     /// Represents a property dependency.
     /// </summary>
-    internal class PropertyDependecy : Dependency
+    internal class PropertyDependency : Dependency
     {
         /// <summary>
         /// Gets or sets the <see cref="MethodInfo"/> that is used to set the property value.
@@ -2736,7 +2803,7 @@ namespace LightInject
                 return Property.Name;
             }
         }
-
+        
         /// <summary>
         /// Returns textual information about the dependency.
         /// </summary>
@@ -3085,7 +3152,7 @@ namespace LightInject
             InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
             InternalTypes.Add(typeof(LambdaExpressionValidator));
             InternalTypes.Add(typeof(ConstructorDependency));
-            InternalTypes.Add(typeof(PropertyDependecy));
+            InternalTypes.Add(typeof(PropertyDependency));
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
             InternalTypes.Add(typeof(Scope));
             InternalTypes.Add(typeof(PerContainerLifetime));

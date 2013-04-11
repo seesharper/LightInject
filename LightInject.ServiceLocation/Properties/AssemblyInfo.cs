@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LightInject.Silverlight")]
+[assembly: AssemblyTitle("LightInject.ServiceLocation")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LightInject.Silverlight")]
+[assembly: AssemblyProduct("LightInject.ServiceLocation")]
 [assembly: AssemblyCopyright("Copyright © Bernhard Richter 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("c6d3da53-4c77-4829-917d-91005ca12e98")]
+[assembly: Guid("77618eea-c4c3-49dd-b8ff-7f53512aa5f7")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -29,7 +29,9 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-// You can specify all the values or you can default the Revision and Build Numbers 
+// You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
+// [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: InternalsVisibleTo("LightInject.Tests")]

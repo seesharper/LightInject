@@ -131,6 +131,7 @@ $scriptpath = split-path -parent $MyInvocation.MyCommand.Path
 $nugetpath = resolve-path "$scriptpath/../../nuget/nuget.exe"
 $sourcepath = resolve-path "$scriptpath../../../LightInject/ServiceContainer.cs"
 
+PreProcess "NET" "`$rootnamespace`$" $sourcepath "$scriptpath\package\content\net35\ServiceContainer.cs.pp"
 PreProcess "NET" "`$rootnamespace`$" $sourcepath "$scriptpath\package\content\net40\ServiceContainer.cs.pp"
 PreProcess "NET" "`$rootnamespace`$" $sourcepath "$scriptpath\package\content\net45\ServiceContainer.cs.pp"
 

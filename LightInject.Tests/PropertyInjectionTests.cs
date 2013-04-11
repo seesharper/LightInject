@@ -20,12 +20,12 @@
         }
 
         [TestMethod]        
-        public void GetInstance_UnKnownDependency_ThrowsException()
+        public void GetInstance_UnKnownDependency_ReturnsInstanceWithoutDependency()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithProperyDependency>();            
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), e => e.InnerException.Message == ErrorMessages.UnknownPropertyDependency);            
+            container.Register<IFoo, FooWithProperyDependency>();
+            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            Assert.IsNull(instance.Bar);
         }
 
         [TestMethod]

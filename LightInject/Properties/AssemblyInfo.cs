@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("LightInject")]
-[assembly: AssemblyCopyright("Copyright © Bernhard Richter")]
+[assembly: AssemblyCopyright("Copyright © Bernhard Richter 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -37,6 +37,8 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.Tests")]
 [assembly: InternalsVisibleTo("LightInject.SampleLibrary")]
 [assembly: InternalsVisibleTo("LightInject.Web")]
+[assembly: InternalsVisibleTo("LightInject.ServiceLocation")]
+[assembly: InternalsVisibleTo("LightInject.Annotation")]
 [assembly: InternalsVisibleTo("SampleLibraryWithCompositionRoot")]
 [assembly: InternalsVisibleTo("LightInject.Mocking")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
