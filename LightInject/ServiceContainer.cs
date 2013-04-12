@@ -32,8 +32,7 @@ namespace LightInject
     using System.Collections;
 #endif
     using System.Collections.Generic;
-#if NET
-    using System.Diagnostics;
+#if NET    
     using System.IO;
 #endif
     using System.Linq;
@@ -1098,21 +1097,6 @@ namespace LightInject
 
             scopeManagers.Dispose();
         }
-
-        private ConstructionInfoProvider CreateConstructionInfoProvider()
-        {
-            return new ConstructionInfoProvider(CreateConstructionInfoBuilder());
-        }
-
-        private ConstructionInfoBuilder CreateConstructionInfoBuilder()
-        {
-            return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
-        }
-
-        private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
-        {
-            return new TypeConstructionInfoBuilder(new ConstructorSelector(), ConstructorDependencySelector, PropertyDependencySelector);
-        }
       
         private static void EmitLoadConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
         {           
@@ -1167,6 +1151,21 @@ namespace LightInject
         private static ILifetime CloneLifeTime(ILifetime lifetime)
         {
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
+        }
+
+        private ConstructionInfoProvider CreateConstructionInfoProvider()
+        {
+            return new ConstructionInfoProvider(CreateConstructionInfoBuilder());
+        }
+
+        private ConstructionInfoBuilder CreateConstructionInfoBuilder()
+        {
+            return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
+        }
+
+        private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
+        {
+            return new TypeConstructionInfoBuilder(new ConstructorSelector(), ConstructorDependencySelector, PropertyDependencySelector);
         }
 
         private Func<object> GetDefaultDelegate(Type serviceType, bool throwError)

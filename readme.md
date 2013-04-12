@@ -29,6 +29,9 @@ This is by design to prevent the service container to leak out into the applicat
 
 If we need to expose any of the types within **LightInject** to the outside world, we need to use the [InternalVisibleTo](http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.internalsvisibletoattribute(v=vs.100).aspx) attribute.
 
+### Code Coverage ###
+
+When installed from [Nuget](http://nuget.org/packages/LightInject/) the [ExcludeFromCodeCoverageAttribute](http://msdn.microsoft.com/query/dev11.query?appId=Dev11IDEF1&l=EN-US&k=k(System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute);k(ExcludeFromCodeCoverage);k(TargetFrameworkMoniker-.NETFramework,Version%3Dv4.5);k(DevLang-csharp)&rd=true) is applied to the classed contained within the "ServiceContainer.cs" file. This is by design so that including the file will not affect the overall code coverage percentage of the project that includes the file. The code has already been tested (100% coverage) and the test suite is available on [GitHub](https://github.com/seesharper/LightInject).
 
 ##Service Registration##
 
@@ -53,6 +56,13 @@ We can register multiple services under the same servicetype using named service
 	container.Register<IFoo>(foo);
 
 The value is registered as a constant value .
+
+####Concrete types###
+
+**LightInject** allows concrete types to be registered as a service.
+
+	container.Register<Foo>();
+
 
 ###Dependencies ###
 
@@ -88,6 +98,7 @@ Registers a service by providing explicit information about how to create the se
 
 ### Property Injection ###
 ----
+
 	public interface IFoo {}
 
 	public interface IBar {}
@@ -105,6 +116,8 @@ Registers a service by providing explicit information about how to create the se
 	container.Register<IBar, Bar>();
 
 Registers the service without specifying any information about how to resolve the property dependencies. 
+
+**Note:** ***LightInject** implements a loose strategy around property dependencies, meaning that it will **NOT** throw an exception in the case of an unresolved property dependency.*
 
 ####Explicit service registration####
 
@@ -160,6 +173,86 @@ The following code will throw an **InvalidOperationException** stating that ther
 
 	container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
 	container.GetInstance<IFoo>()
+
+## Annotation  ##
+
+**LightInject** supports annotation of properties and constructor parameters through an extension LightInject. 
+
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject.Annotation </code>
+   </p>
+</div> 
+
+By using the **InjectAttribute** we can be more explicit about the services that gets injected into properties and constructor dependencies.
+
+**Note:** *As opposed to all other types within **LightInject**, the **InjectAttribute** is marked with the public access modifier so that is can be used outside the assembly that contains the service container. This creates a dependency from our services to the assembly containing the attribute, but we still don't need to reference any of the specific types in **LightInject** making this an affordable sacrifice when it comes to services referencing container specific types.*  
+
+
+### Annotated Property Injection ###
+
+To enable annotated property injection, we must execute the following line before we start requesting services from the container.
+
+	container.EnableAnnotatedPropertyInjection();
+
+
+The container now only try to inject dependencies for properties that is annotated with the **InjectAttribute**.
+The container will throw an **InvalidOperationException** if the annotated property dependency is unable to be resolved.
+
+    public class FooWithAnnotatedProperyDependency : IFoo
+    {
+        [Inject]
+        public IBar Bar { get; set; }
+    }
+
+Given that we have a registration for the **IBar** dependency, it will be injected into the **Bar** property.
+
+   	container.Register<IFoo, FooWithAnnotatedProperyDependency>();
+   	container.Register<IBar, Bar>();
+	var instance = (FooWithAnnotatedProperyDependency)container.GetInstance<IFoo>();
+	Assert.IsNotNull(instance.Bar);
+
+If we have multiple registrations of the same interface, we can also use the **InjectAttribute** to specify the service to be injected. 
+
+    public class FooWithNamedAnnotatedProperyDependency : IFoo
+    {
+        [Inject("AnotherBar")]
+        public IBar Bar { get; set; }
+    }
+
+The container will inject the service that matches the specified service name.
+
+	container.Register<IFoo, FooWithNamedAnnotatedProperyDependency>();
+	container.Register<IBar, Bar>("SomeBar");
+	container.Register<IBar, AnotherBar>("AnotherBar");	
+	var instance = (FooWithNamedAnnotatedProperyDependency)container.GetInstance<IFoo>();	
+	Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
+
+### Annotated Constructor Injection ###
+
+To enable annotated constructor injection, we must execute the following line before we start requesting services from the container.
+
+	container.EnableAnnotatedConstructorInjection();
+
+**LightInject** does does consider all constructor parameters to be required dependencies and will try to satisfy all dependencies regardless of being annotated with the **InjectAttribute**. We can however use the **InjectAttribute ** to specify the named service to be injected.
+
+    public class FooWithAnnotatedDependency : IFoo
+    {
+        public FooWithAnnotatedDependency([Inject]IBar bar)
+        {
+            Bar = bar;
+        }
+
+        public IBar Bar { get; private set; }
+    }
+
+The container will inject the service that matches the specified service name.
+
+	container.Register<IFoo, FooWithNamedAnnotatedDependency>();
+	container.Register<IBar, Bar>("SomeBar");
+	container.Register<IBar, AnotherBar>("AnotherBar");	
+	var instance = (FooWithNamedAnnotatedDependency)container.GetInstance<IFoo>();	
+	Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
 
 
 ## Service Resolution
@@ -606,9 +699,15 @@ The **StopMocking** method tells the container to replace the mock registration 
 	Assert.IsInstanceOfType(foo.Bar, typeof(Bar));
 	
 
-	
+##Common Service Locator ##
 
+**LightInject** provides an implementation of the [Common Service Locator](http://commonservicelocator.codeplex.com/) abstraction to support other frameworks that rely on this library.
 
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject.ServiceLocation </code>
+   </p>
+</div>
 
 
 
