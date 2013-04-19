@@ -53,6 +53,7 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -79,6 +80,7 @@
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="MockingTests.cs" />
+    <Compile Include="ParallelInvoker.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="PropertyInjectionTests.cs" />
     <Compile Include="PropertyInjectionVerificationTests.cs" />
@@ -90,6 +92,7 @@
     <Compile Include="ServiceLocatorTests.cs" />
     <Compile Include="ServiceRegistrationTests.cs" />
     <Compile Include="TestBase.cs" />
+    <Compile Include="WebTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.Annotation\LightInject.Annotation.csproj">
@@ -111,6 +114,10 @@
     <ProjectReference Include="..\LightInject.ServiceLocation\LightInject.ServiceLocation.csproj">
       <Project>{3498fa47-4da8-4649-8adc-87bb1c6ab586}</Project>
       <Name>LightInject.ServiceLocation</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Web\LightInject.Web.csproj">
+      <Project>{92e9b349-5655-4d6c-924c-707d05a5d812}</Project>
+      <Name>LightInject.Web</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject\LightInject.csproj">
       <Project>{3d54591b-b055-4edd-96b6-e6f184e8ca6e}</Project>

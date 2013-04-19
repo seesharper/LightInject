@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LightInject")]
+[assembly: AssemblyTitle("LightInject.Web")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LightInject")]
-[assembly: AssemblyCopyright("Copyright © Bernhard Richter 2013")]
+[assembly: AssemblyCompany("DIPS ASA")]
+[assembly: AssemblyProduct("LightInject.Web")]
+[assembly: AssemblyCopyright("Copyright © DIPS ASA 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("29c44396-1968-43b7-b95f-32afe2a6da08")]
+[assembly: Guid("10e7ab21-5293-4ff3-8f29-d0c0fb82d93f")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -32,14 +32,6 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("3.0.0.3")]
-[assembly: AssemblyFileVersion("3.0.0.3")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
 [assembly: InternalsVisibleTo("LightInject.Tests")]
-[assembly: InternalsVisibleTo("LightInject.SampleLibrary")]
-[assembly: InternalsVisibleTo("LightInject.Web")]
-[assembly: InternalsVisibleTo("LightInject.ServiceLocation")]
-[assembly: InternalsVisibleTo("LightInject.Annotation")]
-[assembly: InternalsVisibleTo("SampleLibraryWithCompositionRoot")]
-[assembly: InternalsVisibleTo("LightInject.Mocking")]
-[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
-[assembly: InternalsVisibleTo("DynamicAssembly")]

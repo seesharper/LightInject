@@ -213,5 +213,18 @@
             container.GetInstance<IFoo>();
             Assert.IsNull(FooWithStaticDependency.Bar);
         }    
+
+        [TestMethod]
+        public void InjectProperties_ClassWithPropertyDependency_InjectsPropertyDependencies()
+        {
+            var container = CreateContainer();
+            container.Register<FooWithProperyDependency>();
+            container.Register<IBar, Bar>();
+            var fooWithProperyDependency = new FooWithProperyDependency();
+
+            var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+
+            Assert.IsInstanceOfType(result.Bar, typeof(Bar));
+        }
     }
 }

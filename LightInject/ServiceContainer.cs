@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.2 
+   LightInject version 3.0.0.3 
    https://github.com/seesharper/LightInject/wiki/Getting-started
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -377,7 +377,13 @@ namespace LightInject
         /// Starts a new <see cref="Scope"/>.
         /// </summary>
         /// <returns><see cref="Scope"/></returns>
-        Scope BeginScope();        
+        Scope BeginScope();
+
+        /// <summary>
+        /// Injects the property dependencies for a given <paramref name="instance"/>.
+        /// </summary>
+        /// <param name="instance">The target instance for which to inject its property dependencies.</param>
+        object InjectProperties(object instance);
     }
 
     /// <summary>
@@ -665,6 +671,31 @@ namespace LightInject
         {
             return scopeManagers.Value.BeginScope();
         }
+
+        public object InjectProperties(object instance)
+        {
+            IMethodSkeleton methodSkeleton = new DynamicMethodSkeleton();
+            var arguments = new[] { instance };            
+            var key = Tuple.Create(instance.GetType(), string.Empty);
+            ServiceRegistration serviceRegistration = availableServices.GetOrAdd(
+                key, tuple => CreateServiceRegistrationBasedOnConcreteType(tuple.Item1));
+
+            ConstructionInfo constructionInfo = GetConstructionInfo(serviceRegistration);
+
+            EmitLoadConstant(methodSkeleton, 0, instance.GetType());
+            EmitPropertyDependencies(constructionInfo, methodSkeleton);
+
+            var del = methodSkeleton.CreateDelegate();
+            return del(arguments);
+        }
+
+        private ServiceRegistration CreateServiceRegistrationBasedOnConcreteType(Type type)
+        {
+            ServiceRegistration serviceRegistration = new ServiceRegistration();
+            serviceRegistration.ImplementingType = type;
+            return serviceRegistration;
+        }
+
 
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="expression"/> that 
