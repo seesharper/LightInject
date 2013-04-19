@@ -236,9 +236,9 @@ To enable annotated constructor injection, we must execute the following line be
 
 **LightInject** does consider all constructor parameters to be required dependencies and will try to satisfy all dependencies regardless of being annotated with the **InjectAttribute**. We can however use the **InjectAttribute ** to specify the named service to be injected.
 
-    public class FooWithAnnotatedDependency : IFoo
+    public class FooWithNamedAnnotatedDependency : IFoo
     {
-        public FooWithAnnotatedDependency([Inject(ServiceName="AnotherBar")]IBar bar)
+        public FooWithNamedAnnotatedDependency([Inject(ServiceName="AnotherBar")]IBar bar)
         {
             Bar = bar;
         }
