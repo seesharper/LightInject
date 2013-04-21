@@ -1,4 +1,24 @@
-﻿namespace $rootnamespace$
+﻿/*****************************************************************************   
+   Copyright 2013 bernhard.richter@gmail.com
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+******************************************************************************
+   LightInject.Mocking version 1.0.0.1
+   https://github.com/seesharper/LightInject/wiki/Getting-started
+******************************************************************************/
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
+
+namespace LightInject.Mocking
 {
     using System;
     using System.Collections.Concurrent;
@@ -8,7 +28,7 @@
     /// <summary>
     /// Extends the <see cref="IServiceRegistry"/> interface.
     /// </summary>
-    internal static class MockingExtensions
+    internal static class LightInjectMocking
     {
         private static readonly ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration> MockedServices
             = new ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration>();
@@ -24,7 +44,7 @@
         /// <param name="mockFactory">The factory delegate that creates the mock instance.</param>
         /// <param name="serviceName">The name of the service to mock.</param>
         public static void StartMocking<TService>(this IServiceRegistry serviceRegistry, Func<TService> mockFactory, string serviceName) where TService : class
-        {
+        {            
             Tuple<IServiceRegistry, Type, string> key = CreateServiceKey<TService>(serviceRegistry, serviceName);
             ILifetime lifeTime = null;
             var serviceRegistration = GetExistingServiceRegistration<TService>(serviceRegistry, serviceName);
@@ -61,15 +81,13 @@
         {
             var key = Tuple.Create(serviceRegistry, typeof(TService), serviceName);
             ServiceRegistration serviceRegistration;
-            if (MockedServices.TryGetValue(key, out serviceRegistration))
+            
+            if (MockedServices.TryRemove(key, out serviceRegistration))
             {
                 serviceRegistry.Register(serviceRegistration);
             }
 
-            if (MockedServices.TryGetValue(key, out serviceRegistration))
-            {
-                MockedServices.TryRemove(key, out serviceRegistration);
-            }
+            ServicesMocks.TryRemove(key, out serviceRegistration);
         }
 
         /// <summary>

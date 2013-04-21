@@ -13,7 +13,7 @@
         public void StartMocking_ExistingService_ReturnsMockInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo,Foo>();
+            container.Register<IFoo,Foo>();            
             var fooMock = new Mock<IFoo>();
             container.StartMocking(() => fooMock.Object);
 
@@ -80,6 +80,37 @@
 
             Assert.AreSame(instance, fooMock.Object);
         }
+
+        [TestMethod]
+        public void StartMocking_NamedService_DoesNotMockDefaultService()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Register<IFoo, AnotherFoo>("AnotherFoo");
+
+            var fooMock = new Mock<IFoo>();
+            container.StartMocking(() => fooMock.Object, "AnotherFoo");
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+        [TestMethod]
+        public void StartMocking_DefaultService_DoesNotMockNamedService()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Register<IFoo, AnotherFoo>("AnotherFoo");
+
+            var fooMock = new Mock<IFoo>();
+            container.StartMocking(() => fooMock.Object);
+
+            var instance = container.GetInstance<IFoo>("AnotherFoo");
+
+            Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
+        }
+
 
         [TestMethod]
         public void StartMocking_ExistingServiceAfterGetInstance_ReturnsMockInstance()

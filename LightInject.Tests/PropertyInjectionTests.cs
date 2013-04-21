@@ -215,7 +215,7 @@
         }    
 
         [TestMethod]
-        public void InjectProperties_ClassWithPropertyDependency_InjectsPropertyDependencies()
+        public void InjectProperties_KnownClassWithPropertyDependency_InjectsPropertyDependencies()
         {
             var container = CreateContainer();
             container.Register<FooWithProperyDependency>();
@@ -225,6 +225,45 @@
             var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
 
             Assert.IsInstanceOfType(result.Bar, typeof(Bar));
+        }
+
+        [TestMethod]
+        public void InjectProperties_UnknownClassWithPropertyDependency_InjectsPropertyDependencies()
+        {
+            var container = CreateContainer();            
+            container.Register<IBar, Bar>();
+            var fooWithProperyDependency = new FooWithProperyDependency();
+
+            var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+
+            Assert.IsInstanceOfType(result.Bar, typeof(Bar));
+        }
+
+        [TestMethod]
+        public void InjectProperties_FuncFactory_InjectsPropertyDependencies()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+            container.Register<IBar, AnotherBar>("AnotherBar");
+            container.Register(f => new FooWithProperyDependency(){ Bar = f.GetInstance<IBar>("AnotherBar") });
+            var fooWithProperyDependency = new FooWithProperyDependency();
+
+            var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+
+            Assert.IsInstanceOfType(result.Bar, typeof(AnotherBar));
+        }
+
+        [TestMethod]
+        public void InjectProperties_RecursiveDependency_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithRecursiveDependency>();
+
+            var barWithPropertyDependency = new BarWithPropertyDependency();
+
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.InjectProperties(barWithPropertyDependency), ErrorMessages.RecursivePropertyDependency);
+
         }
     }
 }

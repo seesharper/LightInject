@@ -126,6 +126,25 @@ Registers the service without specifying any information about how to resolve th
 
 Registers a service by providing explicit information about how to create the service instance and how to resolve the property dependencies.
 
+#### Property injection on existing instances. ####
+
+In the cases where we don't control the creation of the service instance, **LightInject** can inject property dependencies into an existing instance.
+
+	container.Register<IBar, Bar>();
+	var fooWithProperyDependency = new FooWithProperyDependency();
+    var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+    Assert.IsInstanceOfType(result.Bar, typeof(Bar));
+
+If we want to be explicit about the dependencies injected into the service instance, the concrete type can be registered with the container.
+
+	container.Register<IBar, Bar>();
+    container.Register<IBar, AnotherBar>("AnotherBar");
+    container.Register(f => new FooWithProperyDependency(){ Bar = f.GetInstance<IBar>("AnotherBar") });
+    var fooWithProperyDependency = new FooWithProperyDependency();
+    var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+    Assert.IsInstanceOfType(result.Bar, typeof(AnotherBar));
+
+
 
 ### Assembly  ###
 
@@ -709,5 +728,23 @@ The **StopMocking** method tells the container to replace the mock registration 
    </p>
 </div>
 
+## Web ##
 
+Enables **LightInject** to be used in a web application and provides support for **PerWebRequest** scoped service instances.
 
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject.Web </code>
+   </p>
+</div>
+
+The following example shows how to enable **LightInject** in the **Application_Start** event.
+
+	protected void Application_Start()
+    {
+		var serviceContainer = new ServiceContainer();            
+		serviceContainer.Register<IFoo, Foo>(new PerScopeLifetime()); 
+		LightInjectHttpModule.SetServiceContainer(serviceContainer);		
+	}
+
+A service	 registered with **PerScopeLifetime** is scoped per web request and is disposed at the end of the request if it implements **IDisposable**.

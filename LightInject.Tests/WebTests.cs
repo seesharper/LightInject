@@ -16,9 +16,13 @@ namespace LightInject.Tests
     [TestClass]
     public class WebTests
     {
+        private static IServiceContainer serviceContainer;
+
         static WebTests()
         {
-            LightInjectHttpModule.ServiceContainer.Register<IFoo, Foo>(new PerScopeLifetime());
+            serviceContainer = new ServiceContainer();
+            serviceContainer.Register<IFoo, Foo>(new PerScopeLifetime());
+            LightInjectHttpModule.SetServiceContainer(serviceContainer);
         }
                 
         [TestMethod]
@@ -27,8 +31,8 @@ namespace LightInject.Tests
             var mockHttpApplication = new MockHttpApplication();                                    
             mockHttpApplication.BeginRequest();
 
-            var firstInstance = LightInjectHttpModule.ServiceContainer.GetInstance<IFoo>();
-            var secondInstance = LightInjectHttpModule.ServiceContainer.GetInstance<IFoo>();
+            var firstInstance = serviceContainer.GetInstance<IFoo>();
+            var secondInstance = serviceContainer.GetInstance<IFoo>();
 
             Assert.AreEqual(firstInstance, secondInstance);
 
@@ -62,7 +66,7 @@ namespace LightInject.Tests
         {
             var mockHttpApplication = new MockHttpApplication();
             mockHttpApplication.BeginRequest();
-            IFoo firstInstance = LightInjectHttpModule.ServiceContainer.GetInstance<IFoo>();
+            IFoo firstInstance = serviceContainer.GetInstance<IFoo>();
             mockHttpApplication.EndRequest();
             mockHttpApplication.Dispose();
             return firstInstance;
@@ -85,16 +89,17 @@ namespace LightInject.Tests
                 BeginEventHandlerKey = typeof(HttpApplication).GetField("EventBeginRequest", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
             }
            
-            public void BeginRequest()
+            public new void BeginRequest()
             {
                 HttpContext.Current = new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
                 this.Events[BeginEventHandlerKey].DynamicInvoke(null, null);
             }
 
-            public void EndRequest()
+            public new void EndRequest()
             {
                 this.Events[EndEventHandlerKey].DynamicInvoke(null, null);
                 HttpContext.Current = null;
+                
             }
 
             public override void Dispose()

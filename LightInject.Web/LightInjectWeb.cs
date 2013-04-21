@@ -54,17 +54,9 @@ namespace LightInject.Web
     /// with the <see cref="PerScopeLifetime"/> lifetime is scoped per web request.
     /// </summary>
     public class LightInjectHttpModule : IHttpModule
-    {                        
-        static LightInjectHttpModule()
-        {
-            ServiceContainer = new ServiceContainer();            
-        }
-
-        /// <summary>
-        /// Gets the <see cref="IServiceContainer"/> used to resolve services in this web application.
-        /// </summary>
-        internal static IServiceContainer ServiceContainer { get; private set; }
-
+    {
+        private static IServiceContainer serviceContainer;
+              
         /// <summary>
         /// Initializes a module and prepares it to handle requests.
         /// </summary>
@@ -79,6 +71,15 @@ namespace LightInject.Web
         {            
         }
 
+        /// <summary>
+        /// Sets the <see cref="IServiceContainer"/> instance to be used by this <see cref="LightInjectHttpModule"/>.
+        /// </summary>
+        /// <param name="container">The container to be used by this <see cref="LightInjectHttpModule"/>.</param>
+        internal static void SetServiceContainer(IServiceContainer container)
+        {
+            serviceContainer = container;
+        }
+
         private static void EndScope()
         {            
             ((Scope)HttpContext.Current.Items["Scope"]).Dispose();            
@@ -86,7 +87,7 @@ namespace LightInject.Web
 
         private static void BeginScope()
         {            
-            HttpContext.Current.Items["Scope"] = ServiceContainer.BeginScope();
+            HttpContext.Current.Items["Scope"] = serviceContainer.BeginScope();
         }         
     }   
 }

@@ -310,6 +310,11 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class BarWithPropertyDependency : IBar
+    {
+        public IFoo Foo { get; set; }
+    }
+
     public interface IFoo<T> { }
 
     public class Foo<T> : IFoo<T> { }

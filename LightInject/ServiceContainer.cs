@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.3 
+   LightInject version 3.0.0.4 
    https://github.com/seesharper/LightInject/wiki/Getting-started
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -383,7 +383,8 @@ namespace LightInject
         /// Injects the property dependencies for a given <paramref name="instance"/>.
         /// </summary>
         /// <param name="instance">The target instance for which to inject its property dependencies.</param>
-        object InjectProperties(object instance);
+        /// <returns>The <paramref name="instance"/> with its property dependencies injected.</returns>
+        object InjectProperties(object instance);      
     }
 
     /// <summary>
@@ -582,7 +583,8 @@ namespace LightInject
         private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();        
         private readonly ServiceRegistry<Action<IMethodSkeleton, Type>> openGenericEmitters = new ServiceRegistry<Action<IMethodSkeleton, Type>>(); 
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
-        private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();        
+        private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
+        private readonly DelegateRegistry<Type> propertyInjectionDelegates = new DelegateRegistry<Type>();
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
         private readonly Stack<Action<IMethodSkeleton>> dependencyStack = new Stack<Action<IMethodSkeleton>>();
@@ -593,7 +595,7 @@ namespace LightInject
         
         private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
-        private Lazy<IConstructionInfoProvider> constructionInfoProvider;
+        private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
 
         private bool firstServiceRequest = true;
         
@@ -671,32 +673,13 @@ namespace LightInject
         {
             return scopeManagers.Value.BeginScope();
         }
-
+       
         public object InjectProperties(object instance)
         {
-            IMethodSkeleton methodSkeleton = new DynamicMethodSkeleton();
-            var arguments = new[] { instance };            
-            var key = Tuple.Create(instance.GetType(), string.Empty);
-            ServiceRegistration serviceRegistration = availableServices.GetOrAdd(
-                key, tuple => CreateServiceRegistrationBasedOnConcreteType(tuple.Item1));
-
-            ConstructionInfo constructionInfo = GetConstructionInfo(serviceRegistration);
-
-            EmitLoadConstant(methodSkeleton, 0, instance.GetType());
-            EmitPropertyDependencies(constructionInfo, methodSkeleton);
-
-            var del = methodSkeleton.CreateDelegate();
-            return del(arguments);
+            var type = instance.GetType();
+            return propertyInjectionDelegates.GetOrAdd(type, t => CreatePropertyInjectionDelegate(type, instance))();                        
         }
-
-        private ServiceRegistration CreateServiceRegistrationBasedOnConcreteType(Type type)
-        {
-            ServiceRegistration serviceRegistration = new ServiceRegistration();
-            serviceRegistration.ImplementingType = type;
-            return serviceRegistration;
-        }
-
-
+      
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="expression"/> that 
         /// describes the dependencies of the service. 
@@ -1182,6 +1165,50 @@ namespace LightInject
         private static ILifetime CloneLifeTime(ILifetime lifetime)
         {
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
+        }
+
+        private Func<object> CreatePropertyInjectionDelegate(Type concreteType, object instance)
+        {
+            IMethodSkeleton methodSkeleton = new DynamicMethodSkeleton();
+            var arguments = new[] { instance };
+            ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
+            EmitLoadConstant(methodSkeleton, 0, concreteType);
+            try
+            {
+                EmitPropertyDependencies(constructionInfo, methodSkeleton);
+            }
+            catch (Exception)
+            {
+                dependencyStack.Clear();
+                throw;
+            }
+
+            var del = methodSkeleton.CreateDelegate();
+            return () => del(arguments);
+        }
+
+        private ConstructionInfo GetContructionInfoForConcreteType(Type concreteType)
+        {
+            var serviceRegistration = GetServiceRegistrationForConcreteType(concreteType);
+            return GetConstructionInfo(serviceRegistration);
+        }
+
+        private ServiceRegistration GetServiceRegistrationForConcreteType(Type concreteType)
+        {
+            var serviceKey = Tuple.Create(concreteType, string.Empty);
+            return availableServices.GetOrAdd(
+                serviceKey, tuple => CreateServiceRegistrationBasedOnConcreteType(tuple.Item1));
+        }
+
+        private ServiceRegistration CreateServiceRegistrationBasedOnConcreteType(Type type)
+        {
+            var serviceRegistration = new ServiceRegistration
+                                          {
+                                              ServiceType = type,
+                                              ImplementingType = type,
+                                              ServiceName = string.Empty
+                                          };
+            return serviceRegistration;
         }
 
         private ConstructionInfoProvider CreateConstructionInfoProvider()

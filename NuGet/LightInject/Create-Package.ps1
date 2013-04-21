@@ -139,6 +139,6 @@ PreProcess "SILVERLIGHT" "`$rootnamespace`$" $sourcepath "$scriptpath\package\co
 
 pushd $scriptpath
 
-.\..\Nuget.exe pack package/LightInject.nuspec
+.\..\Nuget.exe pack package/LightInject.nuspec -OutputDirectory "..\"
 
 popd
