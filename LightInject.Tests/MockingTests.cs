@@ -99,9 +99,9 @@
         [TestMethod]
         public void StartMocking_DefaultService_DoesNotMockNamedService()
         {
-            var container = CreateContainer();
-            container.Register<IFoo, Foo>();
+            var container = CreateContainer();            
             container.Register<IFoo, AnotherFoo>("AnotherFoo");
+            container.Register<IFoo, Foo>();
 
             var fooMock = new Mock<IFoo>();
             container.StartMocking(() => fooMock.Object);
