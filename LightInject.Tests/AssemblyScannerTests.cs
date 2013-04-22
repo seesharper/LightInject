@@ -166,6 +166,29 @@
         }
 
         [TestMethod]
+        public void Register_Assembly_RegistersConcreteTypeWithoutBaseclass()
+        {
+            AssemblyScanner assemblyScanner = new AssemblyScanner();
+            var serviceRegistryMock = new Mock<IServiceRegistry>();
+            assemblyScanner.Scan(typeof(IFoo).Assembly, serviceRegistryMock.Object, () => null, type => true);
+
+            serviceRegistryMock.Verify(r => r.Register(typeof(ConcreteFoo), typeof(ConcreteFoo), "ConcreteFoo", null));
+        }
+
+        [TestMethod]
+        public void Register_Assembly_RegistersConcreteTypeWithBaseclass()
+        {
+            AssemblyScanner assemblyScanner = new AssemblyScanner();
+            var serviceRegistryMock = new Mock<IServiceRegistry>();
+            assemblyScanner.Scan(typeof(IFoo).Assembly, serviceRegistryMock.Object, () => null, type => true);
+
+            serviceRegistryMock.Verify(r => r.Register(typeof(Foo), typeof(ConcreteFooWithBaseClass), "ConcreteFooWithBaseClass", null));
+
+
+        }
+
+
+        [TestMethod]
         public void Register_AssemblyWithFunc_CallsAssemblyScanner()
         {
             var scannerMock = new Mock<IAssemblyScanner>();

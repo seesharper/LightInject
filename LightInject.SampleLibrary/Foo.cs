@@ -460,4 +460,14 @@ namespace LightInject.SampleLibrary
             
         }
     }
+
+    public class ConcreteFoo
+    {
+        
+    }
+
+    public class ConcreteFooWithBaseClass : Foo
+    {
+
+    }
 }

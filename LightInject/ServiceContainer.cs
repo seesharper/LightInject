@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.4 
+   LightInject version 3.0.0.5 
    https://github.com/seesharper/LightInject/wiki/Getting-started
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -3182,30 +3182,12 @@ namespace LightInject
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
     /// </summary>    
     internal class AssemblyScanner : IAssemblyScanner
-    {
-        private static readonly List<Type> InternalInterfaces = new List<Type>();
+    {        
         private static readonly List<Type> InternalTypes = new List<Type>();
         private Assembly currentAssembly;
 
         static AssemblyScanner()
         {
-            InternalInterfaces.Add(typeof(IServiceContainer));
-            InternalInterfaces.Add(typeof(IServiceFactory));
-            InternalInterfaces.Add(typeof(IServiceRegistry));
-            InternalInterfaces.Add(typeof(IPropertySelector));
-            InternalInterfaces.Add(typeof(IAssemblyLoader));
-            InternalInterfaces.Add(typeof(IAssemblyScanner));
-            InternalInterfaces.Add(typeof(ILifetime));
-            InternalInterfaces.Add(typeof(IMethodSkeleton));
-            InternalInterfaces.Add(typeof(IPropertySelector));
-            InternalInterfaces.Add(typeof(IPropertyDependencySelector));
-            InternalInterfaces.Add(typeof(IConstructorSelector));
-            InternalInterfaces.Add(typeof(IConstructorDependencySelector));
-            InternalInterfaces.Add(typeof(IConstructionInfoProvider));
-            InternalInterfaces.Add(typeof(IConstructionInfoBuilder));
-            InternalInterfaces.Add(typeof(IConstructorSelector));
-            InternalInterfaces.Add(typeof(ITypeConstructionInfoBuilder));
-
             InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
             InternalTypes.Add(typeof(LambdaExpressionValidator));
             InternalTypes.Add(typeof(ConstructorDependency));
@@ -3219,7 +3201,20 @@ namespace LightInject
             InternalTypes.Add(typeof(DecoratorRegistration));
             InternalTypes.Add(typeof(ServiceRequest));                        
             InternalTypes.Add(typeof(Registration));
-            InternalTypes.Add(typeof(ServiceContainer));            
+            InternalTypes.Add(typeof(ServiceContainer));
+            InternalTypes.Add(typeof(ConstructionInfo));
+            InternalTypes.Add(typeof(AssemblyLoader));
+            InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
+            InternalTypes.Add(typeof(ConstructionInfoProvider));
+            InternalTypes.Add(typeof(ConstructionInfoBuilder));
+            InternalTypes.Add(typeof(ConstructorSelector));
+            InternalTypes.Add(typeof(PerContainerLifetime));
+            InternalTypes.Add(typeof(PerContainerLifetime));
+            InternalTypes.Add(typeof(PerRequestLifeTime));
+            InternalTypes.Add(typeof(PropertySelector));
+            InternalTypes.Add(typeof(AssemblyScanner));
+            InternalTypes.Add(typeof(ConstructorDependencySelector));
+            InternalTypes.Add(typeof(PropertyDependencySelector));
         }
 
         /// <summary>
@@ -3276,7 +3271,7 @@ namespace LightInject
 
         private static IEnumerable<Type> GetBaseTypes(Type concreteType)
         {
-            Type baseType = concreteType.BaseType;
+            Type baseType = concreteType;
             while (baseType != typeof(object) && baseType != null)
             {
                 yield return baseType;
@@ -3298,11 +3293,8 @@ namespace LightInject
         {
             Type[] interfaces = implementingType.GetInterfaces();
             foreach (Type interfaceType in interfaces)
-            {
-                if (InternalInterfaces.All(i => i != interfaceType))
-                {
-                    RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory());
-                }
+            {                
+                RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory());                
             }
 
             foreach (Type baseType in GetBaseTypes(implementingType))

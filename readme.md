@@ -63,6 +63,22 @@ The value is registered as a constant value .
 
 	container.Register<Foo>();
 
+####Unknown types###
+
+We can register a predicate along with a factory delegate to deal with creating instances of types that 
+are not known by the service container.
+
+    container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
+    var instance = container.GetInstance<IFoo>();
+    Assert.IsInstanceOfType(instance, typeof(IFoo));
+
+We can also specify the lifetime for unknown types.
+
+	container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo(), new PerContainerLifetime());
+	var firstInstance = container.GetInstance<IFoo>();
+	var secondInstance = container.GetInstance<IFoo>();
+	Assert.AreSame(firstInstance, secondInstance);
+
 
 ###Dependencies ###
 
