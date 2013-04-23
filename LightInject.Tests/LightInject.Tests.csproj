@@ -54,6 +54,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Mvc, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -80,10 +81,12 @@
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="MockingTests.cs" />
+    <Compile Include="MvcTests.cs" />
     <Compile Include="ParallelInvoker.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="PropertyInjectionTests.cs" />
     <Compile Include="PropertyInjectionVerificationTests.cs" />
+    <Compile Include="SampleController.cs" />
     <Compile Include="ScopeTests.cs" />
     <Compile Include="ServiceContainerTests.cs" />
     <Compile Include="ExpressionExtensions.cs" />
@@ -102,6 +105,10 @@
     <ProjectReference Include="..\LightInject.Mocking\LightInject.Mocking.csproj">
       <Project>{3f020ff3-63fb-45f1-ad16-1116d63cc770}</Project>
       <Name>LightInject.Mocking</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Mvc\LightInject.Mvc.csproj">
+      <Project>{2bbfa6de-d28e-4040-9c1c-ff05d330a063}</Project>
+      <Name>LightInject.Mvc</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
       <Project>{65ff0ceb-76b4-44fd-898a-00c32c21738c}</Project>

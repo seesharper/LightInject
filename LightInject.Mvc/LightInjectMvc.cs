@@ -25,7 +25,7 @@
 namespace LightInject.Mvc
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections.Generic;    
     using System.Web.Mvc;
 
     /// <summary>
@@ -68,5 +68,42 @@ namespace LightInject.Mvc
         {
             return serviceContainer.GetAllInstances(serviceType);
         }
+    }
+
+    /// <summary>
+    /// A <see cref="FilterAttributeFilterProvider"/> that uses an <see cref="IServiceContainer"/>    
+    /// to inject property dependencies into <see cref="Filter"/> instances.
+    /// </summary>
+    internal class LightInjectFilterProvider : FilterAttributeFilterProvider
+    {
+        private readonly IServiceContainer serviceContainer;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LightInjectFilterProvider"/> class.
+        /// </summary>
+        /// <param name="serviceContainer">The <see cref="IServiceContainer"/> instance 
+        /// used to inject property dependencies.</param>
+        public LightInjectFilterProvider(IServiceContainer serviceContainer)
+        {
+            this.serviceContainer = serviceContainer;
+        }
+
+        /// <summary>
+        /// Aggregates the filters from all of the filter providers into one collection.
+        /// </summary>
+        /// <returns>
+        /// The collection filters from all of the filter providers.
+        /// </returns>
+        /// <param name="controllerContext">The controller context.</param>
+        /// <param name="actionDescriptor">The action descriptor.</param>
+        public override IEnumerable<Filter> GetFilters(ControllerContext controllerContext, ActionDescriptor actionDescriptor)
+        {
+            var filters = base.GetFilters(controllerContext, actionDescriptor);
+            foreach (var filter in filters)
+            {
+                serviceContainer.InjectProperties(filter.Instance);
+                yield return filter;
+            }                       
+        }                
     }
 }
