@@ -29,6 +29,7 @@
             Assert.IsInstanceOfType(((SampleFilterAttribute)filter.Instance).Foo, typeof(Foo));
         }
 
+        [TestMethod]
         public void GetService_KnownService_ReturnsInstance()
         {
             var container = CreateContainer();
