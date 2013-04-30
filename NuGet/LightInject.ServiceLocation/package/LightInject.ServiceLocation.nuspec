@@ -1,0 +1,17 @@
+﻿<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>LightInject.ServiceLocation</id>
+        <version>1.0.0.1</version>
+        <authors>Bernhard Richter</authors>
+        <owners>Bernhard Richter</owners>      
+        <description>A CommonServiceLocator adapter for the LightInject service container.</description>
+        <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator</tags>
+		<dependencies> 
+			<group>
+			  <dependency id="LightInject" version="3.0.0.1" />
+			  <dependency id="CommonServiceLocator" version="1.0" />
+			</group>		   
+		</dependencies>
+    </metadata>    
+</package>
