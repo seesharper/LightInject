@@ -91,32 +91,35 @@
 			"file": "/C/Users/bri/Documents/GitHub/LightInject/.git/config",
 			"settings":
 			{
-				"buffer_size": 336,
-				"line_ending": "Unix"
+				"buffer_size": 0,
+				"line_ending": "Windows"
 			}
 		},
 		{
 			"file": "/C/Users/bri/Documents/GitHub/LightInject/.git/packed-refs",
 			"settings":
 			{
-				"buffer_size": 149,
-				"line_ending": "Unix"
+				"buffer_size": 0,
+				"line_ending": "Windows"
 			}
 		},
 		{
 			"file": "/C/Users/bri/Documents/GitHub/LightInject/.git/description",
 			"settings":
 			{
-				"buffer_size": 73,
-				"line_ending": "Unix"
+				"buffer_size": 0,
+				"line_ending": "Windows"
 			}
 		},
 		{
+			"contents": "",
 			"file": "/C/Users/bri/Documents/GitHub/LightInject/.git/ORIG_HEAD",
+			"file_size": -1,
+			"file_write_time": -1,
 			"settings":
 			{
-				"buffer_size": 41,
-				"line_ending": "Unix"
+				"buffer_size": 0,
+				"line_ending": "Windows"
 			}
 		},
 		{
@@ -149,6 +152,22 @@
 			{
 				"buffer_size": 836,
 				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/C/Users/bri/Documents/LightInjectWeb/index.html",
+			"settings":
+			{
+				"buffer_size": 4943,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "lightinjectweb.sublime-workspace",
+			"settings":
+			{
+				"buffer_size": 10421,
+				"line_ending": "Unix"
 			}
 		}
 	],
@@ -227,7 +246,7 @@
 	"groups":
 	[
 		{
-			"selected": 4,
+			"selected": 10,
 			"sheets":
 			[
 				{
@@ -263,15 +282,15 @@
 					"file": "/C/Users/bri/Documents/GitHub/LightInject/.git/config",
 					"settings":
 					{
-						"buffer_size": 336,
+						"buffer_size": 0,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								273,
-								273
+								0,
+								0
 							]
 						],
 						"settings":
@@ -290,7 +309,7 @@
 					"file": "/C/Users/bri/Documents/GitHub/LightInject/.git/packed-refs",
 					"settings":
 					{
-						"buffer_size": 149,
+						"buffer_size": 0,
 						"regions":
 						{
 						},
@@ -316,7 +335,7 @@
 					"file": "/C/Users/bri/Documents/GitHub/LightInject/.git/description",
 					"settings":
 					{
-						"buffer_size": 73,
+						"buffer_size": 0,
 						"regions":
 						{
 						},
@@ -342,7 +361,7 @@
 					"file": "/C/Users/bri/Documents/GitHub/LightInject/.git/ORIG_HEAD",
 					"settings":
 					{
-						"buffer_size": 41,
+						"buffer_size": 0,
 						"regions":
 						{
 						},
@@ -469,6 +488,61 @@
 							"syntax": "Packages/HTML/HTML.tmLanguage",
 							"tab_size": 2,
 							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "/C/Users/bri/Documents/LightInjectWeb/index.html",
+					"settings":
+					{
+						"buffer_size": 4943,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								192,
+								192
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "lightinjectweb.sublime-workspace",
+					"settings":
+					{
+						"buffer_size": 10421,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
