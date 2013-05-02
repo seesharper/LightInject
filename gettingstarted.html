@@ -4,677 +4,170 @@
   <title>LightInject</title>
   
   <!-- Bootstrap CSS-->
-  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.9.1.js"></script>
-  <script src="assets/bootstrap/js/bootstrap.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">   
+  <script src="assets/jquery/jquery-1.9.1.min.js"></script>
+  <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">  
+  <link href="assets/css/common.css" rel="stylesheet">
+
+  <style type="text/css">
+
+  .span4  {    
+    height: 250px;            
+    position: relative;
+  }
+
+  .container {
+    width:1200px;
+    height: 100%;
+  }
+
+  iframe {
+    width: 1200px;
+    border-width: 0px;    
+  }
+
+
+  .span4 .btn{
+    position: absolute;
+    bottom: 0;    
+  }
+
+
+  section {
+    padding-top: 40px;
+  }
+
+  </style>
+
 </head>
 
 <body>
-  <h1>LightInject</h1>
-  <p><strong>LightInject</strong> is an ultra lightweight IoC container that supports the most common features expected from a service container.</p>
-  <div class="nuget-badge" >
-   <p>
-     <code>PM&gt; Install-Package LightInject </code>
-   </p>
- </div>
- <p>This will install a single file named &quot;ServiceContainer.cs&quot; into the current project.</p>
- <h2>The Rationale Behind</h2>
- <p><strong>LightInject</strong> was created to provide a very simple, super fast and easy-to-learn service container that can be used in small projects as well as part of larger applications.</p>
- <p><strong>LightInject</strong> is specifically designed not to bleed into the application code and thus creating a dependency to the container everywhere in the application.</p>
- <p><strong>LightInject</strong> is also very well suited for stand alone class libraries that requires a service container without creating a dependency to a third-party assembly. We can keep the container within our class library and still ship the library as a single DLL.</p>
- <p><strong>LightInject</strong> uses Reflection.Emit to dynamically create the code needed to resolve services and dependencies and thus providing performance numbers very close to the new operator.</p>
- <h2>The code</h2>
- <p>The first thing to notice about the code is that every type that is expected to be <strong>public</strong>, is marked with the <strong>internal</strong> access modifier.</p>
- <p>This is by design to prevent the service container to leak out into the application code and hence creating a dependency to a spesific service container implementation.</p>
- <p>If we need to expose any of the types within <strong>LightInject</strong> to the outside world, we need to use the <a href="http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.internalsvisibletoattribute(v=vs.100).aspx">InternalVisibleTo</a> attribute.</p>
- <h3>Code Coverage</h3>
- <p>When installed from <a href="http://nuget.org/packages/LightInject/">Nuget</a> the <a href="http://msdn.microsoft.com/query/dev11.query?appId=Dev11IDEF1&amp;l=EN-US&amp;k=k(System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute);k(ExcludeFromCodeCoverage);k(TargetFrameworkMoniker-.NETFramework,Version%3Dv4.5);k(DevLang-csharp)&amp;rd=true">ExcludeFromCodeCoverageAttribute</a> is applied to the classed contained within the &quot;ServiceContainer.cs&quot; file. This is by design so that including the file will not affect the overall code coverage percentage of the project that includes the file. The code has already been tested (100% coverage) and the test suite is available on <a href="https://github.com/seesharper/LightInject">GitHub</a>.</p>
- <h2>Service Registration</h2>
- <h3>Basic type mapping</h3>
- <p>Create mapping between the service type and the implementing type.  
- </p>
- <pre><code>container.Register&lt;IFoo,Foo&gt;();
- </code></pre>
-
- <h4>Named Services</h4>
- <p>We can register multiple services under the same servicetype using named services. </p>
- <pre><code>container.Register&lt;IFoo, Foo&gt;();
-  container.Register&lt;IFoo, AnotherFoo&gt;(&quot;SomeFoo&quot;);
-</code></pre>
-
-<h4>Values</h4>
-<pre><code>var foo = new Foo();
-  container.Register&lt;IFoo&gt;(foo);
-</code></pre>
-
-<p>The value is registered as a constant value .</p>
-<h4>Concrete types</h4>
-<p><strong>LightInject</strong> allows concrete types to be registered as a service.</p>
-<pre><code>container.Register&lt;Foo&gt;();
-</code></pre>
-
-<h4>Unknown types</h4>
-<p>We can register a predicate along with a factory delegate to deal with creating instances of types that 
-  are not known by the service container.</p>
-  <pre><code>container.Register((serviceType, serviceName) =&gt; serviceType == typeof(IFoo), request =&gt; new Foo());
-    var instance = container.GetInstance&lt;IFoo&gt;();
-    Assert.IsInstanceOfType(instance, typeof(IFoo));
-  </code></pre>
-
-  <p>We can also specify the lifetime for unknown types.</p>
-  <pre><code>container.Register((serviceType, serviceName) =&gt; serviceType == typeof(IFoo), request =&gt; new Foo(), new PerContainerLifetime());
-    var firstInstance = container.GetInstance&lt;IFoo&gt;();
-    var secondInstance = container.GetInstance&lt;IFoo&gt;();
-    Assert.AreSame(firstInstance, secondInstance);
-  </code></pre>
-
-  <h3>Dependencies</h3>
-  <p>LightInject provides two patterns for registering services which we will refer to as <strong>implicit</strong> and <strong>explicit</strong> service registration.</p>
-  <h3>Constructor Injection</h3>
-  <hr />
-  <pre><code>public interface IFoo {}
-
-    public interface IBar {}
-
-    public class FooWithDependency : IFoo
-    {
-    public FooWithDependency(IBar bar){}
-  }
-
-  public class Bar : IBar {}
-</code></pre>
-
-<h4>Implicit service registration</h4>
-<pre><code>container.Register&lt;IFoo, FooWithDependency&gt;();
-  container.Register&lt;IBar, Bar&gt;();
-</code></pre>
-
-<p>Registers a service without specifying any information about how to resolve the constructor dependencies of the implementing type.</p>
-<h4>Explicit service registration</h4>
-<pre><code>container.Register&lt;IBar, Bar&gt;();
-  container.Register&lt;IFoo&gt;(factory =&gt; new FooWithDependency(factory.GetInstance&lt;IBar&gt;())) 
-</code></pre>
-
-<p>Registers a service by providing explicit information about how to create the service instance and how to resolve the constructor dependencies.</p>
-<h3>Property Injection</h3>
-<hr />
-<pre><code>public interface IFoo {}
-
-  public interface IBar {}
-
-  public class FooWithPropertyDependency : IFoo
-  {
-  public IBar Bar { get; set; }
-}
-
-public class Bar : IBar {}
-</code></pre>
-
-<h4>Implicit service registration</h4>
-<pre><code>container.Register&lt;IFoo, FooWithPropertyDependency&gt;();
-  container.Register&lt;IBar, Bar&gt;();
-</code></pre>
-
-<p>Registers the service without specifying any information about how to resolve the property dependencies. </p>
-<p><strong>Note:</strong> <em><strong>LightInject</strong> implements a loose strategy around property dependencies, meaning that it will <strong>NOT</strong> throw an exception in the case of an unresolved property dependency.</em></p>
-<h4>Explicit service registration</h4>
-<pre><code>container.Register&lt;IBar, Bar&gt;();
-  container.Register&lt;IFoo&gt;(factory =&gt; new FooWithPropertyDependency() {Bar = factory.GetInstance&lt;IBar&gt;()}) 
-</code></pre>
-
-<p>Registers a service by providing explicit information about how to create the service instance and how to resolve the property dependencies.</p>
-<h4>Property injection on existing instances.</h4>
-<p>In the cases where we don't control the creation of the service instance, <strong>LightInject</strong> can inject property dependencies into an existing instance.</p>
-<pre><code>container.Register&lt;IBar, Bar&gt;();
-  var fooWithProperyDependency = new FooWithProperyDependency();
-  var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
-  Assert.IsInstanceOfType(result.Bar, typeof(Bar));
-</code></pre>
-
-<p>If we want to be explicit about the dependencies injected into the service instance, the concrete type can be registered with the container.</p>
-<pre><code>container.Register&lt;IBar, Bar&gt;();
-  container.Register&lt;IBar, AnotherBar&gt;(&quot;AnotherBar&quot;);
-  container.Register(f =&gt; new FooWithProperyDependency(){ Bar = f.GetInstance&lt;IBar&gt;(&quot;AnotherBar&quot;) });
-  var fooWithProperyDependency = new FooWithProperyDependency();
-  var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
-  Assert.IsInstanceOfType(result.Bar, typeof(AnotherBar));
-</code></pre>
-
-<h3>Assembly</h3>
-<hr />
-<pre><code>container.RegisterAssembly(typeof(IFoo).Assembly)
-</code></pre>
-
-<p>Registers all types within an assembly.</p>
-<pre><code>container.RegisterAssembly(typeof(IFoo).Assembly, type =&gt; type.NameSpace == &quot;SomeNamespace&quot;);
-</code></pre>
-
-<p>Registers all types within an assembly and uses the given predicate to decide if the current implementing type should be registered with the container. </p>
-<pre><code>container.RegisterAssembly(&quot;SomeAssemblyName*.dll&quot;);
-</code></pre>
-
-<p>Registers services from all assemblies that matches the given search pattern.</p>
-<h4>CompositionRoot</h4>
-<p>When working with modular applications, it might be necessary to allow the modules to register services with the service container. This can be done by implementing the <strong>ICompositionRoot</strong> interface.   
-</p>
-<pre><code>public class SampleCompositionRoot : ICompositionRoot
-  {               
-  public void Compose(IServiceRegistry serviceRegistry)
-  {     
-  serviceRegistry.Register(typeof(IFoo),typeof(Foo));
-}
-}
-</code></pre>
-
-<p>When we register an assembly, the container will first look for implementations of the <strong>ICompositionRoot</strong> interface. If one or more implementations are found, they will be created and invoked.</p>
-<p><strong>Note:</strong> Any other services contained within the target assembly that is not registered in the composition root, will <strong>NOT</strong> be registered.</p>
-<h3>Recursive dependency detection</h3>
-<p>A recursive dependency graph is when a service depends directly or indirectly on itself.</p>
-<pre><code>public class FooWithRecursiveDependency : IFoo
-  {
-  public FooWithRecursiveDependency(IFoo foo)
-  {
-}
-}
-</code></pre>
-
-<p>The following code will throw an <strong>InvalidOperationException</strong> stating that there are existing recursive dependencies. </p>
-<pre><code>container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
-  container.GetInstance&lt;IFoo&gt;()
-</code></pre>
-
-<h2>Annotation</h2>
-<p><strong>LightInject</strong> supports annotation of properties and constructor parameters through an extension LightInject. </p>
-<div class="nuget-badge" >
- <p>
-   <code>PM&gt; Install-Package LightInject.Annotation </code>
- </p>
-</div> 
-<p>By using the <strong>InjectAttribute</strong> we can be more explicit about the services that gets injected into properties and constructor dependencies.</p>
-<p><strong>Note:</strong> <em>As opposed to all other types within <strong>LightInject</strong>, the <strong>InjectAttribute</strong> is marked with the public access modifier so that is can be used outside the assembly that contains the service container. This creates a dependency from our services to the assembly containing the attribute, but we still don't need to reference any of the specific types in <strong>LightInject</strong> making this an affordable sacrifice when it comes to services referencing container specific types.</em>  
-</p>
-<h3>Annotated Property Injection</h3>
-<p>To enable annotated property injection, we must execute the following line before we start requesting services from the container.</p>
-<pre><code>container.EnableAnnotatedPropertyInjection();
-</code></pre>
-
-<p>The container now only try to inject dependencies for properties that is annotated with the <strong>InjectAttribute</strong>.
-  The container will throw an <strong>InvalidOperationException</strong> if the annotated property dependency is unable to be resolved.</p>
-  <pre><code>public class FooWithAnnotatedProperyDependency : IFoo
-    {
-    [Inject]
-    public IBar Bar { get; set; }
-  }
-</code></pre>
-
-<p>Given that we have a registration for the <strong>IBar</strong> dependency, it will be injected into the <strong>Bar</strong> property.</p>
-<pre><code>container.Register&lt;IFoo, FooWithAnnotatedProperyDependency&gt;();
-  container.Register&lt;IBar, Bar&gt;();
-  var instance = (FooWithAnnotatedProperyDependency)container.GetInstance&lt;IFoo&gt;();
-  Assert.IsNotNull(instance.Bar);
-</code></pre>
-
-<p>If we have multiple registrations of the same interface, we can also use the <strong>InjectAttribute</strong> to specify the service to be injected. </p>
-<pre><code>public class FooWithNamedAnnotatedProperyDependency : IFoo
-  {
-  [Inject(&quot;AnotherBar&quot;)]
-  public IBar Bar { get; set; }
-}
-</code></pre>
-
-<p>The container will inject the service that matches the specified service name.</p>
-<pre><code>container.Register&lt;IFoo, FooWithNamedAnnotatedProperyDependency&gt;();
-  container.Register&lt;IBar, Bar&gt;(&quot;SomeBar&quot;);
-  container.Register&lt;IBar, AnotherBar&gt;(&quot;AnotherBar&quot;); 
-  var instance = (FooWithNamedAnnotatedProperyDependency)container.GetInstance&lt;IFoo&gt;();   
-  Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
-</code></pre>
-
-<h3>Annotated Constructor Injection</h3>
-<p>To enable annotated constructor injection, we must execute the following line before we start requesting services from the container.</p>
-<pre><code>container.EnableAnnotatedConstructorInjection();
-</code></pre>
-
-<p><strong>LightInject</strong> does consider all constructor parameters to be required dependencies and will try to satisfy all dependencies regardless of being annotated with the <strong>InjectAttribute</strong>. We can however use the **InjectAttribute ** to specify the named service to be injected.</p>
-<pre><code>public class FooWithNamedAnnotatedDependency : IFoo
-  {
-  public FooWithNamedAnnotatedDependency([Inject(ServiceName=&quot;AnotherBar&quot;)]IBar bar)
-  {
-  Bar = bar;
-}
-
-public IBar Bar { get; private set; }
-}
-</code></pre>
-
-<p>The container will inject the service that matches the specified service name.</p>
-<pre><code>container.Register&lt;IFoo, FooWithNamedAnnotatedDependency&gt;();
-  container.Register&lt;IBar, Bar&gt;(&quot;SomeBar&quot;);
-  container.Register&lt;IBar, AnotherBar&gt;(&quot;AnotherBar&quot;); 
-  var instance = (FooWithNamedAnnotatedDependency)container.GetInstance&lt;IFoo&gt;();  
-  Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
-</code></pre>
-
-<h2>Service Resolution</h2>
-<h3>GetInstance</h3>
-<p>The service container will throw an <strong>InvalidOperationException</strong> if the service container is unable to resolve the service or any of its dependencies.</p>
-<pre><code>container.Register&lt;IFoo, Foo&gt;();    
-  ExceptionAssert.Throws&lt;InvalidOperationException&gt;(() =&gt; container.GetInstance&lt;IBar&gt;());
-</code></pre>
-
-<h3>TryGetInstance</h3>
-<p>The service container will <strong>NOT</strong> throw an exception when resolving an unknown service.</p>
-<pre><code>container.Register&lt;IBar, Bar&gt;();    
-  var instance = container.TryGetInstance&lt;IFoo&gt;();    
-  Assert.IsNull(instance);
-</code></pre>
-
-<p>The container will still throw an exception for a known service resolved via the <strong>TryGetInstance</strong> method if any of its dependencies can not be resolved.</p>
-<pre><code>var container = CreateContainer();
-  container.Register&lt;IFoo, FooWithDependency&gt;();  
-  ExceptionAssert.Throws&lt;InvalidOperationException&gt;(() =&gt; container.GetInstance&lt;IFoo&gt;());
-</code></pre>
-
-<h3>Basic Types</h3>
-<pre><code>public interface IFoo {}:
-  public class Foo {}:
-</code></pre>
-
-<p>The container resolves the instance based on the requested service type.</p>
-<pre><code>container.Register&lt;IFoo,Foo&gt;(); 
-  var instance = container.GetInstance&lt;IFoo&gt;();
-  Assert.IsInstanceOfType(instance, typeof(Foo));
-</code></pre>
-
-<h3>Open Generic Types</h3>
-<pre><code>public interface IFoo&lt;T&gt; {};
-  public class Foo&lt;T&gt; : IFoo&lt;T&gt; {};
-</code></pre>
-
-<p>The container creates the closed generic type based on the service request.</p>
-<pre><code>container.Register(typeof(IFoo&lt;&gt;), typeof(Foo&lt;&gt;));
-  var instance = container.GetInstance(typeof(IFoo&lt;int&gt;));
-  Assert.IsInstanceOfType(instance, typeof(Foo&lt;int&gt;));
-</code></pre>
-
-<h3>Func&lt;T&gt;</h3>
-<pre><code>public class FooWithFuncDependency : IFoo
-  {
-  public FooWithFuncDependency(Func&lt;IBar&gt; getBar)
-  {
-  GetBar = getBar;
-}
-public Func&lt;IBar&gt; GetBar { get; private set; } 
-}
-</code></pre>
-
-<p>The container creates a delegate that is capable of resolving the underlying dependency (IBar).</p>
-<pre><code>container.Register&lt;IBar, Bar&gt;();
-  container.Register&lt;IFoo, FooWithFuncDependency&gt;();
-  var instance = (FooWithFuncDependency)container.GetInstance&lt;IFoo&gt;();
-  Assert.IsInstanceOfType(instance.GetBar(), typeof(Bar));
-</code></pre>
-
-<h3>Func&lt;string,T&gt;</h3>
-<pre><code>public class FooWithNamedFuncDependency : IFoo
-  {
-  public FooWithNamedFuncDependency(Func&lt;string, IBar&gt; getBar)
-  {
-  GetBar = getBar;
-}
-public Func&lt;string, IBar&gt; GetBar { get; private set; }
-}
-</code></pre>
-
-<p>The container creates a delegate that is capable of resolving the underlying named dependency.</p>
-<pre><code>var container = CreateContainer();
-  container.Register&lt;IBar, Bar&gt;(&quot;SomeBar&quot;);
-  container.Register&lt;IFoo, FooWithNamedFuncDependency&gt;();
-  var instance = (FooWithNamedFuncDependency)container.GetInstance&lt;IFoo&gt;();
-  Assert.IsInstanceOfType(instance.GetBar(&quot;SomeBar&quot;), typeof(Bar));
-</code></pre>
-
-<h3>IEnumerable&lt;T&gt;</h3>
-<pre><code>public interface IFoo {};
-  public class Foo : IFoo {};
-  public class AnotherFoo : IFoo {};
-</code></pre>
-
-<p>The container resolves all instances as an <strong>IEnumerable&lt;T&gt;</strong>.</p>
-<pre><code>container.Register(typeof(IFoo), typeof(Foo));
-  container.Register(typeof(IFoo), typeof(AnotherFoo), &quot;AnotherFoo&quot;);
-  var services = container.GetInstance&lt;IEnumerable&lt;IFoo&gt;&gt;();
-  Assert.AreEqual(2, services.Count());
-</code></pre>
-
-<p>Alternatively using the <strong>GetAllInstances</strong> method.</p>
-<pre><code>container.Register(typeof(IFoo), typeof(Foo));
-  container.Register(typeof(IFoo), typeof(AnotherFoo), &quot;AnotherFoo&quot;);
-  var services = container.GetAllInstance&lt;&lt;IFoo&gt;();
-  Assert.AreEqual(2, services.Count());
-</code></pre>
-
-<h2>IDisposable</h2>
-<hr />
-<p>The recommened way of dealing with a disposable object is to wrap it in a using block.</p>
-<pre><code>using(IFoo disposableFoo = new DisposableFoo())
-  {
-
-} &lt;--the instance is disposed here.
-</code></pre>
-
-<p>The <strong>using</strong> block defines a scope for the instance and the instance is safely disposed when the scope ends.</p>
-<p><strong>Note:</strong> 
-  <em>We might argue that the <strong>using</strong> block invites to <a href="http://en.wikipedia.org/wiki/Leaky_abstraction" title="leaky abstractions">leaky abstractions</a> as the abstraction(</em><em>IFoo</em><em>) is required to &quot;implement&quot; the <strong>IDisposable</strong> interface in order for this code to compile.</em></p>
-  <p><strong>LightInject</strong> offers the <strong>BeginScope</strong> method that defines a new scope similar to the <strong>using</strong> block. </p>
-  <pre><code>using(var scope = container.BeginScope())
-    {
-    IFoo instance = container.GetInstance&lt;IFoo&gt;(); 
-  } //instance is disposed here.
-</code></pre>
-
-<p>Scopes can also be nested </p>
-<pre><code>using(var outerScope = container.BeginScope())
-  {
-  IFoo outerInstance = container.GetInstance&lt;IFoo&gt;(); 
-  using(var innerScope = container.BeginScope())
-  {
-  IFoo innerInstance = container.GetInstance&lt;IFoo&gt;(); 
-} //innerInstance is disposed here.
-} //outerInstance is disposed here.
-</code></pre>
-
-<h2>Lifetime</h2>
-<p>The default behavior in <strong>LightInject</strong> is to treat all objects as transients unless otherwise specified.</p>
-<pre><code>container.Register&lt;IFoo,Foo&gt;();
-  var firstInstance = container.GetInstance&lt;IFoo&gt;();
-  var secondInstance = container.GetInstance&lt;IFoo&gt;();
-  Assert.AreNotSame(firstInstance, secondInstance);
-</code></pre>
-
-<h3>PerScopeLifetime</h3>
-<p>Ensures that only one instance of a given service can exists within a scope.
-  The container will call the <strong>Dispose</strong> method on all disposable objects created within the scope.</p>
-  <pre><code>container.Register&lt;IFoo,Foo&gt;(new PerScopeLifetime());
-    using(container.BeginScope())
-    {
-
-    var firstInstance = container.GetInstance&lt;IFoo&gt;();
-    var secondInstance = container.GetInstance&lt;IFoo&gt;();
-    Assert.AreSame(firstInstance, secondInstance);
-  }
-</code></pre>
-
-<p><strong>Note:</strong> <em>An <strong>InvalidOperationException</strong> is thrown if a service registered with the <strong>PerScopeLifetime</strong> is requested outside the scope.</em></p>
-<h3>PerContainerLifetime</h3>
-<p>Ensures that only one instance of a given service can exist within the container.
-  The container will call the Dispose method on all disposable objects when the container itself is disposed.</p>
-  <pre><code>using(container = new ServiceContainer())
-    {
-    container.Register&lt;IFoo,Foo&gt;(new PerContainerLifetime());   
-    var firstInstance = container.GetInstance&lt;IFoo&gt;();
-    var secondInstance = container.GetInstance&lt;IFoo&gt;();
-    Assert.AreSame(firstInstance, secondInstance);
-  }
-</code></pre>
-
-<h3>PerRequestLifetime</h3>
-<p>A new instance is created for each request and the container calls <strong>Dispose</strong> when the scope ends.
-  This lifetime is used when the conrete class implements <strong>IDisposable</strong>.</p>
-  <pre><code>container.Register&lt;IFoo,Foo&gt;(new PerRequestLifetime());
-    using(container.BeginScope())
-    {       
-    var firstInstance = container.GetInstance&lt;IFoo&gt;();
-    var secondInstance = container.GetInstance&lt;IFoo&gt;();
-    Assert.AreNotSame(firstInstance, secondInstance);
-  }   
-</code></pre>
-
-<p><strong>Note:</strong> <em>An <strong>InvalidOperationException</strong> is thrown if a service registered with the <strong>PerRequestLifetime</strong> is requested outside the scope.</em></p>
-<h3>Custom lifetime</h3>
-<p>A custom lifetime is created by implementing the <strong>ILifetime</strong> interface</p>
-<pre><code>internal interface ILifetime
-  {
-  object GetInstance(Func&lt;object&gt; instanceFactory, Scope currentScope);        
-}
-</code></pre>
-
-<p>The following example shows to create a custom lifetime that ensures only one instance per thread.</p>
-<pre><code>public class PerThreadLifetime : ILifetime
-  {
-  ThreadLocal&lt;object&gt; instances = new ThreadLocal&lt;object&gt;();  
-
-  public object GetInstance(Func&lt;object&gt; instanceFactory, Scope currentScope)
-  {
-  if (instances.value == null)
-  {
-  instances.value = instanceFactory();
-}
-return instances.value;
-}
-}
-</code></pre>
-
-<p>That is all it takes to create a custom lifetime, but what about disposable services?</p>
-<pre><code>public class PerThreadLifetime : ILifetime
-  {
-  ThreadLocal&lt;object&gt; instances = new ThreadLocal&lt;object&gt;();  
-
-  public object GetInstance(Func&lt;object&gt; instanceFactory, Scope currentScope)
-  {           
-  if (instances.value == null)
-  {               
-  object instance = instanceFactory();                
-  IDisposable disposable = instance as IDisposable;               
-  if (disposable != null)
-  {
-  if (currentScope == null)
-  {
-  throw new InvalidOperationException(&quot;Attempt to create an disposable object 
-  without a current scope.&quot;)
-}
-currentScope.TrackInstance(disposable);
-}
-
-instances.value = instance;
-}
-return instance.value;
-}
-}
-</code></pre>
-
-<h4>Important</h4>
-<p>A lifetime object controls the lifetime of a single service and can <strong>never</strong> be shared for multiple service registrations.</p>
-<p><strong>Wrong</strong></p>
-<pre><code>ILifetime lifetime = new PerContainerLifeTime();
-  container.Register&lt;IFoo,Foo&gt;(lifetime);
-  container.Register&lt;IBar,Bar&gt;(lifetime);
-</code></pre>
-
-<p><strong>Right</strong></p>
-<pre><code>container.Register&lt;IFoo,Foo&gt;(new PerContainerLifeTime());
-  container.Register&lt;IBar,Bar&gt;(new PerContainerLifeTime());
-</code></pre>
-
-<p>A lifetime object is also shared across threads and that is something we must take into consideration when developing new lifetime implementations.</p>
-<h2>Decorators</h2>
-<p><strong>LightInject</strong> has native support for the <a href="http://en.wikipedia.org/wiki/Decorator_pattern">decorator pattern</a>.</p>
-<p>A decorator is a class that implements the same interface as the type it is decorating and takes the target instance as a constructor argument.</p>
-<pre><code>public class FooDecorator : IFoo
-  {     
-  public FooDecorator(IFoo foo)
-  {     
-}
-} 
-</code></pre>
-
-<p>Decorators are applied using the <strong>Decorate</strong> method. </p>
-<pre><code>container.Register&lt;IFoo, Foo&gt;();
-  container.Decorate(typeof(IFoo), typeof(FooDecorator));
-
-  var instance = container.GetInstance&lt;IFoo&gt;();
-
-  Assert.IsInstanceOfType(instance, typeof(FooDecorator));
-</code></pre>
-
-<p>Decorators can be nested and they are applied in the same sequence as they are registered.</p>
-<pre><code>container.Register&lt;IFoo, Foo&gt;();            
-  container.Decorate(typeof(IFoo), typeof(FooDecorator));
-  container.Decorate(typeof(IFoo), typeof(AnotherFooDecorator));
-
-  var instance = container.GetInstance&lt;IFoo&gt;();
-
-  Assert.IsInstanceOfType(instance, typeof(AnotherFooDecorator));
-</code></pre>
-
-<p>If we have multiple services implementing the same interface, we can apply the decorator to implementations matching the given predicate.</p>
-<pre><code>container.Register&lt;IFoo, Foo&gt;();
-  container.Register&lt;IFoo, AnotherFoo&gt;(&quot;AnotherFoo&quot;);
-  container.Decorate(typeof(IFoo), typeof(FooDecorator), service =&gt; service.ServiceName == &quot;AnotherFoo&quot;);
-
-  var instance = container.GetInstance&lt;IFoo&gt;();
-  var decoratedInstance = container.GetInstance&lt;IFoo&gt;(&quot;AnotherFoo&quot;);
-
-  Assert.IsInstanceOfType(instance, typeof(Foo));
-  Assert.IsInstanceOfType(decoratedInstance, typeof(FooDecorator));
-</code></pre>
-
-<p>Decorators can have their own dependencies in addition to the target instance it is decorating.</p>
-<pre><code>public class FooDecoratorWithDependency : IFoo
-  {        
-  public FooDecoratorWithDependency(IFoo foo, IBar bar)
-  {
-  Foo = foo;
-  Bar = bar;
-}
-
-public IFoo Foo { get; private set; }
-
-public IBar Bar { get; private set; }
-}
-</code></pre>
-
-<p>The dependencies of the decorator can be implicitly resolved.</p>
-<pre><code>container.Register&lt;IFoo, Foo&gt;();
-  container.Register&lt;IBar, Bar&gt;();
-  container.Decorate(typeof(IFoo), typeof(FooDecoratorWithDependency));
-  var instance = (FooDecoratorWithDependency)container.GetInstance&lt;IFoo&gt;();
-  Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
-  Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
-</code></pre>
-
-<p>By using a function factory, we can explicitly specify the depenendecies of the decorator.</p>
-<pre><code>container.Register&lt;IFoo, Foo&gt;();
-  container.Register&lt;IBar, Bar&gt;();
-  container.Decorate&lt;IFoo&gt;((serviceFactory, target) 
-  =&gt; new FooDecoratorWithDependency(target, serviceFactory.GetInstance&lt;IBar&gt;()));
-  var instance = (FooDecoratorWithDependency)container.GetInstance&lt;IFoo&gt;();
-  Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
-  Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
-</code></pre>
-
-<p><strong>Note:</strong> <em>The target instance is available through the function delegate so that we can pass it to the constructor of the decorator.</em></p>
-<p>Decorators can also be applied to open generic types.</p>
-<pre><code>container.Register(typeof(IFoo&lt;&gt;), typeof(Foo&lt;&gt;));
-  container.Decorate(typeof(IFoo&lt;&gt;), typeof(FooDecorator&lt;&gt;));
-
-  var instance = container.GetInstance&lt;IFoo&lt;int&gt;&gt;();
-
-  Assert.IsInstanceOfType(instance, typeof(FooDecorator&lt;int&gt;));
-</code></pre>
-
-<h2>Composite pattern</h2>
-<p>The <a href="http://en.wikipedia.org/wiki/Composite_pattern">composite pattern</a> is a simple pattern that lets a class implement an interface and then delegates invocation of methods to a set other classes implementing the same interface. </p>
-<pre><code>public class FooWithEnumerableIFooDependency : IFoo
-  {
-  public IEnumerable&lt;IFoo&gt; FooList { get; private set; }
-
-  public FooWithEnumerableIFooDependency(IEnumerable&lt;IFoo&gt; fooList)
-  {
-  FooList = fooList;
-}
-}
-</code></pre>
-
-<p>While this looks like a recursive dependency, <strong>LightInject</strong> detects this and removes the  <strong>FooWithEnumerableIFooDependency</strong> from the IEnumerable&lt;IFoo&gt; beeing injected.   </p>
-<pre><code>container.Register(typeof(IFoo), typeof(Foo), &quot;Foo&quot;);
-  container.Register(typeof(IFoo), typeof(AnotherFoo), &quot;AnotherFoo&quot;);
-  container.Register(typeof(IFoo), typeof(FooWithEnumerableIFooDependency));            
-  var instance = (FooWithEnumerableIFooDependency)container.GetInstance&lt;IFoo&gt;();
-  Assert.IsInstanceOfType(instance.FooList.First(), typeof(Foo));
-  Assert.IsInstanceOfType(instance.FooList.Last(), typeof(AnotherFoo));
-</code></pre>
-
-<h2>Unit testing</h2>
-<p><strong>LightInject</strong> provides native support for mocking services during unit testing.</p>
-<div class="nuget-badge" >
- <p>
-   <code>PM&gt; Install-Package LightInject.Mocking </code>
- </p>
+ <!-- NAVBAR
+ ================================================== -->
+ <div class="navbar-wrapper">
+  <!-- Wrap the .navbar in .container to center it within the absolutely positioned parent. -->
+  <div class="container">
+
+    <div class="navbar navbar-inverse">
+      <div class="navbar-inner">
+        <!-- Responsive Navbar Part 1: Button for triggering responsive navbar (not covered in tutorial). Include responsive CSS to utilize. -->
+        <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="brand" href="#">LightInject</a>
+        <!-- Responsive Navbar Part 2: Place all navbar contents you want collapsed withing .navbar-collapse.collapse. -->
+        <div class="nav-collapse collapse">
+          <ul class="nav">
+            <li><a href="#">Getting started</a></li>
+            <li><a href="#about">Annotation</a></li>
+            <li><a href="#about">Service Locator</a></li>
+            <li><a href="#about">Web</a></li>
+            <li><a href="#about">MVC</a></li>
+            <li><a href="#about">Web API</a></li>
+            <li><a href="#about">WCF</a></li>                
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div><!-- /.navbar-inner -->
+    </div><!-- /.navbar -->
+
+  </div> <!-- /.container -->
+</div><!-- /.navbar-wrapper -->
+
+<!-- Carousel
+ ================================================== -->
+ <div id="myCarousel" class="carousel slide">
+  <div class="carousel-inner">
+    <div class="item active">
+      <img src="images/abstract.jpg" alt="">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1>LightInject</h1>              
+          <p class="lead">An ultra lightweight single file Inversion of Control container for the .Net framework</p>
+          <a class="btn btn-large btn-primary" href="#">Learn more</a>
+        </div>
+      </div>
+    </div>
+    <div class="item">
+      <img src="images/keyboard.jpg" alt="">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1>Annotation</h1>
+          <p class="lead">Use attributes to control injected dependencies.</p>
+          <a class="btn btn-large btn-primary" href="#">Learn more</a>
+        </div>
+      </div>
+    </div>
+    <div class="item">
+      <img src="images/abstract2.jpg" alt="">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1>Hidden by default</h1>
+          <p class="lead">LightInject is specially designed not to bleed into application code. Everything is internal</p>            
+          <a class="btn btn-large btn-primary" href="#">Learn more</a>
+        </div>
+      </div>
+    </div>
+    <div class="item">
+      <img src="images/keyboard.jpg" alt="">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1>Decorator Pattern</h1>
+          <p class="lead">LightInject has native support for the decorator pattern.</p>            
+          <a class="btn btn-large btn-primary" href="#">Learn more</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="item">
+      <img src="images/abstract.jpg" alt="">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1>Simplicity is everything</h1>
+          <p class="lead">LightInject puts simplicity in the front seat making it very easy to use.</p>            
+          <a class="btn btn-large btn-primary" href="#">Learn more</a>
+        </div>
+      </div>
+    </div>  
+
+  </div>
+  <a class="left carousel-control" href="#myCarousel" data-slide="prev">&lsaquo;</a>
+  <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>
+</div><!-- /.carousel -->
+
+
+<div class="container">  
+  <div class="row">
+    <div class="span3 bs-docs-sidebar">
+      <ul class="nav nav-list bs-docs-sidenav">
+        <li><a href="#download-bootstrap"><i class="icon-chevron-right"></i> Download</a></li>
+        <li><a href="#file-structure"><i class="icon-chevron-right"></i> File structure</a></li>
+        <li><a href="#contents"><i class="icon-chevron-right"></i> What's included</a></li>
+        <li><a href="#html-template"><i class="icon-chevron-right"></i> HTML template</a></li>
+        <li><a href="#examples"><i class="icon-chevron-right"></i> Examples</a></li>
+        <li><a href="#what-next"><i class="icon-chevron-right"></i> What next?</a></li>
+      </ul>
+    </div>
+    <div class="span9">
+     <section id="overview">
+       <div class="page-header">
+        <h1>JavaScript in Bootstrap</h1>
+       </div>
+      <p>If we want to be explicit about the dependencies injected into the service instance, the concrete type can be registered with the container.</p>
+
+      <pre><code>container.Register&lt;IBar, Bar&gt;();
+        container.Register&lt;IBar, AnotherBar&gt;("AnotherBar");
+        container.Register(f =&gt; new FooWithProperyDependency(){ Bar = f.GetInstance&lt;IBar&gt;("AnotherBar") });
+        var fooWithProperyDependency = new FooWithProperyDependency();
+        var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+        Assert.IsInstanceOfType(result.Bar, typeof(AnotherBar));
+      </code></pre>
+    </section>   
+  </div>
+</div>   
 </div>
-<p><strong>Note:</strong> <em>Use the <a href="http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.internalsvisibletoattribute(v=vs.100).aspx">InternalVisibleTo</a> attribute to give the test project access to the <strong>LightInject</strong> internal types.</em></p>
-<pre><code>public class FooWithDependency : IFoo
-  {
-  public FooWithDependency(IBar bar)
-  {
-}
-}
-</code></pre>
-
-<p>The container is configured as usual at the composition root.</p>
-<pre><code>container.Register&lt;IFoo,FooWithDependency&gt;();
-  container.Register&lt;IBar,Bar&gt;();
-</code></pre>
-
-<p>Now, in our unit test project we would like to write tests against the <strong>IFoo</strong> service, but we would also like to replace the dependency (<strong>Bar</strong>) with a mock instance.</p>
-<p>The following example uses the <a href="http://code.google.com/p/moq/">Moq</a> library to provide a mock instance for the <strong>IBar</strong> dependency.</p>
-<pre><code>barMock = new Mock&lt;IBar&gt;();
-  container.StartMocking&lt;IBar&gt;(() =&gt; barMock.Object); 
-
-  var foo = (FooWithDependency)container.GetInstance&lt;IFoo&gt;();
-
-  Assert.IsNotInstanceOfType(foo.Bar, typeof(Bar));
-  container.EndMocking&lt;IBar&gt;()
-</code></pre>
-
-<p>When the <strong>StartMocking</strong> method is called, the container will replace the original service registration with a new service registration that uses our mock instance. </p>
-<p><strong>Note:</strong> <em>The mock instance uses the same lifetime as the original registration.</em></p>
-<p>The <strong>StopMocking</strong> method tells the container to replace the mock registration with our original service registration.</p>
-<pre><code>barMock = new Mock&lt;IBar&gt;();
-  container.StartMocking&lt;IBar&gt;(() =&gt; barMock.Object); 
-  container.EndMocking&lt;IBar&gt;();
-
-  var foo = (FooWithDependency)container.GetInstance&lt;IFoo&gt;();
-
-  Assert.IsInstanceOfType(foo.Bar, typeof(Bar));
-</code></pre>
-
-<h2>Common Service Locator</h2>
-<p><strong>LightInject</strong> provides an implementation of the <a href="http://commonservicelocator.codeplex.com/">Common Service Locator</a> abstraction to support other frameworks that rely on this library.</p>
-<div class="nuget-badge" >
- <p>
-   <code>PM&gt; Install-Package LightInject.ServiceLocation </code>
- </p>
-</div>
-<h2>Web</h2>
-<p>Enables <strong>LightInject</strong> to be used in a web application and provides support for <strong>PerWebRequest</strong> scoped service instances.</p>
-<div class="nuget-badge" >
- <p>
-   <code>PM&gt; Install-Package LightInject.Web </code>
- </p>
-</div>
-<p>The following example shows how to enable <strong>LightInject</strong> in the <strong>Application_Start</strong> event.</p>
-<pre><code>protected void Application_Start()
-  {
-  var serviceContainer = new ServiceContainer();            
-  serviceContainer.Register&lt;IFoo, Foo&gt;(new PerScopeLifetime()); 
-  LightInjectHttpModule.SetServiceContainer(serviceContainer);        
-}
-</code></pre>
-
-<p>A service   registered with <strong>PerScopeLifetime</strong> is scoped per web request and is disposed at the end of the request if it implements <strong>IDisposable</strong>.</p>
-
 
 </body>
 

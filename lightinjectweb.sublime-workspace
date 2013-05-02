@@ -1,0 +1,391 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"boi",
+				"border-width"
+			],
+			[
+				"bord",
+				"border-bottom-width"
+			],
+			[
+				"im",
+				"iframe	Tag"
+			],
+			[
+				"se",
+				"section	Tag"
+			],
+			[
+				"pa",
+				"padding-top"
+			],
+			[
+				"t",
+				"table-cell"
+			],
+			[
+				"di",
+				"display"
+			],
+			[
+				"image",
+				"imagerow"
+			],
+			[
+				"l",
+				"lead"
+			],
+			[
+				"w",
+				"width"
+			],
+			[
+				"span",
+				"span4"
+			],
+			[
+				"ma",
+				"margin-left"
+			],
+			[
+				"do",
+				"documentation"
+			],
+			[
+				"cn",
+				"container"
+			],
+			[
+				"i",
+				"iframe	Tag"
+			],
+			[
+				"bo",
+				"body"
+			],
+			[
+				"b",
+				"body	Tag"
+			],
+			[
+				"p",
+				"p	Tag"
+			],
+			[
+				"h",
+				"h1	Tag"
+			],
+			[
+				"sp",
+				"span8"
+			],
+			[
+				"co",
+				"color"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "index.html",
+			"settings":
+			{
+				"buffer_size": 5682,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "index2.html",
+			"settings":
+			{
+				"buffer_size": 2173,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "assets/css/common.css",
+			"settings":
+			{
+				"buffer_size": 3873,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "gettingstarted.html",
+			"settings":
+			{
+				"buffer_size": 6160,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 311.0,
+		"selected_items":
+		[
+			[
+				"Package Control: ",
+				"Package Control: List Packages"
+			]
+		],
+		"width": 512.0
+	},
+	"console":
+	{
+		"height": 146.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/gettingstarted2.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/gettingstartediframe.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/lightinjectweb.sublime-project",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/lightinjectweb.sublime-workspace",
+		"/C/Users/bri/Documents/Homepage.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/gettingstarted.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/assets/css/common.css",
+		"/C/Users/bri/Documents/GitHub/LightInject/.git/ORIG_HEAD",
+		"/C/Users/bri/Documents/GitHub/LightInject/.git/description",
+		"/C/Users/bri/Documents/GitHub/LightInject/.git/packed-refs",
+		"/C/Users/bri/Documents/GitHub/LightInject/.git/config",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/index.html",
+		"/C/Users/bri/Documents/LightInjectWeb/index.html",
+		"/C/Users/bri/Documents/LightInjectWeb/gettingstarted.html",
+		"/C/Users/bri/Documents/LightInjectWeb/lightinjectweb.sublime-project",
+		"/C/Users/bri/Documents/test.sublime-project",
+		"/C/Users/bri/Documents/GitHub/LightInject/NuGet/LightInject/package/LightInject.nuspec",
+		"/C/Users/bri/Documents/GitHub/LightInject/NuGet/LightInject.Web/package/LightInject.Web.nuspec",
+		"/C/Users/bri/Documents/GitHub/LightInject/NuGet/LightInject.ServiceLocation/package/LightInject.ServiceLocation.nuspec",
+		"/C/Users/bri/Documents/GitHub/LightInject/NuGet/LightInject.Annotation/package/LightInject.Annotation.nuspec",
+		"/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/LiveReload/LiveReload.sublime-settings",
+		"/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
+		"/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/Default/Default (Windows).sublime-keymap",
+		"/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/HTML/HTML.tmLanguage"
+	],
+	"find":
+	{
+		"height": 0.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"dib",
+			"servicelocator"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 3,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "index.html",
+					"settings":
+					{
+						"buffer_size": 5682,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2178,
+								4632
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1529.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "index2.html",
+					"settings":
+					{
+						"buffer_size": 2173,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								588,
+								588
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "assets/css/common.css",
+					"settings":
+					{
+						"buffer_size": 3873,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3873,
+								3873
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CSS/CSS.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "gettingstarted.html",
+					"settings":
+					{
+						"buffer_size": 6160,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6098,
+								6098
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2214.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 34.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 0.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 195.0,
+	"status_bar_visible": true
+}
