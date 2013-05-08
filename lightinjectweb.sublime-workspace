@@ -4,6 +4,98 @@
 		"selected_items":
 		[
 			[
+				"padding",
+				"padding-bottom"
+			],
+			[
+				"bo",
+				"border-radius"
+			],
+			[
+				"borders",
+				"border-style"
+			],
+			[
+				"pa",
+				"padding-top"
+			],
+			[
+				"fo",
+				"font-size"
+			],
+			[
+				"li",
+				"list-style"
+			],
+			[
+				"p",
+				"padding-left"
+			],
+			[
+				"bod",
+				"border"
+			],
+			[
+				"border-c",
+				"border-color"
+			],
+			[
+				"border-",
+				"border-color"
+			],
+			[
+				"border-co",
+				"border-color"
+			],
+			[
+				"ma",
+				"markdownElement"
+			],
+			[
+				"mark",
+				"markdown"
+			],
+			[
+				"re",
+				"renderMarkdown"
+			],
+			[
+				"e",
+				"each"
+			],
+			[
+				"fun",
+				"function"
+			],
+			[
+				"va",
+				"value"
+			],
+			[
+				"fn",
+				"function"
+			],
+			[
+				"mar",
+				"markdownElements"
+			],
+			[
+				"mr",
+				"markdown"
+			],
+			[
+				"par",
+				"parsedHtml"
+			],
+			[
+				"t",
+				"text"
+			],
+			[
+				"n",
+				"none"
+			],
+			[
 				"boi",
 				"border-width"
 			],
@@ -18,14 +110,6 @@
 			[
 				"se",
 				"section	Tag"
-			],
-			[
-				"pa",
-				"padding-top"
-			],
-			[
-				"t",
-				"table-cell"
 			],
 			[
 				"di",
@@ -48,10 +132,6 @@
 				"span4"
 			],
 			[
-				"ma",
-				"margin-left"
-			],
-			[
 				"do",
 				"documentation"
 			],
@@ -64,16 +144,8 @@
 				"iframe	Tag"
 			],
 			[
-				"bo",
-				"body"
-			],
-			[
 				"b",
 				"body	Tag"
-			],
-			[
-				"p",
-				"p	Tag"
 			],
 			[
 				"h",
@@ -92,18 +164,61 @@
 	"buffers":
 	[
 		{
-			"file": "index.html",
+			"file": "gettingstartedwithmarkdown.html",
 			"settings":
 			{
-				"buffer_size": 5682,
+				"buffer_size": 322,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "index2.html",
+			"file": "markdown.js",
 			"settings":
 			{
-				"buffer_size": 2173,
+				"buffer_size": 635,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "",
+			"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/User/Git.sublime-settings",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/User/SublimeServer.sublime-settings",
+			"settings":
+			{
+				"buffer_size": 192,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "markdown2.md",
+			"settings":
+			{
+				"buffer_size": 479,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "Part1.html",
+			"settings":
+			{
+				"buffer_size": 4897,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "part2.html",
+			"settings":
+			{
+				"buffer_size": 3970,
 				"line_ending": "Windows"
 			}
 		},
@@ -111,15 +226,76 @@
 			"file": "assets/css/common.css",
 			"settings":
 			{
-				"buffer_size": 3873,
+				"buffer_size": 3100,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "gettingstarted.html",
+			"file": "assets/highlight.js/styles/github.css",
 			"settings":
 			{
-				"buffer_size": 6160,
+				"buffer_size": 1590,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "{\n    /* Please specify the PATH of pdflatex if you wanna generate PDF */\n    \"tex_path\": [\"/usr/local/texlive/2011/bin/x86_64-darwin\",\n                 \"/usr/local/texlive/2012/bin/x86_64-darwin\"],\n    /* Provide your arguments here as a list e.g.: [\"--latex-engine=xelatex\", \"--toc\"]\n    arguments that are separated by space must be in separate slots. e.g. [\"-H\", \"template.tex\"] */\n    \"pandoc_args\": [],\n    \"pandoc_args_pdf\": [],\n    \"pandoc_args_html\": [],\n    \"pandoc_args_docx\": []\n}",
+			"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/SmartMarkdown/SmartMarkdown.sublime-settings",
+			"file_size": 492,
+			"file_write_time": 130124757857862294,
+			"settings":
+			{
+				"buffer_size": 492,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/Markdown Preview/MarkdownPreview.sublime-settings",
+			"settings":
+			{
+				"buffer_size": 2429,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "markdown.md",
+			"settings":
+			{
+				"buffer_size": 479,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "gettingstarted.md",
+			"settings":
+			{
+				"buffer_size": 15156,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/LiveReload/LiveReload.sublime-settings",
+			"settings":
+			{
+				"buffer_size": 153,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "Package Control Messages\n========================\n\nLiveReload:\n----------\n\n  Changelog:\n  \n  Please be sure to restart Sublime Text 2 to start using this new version. For more information or how to use this plugin visit https://github.com/dz0ny/LiveReload-sublimetext2/blob/master/README.md \n  \n  New Features\n   - Support v2 of protocol\n  \n  Bugs:\n   - Potential security vulnerability with plugin https://github.com/dz0ny/LiveReload-sublimetext2/issues/7\n  \n",
+			"settings":
+			{
+				"buffer_size": 460,
+				"line_ending": "Windows",
+				"name": "Package Control Messages",
+				"scratch": true
+			}
+		},
+		{
+			"file": "index.html",
+			"settings":
+			{
+				"buffer_size": 5682,
 				"line_ending": "Windows"
 			}
 		}
@@ -127,12 +303,28 @@
 	"build_system": "",
 	"command_palette":
 	{
-		"height": 311.0,
+		"height": 392.0,
 		"selected_items":
 		[
 			[
+				"ma",
+				"Markdown Preview: preview in Browser"
+			],
+			[
 				"Package Control: ",
-				"Package Control: List Packages"
+				"Package Control: Install Package"
+			],
+			[
+				"markd",
+				"Markdown Preview: preview in Browser"
+			],
+			[
+				"markdown",
+				"Markdown Preview: preview in Browser"
+			],
+			[
+				"mark",
+				"Markdown Preview: preview in Browser"
 			]
 		],
 		"width": 512.0
@@ -152,18 +344,26 @@
 	},
 	"file_history":
 	[
+		"/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/User/LiveReload.sublime-settings",
+		"/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/User/MarkdownPreview.sublime-settings",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/markdown.md",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/index.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/index2.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/assets/css/common.css",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/assets/css/docs.css",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/gettingstarted2.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/assets/bootstrap/js/bootstrap-responsive.css",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/gettingstartedwithmarkdown.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/strapdowntest.html",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/gettingstarted.html",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/gettingstartediframe.html",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/lightinjectweb.sublime-project",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/lightinjectweb.sublime-workspace",
 		"/C/Users/bri/Documents/Homepage.html",
-		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/gettingstarted.html",
-		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/assets/css/common.css",
 		"/C/Users/bri/Documents/GitHub/LightInject/.git/ORIG_HEAD",
 		"/C/Users/bri/Documents/GitHub/LightInject/.git/description",
 		"/C/Users/bri/Documents/GitHub/LightInject/.git/packed-refs",
 		"/C/Users/bri/Documents/GitHub/LightInject/.git/config",
-		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/index.html",
 		"/C/Users/bri/Documents/LightInjectWeb/index.html",
 		"/C/Users/bri/Documents/LightInjectWeb/gettingstarted.html",
 		"/C/Users/bri/Documents/LightInjectWeb/lightinjectweb.sublime-project",
@@ -179,7 +379,7 @@
 	],
 	"find":
 	{
-		"height": 0.0
+		"height": 34.0
 	},
 	"find_in_files":
 	{
@@ -193,6 +393,8 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"section",
+			"pre",
 			"dib",
 			"servicelocator"
 		],
@@ -212,51 +414,23 @@
 	"groups":
 	[
 		{
-			"selected": 3,
+			"selected": 11,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "index.html",
+					"file": "gettingstartedwithmarkdown.html",
 					"settings":
 					{
-						"buffer_size": 5682,
+						"buffer_size": 322,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2178,
-								4632
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/HTML/HTML.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1529.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "index2.html",
-					"settings":
-					{
-						"buffer_size": 2173,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								588,
-								588
+								260,
+								260
 							]
 						],
 						"settings":
@@ -272,19 +446,210 @@
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "assets/css/common.css",
+					"buffer": 1,
+					"file": "markdown.js",
 					"settings":
 					{
-						"buffer_size": 3873,
+						"buffer_size": 635,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3873,
-								3873
+								16,
+								16
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/User/Git.sublime-settings",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/User/SublimeServer.sublime-settings",
+					"settings":
+					{
+						"buffer_size": 192,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "markdown2.md",
+					"settings":
+					{
+						"buffer_size": 479,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								11,
+								11
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "Part1.html",
+					"settings":
+					{
+						"buffer_size": 4897,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								654,
+								654
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "part2.html",
+					"settings":
+					{
+						"buffer_size": 3970,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1055,
+								1055
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 162.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "assets/css/common.css",
+					"settings":
+					{
+						"buffer_size": 3100,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3037,
+								3098
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CSS/CSS.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2376.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "assets/highlight.js/styles/github.css",
+					"settings":
+					{
+						"buffer_size": 1590,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								70,
+								153
 							]
 						],
 						"settings":
@@ -300,19 +665,177 @@
 					"type": "text"
 				},
 				{
-					"buffer": 3,
-					"file": "gettingstarted.html",
+					"buffer": 9,
+					"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/SmartMarkdown/SmartMarkdown.sublime-settings",
 					"settings":
 					{
-						"buffer_size": 6160,
+						"buffer_size": 492,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								6098,
-								6098
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/Markdown Preview/MarkdownPreview.sublime-settings",
+					"settings":
+					{
+						"buffer_size": 2429,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1048,
+								1048
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 54.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 11,
+					"file": "markdown.md",
+					"settings":
+					{
+						"buffer_size": 479,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								10,
+								10
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 12,
+					"file": "gettingstarted.md",
+					"settings":
+					{
+						"buffer_size": 15156,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								323,
+								323
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 3078.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 13,
+					"file": "/C/Users/bri/AppData/Roaming/Sublime Text 2/Packages/LiveReload/LiveReload.sublime-settings",
+					"settings":
+					{
+						"buffer_size": 153,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 14,
+					"settings":
+					{
+						"buffer_size": 460,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								460,
+								460
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"word_wrap": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 15,
+					"file": "index.html",
+					"settings":
+					{
+						"buffer_size": 5682,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1637,
+								1637
 							]
 						],
 						"settings":
@@ -322,7 +845,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2214.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -361,6 +884,10 @@
 		]
 	},
 	"menu_visible": true,
+	"output.git":
+	{
+		"height": 118.0
+	},
 	"replace":
 	{
 		"height": 0.0
@@ -386,6 +913,6 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 195.0,
+	"side_bar_width": 212.0,
 	"status_bar_visible": true
 }

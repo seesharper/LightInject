@@ -6,173 +6,103 @@
   <!-- Bootstrap CSS-->
   <script src="assets/jquery/jquery-1.9.1.min.js"></script>
   <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+  <script src="assets/highlight.js/highlight.pack.js"></script>
+  <script src="assets/marked/marked.js"></script>
+  <script src="assets/toc/jquery.toc.js"></script>
+  <script src="assets/script/markdown.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
   <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">  
-  <link href="assets/css/common.css" rel="stylesheet">
+  <link href="assets/bootstrap/css/bootstrap-responsive.css" rel="stylesheet">  
+  <link href="assets/css/common.css" rel="stylesheet">  
+  <link href="assets/highlight.js/styles/magula.css" rel="stylesheet">
+  <script type="text/javascript">
 
-  <style type="text/css">
+$(document).ready(function() {
+    $("#gettingstarted").click(function() {
+        var markdownElement = $("markdown");
+        markdownElement.attr("src","doc/gettingstarted.md");
+        renderMarkdown();                              
+    });
 
-  .span4  {    
-    height: 250px;            
-    position: relative;
-  }
+     $("#annotation").click(function() {
+        var markdownElement = $("markdown");
+        markdownElement.attr("src","doc/annotation.md");
+        renderMarkdown();        
+    });
+    renderMarkdown();     
+});
 
-
-
-
-  
-
-
-
-  .span4 .btn{
-    position: absolute;
-    bottom: 0;    
-  }
-
-  
-
-  
-  
-  </style>
-
+  </script>
 </head>
+
 <body>
+ <!-- NAVBAR
+ ================================================== -->
+ <div class="navbar-wrapper">
+  <!-- Wrap the .navbar in .container to center it within the absolutely positioned parent. -->
+  <div class="container">
 
-   <!-- NAVBAR
-   ================================================== -->
-   <div class="navbar-wrapper">
-    <!-- Wrap the .navbar in .container to center it within the absolutely positioned parent. -->
-    <div class="container">
+    <div class="navbar navbar-inverse">
+      <div class="navbar-inner">
+        <!-- Responsive Navbar Part 1: Button for triggering responsive navbar (not covered in tutorial). Include responsive CSS to utilize. -->
+        <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="brand" href="#">LightInject</a>
+        <!-- Responsive Navbar Part 2: Place all navbar contents you want collapsed withing .navbar-collapse.collapse. -->
+        <div class="nav-collapse collapse">
+          <ul class="nav">
+            <li><a id="gettingstarted" href="#">Getting started</a></li>                        
+            <li><a id="annotation" href="#">Annotation</a></li> 
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div><!-- /.navbar-inner -->
+    </div><!-- /.navbar -->
 
-      <div class="navbar navbar-inverse">
-        <div class="navbar-inner">
-          <!-- Responsive Navbar Part 1: Button for triggering responsive navbar (not covered in tutorial). Include responsive CSS to utilize. -->
-          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="brand" href="#">LightInject</a>
-          <!-- Responsive Navbar Part 2: Place all navbar contents you want collapsed withing .navbar-collapse.collapse. -->
-          <div class="nav-collapse collapse">
-            <ul class="nav">
-              <li><a href="#">Getting started</a></li>
-              <li><a href="#about">Annotation</a></li>
-              <li><a href="#about">Service Locator</a></li>
-              <li><a href="#about">Web</a></li>
-              <li><a href="#about">MVC</a></li>
-              <li><a href="#about">Web API</a></li>
-              <li><a href="#about">WCF</a></li>                
-            </ul>
-          </div><!--/.nav-collapse -->
-        </div><!-- /.navbar-inner -->
-      </div><!-- /.navbar -->
+  </div> <!-- /.container -->
+</div><!-- /.navbar-wrapper -->
 
-    </div> <!-- /.container -->
-  </div><!-- /.navbar-wrapper -->
-
-   <!-- Carousel
-   ================================================== -->
-   <div id="myCarousel" class="carousel slide">
-    <div class="carousel-inner">
-      <div class="item active">
-        <img src="images/abstract.jpg" alt="">
-        <div class="container">
-          <div class="carousel-caption">
-            <h1>LightInject</h1>              
-            <p class="lead">An ultra lightweight single file Inversion of Control container for the .Net framework</p>
-            <a class="btn btn-large btn-primary" href="#">Learn more</a>
-          </div>
+<!-- Carousel
+ ================================================== -->
+ <div id="myCarousel" class="carousel slide">
+  <div class="carousel-inner">
+    <div class="item active">
+      <img src="images/abstract.jpg" alt="">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1>LightInject</h1>              
+          <p class="lead">An ultra lightweight single file Inversion of Control container for the .Net framework</p>
+          <a class="btn btn-large btn-primary" href="#">Learn more</a>
         </div>
       </div>
-      <div class="item">
-        <img src="images/keyboard.jpg" alt="">
-        <div class="container">
-          <div class="carousel-caption">
-            <h1>Annotation</h1>
-            <p class="lead">Use attributes to control injected dependencies.</p>
-            <a class="btn btn-large btn-primary" href="#">Learn more</a>
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <img src="images/abstract2.jpg" alt="">
-        <div class="container">
-          <div class="carousel-caption">
-            <h1>Hidden by default</h1>
-            <p class="lead">LightInject is specially designed not to bleed into application code. Everything is internal</p>            
-            <a class="btn btn-large btn-primary" href="#">Learn more</a>
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <img src="images/keyboard.jpg" alt="">
-        <div class="container">
-          <div class="carousel-caption">
-            <h1>Decorator Pattern</h1>
-            <p class="lead">LightInject has native support for the decorator pattern.</p>            
-            <a class="btn btn-large btn-primary" href="#">Learn more</a>
-          </div>
-        </div>
-      </div>
-
-       <div class="item">
-        <img src="images/abstract.jpg" alt="">
-        <div class="container">
-          <div class="carousel-caption">
-            <h1>Simplicity is everything</h1>
-            <p class="lead">LightInject puts simplicity in the front seat making it very easy to use.</p>            
-            <a class="btn btn-large btn-primary" href="#">Learn more</a>
-          </div>
-        </div>
-      </div>  
-
     </div>
-    <a class="left carousel-control" href="#myCarousel" data-slide="prev">&lsaquo;</a>
-    <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>
-  </div><!-- /.carousel -->
-
-
-  <div class="container">    
-    <div class="row">
-      <div class="span4 imagespan">
-        <center>
-          <img src="images/ServiceStack.jpg">         
-          <p class="lead">ServiceStack</p>  
-          <p>Easy integration with the popular Servicestack framework.</p>
-          
-        </center>    
-        <button class="btn">Read more...</button>
-      </div> 
-
-      <div class="span4 imagespan">
-       <center>
-        <img src="images/CommonServiceLocator.jpg">        
-         <p class="lead">Service Locator</p>  
-        <p>For frameworks relying on the Common Service Locator.</p> 
-        
-      </center>    
-      <button class="btn">Read more...</button>
-    </div> 
-
-
-
-
-    <div class="span4 imagespan">
-      <center>
-        <img src="images/net.jpg">     
-         <p class="lead">WCF</p>  
-            <p>Enables constructor injection as well as property injection to WCF services.</p>    
-
-      </center>    
-      <button class="btn">Read more...</button>
-      
-    </div>        
-
-
-
+    <div class="item">
+      <img src="images/abstract2.jpg" alt="">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1>Annotation</h1>
+          <p class="lead">Use attributes to control injected dependencies.</p>
+          <a class="btn btn-large btn-primary" href="#">Learn more</a>
+        </div>
+      </div>
+    </div>    
   </div>
+  <a class="left carousel-control" href="#myCarousel" data-slide="prev">&lsaquo;</a>
+  <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>
+</div><!-- /.carousel -->
 
+
+<div class="container">
+  <div class ="row">
+    <div class="span3">
+      <div id="toc" data-spy="affix" data-offset-top="300"></div>
+    </div>    
+    <div class="span9">
+      <markdown src="doc/GettingStarted.md" />     
+    </div>    
+  </div>
 </div>
-
 </body>
+</html>
