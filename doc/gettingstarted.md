@@ -1,4 +1,4 @@
-## Installings ##
+## Installing ##
 
 Getting started with **LightInject** is as easy as getting the **LightInject** package from NuGet.
 

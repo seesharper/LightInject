@@ -29,24 +29,6 @@ $(document).ready(function() {
         markdownElement.attr("src","doc/annotation.md");
         renderMarkdown();        
     });
-
-     $("#servicelocator").click(function() {
-        var markdownElement = $("markdown");
-        markdownElement.attr("src","doc/servicelocation.md");
-        renderMarkdown();        
-    });
-
-     $("#designpatterns").click(function() {
-        var markdownElement = $("markdown");
-        markdownElement.attr("src","doc/designpatterns.md");
-        renderMarkdown();        
-    });
-
-     $("#unittesting").click(function() {
-        var markdownElement = $("markdown");
-        markdownElement.attr("src","doc/unittesting.md");
-        renderMarkdown();        
-    });
     renderMarkdown();     
 });
 
@@ -73,10 +55,7 @@ $(document).ready(function() {
         <div class="nav-collapse collapse">
           <ul class="nav">
             <li><a id="gettingstarted" href="#">Getting started</a></li>                        
-            <li><a id="designpatterns" href="#">Design patterns</a></li>                        
             <li><a id="annotation" href="#">Annotation</a></li> 
-            <li><a id="servicelocator" href="#">Service Locator</a></li> 
-            <li><a id="unittesting" href="#">Unit Testing</a></li> 
           </ul>
         </div><!--/.nav-collapse -->
       </div><!-- /.navbar-inner -->
