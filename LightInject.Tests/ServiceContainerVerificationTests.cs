@@ -10,7 +10,7 @@
     {
         internal override IServiceContainer CreateContainer()
         {
-            return ContainerFactory.CreateContainerForAssemblyVerification();
+            return VerificationContainerFactory.CreateContainerForAssemblyVerification();
         }
     }
 }

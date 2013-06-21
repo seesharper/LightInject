@@ -1,7 +1,11 @@
 ﻿namespace LightInject.Tests
 {
     using System;
+#if NETFX_CORE
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#else
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+#endif
 
     public static class ExceptionAssert
     {

@@ -93,6 +93,11 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class FooWithStaticProperty : IFoo
+    {
+        public static IBar Bar { get; set; }
+    }
+
 
     public class FooWithSameDependencyTwice : IFoo
     {
@@ -412,6 +417,8 @@ namespace LightInject.SampleLibrary
     {
         public IBar Bar { get; set; }
     }
+
+    public class FooWithInheritedProperyDepenency : FooWithProperyDependency {}
 
     public class FooWithAnnotatedProperyDependency : IFoo
     {

@@ -9,7 +9,7 @@
     {
         internal override IServiceContainer CreateContainer()
         {
-            var container = (ServiceContainer)ContainerFactory.CreateContainerForAssemblyVerification();
+            var container = (ServiceContainer)VerificationContainerFactory.CreateContainerForAssemblyVerification();
             container.PropertyDependencySelector = new AnnotatedPropertyDependencySelector(new PropertySelector());
             return container;
         }

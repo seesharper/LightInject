@@ -276,8 +276,10 @@
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
             container.Register(typeof(IFoo), typeof(FooWithEnumerableIFooDependency));            
             var instance = (FooWithEnumerableIFooDependency)container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance.FooList.First(), typeof(Foo));
-            Assert.IsInstanceOfType(instance.FooList.Last(), typeof(AnotherFoo));
+
+            Assert.IsTrue(instance.FooList.Any(f => f.GetType() == typeof(Foo)));
+            Assert.IsTrue(instance.FooList.Any(f => f.GetType() == typeof(AnotherFoo)));
+            Assert.AreEqual(2, instance.FooList.Count());
         }
 
         [TestMethod]
@@ -288,10 +290,12 @@
             container.Register(typeof(IFoo), typeof(Foo), "Foo");
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
             container.Register<IFoo>(f => new FooWithEnumerableIFooDependency(f.GetAllInstances<IFoo>()));
-                
-            var instance = (BarWithFooDependency)container.GetInstance<IBar>();
-            Assert.IsInstanceOfType(((FooWithEnumerableIFooDependency)instance.Foo).FooList.First(), typeof(Foo));
-            Assert.IsInstanceOfType(((FooWithEnumerableIFooDependency)instance.Foo).FooList.Last(), typeof(AnotherFoo));            
+
+            var instance = (FooWithEnumerableIFooDependency)((BarWithFooDependency)container.GetInstance<IBar>()).Foo;
+
+            Assert.IsTrue(instance.FooList.Any(f => f.GetType() == typeof(Foo)));
+            Assert.IsTrue(instance.FooList.Any(f => f.GetType() == typeof(AnotherFoo)));
+            Assert.AreEqual(2, instance.FooList.Count());            
         }
 
         [TestMethod]
