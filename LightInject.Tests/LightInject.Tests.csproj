@@ -75,6 +75,7 @@
     <Compile Include="AssemblyScannerTests.cs" />
     <Compile Include="ConstructorInjectionTests.cs" />
     <Compile Include="ConstructorInjectionVerificationTests.cs" />
+    <Compile Include="ConstructorSelectorTests.cs" />
     <Compile Include="ContainerFactory.cs" />
     <Compile Include="DecoratorTests.cs" />
     <Compile Include="DecoratorVerificationTests.cs" />

@@ -12,10 +12,10 @@ namespace LightInject.Tests
             {
                 File.Delete(path);
             }
-            return null;
+           
 
-            //var serviceContainer = new ServiceContainer(() => new MethodBuilderMethodSkeleton(path));
-            //return serviceContainer;
+            var serviceContainer = new ServiceContainer(() => new MethodBuilderMethodSkeleton(path));
+            return serviceContainer;
         }
     }
 }

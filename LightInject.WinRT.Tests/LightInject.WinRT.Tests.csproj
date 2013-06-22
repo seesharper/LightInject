@@ -121,14 +121,26 @@
     <Compile Include="..\LightInject.SampleLibrary\SampleService.cs">
       <Link>SampleService.cs</Link>
     </Compile>
+    <Compile Include="..\LightInject.Tests\ConstructorInjectionTests.cs">
+      <Link>ConstructorInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\ConstructorSelectorTests.cs">
+      <Link>ConstructorSelectorTests.cs</Link>
+    </Compile>
     <Compile Include="..\LightInject.Tests\ContainerFactory.cs">
       <Link>ContainerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\DecoratorTests.cs">
+      <Link>DecoratorTests.cs</Link>
     </Compile>
     <Compile Include="..\LightInject.Tests\ErrorMessages.cs">
       <Link>ErrorMessages.cs</Link>
     </Compile>
     <Compile Include="..\LightInject.Tests\ExceptionAssert.cs">
       <Link>ExceptionAssert.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\PropertyInjectionTests.cs">
+      <Link>PropertyInjectionTests.cs</Link>
     </Compile>
     <Compile Include="..\LightInject.Tests\PropertySelectorTests.cs">
       <Link>PropertySelectorTests.cs</Link>

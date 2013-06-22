@@ -2014,7 +2014,7 @@ namespace LightInject
                 return value;
             }
         }
-#if NETs
+#if NET
         private class DynamicMethodSkeleton : IMethodSkeleton
         {
             private DynamicMethod dynamicMethod;
@@ -2242,7 +2242,7 @@ namespace LightInject
             }
         }        
 #endif
-#if NETFX_CORE || NET
+#if NETFX_CORE 
 
     internal class DynamicMethodSkeleton : IMethodSkeleton
     {
@@ -2261,19 +2261,7 @@ namespace LightInject
         }
 
         public Func<object[], object> CreateDelegate()
-        {
-            //ConstructorInfo barConstructorInfo = typeof(Bar).GetTypeInfo().DeclaredConstructors.First();
-            //ConstructorInfo fooConstructorInfo = typeof(FooWithDependency).GetTypeInfo().DeclaredConstructors.First();
-            ////var parameterExpression = Expression.Parameter(typeof(object[]), "constants");
-            //var generator = new ILGenerator(parameterExpression);
-            //generator.Emit(OpCodes.Newobj, barConstructorInfo);
-            //generator.Emit(OpCodes.Newobj, fooConstructorInfo);
-            //Expression body = generator.CurrentExpression;
-
-            //var lambda = Expression.Lambda<Func<object[], object>>(Expression.Block(body), parameterExpression);
-            //var del = lambda.Compile();
-            //return del;
-
+        {            
             Expression body = generator.CurrentExpression;
             var lambda = Expression.Lambda<Func<object[], object>>(body, parameterExpression);
             var del = lambda.Compile();
@@ -2434,7 +2422,16 @@ namespace LightInject
                 var parameterCount = methodInfo.GetParameters().Length;
                 Expression[] arguments = Pop(parameterCount);
                 var instance = stack.Pop();
-                stack.Push(Expression.Call(instance,methodInfo, arguments));
+                var methodCallExpression = Expression.Call(instance, methodInfo, arguments);
+                if (methodInfo.ReturnType == typeof(void))
+                {
+                    expressions.Add(methodCallExpression);
+                }
+                else
+                {
+                    stack.Push(Expression.Call(instance, methodInfo, arguments));    
+                }
+                
             }
             else
             {
@@ -2482,7 +2479,7 @@ namespace LightInject
 
         public static ConstructorInfo[] GetConstructors(this Type type)
         {
-            return type.GetTypeInfo().DeclaredConstructors.ToArray();
+            return type.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
 
         }
 

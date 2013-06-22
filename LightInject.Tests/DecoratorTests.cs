@@ -2,8 +2,11 @@
 {
     using System.Linq;
     using LightInject.SampleLibrary;
+#if NETFX_CORE
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#else
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+#endif
     [TestClass]
     public class DecoratorTests : TestBase
     {

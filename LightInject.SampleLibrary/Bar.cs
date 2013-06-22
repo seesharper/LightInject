@@ -2,6 +2,26 @@
 
 namespace LightInject.SampleLibrary
 {
+    public class FooWithStaticConstructor
+    {
+        private FooWithStaticConstructor()
+        {
+        }
+
+        static FooWithStaticConstructor()
+        {
+            
+        }
+    }
+    
+    public class FooWithPrivateConstructor
+    {
+        private FooWithPrivateConstructor()
+        {
+        }
+    }
+
+    
     public interface IBar
     {
     }
