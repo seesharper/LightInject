@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.5 
+   LightInject version 3.0.0.6 
    https://github.com/seesharper/LightInject/wiki/Getting-started
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -32,7 +32,7 @@ namespace LightInject
     using System.Collections;
 #endif
     using System.Collections.Generic;
-#if NET || NETFX_CORE
+#if NET
     using System.IO;
 #endif
     using System.Linq;
@@ -43,9 +43,7 @@ namespace LightInject
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
-#if NETFX_CORE
-    using LightInject.SampleLibrary;
-#endif
+
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
@@ -573,6 +571,188 @@ namespace LightInject
         /// </summary>
         /// <returns>A delegate used to invoke this method.</returns>
         Func<object[], object> CreateDelegate();
+    }
+
+    internal static class TypeHelper
+    {
+#if NETFX_CORE
+       
+        public static Type[] GetGenericArguments(this Type type)
+        {
+            return type.GetTypeInfo().GenericTypeArguments;
+        }
+
+        public static MethodInfo[] GetMethods(this Type type)
+        {
+            return type.GetTypeInfo().DeclaredMethods.ToArray();
+        }
+
+        public static PropertyInfo[] GetProperties(this Type type)
+        {
+            return type.GetRuntimeProperties().ToArray();
+        }
+
+        public static Type[] GetInterfaces(this Type type)
+        {
+            return type.GetTypeInfo().ImplementedInterfaces.ToArray();
+        }
+
+        public static ConstructorInfo[] GetConstructors(this Type type)
+        {
+            return type.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
+
+        }
+
+        public static MethodInfo GetMethod(this Type type, string name)
+        {
+            return type.GetTypeInfo().GetDeclaredMethod(name);
+        }
+
+        public static bool IsAssignableFrom(this Type type, Type fromType)
+        {
+            return type.GetTypeInfo().IsAssignableFrom(fromType.GetTypeInfo());
+        }
+
+        public static bool IsDefined(this Type type, Type attributeType, bool inherit)
+        {
+            return type.GetTypeInfo().IsDefined(attributeType, inherit);
+        }
+
+        public static PropertyInfo GetProperty(this Type type, string name)
+        {
+            return type.GetTypeInfo().GetDeclaredProperty(name);
+        }
+
+                public static bool IsValueType(Type type)
+        {
+            return type.GetTypeInfo().IsValueType;
+        }
+
+        public static bool IsClass(Type type)
+        {
+            return type.GetTypeInfo().IsClass;
+        }
+
+        public static bool IsAbstract(Type type)
+        {
+            return type.GetTypeInfo().IsAbstract;
+        }
+
+        public static bool IsNestedPrivate(Type type)
+        {
+            return type.GetTypeInfo().IsNestedPrivate;
+        }
+
+
+
+        public static bool IsGenericType(Type type)
+        {
+            return type.GetTypeInfo().IsGenericType;
+        }
+
+        public static bool ContainsGenericParameters(Type type)
+        {
+            return type.GetTypeInfo().ContainsGenericParameters;
+        }
+
+        public static Type GetBaseType(Type type)
+        {
+            return type.GetTypeInfo().BaseType;
+        }
+
+        public static bool IsGenericTypeDefinition(Type type)
+        {
+            return type.GetTypeInfo().IsGenericTypeDefinition;
+        }
+
+        public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
+        {            
+            
+            return propertyInfo.SetMethod;
+        }
+
+        public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetMethod;
+        }
+
+        public static Type[] GetTypes(this Assembly assembly)
+        {
+            return assembly.DefinedTypes.Select(t => t.AsType()).ToArray();
+        }
+
+        public static Assembly GetAssembly(Type type)
+        {
+            return type.GetTypeInfo().Assembly;
+        }
+        
+#endif
+#if NET
+        public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
+        {
+            return Delegate.CreateDelegate(delegateType, target, methodInfo);
+        }
+
+        public static bool IsClass(Type type)
+        {
+            return type.IsClass;
+        }
+
+        public static bool IsAbstract(Type type)
+        {
+            return type.IsAbstract;
+        }
+
+        public static bool IsNestedPrivate(Type type)
+        {
+            return type.IsNestedPrivate;
+        }
+
+        public static bool IsGenericType(Type type)
+        {
+            return type.IsGenericType;
+        }
+
+        public static bool ContainsGenericParameters(Type type)
+        {
+            return type.ContainsGenericParameters;
+        }
+
+        public static Type GetBaseType(Type type)
+        {
+            return type.BaseType;
+        }
+
+        public static bool IsGenericTypeDefinition(Type type)
+        {
+            return type.IsGenericTypeDefinition;
+        }
+
+        public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetSetMethod();
+        }
+
+        public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetGetMethod();
+        }
+
+        public static Type[] GetTypes(this Assembly assembly)
+        {
+            return assembly.GetTypes();
+        }
+
+        public static Assembly GetAssembly(Type type)
+        {
+            return type.Assembly;
+        }
+
+        public static bool IsValueType(Type type)
+        {
+            return type.IsValueType;
+        }
+#endif
     }
 
     /// <summary>
@@ -1902,9 +2082,6 @@ namespace LightInject
             }
         }
 
-
-
-
         private class Storage<T>
         {
             private readonly object lockObject = new object();
@@ -2037,20 +2214,41 @@ namespace LightInject
 
             private void CreateDynamicMethod()
             {
-#if NET
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
-#endif
-#if SILVERLIGHT
-                dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) });
-#endif
             }
         }
 #endif
 
+#if SILVERLIGHT
+        private class DynamicMethodSkeleton : IMethodSkeleton
+        {
+            private DynamicMethod dynamicMethod;
 
+            public DynamicMethodSkeleton()
+            {
+                CreateDynamicMethod();
+            }
 
+            public ILGenerator GetILGenerator()
+            {
+                return dynamicMethod.GetILGenerator();
+            }
+
+            public Func<object[], object> CreateDelegate()
+            {
+                dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
+                return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
+            }
+
+            private void CreateDynamicMethod()
+            {
+                dynamicMethod = new DynamicMethod(
+                    "DynamicMethod", typeof(object), new[] { typeof(List<object>) });
+            }
+        }
+
+#endif
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
         {
         }
@@ -2452,191 +2650,6 @@ namespace LightInject
          
     }
 #endif
-
-    internal static class TypeHelper
-    {
-#if NETFX_CORE
-       
-        public static Type[] GetGenericArguments(this Type type)
-        {
-            return type.GetTypeInfo().GenericTypeArguments;
-        }
-
-        public static MethodInfo[] GetMethods(this Type type)
-        {
-            return type.GetTypeInfo().DeclaredMethods.ToArray();
-        }
-
-        public static PropertyInfo[] GetProperties(this Type type)
-        {
-            return type.GetRuntimeProperties().ToArray();
-        }
-
-        public static Type[] GetInterfaces(this Type type)
-        {
-            return type.GetTypeInfo().ImplementedInterfaces.ToArray();
-        }
-
-        public static ConstructorInfo[] GetConstructors(this Type type)
-        {
-            return type.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
-
-        }
-
-        public static MethodInfo GetMethod(this Type type, string name)
-        {
-            return type.GetTypeInfo().GetDeclaredMethod(name);
-        }
-
-        public static bool IsAssignableFrom(this Type type, Type fromType)
-        {
-            return type.GetTypeInfo().IsAssignableFrom(fromType.GetTypeInfo());
-        }
-
-        public static bool IsDefined(this Type type, Type attributeType, bool inherit)
-        {
-            return type.GetTypeInfo().IsDefined(attributeType, inherit);
-        }
-
-        public static PropertyInfo GetProperty(this Type type, string name)
-        {
-            return type.GetTypeInfo().GetDeclaredProperty(name);
-        }
-
-                public static bool IsValueType(Type type)
-        {
-            return type.GetTypeInfo().IsValueType;
-        }
-
-        public static bool IsClass(Type type)
-        {
-            return type.GetTypeInfo().IsClass;
-        }
-
-        public static bool IsAbstract(Type type)
-        {
-            return type.GetTypeInfo().IsAbstract;
-        }
-
-        public static bool IsNestedPrivate(Type type)
-        {
-            return type.GetTypeInfo().IsNestedPrivate;
-        }
-
-
-
-        public static bool IsGenericType(Type type)
-        {
-            return type.GetTypeInfo().IsGenericType;
-        }
-
-        public static bool ContainsGenericParameters(Type type)
-        {
-            return type.GetTypeInfo().ContainsGenericParameters;
-        }
-
-        public static Type GetBaseType(Type type)
-        {
-            return type.GetTypeInfo().BaseType;
-        }
-
-        public static bool IsGenericTypeDefinition(Type type)
-        {
-            return type.GetTypeInfo().IsGenericTypeDefinition;
-        }
-
-        public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
-        {            
-            
-            return propertyInfo.SetMethod;
-        }
-
-        public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetMethod;
-        }
-
-        public static Type[] GetTypes(this Assembly assembly)
-        {
-            return assembly.DefinedTypes.Select(t => t.AsType()).ToArray();
-        }
-
-        public static Assembly GetAssembly(Type type)
-        {
-            return type.GetTypeInfo().Assembly;
-        }
-        
-#endif
-#if !NETFX_CORE
-        public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
-        {
-            return Delegate.CreateDelegate(delegateType, target, methodInfo);
-        }
-
-        public static bool IsClass(Type type)
-        {
-            return type.IsClass;
-        }
-
-        public static bool IsAbstract(Type type)
-        {
-            return type.IsAbstract;
-        }
-
-        public static bool IsNestedPrivate(Type type)
-        {
-            return type.IsNestedPrivate;
-        }
-
-        public static bool IsGenericType(Type type)
-        {
-            return type.IsGenericType;
-        }
-
-        public static bool ContainsGenericParameters(Type type)
-        {
-            return type.ContainsGenericParameters;
-        }
-
-        public static Type GetBaseType(Type type)
-        {
-            return type.BaseType;
-        }
-
-        public static bool IsGenericTypeDefinition(Type type)
-        {
-            return type.IsGenericTypeDefinition;
-        }
-
-        public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetSetMethod();
-        }
-
-        public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetGetMethod();
-        }
-
-        public static Type[] GetTypes(this Assembly assembly)
-        {
-            return assembly.GetTypes();            
-        }
-
-        public static Assembly GetAssembly(Type type)
-        {
-            return type.Assembly;
-        }
-
-        public static bool IsValueType(Type type)
-        {
-            return type.IsValueType;
-        }
-
-#endif
-
-    }
-
     /// <summary>
     /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
     /// </summary>
@@ -2883,6 +2896,7 @@ namespace LightInject
                 ApplyDependencyDetails(newExpression.Arguments[i], constructorDependency);
                 constructionInfo.ConstructorDependencies.Add(constructorDependency);
             }
+
             return constructionInfo;
         }
 
