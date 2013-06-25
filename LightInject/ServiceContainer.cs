@@ -223,7 +223,7 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        void RegisterAssembly(Assembly assembly, Func<Type, bool> shouldRegister);
+        void RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister);
 
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
@@ -246,7 +246,7 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, bool> shouldRegister);
+        void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type,Type, bool> shouldRegister);
 
 #if NET
         /// <summary>
@@ -552,7 +552,7 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, bool> shouldRegister);
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister);
     }
 
     /// <summary>
@@ -917,7 +917,7 @@ namespace LightInject
         /// </remarks>             
         public void RegisterAssembly(Assembly assembly)
         {
-            RegisterAssembly(assembly, t => true);
+            RegisterAssembly(assembly, (serviceType, implementingType) => true);
         }
 
         /// <summary>
@@ -929,7 +929,7 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        public void RegisterAssembly(Assembly assembly, Func<Type, bool> shouldRegister)
+        public void RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister)
         {
             AssemblyScanner.Scan(assembly, this, () => null, shouldRegister);
         }
@@ -945,7 +945,7 @@ namespace LightInject
         /// </remarks>     
         public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory)
         {
-            AssemblyScanner.Scan(assembly, this, lifetimeFactory, t => true);
+            AssemblyScanner.Scan(assembly, this, lifetimeFactory, (serviceType, implementingType) => true);
         }
 
         /// <summary>
@@ -958,7 +958,7 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, bool> shouldRegister)
+        public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {
             AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
         }
@@ -3654,7 +3654,7 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, bool> shouldRegister)
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {
             IEnumerable<Type> concreteTypes = GetConcreteTypes(assembly).ToList();
             var compositionRoots = concreteTypes.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
@@ -3665,9 +3665,9 @@ namespace LightInject
             }
             else
             {
-                foreach (Type type in concreteTypes.Where(shouldRegister))
+                foreach (Type type in concreteTypes)
                 {
-                    BuildImplementationMap(type, serviceRegistry, lifetimeFactory);
+                    BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
                 }
             }
         }
@@ -3720,17 +3720,23 @@ namespace LightInject
             return type.IsDefined(typeof(CompilerGeneratedAttribute), false);
         }
 
-        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory)
+        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {
             Type[] interfaces = implementingType.GetInterfaces();
             foreach (Type interfaceType in interfaces)
             {
-                RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory());
+                if (shouldRegister(interfaceType, implementingType))
+                {
+                    RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory());
+                }
             }
 
             foreach (Type baseType in GetBaseTypes(implementingType))
             {
-                RegisterInternal(baseType, implementingType, serviceRegistry, lifetimeFactory());
+                if (shouldRegister(baseType, implementingType))
+                {
+                    RegisterInternal(baseType, implementingType, serviceRegistry, lifetimeFactory());
+                }
             }
         }
 

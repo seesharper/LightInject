@@ -91,7 +91,7 @@
 
             var output = Process("ANOTHERDIRECTIVE", inputStream);
 
-            Assert.AreEqual("Line2\r\n", output);
+            Assert.AreEqual("Line2", output);
         }
 
 
