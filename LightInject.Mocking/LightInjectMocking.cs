@@ -13,8 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject.Mocking version 1.0.0.1
-   https://github.com/seesharper/LightInject/wiki/Getting-started
+   LightInject.Mocking version 1.0.0.2
+   http://seesharper.github.io/LightInject/
+   http://twitter.com/bernhardrichter       
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 

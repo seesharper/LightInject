@@ -13,8 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject.Web version 1.0.0.0
-   https://github.com/seesharper/LightInject/wiki/Getting-started
+   LightInject.Web version 1.0.0.1
+   http://seesharper.github.io/LightInject/
+   http://twitter.com/bernhardrichter    
 ******************************************************************************/
 [assembly: System.Web.PreApplicationStartMethod(typeof(LightInject.Web.LightInjectHttpModuleInitializer), "Initialize")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]

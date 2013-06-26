@@ -94,6 +94,67 @@
             Assert.AreEqual("Line2", output);
         }
 
+        [TestMethod]
+        public void Write_NameSpace_WriteNamespaceMacro()
+        {
+            string input = "namespace SomeNamespace";
+
+            var inputStream = CreateInputStream(input);
+
+            var output = Process("SOMEDIRECTIVE", inputStream);
+
+            Assert.AreEqual("namespace $rootnamespace$", output);
+        }
+
+        [TestMethod]
+        public void Write_PublicClasses_AddsExcludeFromCodeCoverageAttribute()
+        {
+            string input = "public class SomeClass";
+
+            var inputStream = CreateInputStream(input);
+
+            var output = Process("SOMEDIRECTIVE", inputStream);
+
+            Assert.AreEqual("[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\npublic class SomeClass", output);
+        }
+
+        [TestMethod]
+        public void Write_InternalClasses_AddsExcludeFromCodeCoverageAttribute()
+        {
+            string input = "internal class SomeClass";
+
+            var inputStream = CreateInputStream(input);
+
+            var output = Process("SOMEDIRECTIVE", inputStream);
+
+            Assert.AreEqual("[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\ninternal class SomeClass", output);
+        }
+
+
+        [TestMethod]
+        public void Write_InternalClasses_AddsExcludeFromCodeCoverageAttributeUsingSameIndentation()
+        {
+            string input = "\tinternal class SomeClass";
+
+            var inputStream = CreateInputStream(input);
+
+            var output = Process("SOMEDIRECTIVE", inputStream);
+
+            Assert.AreEqual("\t[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\n\tinternal class SomeClass", output);
+        }
+
+
+        [TestMethod]
+        public void Write_InternalClasses_DoesNotAddExcludeFromCodeCoverageForWinRT()
+        {
+            string input = "\tinternal class SomeClass";
+
+            var inputStream = CreateInputStream(input);
+
+            var output = Process("NETFX_CORE", inputStream);
+
+            Assert.AreEqual(input, output);
+        }
 
         private static string Process(string directive, MemoryStream inputStream)
         {

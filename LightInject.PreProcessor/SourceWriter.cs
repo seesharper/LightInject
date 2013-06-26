@@ -1,6 +1,9 @@
 ﻿namespace LightInject.PreProcessor
 {
+    using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
 
     public class SourceWriter
@@ -41,6 +44,25 @@
 
                 if (shouldWrite)
                 {
+                    if (line.Contains("namespace"))
+                    {
+                        line = line.Replace(line.Substring(10), "$rootnamespace$");
+                    }
+
+                    if ((line.Contains("public class") || line.Contains("internal class")) && directive != "NETFX_CORE")
+                    {
+                        string tabString = string.Empty;
+                        string[] tabs = line.Where(c => c == '\t').Select(c => c.ToString()).ToArray();
+                        if (tabs.Length > 0)
+                        {
+                            tabString = tabs.Aggregate((current, next) => current + next);
+                        }                             
+                                
+                        
+                        writer.WriteLine("{0}{1}", tabString, "[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");                        
+                    }
+
+                    
                     if (!reader.EndOfStream)
                     {
                         writer.WriteLine(line);

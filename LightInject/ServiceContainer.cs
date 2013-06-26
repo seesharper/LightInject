@@ -14,7 +14,8 @@
    limitations under the License.
 ******************************************************************************
    LightInject version 3.0.0.6 
-   https://github.com/seesharper/LightInject/wiki/Getting-started
+   http://seesharper.github.io/LightInject/
+   http://twitter.com/bernhardrichter
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
