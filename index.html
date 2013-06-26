@@ -47,6 +47,12 @@ $(document).ready(function() {
         markdownElement.attr("src","doc/unittesting.md");
         renderMarkdown();        
     });
+
+     $("#whatsnew").click(function() {
+        var markdownElement = $("markdown");
+        markdownElement.attr("src","doc/whatsnew.md");
+        renderMarkdown();        
+    });
     renderMarkdown();     
 });
 
@@ -77,6 +83,8 @@ $(document).ready(function() {
             <li><a id="annotation" href="#">Annotation</a></li> 
             <li><a id="servicelocator" href="#">Service Locator</a></li> 
             <li><a id="unittesting" href="#">Unit Testing</a></li> 
+            <li><a id="whatsnew" href="#">What's New</a></li> 
+            <li><a id="source" href="https://github.com/seesharper/LightInject">Source</a></li> 
           </ul>
         </div><!--/.nav-collapse -->
       </div><!-- /.navbar-inner -->
@@ -103,8 +111,7 @@ $(document).ready(function() {
       <div class="container">
         <div class="carousel-caption">
           <h1>Annotation</h1>
-          <p class="lead">Use attributes to control injected dependencies.</p>
-          <a class="btn btn-large btn-primary" href="#">Learn more</a>
+          <p class="lead">Use attributes to control injected dependencies.</p>          
         </div>
       </div>
     </div>    

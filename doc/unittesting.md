@@ -10,7 +10,7 @@
    </p>
 </div>
 
-**Note:** *Use the [InternalVisibleTo](http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.internalsvisibletoattribute(v=vs.100).aspx) attribute to give the test project access to the **LightInject** internal types.*
+**Note:** *Use the [InternalVisibleTo](http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.internalsvisibletoattribute.aspx) attribute to give the test project access to the **LightInject** internal types.*
 
 ## Example ##
 
