@@ -14,7 +14,7 @@
    limitations under the License.
 ******************************************************************************
    LightInject version 3.0.0.6 
-   http://seesharper.github.io/LightInject/
+   http://www.lightinject.net/
    http://twitter.com/bernhardrichter
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -247,7 +247,7 @@ namespace LightInject
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this 
         /// will be used to configure the container.
         /// </remarks>     
-        void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type,Type, bool> shouldRegister);
+        void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister);
 
 #if NET
         /// <summary>
@@ -797,6 +797,7 @@ namespace LightInject
 #endif
         }
 #if TEST
+ 
         public ServiceContainer(Func<IMethodSkeleton> methodSkeletonFactory)
             : this()
         {
@@ -2192,6 +2193,7 @@ namespace LightInject
                 return value;
             }
         }
+
 #if NET
         private class DynamicMethodSkeleton : IMethodSkeleton
         {
@@ -2524,7 +2526,6 @@ namespace LightInject
             {
                 stack.Push(parameterExpression);
             }
-
             else if (opCode == OpCodes.Ldelem_Ref)
             {
                 Expression[] indexes = new[] { stack.Pop() };
@@ -2545,7 +2546,6 @@ namespace LightInject
                 var assignExpression = Expression.Assign(localBuilder.Variable, valueExpression);
                 expressions.Add(assignExpression);
             }            
-
             else if (opCode == OpCodes.Ldloc)
             {
                 stack.Push(localBuilder.Variable);
@@ -2592,7 +2592,6 @@ namespace LightInject
                 var assignExpression = Expression.Assign(arrayAccess, value);
                 expressions.Add(assignExpression);
             }
-
             else if (opCode == OpCodes.Castclass)
             {
                 stack.Push(Expression.Convert(stack.Pop(), type));
@@ -2601,17 +2600,14 @@ namespace LightInject
             {
                 stack.Push(Expression.Convert(stack.Pop(), typeof(object)));
             }
-
             else if (opCode == OpCodes.Unbox_Any)
             {
                 stack.Push(Expression.Convert(stack.Pop(), type));
             }
-
             else
             {
                 throw new NotSupportedException(opCode.ToString());
-            }
-            
+            }            
         }
 
         public void Emit(OpCode opCode, MethodInfo methodInfo)
@@ -2629,14 +2625,12 @@ namespace LightInject
                 else
                 {
                     stack.Push(Expression.Call(instance, methodInfo, arguments));    
-                }
-                
+                }                
             }
             else
             {
                 throw new NotSupportedException(opCode.ToString());
             }
-
         }
     }
 
