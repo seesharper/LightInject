@@ -415,6 +415,20 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a class that extracts a set of types from an <see cref="Assembly"/>.
+    /// </summary>
+    internal interface ITypeExtractor
+    {
+        /// <summary>
+        /// Extracts types found in the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> for which to extract types.</param>
+        /// <returns>A set of types found in the given <paramref name="assembly"/>.</returns>
+        IEnumerable<Type> Execute(Assembly assembly);
+    }
+
+
+    /// <summary>
     /// Represents a class that is responsible for selecting injectable properties.
     /// </summary>
     internal interface IPropertySelector
@@ -787,7 +801,7 @@ namespace LightInject
         /// </summary>
         public ServiceContainer()
         {
-            AssemblyScanner = new AssemblyScanner();
+            AssemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor());
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
@@ -3602,14 +3616,34 @@ namespace LightInject
     }
 
     /// <summary>
-    /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
-    /// </summary>    
-    internal class AssemblyScanner : IAssemblyScanner
+    /// Used at the assembly level to describe the composition root(s) for the target assembly.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    internal class CompositionRootTypeAttribute : Attribute
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CompositionRootTypeAttribute"/> class.
+        /// </summary>
+        /// <param name="compositionRootType">A <see cref="Type"/> that implements the <see cref="ICompositionRoot"/> interface.</param>
+        public CompositionRootTypeAttribute(Type compositionRootType)
+        {
+            CompositionRootType = compositionRootType;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="Type"/> that implements the <see cref="ICompositionRoot"/> interface.
+        /// </summary>
+        public Type CompositionRootType { get; private set; }
+    }
+
+    /// <summary>
+    /// Extracts concrete types from an <see cref="Assembly"/>.
+    /// </summary>
+    internal class ConcreteTypeExtractor : ITypeExtractor
     {
         private static readonly List<Type> InternalTypes = new List<Type>();
-        private Assembly currentAssembly;
-
-        static AssemblyScanner()
+        
+        static ConcreteTypeExtractor()
         {
             InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
             InternalTypes.Add(typeof(LambdaExpressionValidator));
@@ -3640,8 +3674,45 @@ namespace LightInject
             InternalTypes.Add(typeof(AssemblyScanner));
             InternalTypes.Add(typeof(ConstructorDependencySelector));
             InternalTypes.Add(typeof(PropertyDependencySelector));
+            InternalTypes.Add(typeof(CompositionRootTypeAttribute));
+            InternalTypes.Add(typeof(ConcreteTypeExtractor));
         }
 
+        /// <summary>
+        /// Extracts concrete types found in the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> for which to extract types.</param>
+        /// <returns>A set of concrete types found in the given <paramref name="assembly"/>.</returns>
+        public IEnumerable<Type> Execute(Assembly assembly)
+        {
+            return assembly.GetTypes().Where(t => TypeHelper.IsClass(t) && !TypeHelper.IsNestedPrivate(t)
+                && !TypeHelper.IsAbstract(t) && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t)).Except(InternalTypes);
+        }
+
+        private static bool IsCompilerGenerated(Type type)
+        {
+            return type.IsDefined(typeof(CompilerGeneratedAttribute), false);
+        }
+    }
+
+    /// <summary>
+    /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
+    /// </summary>    
+    internal class AssemblyScanner : IAssemblyScanner
+    {
+        private readonly ITypeExtractor typeExtractor;        
+        private Assembly currentAssembly;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AssemblyScanner"/> class.
+        /// </summary>
+        /// <param name="typeExtractor">The <see cref="ITypeExtractor"/> that is responsible for 
+        /// extracting types from the assembly being scanned.</param>
+        public AssemblyScanner(ITypeExtractor typeExtractor)
+        {
+            this.typeExtractor = typeExtractor;
+        }
+                
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
         /// </summary>
@@ -3704,15 +3775,9 @@ namespace LightInject
             }
         }
 
-        private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
+        private IEnumerable<Type> GetConcreteTypes(Assembly assembly)
         {
-            return assembly.GetTypes().Where(t => TypeHelper.IsClass(t) && !TypeHelper.IsNestedPrivate(t)
-                && !TypeHelper.IsAbstract(t) && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t)).Except(InternalTypes);
-        }
-
-        private static bool IsCompilerGenerated(Type type)
-        {
-            return type.IsDefined(typeof(CompilerGeneratedAttribute), false);
+            return typeExtractor.Execute(assembly);            
         }
 
         private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
@@ -3745,6 +3810,8 @@ namespace LightInject
             serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType), lifetime);
         }
     }
+
+
 
     /// <summary>
     /// Selects the properties that represents a dependency to the target <see cref="Type"/>.
