@@ -1,5 +1,6 @@
 ﻿namespace LightInject.Tests
 {
+    using System;
     using System.Linq;
     using LightInject.SampleLibrary;
 #if NETFX_CORE
@@ -201,6 +202,65 @@
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(FooDecorator));
         }
+
+        [TestMethod]
+        public void GetInstance_DecoratorWithLazyTarget_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate<IFoo>((factory, foo) => new LazyFooDecorator(new Lazy<IFoo>(factory.GetInstance<IFoo>)));
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(LazyFooDecorator));
+        }
+
+        [TestMethod]
+        public void GetInstance_DecoratorWithLazyTarget_DoesNotCreateTarget()
+        {
+            Foo.Instances = 0;
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
+            container.GetInstance<IFoo>();
+            Assert.AreEqual(0, Foo.Instances);
+        }
+
+        [TestMethod]
+        public void GetInstance_DecoratorWithLazyTarget_CreatesTargetWhenValuePropertyIsAccessed()
+        {
+            Foo.Instances = 0;
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
+            var instance = (LazyFooDecorator)container.GetInstance<IFoo>();
+            
+            Assert.IsInstanceOfType(instance.Foo.Value, typeof(Foo));
+        }
+
+
+        //[TestMethod]
+        //public void GetInstance_DecoratorWithLazyTarget_DoesNotCreateTarget()
+        //{
+        //    Foo.Instances = 0;
+        //    var container = CreateContainer();
+        //    container.Register<IFoo, Foo>();
+        //    container.Decorate<IFoo>((factory, foo) => new LazyFooDecorator(new Lazy<IFoo>(factory.GetInstance<IFoo>)));
+        //    container.GetInstance<IFoo>();
+        //    Assert.AreEqual(0, Foo.Instances);
+        //}
+
+        [TestMethod]
+        public void GetInstance_DecoratorWithTargetAsPropertyDependency_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate(typeof(IFoo), typeof(FooDecoratorWithTargetAsPropertyDependency));
+
+            var instance = (FooDecoratorWithTargetAsPropertyDependency)container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance.Foo, typeof(Foo));
+        }
+
+
 
         private static FooDecorator GetFooDecorator(IFoo target)
         {

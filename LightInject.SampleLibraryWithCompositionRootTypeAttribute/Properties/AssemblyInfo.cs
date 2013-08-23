@@ -2,17 +2,18 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-
+using LightInject;
+using LightInject.SampleLibraryWithCompositionRootTypeAttribute;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LightInject.SampleLibraryWithCompositionRoot")]
+[assembly: AssemblyTitle("LightInject.SampleLibraryWithCompositionRootTypeAttribute")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LightInject.SampleLibraryWithCompositionRoot")]
-[assembly: AssemblyCopyright("Copyright © Bernhard Richter 2013")]
+[assembly: AssemblyProduct("LightInject.SampleLibraryWithCompositionRootTypeAttribute")]
+[assembly: AssemblyCopyright("Copyright ©  2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -22,7 +23,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("19248a1a-15d9-4743-aec5-bb82067af955")]
+[assembly: Guid("279514b5-17ba-4ca4-a101-03e0f66670e4")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -37,4 +38,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 [assembly: InternalsVisibleTo("LightInject.Tests")]
-[assembly: InternalsVisibleTo("LightInject")]
+[assembly: CompositionRootType(typeof(CompositionRoot))]

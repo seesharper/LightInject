@@ -701,6 +701,12 @@ namespace LightInject
             return type.GetTypeInfo().Assembly;
         }
         
+        public static ConstructorInfo GetConstructor(this Type type, Type[] types)
+        {
+            return
+                GetConstructors(type).FirstOrDefault(c => c.GetParameters().Select(p => p.ParameterType).SequenceEqual(types));
+        }
+
 #endif
 #if NET
         public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
@@ -766,7 +772,7 @@ namespace LightInject
         public static bool IsValueType(Type type)
         {
             return type.IsValueType;
-        }
+        }        
 #endif
     }
 
@@ -795,7 +801,7 @@ namespace LightInject
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
 
         private bool firstServiceRequest = true;
-
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
@@ -1345,6 +1351,11 @@ namespace LightInject
             return TypeHelper.IsGenericType(serviceType) && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
         }
 
+        private static bool IsLazy(Type serviceType)
+        {
+            return TypeHelper.IsGenericType(serviceType) && serviceType.GetGenericTypeDefinition() == typeof(Lazy<>);
+        }
+
         private static bool IsFunc(Type serviceType)
         {
             return TypeHelper.IsGenericType(serviceType) && serviceType.GetGenericTypeDefinition() == typeof(Func<>);
@@ -1465,14 +1476,28 @@ namespace LightInject
 
         private Action<IMethodSkeleton> GetEmitMethod(Type serviceType, string serviceName)
         {
-            if (FirstServiceRequest())
-            {
-                EnsureThatServiceRegistryIsConfigured(serviceType);
-            }
+            //if (FirstServiceRequest())
+            //{
+            //    EnsureThatServiceRegistryIsConfigured(serviceType);
+            //}
 
             Action<IMethodSkeleton> emitter = GetRegisteredEmitMethod(serviceType, serviceName);
 
+            if (emitter == null)
+            {
+                if (!HasProcessedTypesFromThisAssembly(TypeHelper.GetAssembly(serviceType)))
+                {
+                    RegisterAssembly(TypeHelper.GetAssembly(serviceType));
+                    emitter = GetRegisteredEmitMethod(serviceType, serviceName);
+                }
+            }
+        
             return CreateEmitMethodWrapper(emitter, serviceType, serviceName);
+        }
+
+        private bool HasProcessedTypesFromThisAssembly(Assembly assembly)
+        {
+            return availableServices.Keys.Select(t => TypeHelper.GetAssembly(t.Item1)).Any(a => a == assembly);
         }
 
         private Action<IMethodSkeleton> CreateEmitMethodWrapper(Action<IMethodSkeleton> emitter, Type serviceType, string serviceName)
@@ -1526,6 +1551,22 @@ namespace LightInject
                 });
         }
 
+        //private void EmitNewInstance_new(Registration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
+        //{
+        //    var serviceDecorators = this.GetDecorators(serviceRegistration.ServiceType).ToArray();
+        //    if (serviceDecorators.Length > 0)
+        //    {
+        //        var nextDecorator = serviceDecorators.Last();
+        //        var remainingDecorators = serviceDecorators.Where(sd => sd != nextDecorator).ToArray();
+        //        EmitNewInstance(nextDecorator, dynamicMethodSkeleton);
+        //        //EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, () => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton));
+        //    }
+        //    else
+        //    {
+        //        DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton);
+        //    }
+        //}
+
         private void EmitNewInstance(ServiceRegistration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
         {
             var serviceDecorators = GetDecorators(serviceRegistration.ServiceType);
@@ -1578,6 +1619,15 @@ namespace LightInject
             {
                 EmitNewInstanceUsingImplementingType(dynamicMethodSkeleton, constructionInfo, pushInstance);
             }
+        }
+
+        private static ConstructorDependency GetConstructorDependencyThatRepresentsDecoratorTarget(
+            DecoratorRegistration decoratorRegistration, ConstructionInfo constructionInfo)
+        {
+            var constructorDependency =
+                constructionInfo.ConstructorDependencies.FirstOrDefault(
+                    cd => cd.ServiceType == decoratorRegistration.ServiceType || (IsLazy(cd.ServiceType) && cd.ServiceType.GetGenericArguments().First() == decoratorRegistration.ServiceType));
+            return constructorDependency;
         }
 
         private void EmitNewDecoratorUsingFactoryDelegate(Delegate factoryDelegate, IMethodSkeleton dynamicMethodSkeleton, Action pushInstance)
@@ -1740,6 +1790,12 @@ namespace LightInject
             {
                 emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
             }
+            else if (IsLazy(serviceType))
+            {
+                emitter = CreateServiceEmitterBasedOnLazyServiceRequest(serviceType);
+            }
+
+
             else if (IsFunc(serviceType))
             {
                 emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, false);
@@ -1765,7 +1821,7 @@ namespace LightInject
 
             return emitter;
         }
-
+        
         private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = rule.LifeTime };
@@ -1814,6 +1870,24 @@ namespace LightInject
                 GetRegisteredEmitMethod(actualServiceType, openGenericEmitterEntry);
             }
         }
+
+        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnLazyServiceRequest(Type serviceType)
+        {
+            Type actualServiceType = serviceType.GetGenericArguments().First();
+            Type funcType = typeof(Func<>).MakeGenericType(actualServiceType);
+
+            var lazyConstructor = serviceType.GetConstructor(new[] { funcType });
+            Delegate getInstanceDelegate = ReflectionHelper.CreateGetInstanceDelegate(actualServiceType, this);
+            var constantIndex = constants.Add(getInstanceDelegate);
+
+            return ms =>
+                {
+                    EmitLoadConstant(ms, constantIndex, funcType);
+                    ms.GetILGenerator().Emit(OpCodes.Newobj, lazyConstructor);
+                };
+        }
+
+        
 
         private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
         {
@@ -1913,6 +1987,7 @@ namespace LightInject
                 closedGenericEmitter(ms);
             };
             GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);
+            UpdateServiceRegistration(new ServiceRegistration() {ServiceType = openGenericServiceType, ImplementingType = openGenericImplementingType, ServiceName = serviceName, Lifetime = lifetime});
         }
 
         private Action<IMethodSkeleton> GetEmitDelegate(ServiceRegistration serviceRegistration)

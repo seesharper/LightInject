@@ -978,6 +978,38 @@
             ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());            
         }
 
+        [TestMethod]
+        public void GetInstance_LazyService_ReturnsInstance()
+        {
+            var container = new ServiceContainer();
+            container.Register<IFoo, Foo>();
 
+            var lazyInstance = container.GetInstance<Lazy<IFoo>>();
+
+            Assert.IsInstanceOfType(lazyInstance, typeof(Lazy<IFoo>));
+        }
+
+        [TestMethod]
+        public void GetInstance_LazyService_DoesNotCreateTarget()
+        {
+            var container = new ServiceContainer();
+            container.Register<IFoo, Foo>();
+            Foo.Instances = 0;
+
+            container.GetInstance<Lazy<IFoo>>();
+
+            Assert.AreEqual(0, Foo.Instances);
+        }
+
+        [TestMethod]
+        public void GetInstance_LazyService_CreatesTargetWhenValuePropertyIsAccessed()
+        {
+            var container = new ServiceContainer();
+            container.Register<IFoo, Foo>();
+            
+            var instance = container.GetInstance<Lazy<IFoo>>();
+
+            Assert.IsInstanceOfType(instance.Value, typeof(Foo));
+        }
     }
 }

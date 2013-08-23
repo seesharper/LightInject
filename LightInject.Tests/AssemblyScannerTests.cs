@@ -118,49 +118,7 @@
                 scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());
             }
         }
-
-        [TestMethod]
-        public void GetInstance_NoServices_CallsAssemblyScannerOnlyOnce()
-        {
-            var scannerMock = new Mock<IAssemblyScanner>();
-            var serviceContainer = new ServiceContainer();
-            serviceContainer.AssemblyScanner = scannerMock.Object;
-            try
-            {
-                serviceContainer.GetInstance<IFoo>();
-            }
-            catch
-            {
-                try
-                {
-                    serviceContainer.GetInstance<IFoo>();
-                }
-                catch
-                {
-
-                }
-            }
-            finally
-            {
-                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());
-            }
-        }
-
-        [TestMethod, Ignore]
-        public void Scan_SameAssemblyTwice_DoesNotRegisterServices()
-        {
-            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor());
-            var serviceRegistryMock = new Mock<IServiceRegistry>();
-
-            assemblyScanner.Scan(typeof(IFoo).Assembly, serviceRegistryMock.Object, () => null, (s, t) => true);
-            assemblyScanner.Scan(typeof(IFoo).Assembly, serviceRegistryMock.Object, () => null, (s, t) => true);
-
-            serviceRegistryMock.Verify(sr => sr.Register(typeof(IFoo), typeof(Foo), string.Empty, null), Times.Once());
-
-        }
-
-
-
+          
         [TestMethod]
         public void Register_AssemblyFile_CallsAssemblyScanner()
         {

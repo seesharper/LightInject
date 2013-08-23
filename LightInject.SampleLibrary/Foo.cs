@@ -168,6 +168,13 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class FooDecoratorWithTargetAsPropertyDependency : IFoo
+    {
+        public IFoo Foo { get; set; }
+    }
+
+
+
     public class AnotherFooDecorator<T> : IFoo<T>
     {
         public AnotherFooDecorator(IFoo<T> foo)
@@ -476,5 +483,16 @@ namespace LightInject.SampleLibrary
     public class ConcreteFooWithBaseClass : Foo
     {
 
+    }
+
+
+    public class LazyFooDecorator : IFoo
+    {
+        public Lazy<IFoo> Foo { get; private set; }
+
+        public LazyFooDecorator(Lazy<IFoo> foo)
+        {
+            Foo = foo;
+        }
     }
 }

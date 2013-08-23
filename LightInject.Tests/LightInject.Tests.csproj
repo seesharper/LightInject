@@ -84,6 +84,7 @@
     <Compile Include="ErrorMessages.cs" />
     <Compile Include="ExceptionAssert.cs" />
     <Compile Include="LambdaExpressionParserTests.cs" />
+    <Compile Include="LazyCompositionRootTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="MockingTests.cs" />
     <Compile Include="MvcTests.cs" />
@@ -120,6 +121,10 @@
     <ProjectReference Include="..\LightInject.PreProcessor\LightInject.PreProcessor.csproj">
       <Project>{d4fc2c76-196f-4da9-9716-baa5fea5d257}</Project>
       <Name>LightInject.PreProcessor</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj">
+      <Project>{75ea6152-b0c9-40c1-af22-10dbca192239}</Project>
+      <Name>LightInject.SampleLibraryWithCompositionRootTypeAttribute</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
       <Project>{65ff0ceb-76b4-44fd-898a-00c32c21738c}</Project>
