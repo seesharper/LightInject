@@ -232,7 +232,8 @@
             container.Register<IFoo, Foo>();
             container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
             var instance = (LazyFooDecorator)container.GetInstance<IFoo>();
-            
+             
+            IFoo test = instance.Foo.Value;
             Assert.IsInstanceOfType(instance.Foo.Value, typeof(Foo));
         }
 

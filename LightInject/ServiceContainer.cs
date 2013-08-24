@@ -1379,7 +1379,7 @@ namespace LightInject
 
         private Func<object> CreatePropertyInjectionDelegate(Type concreteType, object instance)
         {
-            IMethodSkeleton methodSkeleton = new DynamicMethodSkeleton();
+            IMethodSkeleton methodSkeleton = methodSkeletonFactory();
             var arguments = new[] { instance };
             ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
             EmitLoadConstant(methodSkeleton, 0, concreteType);
@@ -1474,13 +1474,17 @@ namespace LightInject
             return () => del(constants.Items);
         }
 
-        private Action<IMethodSkeleton> GetEmitMethod(Type serviceType, string serviceName)
+        private Func<T> CreateGenericDynamicMethodDelegate<T>(Action<IMethodSkeleton> serviceEmitter)
         {
-            //if (FirstServiceRequest())
-            //{
-            //    EnsureThatServiceRegistryIsConfigured(serviceType);
-            //}
+            var methodSkeleton = methodSkeletonFactory();
+            serviceEmitter(methodSkeleton);            
+            var del = methodSkeleton.CreateDelegate();
+            return () => (T)del(constants.Items);
+        }
 
+
+        private Action<IMethodSkeleton> GetEmitMethod(Type serviceType, string serviceName)
+        {           
             Action<IMethodSkeleton> emitter = GetRegisteredEmitMethod(serviceType, serviceName);
 
             if (emitter == null)
@@ -1551,28 +1555,12 @@ namespace LightInject
                 });
         }
 
-        //private void EmitNewInstance_new(Registration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
-        //{
-        //    var serviceDecorators = this.GetDecorators(serviceRegistration.ServiceType).ToArray();
-        //    if (serviceDecorators.Length > 0)
-        //    {
-        //        var nextDecorator = serviceDecorators.Last();
-        //        var remainingDecorators = serviceDecorators.Where(sd => sd != nextDecorator).ToArray();
-        //        EmitNewInstance(nextDecorator, dynamicMethodSkeleton);
-        //        //EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, () => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton));
-        //    }
-        //    else
-        //    {
-        //        DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton);
-        //    }
-        //}
-
         private void EmitNewInstance(ServiceRegistration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
         {
             var serviceDecorators = GetDecorators(serviceRegistration.ServiceType);
             if (serviceDecorators.Length > 0)
             {
-                EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, () => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton));
+                EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, (dm) => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dm));
             }
             else
             {
@@ -1601,11 +1589,12 @@ namespace LightInject
             return registeredDecorators.ToArray();
         }
 
-        private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IMethodSkeleton dynamicMethodSkeleton, Action pushInstance)
+        private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> pushInstance)
         {
             ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
-            var constructorDependency =
-                constructionInfo.ConstructorDependencies.FirstOrDefault(cd => cd.ServiceType == decoratorRegistration.ServiceType);
+            var constructorDependency = GetConstructorDependencyThatRepresentsDecoratorTarget(
+                decoratorRegistration, constructionInfo);
+                
             if (constructorDependency != null)
             {
                 constructorDependency.IsDecoratorTarget = true;
@@ -1630,14 +1619,14 @@ namespace LightInject
             return constructorDependency;
         }
 
-        private void EmitNewDecoratorUsingFactoryDelegate(Delegate factoryDelegate, IMethodSkeleton dynamicMethodSkeleton, Action pushInstance)
+        private void EmitNewDecoratorUsingFactoryDelegate(Delegate factoryDelegate, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> pushInstance)
         {
             var factoryDelegateIndex = constants.Add(factoryDelegate);
             var serviceFactoryIndex = constants.Add(this);
             Type funcType = factoryDelegate.GetType();
             EmitLoadConstant(dynamicMethodSkeleton, factoryDelegateIndex, funcType);
             EmitLoadConstant(dynamicMethodSkeleton, serviceFactoryIndex, typeof(IServiceFactory));
-            pushInstance();
+            pushInstance(dynamicMethodSkeleton);
             ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             MethodInfo invokeMethod = funcType.GetMethod("Invoke");
             generator.Emit(OpCodes.Callvirt, invokeMethod);
@@ -1655,7 +1644,7 @@ namespace LightInject
             }
         }
 
-        private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IMethodSkeleton dynamicMethodSkeleton, Action decoratorTargetEmitter)
+        private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> decoratorTargetEmitter)
         {
             foreach (DecoratorRegistration decorator in serviceDecorators)
             {
@@ -1664,15 +1653,15 @@ namespace LightInject
                     continue;
                 }
 
-                Action currentDecoratorTargetEmitter = decoratorTargetEmitter;
+                Action<IMethodSkeleton> currentDecoratorTargetEmitter = decoratorTargetEmitter;
                 DecoratorRegistration currentDecorator = decorator;
-                decoratorTargetEmitter = () => DoEmitDecoratorInstance(currentDecorator, dynamicMethodSkeleton, currentDecoratorTargetEmitter);
+                decoratorTargetEmitter = (dm) => DoEmitDecoratorInstance(currentDecorator, dynamicMethodSkeleton, currentDecoratorTargetEmitter);
             }
 
-            decoratorTargetEmitter();
+            decoratorTargetEmitter(dynamicMethodSkeleton);
         }
 
-        private void EmitNewInstanceUsingImplementingType(IMethodSkeleton dynamicMethodSkeleton, ConstructionInfo constructionInfo, Action decoratorTargetEmitter)
+        private void EmitNewInstanceUsingImplementingType(IMethodSkeleton dynamicMethodSkeleton, ConstructionInfo constructionInfo, Action<IMethodSkeleton> decoratorTargetEmitter)
         {
             ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             EmitConstructorDependencies(constructionInfo, dynamicMethodSkeleton, decoratorTargetEmitter);
@@ -1692,7 +1681,7 @@ namespace LightInject
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
-        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, IMethodSkeleton dynamicMethodSkeleton, Action decoratorTargetEmitter)
+        private void EmitConstructorDependencies(ConstructionInfo constructionInfo, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> decoratorTargetEmitter)
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
@@ -1701,8 +1690,19 @@ namespace LightInject
                     EmitDependency(dynamicMethodSkeleton, dependency);
                 }
                 else
-                {
-                    decoratorTargetEmitter();
+                {                    
+                    if (IsLazy(dependency.ServiceType))
+                    {
+                                                
+                        Type actualServiceType = dependency.ServiceType.GetGenericArguments().First();                        
+                        var methodINfo = this.GetType().GetMethod("CreateGenericDynamicMethodDelegate", BindingFlags.Instance | BindingFlags.NonPublic);
+                        var closedGenericMethod = methodINfo.MakeGenericMethod(actualServiceType);
+                        Delegate del = (Delegate)closedGenericMethod.Invoke(this, new object[] { decoratorTargetEmitter });
+                        decoratorTargetEmitter = this.CreateServiceEmitterBasedOnLazyServiceRequest(dependency.ServiceType, (t) => del);
+                        
+                    }
+                    
+                    decoratorTargetEmitter(dynamicMethodSkeleton);
                 }
             }
         }
@@ -1792,7 +1792,7 @@ namespace LightInject
             }
             else if (IsLazy(serviceType))
             {
-                emitter = CreateServiceEmitterBasedOnLazyServiceRequest(serviceType);
+                emitter = CreateServiceEmitterBasedOnLazyServiceRequest(serviceType, (t) => ReflectionHelper.CreateGetInstanceDelegate(t, this));
             }
 
 
@@ -1871,13 +1871,14 @@ namespace LightInject
             }
         }
 
-        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnLazyServiceRequest(Type serviceType)
+        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnLazyServiceRequest(Type serviceType, Func<Type, Delegate> valueFactoryDelegate)
         {
             Type actualServiceType = serviceType.GetGenericArguments().First();
             Type funcType = typeof(Func<>).MakeGenericType(actualServiceType);
 
             var lazyConstructor = serviceType.GetConstructor(new[] { funcType });
-            Delegate getInstanceDelegate = ReflectionHelper.CreateGetInstanceDelegate(actualServiceType, this);
+            //Delegate getInstanceDelegate = ReflectionHelper.CreateGetInstanceDelegate(actualServiceType, this);
+            Delegate getInstanceDelegate = valueFactoryDelegate(actualServiceType);
             var constantIndex = constants.Add(getInstanceDelegate);
 
             return ms =>
