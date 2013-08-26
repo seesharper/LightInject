@@ -10,19 +10,21 @@
     {
         private readonly string outputPath;
 
+        
 
         private readonly string fileName;
         private AssemblyBuilder assemblyBuilder;
         private TypeBuilder typeBuilder;
         private MethodBuilder methodBuilder;
 
-        public MethodBuilderMethodSkeleton(string outputPath)
+        public MethodBuilderMethodSkeleton(string outputPath, Type returnType, Type[] parameterTypes)
         {
             this.outputPath = outputPath;
+        
             fileName = Path.GetFileName(outputPath);
             CreateAssemblyBuilder();
             CreateTypeBuilder();
-            CreateMethodBuilder();
+            CreateMethodBuilder(returnType, parameterTypes);
         }
 
         public ILGenerator GetILGenerator()
@@ -30,15 +32,15 @@
             return methodBuilder.GetILGenerator();
         }
 
-        public Func<object[], object> CreateDelegate()
-        {
+        public Delegate CreateDelegate()
+        {            
             methodBuilder.GetILGenerator().Emit(OpCodes.Ret);
             var dynamicType = typeBuilder.CreateType();
             assemblyBuilder.Save(fileName);
             Console.WriteLine("Saving file " + fileName);
             AssemblyAssert.IsValidAssembly(outputPath);
             MethodInfo methodInfo = dynamicType.GetMethod("DynamicMethod", BindingFlags.Static | BindingFlags.Public);
-            return (Func<object[], object>)Delegate.CreateDelegate(typeof(Func<object[], object>), methodInfo);
+            return Delegate.CreateDelegate(typeof(Func<object[], object>), methodInfo);
         }
 
         private void CreateAssemblyBuilder()
@@ -60,10 +62,10 @@
             typeBuilder = module.DefineType("DynamicType", TypeAttributes.Public);
         }
 
-        private void CreateMethodBuilder()
+        private void CreateMethodBuilder(Type returnType, Type[] parameterTypes)
         {
             methodBuilder = typeBuilder.DefineMethod(
-                "DynamicMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(object), new Type[] { typeof(object[]) });
+                "DynamicMethod", MethodAttributes.Public | MethodAttributes.Static, returnType, parameterTypes);
             methodBuilder.InitLocals = true;
 
         }

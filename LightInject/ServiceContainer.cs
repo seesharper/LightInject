@@ -585,7 +585,7 @@ namespace LightInject
         /// Creates a delegate used to invoke this method.
         /// </summary>
         /// <returns>A delegate used to invoke this method.</returns>
-        Func<object[], object> CreateDelegate();
+        Delegate CreateDelegate();
     }
 
     internal static class TypeHelper
@@ -782,7 +782,7 @@ namespace LightInject
     internal class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
-        private readonly Func<IMethodSkeleton> methodSkeletonFactory;
+        private readonly Func<Type, Type[],IMethodSkeleton> methodSkeletonFactory;
         private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();
         private readonly ServiceRegistry<Action<IMethodSkeleton, Type>> openGenericEmitters = new ServiceRegistry<Action<IMethodSkeleton, Type>>();
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
@@ -811,14 +811,14 @@ namespace LightInject
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
-            methodSkeletonFactory = () => new DynamicMethodSkeleton();
+            methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
 #if NET
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
 #if TEST
  
-        public ServiceContainer(Func<IMethodSkeleton> methodSkeletonFactory)
+        public ServiceContainer(Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory)
             : this()
         {
             this.methodSkeletonFactory = methodSkeletonFactory;
@@ -882,7 +882,7 @@ namespace LightInject
         public object InjectProperties(object instance)
         {
             var type = instance.GetType();
-            return propertyInjectionDelegates.GetOrAdd(type, t => CreatePropertyInjectionDelegate(type, instance))();
+            return propertyInjectionDelegates.GetOrAdd(type, t => CreatePropertyInjectionDelegate(type))(new[] { instance });
         }
 
         /// <summary>
@@ -1203,7 +1203,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
         {
-            return GetDefaultDelegate(serviceType, true)();
+            return GetDefaultDelegate(serviceType, true)(constants.Items);
         }
 
         /// <summary>
@@ -1234,7 +1234,7 @@ namespace LightInject
         /// <returns>The requested service instance if available, otherwise null.</returns>
         public object TryGetInstance(Type serviceType)
         {
-            return GetDefaultDelegate(serviceType, false)();
+            return GetDefaultDelegate(serviceType, false)(constants.Items);
         }
 
         /// <summary>
@@ -1245,7 +1245,7 @@ namespace LightInject
         /// <returns>The requested service instance if available, otherwise null.</returns>
         public object TryGetInstance(Type serviceType, string serviceName)
         {
-            return GetNamedDelegate(serviceType, serviceName, false)();
+            return GetNamedDelegate(serviceType, serviceName, false)(constants.Items);
         }
 
         /// <summary>
@@ -1277,7 +1277,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName)
         {
-            return GetNamedDelegate(serviceType, serviceName, true)();
+            return GetNamedDelegate(serviceType, serviceName, true)(constants.Items);
         }
 
         /// <summary>
@@ -1377,10 +1377,9 @@ namespace LightInject
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
         }
 
-        private Func<object> CreatePropertyInjectionDelegate(Type concreteType, object instance)
+        private Func<object[], object> CreatePropertyInjectionDelegate(Type concreteType)
         {
-            IMethodSkeleton methodSkeleton = methodSkeletonFactory();
-            var arguments = new[] { instance };
+            IMethodSkeleton methodSkeleton = methodSkeletonFactory(concreteType, new[] { typeof(object[]) });            
             ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
             EmitLoadConstant(methodSkeleton, 0, concreteType);
             try
@@ -1393,8 +1392,9 @@ namespace LightInject
                 throw;
             }
 
-            var del = methodSkeleton.CreateDelegate();
-            return () => del(arguments);
+            var del = (Func<object[], object>)methodSkeleton.CreateDelegate();
+            //return () => del(arguments);
+            return del;
         }
 
         private ConstructionInfo GetContructionInfoForConcreteType(Type concreteType)
@@ -1436,9 +1436,9 @@ namespace LightInject
             return new TypeConstructionInfoBuilder(new ConstructorSelector(), ConstructorDependencySelector, PropertyDependencySelector);
         }
 
-        private Func<object> GetDefaultDelegate(Type serviceType, bool throwError)
+        private Func<object[], object> GetDefaultDelegate(Type serviceType, bool throwError)
         {
-            Func<object> del;
+            Func<object[], object> del;
 
             if (!this.delegates.TryGetValue(serviceType, out del))
             {
@@ -1448,9 +1448,9 @@ namespace LightInject
             return del;
         }
 
-        private Func<object> GetNamedDelegate(Type serviceType, string serviceName, bool throwError)
+        private Func<object[], object> GetNamedDelegate(Type serviceType, string serviceName, bool throwError)
         {
-            Func<object> del;
+            Func<object[], object> del;
 
             if (!this.namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
             {
@@ -1461,27 +1461,29 @@ namespace LightInject
             return del;
         }
 
-        private Func<object> CreateDynamicMethodDelegate(Action<IMethodSkeleton> serviceEmitter, Type serviceType)
+        private Func<object[], object> CreateDynamicMethodDelegate(Action<IMethodSkeleton> serviceEmitter, Type serviceType)
         {
-            var methodSkeleton = methodSkeletonFactory();
+            var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
             serviceEmitter(methodSkeleton);
             if (TypeHelper.IsValueType(serviceType))
             {
                 methodSkeleton.GetILGenerator().Emit(OpCodes.Box, serviceType);
             }
 
-            var del = methodSkeleton.CreateDelegate();
-            return () => del(constants.Items);
+            var del = (Func<object[], object>)methodSkeleton.CreateDelegate();                        
+            return del;
+        }
+
+        private Func<object> WrapAsFuncDelegate(Func<object[], object> instanceDelegate)
+        {
+            return () => instanceDelegate(constants.Items);
         }
 
         private Func<T> CreateGenericDynamicMethodDelegate<T>(Action<IMethodSkeleton> serviceEmitter)
         {
-            var methodSkeleton = methodSkeletonFactory();
-            serviceEmitter(methodSkeleton);            
-            var del = methodSkeleton.CreateDelegate();
-            return () => (T)del(constants.Items);
+            var del = this.WrapAsFuncDelegate(CreateDynamicMethodDelegate(serviceEmitter, typeof(T)));
+            return () => (T)del();      
         }
-
 
         private Action<IMethodSkeleton> GetEmitMethod(Type serviceType, string serviceName)
         {           
@@ -1692,20 +1694,25 @@ namespace LightInject
                 else
                 {                    
                     if (IsLazy(dependency.ServiceType))
-                    {
-                                                
+                    {                                                
                         Type actualServiceType = dependency.ServiceType.GetGenericArguments().First();                        
+                        
                         var methodINfo = this.GetType().GetMethod("CreateGenericDynamicMethodDelegate", BindingFlags.Instance | BindingFlags.NonPublic);
                         var closedGenericMethod = methodINfo.MakeGenericMethod(actualServiceType);
                         Delegate del = (Delegate)closedGenericMethod.Invoke(this, new object[] { decoratorTargetEmitter });
-                        decoratorTargetEmitter = this.CreateServiceEmitterBasedOnLazyServiceRequest(dependency.ServiceType, (t) => del);
-                        
+                        decoratorTargetEmitter = this.CreateServiceEmitterBasedOnLazyServiceRequest(dependency.ServiceType, (t) => del);                        
                     }
                     
                     decoratorTargetEmitter(dynamicMethodSkeleton);
                 }
             }
         }
+
+        //private Delegate CreateTypedGetInstanceDelegate(Action<IMethodSkeleton> instanceEmitter, Type actualServiceType)
+        //{
+            
+        //}
+
 
         private void EmitDependency(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
         {
@@ -2025,7 +2032,7 @@ namespace LightInject
         private int CreateInstanceDelegateIndex(Action<IMethodSkeleton> instanceEmitter, Type serviceType)
         {
             return constants.Add(
-                CreateDynamicMethodDelegate(instanceEmitter, serviceType));
+                this.WrapAsFuncDelegate(CreateDynamicMethodDelegate(instanceEmitter, serviceType)));
         }
 
         private int CreateLifetimeIndex(ILifetime lifetime)
@@ -2033,7 +2040,7 @@ namespace LightInject
             return constants.Add(lifetime);
         }
 
-        private Func<object> CreateDelegate(Type serviceType, string serviceName, bool throwError)
+        private Func<object[], object> CreateDelegate(Type serviceType, string serviceName, bool throwError)
         {
             var serviceEmitter = GetEmitMethod(serviceType, serviceName);
             if (serviceEmitter == null && throwError)
@@ -2044,7 +2051,7 @@ namespace LightInject
             if (serviceEmitter != null)
             {
                 try
-                {
+                {                   
                     return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
                 }
                 catch (InvalidOperationException ex)
@@ -2055,7 +2062,7 @@ namespace LightInject
                 }
             }
 
-            return () => null;
+            return c => null;
         }
 
         private bool FirstServiceRequest()
@@ -2113,6 +2120,8 @@ namespace LightInject
             private static readonly Lazy<MethodInfo> LazyGetCurrentScopeMethod;
             private static readonly Lazy<MethodInfo> LazyGetCurrentScopeManagerMethod;
 
+            
+ 
             static ReflectionHelper()
             {
                 LazyLifetimeGetInstanceMethod = new Lazy<MethodInfo>(() => typeof(ILifetime).GetMethod("GetInstance"));
@@ -2287,10 +2296,16 @@ namespace LightInject
 #if NET
         private class DynamicMethodSkeleton : IMethodSkeleton
         {
+            private readonly Type returnType;
+
+            private readonly Type[] parameterTypes;
+
             private DynamicMethod dynamicMethod;
 
-            public DynamicMethodSkeleton()
+            public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
             {
+                this.returnType = returnType;
+                this.parameterTypes = parameterTypes;
                 CreateDynamicMethod();
             }
 
@@ -2299,16 +2314,18 @@ namespace LightInject
                 return dynamicMethod.GetILGenerator();
             }
 
-            public Func<object[], object> CreateDelegate()
+            public Delegate CreateDelegate()
             {
+                
                 dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
-                return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
+                Type delegateType = Expression.GetFuncType(new Type[] { typeof(object[]), returnType });
+                return dynamicMethod.CreateDelegate(delegateType);
             }
 
             private void CreateDynamicMethod()
             {
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
+                    "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, false);
             }
         }
 #endif
@@ -2346,7 +2363,7 @@ namespace LightInject
         {
         }
 
-        private class DelegateRegistry<TKey> : KeyValueStorage<TKey, Func<object>>
+        private class DelegateRegistry<TKey> : KeyValueStorage<TKey, Func<object[], object>>
         {
         }
 
