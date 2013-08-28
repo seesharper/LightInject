@@ -248,21 +248,7 @@
         //    container.GetInstance<IFoo>();
         //    Assert.AreEqual(0, Foo.Instances);
         //}
-
-        [TestMethod]
-        public void GetInstance_DecoratorWithTargetAsPropertyDependency_ReturnsDecoratedInstance()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo, Foo>();
-            container.Decorate(typeof(IFoo), typeof(FooDecoratorWithTargetAsPropertyDependency));
-
-            var instance = (FooDecoratorWithTargetAsPropertyDependency)container.GetInstance<IFoo>();
-
-            Assert.IsInstanceOfType(instance.Foo, typeof(Foo));
-        }
-
-
-
+       
         private static FooDecorator GetFooDecorator(IFoo target)
         {
             return new FooDecorator(target);
