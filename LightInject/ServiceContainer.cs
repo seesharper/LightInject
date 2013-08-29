@@ -924,8 +924,10 @@ namespace LightInject
         /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> instance that contains service metadata.</param>
         public void Register(ServiceRegistration serviceRegistration)
         {
-            UpdateServiceEmitter(serviceRegistration.ServiceType, serviceRegistration.ServiceName, GetEmitDelegate(serviceRegistration));
-            UpdateServiceRegistration(serviceRegistration);
+            var key = Tuple.Create(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
+            var sr = serviceRegistration;
+            availableServices.AddOrUpdate(
+                key, k => AddServiceRegistration(sr), (k, existing) => UpdateServiceRegistration(existing, sr));                        
         }
 
         /// <summary>
@@ -1547,19 +1549,27 @@ namespace LightInject
                 GetServiceEmitters(serviceType).AddOrUpdate(serviceName, s => emitter, (s, m) => emitter);
             }
         }
-
-        private void UpdateServiceRegistration(ServiceRegistration serviceRegistration)
+        
+        private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
-            var key = Tuple.Create(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
-            var sr = serviceRegistration;
-            availableServices.AddOrUpdate(
-                key,
-                k => sr,
-                (k, s) =>
-                {                    
-                    Invalidate();
-                    return serviceRegistration;
-                });
+            var emitDelegate = ResolveEmitDelegate(serviceRegistration);
+            GetServiceEmitters(serviceRegistration.ServiceType)
+                .AddOrUpdate(serviceRegistration.ServiceName, s => emitDelegate, (s, m) => emitDelegate);
+            return serviceRegistration;
+        }
+
+        private ServiceRegistration UpdateServiceRegistration(ServiceRegistration existingRegistration, ServiceRegistration newRegistration )
+        {
+            if (existingRegistration.IsReadOnly)
+            {
+                return existingRegistration;
+            }
+            Invalidate();
+            var emitDelegate = ResolveEmitDelegate(newRegistration);
+            GetServiceEmitters(newRegistration.ServiceType)
+                .AddOrUpdate(newRegistration.ServiceName, s => emitDelegate, (s, m) => emitDelegate);
+            
+            return newRegistration;
         }
 
         private void EmitNewInstance(ServiceRegistration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
@@ -1573,27 +1583,6 @@ namespace LightInject
             {
                 DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton);
             }
-        }
-
-        private DecoratorRegistration[] GetDecorators_old(Type serviceType)
-        {
-            var registeredDecorators = GetRegisteredDecorators(serviceType);
-            if (registeredDecorators.Count == 0 && TypeHelper.IsGenericType(serviceType))
-            {
-                var openGenericServiceType = serviceType.GetGenericTypeDefinition();
-                var openGenericDecorators = GetRegisteredDecorators(openGenericServiceType);
-                if (openGenericDecorators.Count >= 0)
-                {
-                    foreach (DecoratorRegistration openGenericDecorator in openGenericDecorators)
-                    {
-                        var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(ReflectionHelper.GetGenericArguments(serviceType));
-                        var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, CanDecorate = openGenericDecorator.CanDecorate };
-                        registeredDecorators.Add(decoratorInfo);
-                    }
-                }
-            }
-
-            return registeredDecorators.ToArray();
         }
 
         private DecoratorRegistration[] GetDecorators(Type serviceType)
@@ -1990,8 +1979,7 @@ namespace LightInject
             else
             {
                 var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime };
-                UpdateServiceEmitter(serviceType, serviceName, GetEmitDelegate(serviceRegistration));
-                UpdateServiceRegistration(serviceRegistration);
+                Register(serviceRegistration);
             }
         }
 
@@ -2001,17 +1989,23 @@ namespace LightInject
             {
                 Type closedGenericImplementingType = openGenericImplementingType.MakeGenericType(closedGenericServiceType.GetGenericArguments());
                 var serviceRegistration = new ServiceRegistration { ServiceType = closedGenericServiceType, ImplementingType = closedGenericImplementingType, ServiceName = serviceName, Lifetime = CloneLifeTime(lifetime) };
-                var closedGenericEmitter = GetEmitDelegate(serviceRegistration);
-                UpdateServiceEmitter(closedGenericServiceType, serviceName, closedGenericEmitter);
-                UpdateServiceRegistration(serviceRegistration);
+                var closedGenericEmitter = this.ResolveEmitDelegate(serviceRegistration);
+                Register(serviceRegistration);
                 closedGenericEmitter(ms);
             };
             GetOpenGenericRegistrations(openGenericServiceType).AddOrUpdate(serviceName, s => emitter, (s, e) => emitter);
-            UpdateServiceRegistration(new ServiceRegistration { ServiceType = openGenericServiceType, ImplementingType = openGenericImplementingType, ServiceName = serviceName, Lifetime = lifetime });
+            //UpdateServiceRegistration(new ServiceRegistration { ServiceType = openGenericServiceType, ImplementingType = openGenericImplementingType, ServiceName = serviceName, Lifetime = lifetime });
         }
 
-        private Action<IMethodSkeleton> GetEmitDelegate(ServiceRegistration serviceRegistration)
+        private Action<IMethodSkeleton> ResolveEmitDelegate(ServiceRegistration serviceRegistration)
         {
+            if (serviceRegistration.Value != null)
+            {
+                int index = constants.Add(serviceRegistration.Value);
+                Type serviceType = serviceRegistration.ServiceType;
+                return methodSkeleton => EmitLoadConstant(methodSkeleton, index, serviceType);
+            }
+            
             if (serviceRegistration.Lifetime == null)
             {
                 return methodSkeleton => EmitNewInstance(serviceRegistration, methodSkeleton);
@@ -2087,16 +2081,17 @@ namespace LightInject
         
         private void RegisterValue(Type serviceType, object value, string serviceName)
         {
-            int index = constants.Add(value);
-            UpdateServiceEmitter(serviceType, serviceName, ms => EmitLoadConstant(ms, index, serviceType));
+            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Value = value };
+            Register(serviceRegistration);
+            //int index = constants.Add(value);
+            //UpdateServiceEmitter(serviceType, serviceName, ms => EmitLoadConstant(ms, index, serviceType));
         }
 
         private void RegisterServiceFromLambdaExpression<TService>(
             Expression<Func<IServiceFactory, TService>> factory, ILifetime lifetime, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, Lifetime = lifetime };
-            UpdateServiceEmitter(typeof(TService), serviceName, GetEmitDelegate(serviceRegistration));
-            UpdateServiceRegistration(serviceRegistration);
+            Register(serviceRegistration);
         }
 
         private static class ReflectionHelper

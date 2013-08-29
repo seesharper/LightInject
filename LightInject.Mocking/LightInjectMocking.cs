@@ -82,13 +82,14 @@ namespace LightInject.Mocking
         {
             var key = Tuple.Create(serviceRegistry, typeof(TService), serviceName);
             ServiceRegistration serviceRegistration;
-            
+
+            ServicesMocks.TryRemove(key, out serviceRegistration);
+            serviceRegistration.IsReadOnly = false;
+
             if (MockedServices.TryRemove(key, out serviceRegistration))
             {
                 serviceRegistry.Register(serviceRegistration);
-            }
-
-            ServicesMocks.TryRemove(key, out serviceRegistration);
+            }           
         }
 
         /// <summary>
