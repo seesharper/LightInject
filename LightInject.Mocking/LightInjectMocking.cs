@@ -38,6 +38,41 @@ namespace LightInject.Mocking
             = new ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration>();
 
         /// <summary>
+        /// Allows a service to be mocked using the given <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="serviceType">The type of service to mock.</param>        
+        /// <param name="implementingType">The type that represents the mock to be created.</param>
+        public static void StartMocking(this IServiceRegistry serviceRegistry, Type serviceType, Type implementingType)
+        {
+            StartMocking(serviceRegistry, serviceType, string.Empty, implementingType);
+        }
+
+        /// <summary>
+        /// Allows a named service to be mocked using the given <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="serviceType">The type of service to mock.</param>
+        /// <param name="serviceName">The name of the service to mock.</param>
+        /// <param name="implementingType">The type that represents the mock to be created.</param>
+        public static void StartMocking(this IServiceRegistry serviceRegistry, Type serviceType, string serviceName, Type implementingType)
+        {
+            Tuple<IServiceRegistry, Type, string> key = CreateServiceKey(serviceRegistry, serviceType, serviceName);
+            ILifetime lifeTime = null;
+            var serviceRegistration = GetExistingServiceRegistration(serviceRegistry, serviceType, serviceName);
+
+            if (serviceRegistration != null)
+            {
+                MockedServices.TryAdd(key, serviceRegistration);
+                lifeTime = CreateLifeTimeBasedOnExistingServiceRegistration(serviceRegistration);
+            }
+
+            var mockServiceRegistration = CreateTypeBasedMockServiceRegistration(serviceType, serviceName, implementingType, lifeTime);
+            serviceRegistry.Register(mockServiceRegistration);
+            ServicesMocks.TryAdd(key, mockServiceRegistration);
+        }
+
+        /// <summary>
         /// Allows a named service to be mocked using the given <paramref name="mockFactory"/>.
         /// </summary>
         /// <typeparam name="TService">The type of service to mock.</typeparam>
@@ -46,9 +81,9 @@ namespace LightInject.Mocking
         /// <param name="serviceName">The name of the service to mock.</param>
         public static void StartMocking<TService>(this IServiceRegistry serviceRegistry, Func<TService> mockFactory, string serviceName) where TService : class
         {            
-            Tuple<IServiceRegistry, Type, string> key = CreateServiceKey<TService>(serviceRegistry, serviceName);
+            Tuple<IServiceRegistry, Type, string> key = CreateServiceKey(serviceRegistry, typeof(TService), serviceName);
             ILifetime lifeTime = null;
-            var serviceRegistration = GetExistingServiceRegistration<TService>(serviceRegistry, serviceName);
+            var serviceRegistration = GetExistingServiceRegistration(serviceRegistry, typeof(TService), serviceName);
             
             if (serviceRegistration != null)
             {
@@ -56,13 +91,13 @@ namespace LightInject.Mocking
                 lifeTime = CreateLifeTimeBasedOnExistingServiceRegistration(serviceRegistration);
             }
 
-            var mockServiceRegistration = CreateMockServiceRegistration(mockFactory, serviceName, lifeTime);
+            var mockServiceRegistration = CreateFactoryBasedMockServiceRegistration(mockFactory, serviceName, lifeTime);
             serviceRegistry.Register(mockServiceRegistration);
             ServicesMocks.TryAdd(key, mockServiceRegistration);
         }
        
         /// <summary>
-        /// Allows a named service to be mocked using the given <paramref name="mockFactory"/>.
+        /// Allows a service to be mocked using the given <paramref name="mockFactory"/>.
         /// </summary>
         /// <typeparam name="TService">The type of service to mock.</typeparam>
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
@@ -102,7 +137,7 @@ namespace LightInject.Mocking
             EndMocking<TService>(serviceRegistry, string.Empty);
         }
 
-        private static ServiceRegistration CreateMockServiceRegistration<TService>(Func<TService> mockFactory, string serviceName, ILifetime lifeTime)
+        private static ServiceRegistration CreateFactoryBasedMockServiceRegistration<TService>(Func<TService> mockFactory, string serviceName, ILifetime lifeTime)
            where TService : class
         {
             var mockServiceRegistration = new ServiceRegistration { ServiceType = typeof(TService), ServiceName = serviceName, Lifetime = lifeTime, IsReadOnly = true };
@@ -111,9 +146,15 @@ namespace LightInject.Mocking
             return mockServiceRegistration;
         }
 
-        private static Tuple<IServiceRegistry, Type, string> CreateServiceKey<TService>(IServiceRegistry serviceRegistry, string serviceName) where TService : class
+        private static ServiceRegistration CreateTypeBasedMockServiceRegistration(Type serviceType, string serviceName, Type implementingType, ILifetime lifeTime)        
         {
-            return Tuple.Create(serviceRegistry, typeof(TService), serviceName);
+            var mockServiceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifeTime, IsReadOnly = true };            
+            return mockServiceRegistration;
+        }
+
+        private static Tuple<IServiceRegistry, Type, string> CreateServiceKey(IServiceRegistry serviceRegistry, Type serviceType, string serviceName)
+        {
+            return Tuple.Create(serviceRegistry, serviceType, serviceName);
         }
 
         private static ILifetime CreateLifeTimeBasedOnExistingServiceRegistration(ServiceRegistration serviceRegistration)
@@ -127,9 +168,9 @@ namespace LightInject.Mocking
             return lifeTime;
         }
 
-        private static ServiceRegistration GetExistingServiceRegistration<TService>(IServiceRegistry serviceRegistry, string serviceName) where TService : class
+        private static ServiceRegistration GetExistingServiceRegistration(IServiceRegistry serviceRegistry, Type serviceType, string serviceName)
         {
-            return serviceRegistry.AvailableServices.FirstOrDefault(sr => sr.ServiceType == typeof(TService) && sr.ServiceName == serviceName);
+            return serviceRegistry.AvailableServices.FirstOrDefault(sr => sr.ServiceType == serviceType && sr.ServiceName == serviceName);
         }
     }
 }

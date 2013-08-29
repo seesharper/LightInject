@@ -793,11 +793,9 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration> availableServices =
             new ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration>();
 
-        private readonly ThreadSafeDictionary<Type, List<DecoratorRegistration>> decoratorsPerServiceType = new ThreadSafeDictionary<Type, List<DecoratorRegistration>>();
-
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
-
-        private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
+        private readonly ThreadLocal<ScopeManager> scopeManagers =
+            new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
                 
@@ -1959,12 +1957,7 @@ namespace LightInject
         {
             return emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<IMethodSkeleton>>(StringComparer.CurrentCultureIgnoreCase));
         }
-
-        private List<DecoratorRegistration> GetRegisteredDecorators(Type serviceType)
-        {
-            return this.decoratorsPerServiceType.GetOrAdd(serviceType, s => new List<DecoratorRegistration>());
-        }
-
+       
         private ThreadSafeDictionary<string, Action<IMethodSkeleton, Type>> GetOpenGenericRegistrations(Type serviceType)
         {
             return openGenericEmitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<IMethodSkeleton, Type>>(StringComparer.CurrentCultureIgnoreCase));

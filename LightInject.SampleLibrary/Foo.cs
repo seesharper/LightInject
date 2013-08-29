@@ -37,6 +37,13 @@ namespace LightInject.SampleLibrary
         public static IBar Bar { get; set; }
     }
 
+    public class FooMock : IFoo
+    {
+        
+    }
+
+    public class FooMock<T> : IFoo<T>{}
+
 
     public class AnotherFoo : IFoo { }
 

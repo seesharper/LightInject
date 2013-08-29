@@ -10,41 +10,50 @@
     public class MockingTests
     {
         [TestMethod]
-        public void StartMocking_ExistingService_ReturnsMockInstance()
+        public void GetInstance_ExistingService_ReturnsMockInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo,Foo>();            
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object);
+            container.Register<IFoo, Foo>();                        
+            container.StartMocking<IFoo>(() => new FooMock());
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.AreSame(instance, fooMock.Object);
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
         }
 
         [TestMethod]
-        public void StartMocking_Dependency_ReturnsInstanceWithMockDependency()
+        public void GetInstance_NamedExistingService_ReturnsMockInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>("SomeFoo");            
+            container.StartMocking<IFoo>(() => new FooMock(), "SomeFoo");
+
+            var instance = container.GetInstance<IFoo>("SomeFoo");
+
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
+        }
+
+        [TestMethod]
+        public void GetInstance_Dependency_ReturnsInstanceWithMockDependency()
         {
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
-            container.Register<IBar, Bar>();
-            
-            var barMock = new Mock<IBar>();
-            container.StartMocking(() => barMock.Object);
+            container.Register<IBar, Bar>();                        
+            container.StartMocking<IBar>(() => new BarMock());
 
             var instance = (FooWithDependency)container.GetInstance<IFoo>();
-
-            Assert.AreSame(instance.Bar, barMock.Object);
+            
+            Assert.IsInstanceOfType(instance.Bar, typeof(BarMock));
         }
 
 
         [TestMethod]
-        public void StartMocking_ExistingSingletonService_InheritsLifetime()
+        public void GetInstance_ExistingSingletonService_InheritsLifetime()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>(new PerContainerLifetime());
             
-            container.StartMocking(() => new Mock<IFoo>().Object);
+            container.StartMocking<IFoo>(() => new FooMock());
 
             var firstInstance = container.GetInstance<IFoo>();
             var secondInstance = container.GetInstance<IFoo>();
@@ -53,12 +62,12 @@
         }
 
         [TestMethod]
-        public void StartMocking_ExistingSingletonService_RestoresLifetime()
+        public void GetInstance_ExistingSingletonService_RestoresLifetime()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>(new PerContainerLifetime());
 
-            container.StartMocking(() => new Mock<IFoo>().Object);
+            container.StartMocking<IFoo>(() => new FooMock());
             container.GetInstance<IFoo>();
             container.EndMocking<IFoo>();
             
@@ -68,28 +77,15 @@
             Assert.AreSame(firstInstance, secondInstance);
         }
 
-        [TestMethod]
-        public void StartMocking_NamedExistingService_ReturnsMockInstance()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo, Foo>("SomeFoo");
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object, "SomeFoo");
-            
-            var instance = container.GetInstance<IFoo>("SomeFoo");
-
-            Assert.AreSame(instance, fooMock.Object);
-        }
+     
 
         [TestMethod]
-        public void StartMocking_NamedService_DoesNotMockDefaultService()
+        public void GetInstance_NamedService_DoesNotMockDefaultService()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            container.Register<IFoo, AnotherFoo>("AnotherFoo");
-
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object, "AnotherFoo");
+            container.Register<IFoo, AnotherFoo>("AnotherFoo");            
+            container.StartMocking<IFoo>(() => new FooMock(), "AnotherFoo");
 
             var instance = container.GetInstance<IFoo>();
 
@@ -97,14 +93,12 @@
         }
 
         [TestMethod]
-        public void StartMocking_DefaultService_DoesNotMockNamedService()
+        public void GetInstance_DefaultService_DoesNotMockNamedService()
         {
             var container = CreateContainer();            
             container.Register<IFoo, AnotherFoo>("AnotherFoo");
             container.Register<IFoo, Foo>();
-
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object);
+            container.StartMocking<IFoo>(() => new FooMock());
 
             var instance = container.GetInstance<IFoo>("AnotherFoo");
 
@@ -113,80 +107,76 @@
 
 
         [TestMethod]
-        public void StartMocking_ExistingServiceAfterGetInstance_ReturnsMockInstance()
+        public void GetInstance_ExistingServiceAfterGetInstance_ReturnsMockInstance()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
             container.GetInstance<IFoo>();
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object);
+            
+            container.StartMocking<IFoo>(() => new FooMock());
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.AreSame(instance, fooMock.Object);
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
         }
 
 
         [TestMethod]
-        public void StartMocking_NamedExistingServiceAfterGetInstance_ReturnsMockInstance()
+        public void GetInstance_NamedExistingServiceAfterGetInstance_ReturnsMockInstance()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>("SomeFoo");
-            container.GetInstance<IFoo>("SomeFoo");
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object, "SomeFoo");
+            container.GetInstance<IFoo>("SomeFoo");            
+            container.StartMocking<IFoo>(() => new FooMock(), "SomeFoo");
 
             var instance = container.GetInstance<IFoo>("SomeFoo");
 
-            Assert.AreSame(instance, fooMock.Object);
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
         }
 
         [TestMethod]
-        public void StartMocking_UnknownService_RetursMockInstance()
+        public void GetInstance_UnknownService_RetursMockInstance()
+        {
+            var container = CreateContainer();                        
+            container.StartMocking<IFoo>(() => new FooMock());
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
+        }
+
+        [TestMethod]
+        public void GetInstance_NamedUnknownService_RetursMockInstance()
         {
             var container = CreateContainer();            
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object);
-
-            var instance = container.GetInstance<IFoo>();
-
-            Assert.AreSame(instance, fooMock.Object);
-        }
-
-        [TestMethod]
-        public void StartMocking_NamedUnknownService_RetursMockInstance()
-        {
-            var container = CreateContainer();
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object, "SomeFoo");
+            container.StartMocking<IFoo>(() => new FooMock(), "SomeFoo");
 
             var instance = container.GetInstance<IFoo>("SomeFoo");
 
-            Assert.AreSame(instance, fooMock.Object);
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
         }
 
         [TestMethod]
-        public void EndMocking_ExistingService_ReturnsOriginalInstance()
+        public void GetInstance_ExistingServiceAfterEndMocking_ReturnsOriginalInstance()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object);
+            
+            container.StartMocking<IFoo>(() => new FooMock());
             container.GetInstance<IFoo>();
             container.EndMocking<IFoo>();
-
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
 
         [TestMethod]
-        public void EndMocking_NamedExistingService_ReturnsOriginalInstance()
+        public void GetInstance_NamedExistingServiceAfterEndMocking_ReturnsOriginalInstance()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>("SomeFoo");
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object, "SomeFoo");
+            
+            container.StartMocking<IFoo>(() => new FooMock(), "SomeFoo");
             container.GetInstance<IFoo>("SomeFoo");
             container.EndMocking<IFoo>("SomeFoo");
 
@@ -194,37 +184,7 @@
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-
-        [TestMethod]
-        public void EndMocking_ExistingServiceAfterGetInstance_ReturnsOriginalInstance()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo, Foo>();
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object);
-            container.GetInstance<IFoo>();
-            container.EndMocking<IFoo>();
-
-            var instance = container.GetInstance<IFoo>();
-
-            Assert.IsInstanceOfType(instance, typeof(Foo));
-        }
-
-        [TestMethod]
-        public void EndMocking_NamedExistingServiceAfterGetInstance_ReturnsOriginalInstance()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo, Foo>("SomeFoo");
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object, "SomeFoo");
-            container.GetInstance<IFoo>("SomeFoo");
-            container.EndMocking<IFoo>("SomeFoo");
-
-            var instance = container.GetInstance<IFoo>("SomeFoo");
-
-            Assert.IsInstanceOfType(instance, typeof(Foo));
-        }
-
+              
         [TestMethod]
         public void GetInstance_RegisterServiceAfterMockingIsStarted_ReturnsMockInstance()
         {
@@ -233,10 +193,48 @@
             var fooMock = new Mock<IFoo>();
             container.StartMocking(() => fooMock.Object);
             container.Register<IFoo, Foo>();
+
             var instance = container.GetInstance<IFoo>();
 
             Assert.AreSame(instance, fooMock.Object);
         }
+
+        [TestMethod]
+        public void GetInstance_NamedServiceUsingMockType_ReturnsMockedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>("SomeFoo");
+            container.StartMocking(typeof(IFoo), "SomeFoo", typeof(FooMock));
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
+        }
+
+        [TestMethod]
+        public void GetInstance_ServiceUsingMockType_ReturnsMockInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.StartMocking(typeof(IFoo), typeof(FooMock));
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
+        }
+
+        [TestMethod]
+        public void GetInstance_OpenGenericServiceUsingMockType_ReturnsMockInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
+            container.StartMocking(typeof(IFoo<>), typeof(FooMock<>));
+
+            var instance = container.GetInstance<IFoo<int>>();
+
+            Assert.IsInstanceOfType(instance, typeof(FooMock<int>));
+        }
+
 
         private static IServiceContainer CreateContainer()
         {

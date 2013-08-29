@@ -37,6 +37,12 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class BarMock : IBar
+    {
+        
+    }
+
+
     public interface IBar<T> { }
 
     public class Bar<T> : IBar<T> { }
