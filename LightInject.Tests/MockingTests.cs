@@ -225,6 +225,19 @@
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
 
+        [TestMethod]
+        public void GetInstance_RegisterServiceAfterMockingIsStarted_ReturnsMockInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            var fooMock = new Mock<IFoo>();
+            container.StartMocking(() => fooMock.Object);
+            container.Register<IFoo, Foo>();
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.AreSame(instance, fooMock.Object);
+        }
+
         private static IServiceContainer CreateContainer()
         {
             return new ServiceContainer();

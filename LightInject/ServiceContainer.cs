@@ -793,7 +793,9 @@ namespace LightInject
         private readonly ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration> availableServices =
             new ThreadSafeDictionary<Tuple<Type, string>, ServiceRegistration>();
 
-        private readonly ThreadSafeDictionary<Type, List<DecoratorRegistration>> decorators = new ThreadSafeDictionary<Type, List<DecoratorRegistration>>();
+        private readonly ThreadSafeDictionary<Type, List<DecoratorRegistration>> decoratorsPerServiceType = new ThreadSafeDictionary<Type, List<DecoratorRegistration>>();
+
+        private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
 
         private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
@@ -1006,7 +1008,8 @@ namespace LightInject
         public void Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate)
         {
             var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = decoratorType, CanDecorate = predicate };
-            GetRegisteredDecorators(serviceType).Add(decoratorInfo);
+            int index = decorators.Add(decoratorInfo);
+            decoratorInfo.Index = index;            
         }
 
         /// <summary>
@@ -1027,7 +1030,8 @@ namespace LightInject
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
         {
             var decoratorInfo = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
-            GetRegisteredDecorators(typeof(TService)).Add(decoratorInfo);
+            int index = decorators.Add(decoratorInfo);
+            decoratorInfo.Index = index;            
         }
 
         /// <summary>
@@ -1552,7 +1556,7 @@ namespace LightInject
                 key,
                 k => sr,
                 (k, s) =>
-                {
+                {                    
                     Invalidate();
                     return serviceRegistration;
                 });
@@ -1571,7 +1575,7 @@ namespace LightInject
             }
         }
 
-        private DecoratorRegistration[] GetDecorators(Type serviceType)
+        private DecoratorRegistration[] GetDecorators_old(Type serviceType)
         {
             var registeredDecorators = GetRegisteredDecorators(serviceType);
             if (registeredDecorators.Count == 0 && TypeHelper.IsGenericType(serviceType))
@@ -1590,6 +1594,24 @@ namespace LightInject
             }
 
             return registeredDecorators.ToArray();
+        }
+
+        private DecoratorRegistration[] GetDecorators(Type serviceType)
+        {
+            var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceType).ToList();
+            if (TypeHelper.IsGenericType(serviceType))
+            {
+                var openGenericServiceType = serviceType.GetGenericTypeDefinition();
+                var openGenericDecorators = decorators.Items.Where(d => d.ServiceType == openGenericServiceType);
+                foreach (DecoratorRegistration openGenericDecorator in openGenericDecorators)
+                {
+                    var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(ReflectionHelper.GetGenericArguments(serviceType));
+                    var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, CanDecorate = openGenericDecorator.CanDecorate };
+                    registeredDecorators.Add(decoratorInfo);
+                }
+            }
+
+            return registeredDecorators.OrderBy(d => d.Index).ToArray();
         }
 
         private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> pushInstance)
@@ -1951,7 +1973,7 @@ namespace LightInject
 
         private List<DecoratorRegistration> GetRegisteredDecorators(Type serviceType)
         {
-            return decorators.GetOrAdd(serviceType, s => new List<DecoratorRegistration>());
+            return this.decoratorsPerServiceType.GetOrAdd(serviceType, s => new List<DecoratorRegistration>());
         }
 
         private ThreadSafeDictionary<string, Action<IMethodSkeleton, Type>> GetOpenGenericRegistrations(Type serviceType)
@@ -3245,6 +3267,11 @@ namespace LightInject
         /// represented by the supplied <see cref="ServiceRegistration"/>.
         /// </summary>
         public Func<ServiceRegistration, bool> CanDecorate { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.
+        /// </summary>
+        public int Index { get; set; }
     }
 
     /// <summary>
@@ -3266,6 +3293,12 @@ namespace LightInject
         /// Gets or sets the value that represents the instance of the service.
         /// </summary>
         public object Value { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="ServiceRegistration"/> can be overridden 
+        /// by another registration.
+        /// </summary>
+        public bool IsReadOnly { get; set; }
 
         /// <summary>
         /// Serves as a hash function for a particular type. 

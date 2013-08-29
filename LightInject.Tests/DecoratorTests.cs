@@ -103,6 +103,28 @@
         }
 
         [TestMethod]
+        public void GetInstance_OpenGenericDecoratorFollowedByClosedGenericDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>));           
+            container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
+            container.Decorate(typeof(IFoo<int>), typeof(ClosedGenericFooDecorator));
+            var instance = container.GetInstance<IFoo<int>>();           
+            Assert.IsInstanceOfType(instance, typeof(ClosedGenericFooDecorator));
+        }
+
+        [TestMethod]
+        public void GetInstance_ClosedGenericDecoratorFollowedByOpenGenericDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
+            container.Decorate(typeof(IFoo<int>), typeof(ClosedGenericFooDecorator));
+            container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));            
+            var instance = container.GetInstance<IFoo<int>>();
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator<int>));
+        }
+
+        [TestMethod]
         public void GetInstance_WithNestedOpenGenericDecorator_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();

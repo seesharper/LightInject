@@ -168,6 +168,14 @@ namespace LightInject.SampleLibrary
         }
     }
 
+
+    public class ClosedGenericFooDecorator : IFoo<int>
+    {
+        public ClosedGenericFooDecorator(IFoo<int> foo)
+        {
+        }
+    }
+
     public class FooDecoratorWithTargetAsPropertyDependency : IFoo
     {
         public IFoo Foo { get; set; }
