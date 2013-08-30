@@ -71,6 +71,27 @@
             Assert.AreEqual(42, value);
         }
 
+        [TestMethod]
+        public void GetInstance_ValueTypeAsSingeton_ReturnsValue()
+        {
+            var container = CreateContainer();
+            container.Register<int>(factory => 42, new PerContainerLifetime());
+            var value = container.GetInstance<int>();
+            Assert.AreEqual(42, value);
+        }
+
+        [TestMethod]
+        public void GetInstance_ValueTypeAsPerScope_ReturnsValue()
+        {
+            var container = CreateContainer();
+            container.Register<int>(factory => 42, new PerScopeLifetime());
+            using (container.BeginScope())
+            {
+                var value = container.GetInstance<int>();
+                Assert.AreEqual(42, value);    
+            }
+        }
+
         #endregion
 
         [TestMethod]

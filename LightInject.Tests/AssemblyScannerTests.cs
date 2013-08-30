@@ -161,7 +161,6 @@
 
         }
 
-
         [TestMethod]
         public void Register_AssemblyWithFunc_CallsAssemblyScanner()
         {
@@ -180,6 +179,17 @@
             serviceContainer.AssemblyScanner = scannerMock.Object;
             serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), (s,t) => true);
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());
+        }
+
+        [TestMethod]
+        public void Register_AssemblyWithLifetimeFactory_RegistersServicesWithGivenLifeTime()
+        {
+            var container = new ServiceContainer();
+            container.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime());
+
+            var service = container.AvailableServices.FirstOrDefault(sr => sr.ServiceType == typeof(IFoo));
+
+            Assert.IsInstanceOfType(service.Lifetime, typeof(PerContainerLifetime));
         }
     }
 }

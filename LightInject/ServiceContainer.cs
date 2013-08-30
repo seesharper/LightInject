@@ -751,20 +751,20 @@ namespace LightInject
             return type.IsGenericTypeDefinition;
         }
 
-        public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetSetMethod();
-        }
+        //public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
+        //{
+        //    return propertyInfo.GetSetMethod();
+        //}
 
-        public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetGetMethod();
-        }
+        //public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
+        //{
+        //    return propertyInfo.GetGetMethod();
+        //}
 
-        public static Type[] GetTypes(this Assembly assembly)
-        {
-            return assembly.GetTypes();
-        }
+        //public static Type[] GetTypes(this Assembly assembly)
+        //{
+        //    return assembly.GetTypes();
+        //}
 
         public static Assembly GetAssembly(Type type)
         {
@@ -1559,8 +1559,8 @@ namespace LightInject
         private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
             var emitDelegate = ResolveEmitDelegate(serviceRegistration);
-            GetServiceEmitters(serviceRegistration.ServiceType)
-                .AddOrUpdate(serviceRegistration.ServiceName, s => emitDelegate, (s, m) => emitDelegate);
+            GetServiceEmitters(serviceRegistration.ServiceType).TryAdd(serviceRegistration.ServiceName, emitDelegate);
+                //.AddOrUpdate(serviceRegistration.ServiceName, s => emitDelegate, (s, m) => emitDelegate);
             return serviceRegistration;
         }
 
@@ -1572,9 +1572,13 @@ namespace LightInject
             }
 
             Invalidate();
-            var emitDelegate = ResolveEmitDelegate(newRegistration);
-            GetServiceEmitters(newRegistration.ServiceType)
-                .AddOrUpdate(newRegistration.ServiceName, s => emitDelegate, (s, m) => emitDelegate);
+            Action<IMethodSkeleton> emitDelegate = ResolveEmitDelegate(newRegistration);
+            Action<IMethodSkeleton> existingDelegate;
+            var serviceEmitters = GetServiceEmitters(newRegistration.ServiceType);
+            serviceEmitters.TryGetValue(newRegistration.ServiceName, out existingDelegate);
+            serviceEmitters.TryUpdate(newRegistration.ServiceName, emitDelegate, existingDelegate);
+            //GetServiceEmitters(newRegistration.ServiceType).TryUpdate(newRegistration.ServiceName, emitDelegate);
+                //.AddOrUpdate(newRegistration.ServiceName, s => emitDelegate, (s, m) => emitDelegate);
             
             return newRegistration;
         }
@@ -2014,18 +2018,30 @@ namespace LightInject
 
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IMethodSkeleton> instanceEmitter, IMethodSkeleton dynamicMethodSkeleton)
         {
-            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
-            int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter, serviceRegistration.ServiceType);
-            int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
-            int scopeManagerIndex = CreateScopeManagerIndex();
-            var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
-            EmitLoadConstant(dynamicMethodSkeleton, lifetimeIndex, typeof(ILifetime));
-            EmitLoadConstant(dynamicMethodSkeleton, instanceDelegateIndex, typeof(Func<object>));
-            EmitLoadConstant(dynamicMethodSkeleton, scopeManagerIndex, typeof(ThreadLocal<ScopeManager>));
-            generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
-            generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
-            generator.Emit(OpCodes.Callvirt, getInstanceMethod);
-            generator.Emit(TypeHelper.IsValueType(serviceRegistration.ServiceType) ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
+            if (serviceRegistration.Lifetime is PerContainerLifetime)
+            {
+                var del =
+                    WrapAsFuncDelegate(
+                        CreateDynamicMethodDelegate(instanceEmitter, serviceRegistration.ServiceType));
+                var instance = serviceRegistration.Lifetime.GetInstance(del, null);
+                var instanceIndex = constants.Add(instance);
+                EmitLoadConstant(dynamicMethodSkeleton, instanceIndex, serviceRegistration.ServiceType);
+            }
+            else
+            {
+                ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
+                int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter, serviceRegistration.ServiceType);
+                int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
+                int scopeManagerIndex = CreateScopeManagerIndex();
+                var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
+                EmitLoadConstant(dynamicMethodSkeleton, lifetimeIndex, typeof(ILifetime));
+                EmitLoadConstant(dynamicMethodSkeleton, instanceDelegateIndex, typeof(Func<object>));
+                EmitLoadConstant(dynamicMethodSkeleton, scopeManagerIndex, typeof(ThreadLocal<ScopeManager>));
+                generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
+                generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
+                generator.Emit(OpCodes.Callvirt, getInstanceMethod);
+                generator.Emit(TypeHelper.IsValueType(serviceRegistration.ServiceType) ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
+            }
         }
 
         private int CreateScopeManagerIndex()
