@@ -2,11 +2,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject</id>
-        <version>3.0.0.6</version>
+        <version>3.0.0.7</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
-        <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
+        <projectUrl>http://www.lightinject.net/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An ultra lightweight single file Inversion of Control container for the .Net framework.</description>
         <releaseNotes>Added support for WinRT making LightInject a perfect choice for Windows Store Apps</releaseNotes>

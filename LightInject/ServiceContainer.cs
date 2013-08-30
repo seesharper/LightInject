@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.6 
+   LightInject version 3.0.0.7 
    http://www.lightinject.net/
    http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -584,7 +584,7 @@ namespace LightInject
         /// Creates a delegate used to invoke this method.
         /// </summary>
         /// <returns>A delegate used to invoke this method.</returns>
-        Delegate CreateDelegate();
+        Func<object[], object> CreateDelegate();
     }
 
     internal static class TypeHelper
@@ -595,7 +595,7 @@ namespace LightInject
         {
             return type.GetTypeInfo().GenericTypeArguments;
         }
-
+       
         public static MethodInfo[] GetMethods(this Type type)
         {
             return type.GetTypeInfo().DeclaredMethods.ToArray();
@@ -615,6 +615,11 @@ namespace LightInject
         {
             return type.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
 
+        }
+        
+        public static MethodInfo GetPrivateMethod(this Type type, string name)
+        {            
+            return GetMethod(type, name);
         }
 
         public static MethodInfo GetMethod(this Type type, string name)
@@ -656,8 +661,6 @@ namespace LightInject
         {
             return type.GetTypeInfo().IsNestedPrivate;
         }
-
-
 
         public static bool IsGenericType(Type type)
         {
@@ -772,6 +775,12 @@ namespace LightInject
         {
             return type.IsValueType;
         }        
+
+        public static MethodInfo GetPrivateMethod(this Type type, string name)
+        {            
+            return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
+        }
+
 #endif
     }
 
@@ -781,7 +790,7 @@ namespace LightInject
     internal class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
-        private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
+        private readonly Func<IMethodSkeleton> methodSkeletonFactory;
         private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();        
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
@@ -807,14 +816,14 @@ namespace LightInject
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
-            methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
+            methodSkeletonFactory = () => new DynamicMethodSkeleton();
 #if NET
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
 #if TEST
  
-        public ServiceContainer(Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory)
+        public ServiceContainer(Func<IMethodSkeleton> methodSkeletonFactory)
             : this()
         {
             this.methodSkeletonFactory = methodSkeletonFactory;
@@ -921,7 +930,7 @@ namespace LightInject
         /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> instance that contains service metadata.</param>
         public void Register(ServiceRegistration serviceRegistration)
         {
-            var services = this.GetAvailableServices(serviceRegistration.ServiceType);            
+            var services = GetAvailableServices(serviceRegistration.ServiceType);            
             var sr = serviceRegistration;
             services.AddOrUpdate(
                 serviceRegistration.ServiceName,
@@ -1393,7 +1402,7 @@ namespace LightInject
 
         private Func<object[], object> CreatePropertyInjectionDelegate(Type concreteType)
         {
-            IMethodSkeleton methodSkeleton = methodSkeletonFactory(concreteType, new[] { typeof(object[]) });            
+            IMethodSkeleton methodSkeleton = methodSkeletonFactory();            
             ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
             EmitLoadConstant(methodSkeleton, 0, concreteType);
             try
@@ -1406,7 +1415,7 @@ namespace LightInject
                 throw;
             }
 
-            return (Func<object[], object>)methodSkeleton.CreateDelegate();                        
+            return methodSkeleton.CreateDelegate();                        
         }
 
         private ConstructionInfo GetContructionInfoForConcreteType(Type concreteType)
@@ -1451,9 +1460,9 @@ namespace LightInject
         {
             Func<object[], object> del;
 
-            if (!this.delegates.TryGetValue(serviceType, out del))
+            if (!delegates.TryGetValue(serviceType, out del))
             {
-                del = this.delegates.GetOrAdd(serviceType, t => this.CreateDelegate(t, string.Empty, throwError));
+                del = delegates.GetOrAdd(serviceType, t => CreateDelegate(t, string.Empty, throwError));
             }
 
             return del;
@@ -1463,10 +1472,10 @@ namespace LightInject
         {
             Func<object[], object> del;
 
-            if (!this.namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
+            if (!namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
             {
-                del = this.namedDelegates.GetOrAdd(
-                    Tuple.Create(serviceType, serviceName), t => this.CreateDelegate(t.Item1, serviceName, throwError));
+                del = namedDelegates.GetOrAdd(
+                    Tuple.Create(serviceType, serviceName), t => CreateDelegate(t.Item1, serviceName, throwError));
             }
 
             return del;
@@ -1474,15 +1483,14 @@ namespace LightInject
 
         private Func<object[], object> CreateDynamicMethodDelegate(Action<IMethodSkeleton> serviceEmitter, Type serviceType)
         {
-            var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
+            var methodSkeleton = methodSkeletonFactory();
             serviceEmitter(methodSkeleton);
             if (TypeHelper.IsValueType(serviceType))
             {
                 methodSkeleton.GetILGenerator().Emit(OpCodes.Box, serviceType);
             }
 
-            var del = (Func<object[], object>)methodSkeleton.CreateDelegate();                        
-            return del;
+            return methodSkeleton.CreateDelegate();                                    
         }
 
         private Func<object> WrapAsFuncDelegate(Func<object[], object> instanceDelegate)
@@ -1508,7 +1516,7 @@ namespace LightInject
 
         private bool HasProcessedTypesFromThisAssembly(Assembly assembly)
         {
-            return availableServices.Keys.Select(TypeHelper.GetAssembly).Any(a => a == assembly);
+            return availableServices.Keys.Select(TypeHelper.GetAssembly).Any(a => Equals(a, assembly));
         }
 
         private Action<IMethodSkeleton> CreateEmitMethodWrapper(Action<IMethodSkeleton> emitter, Type serviceType, string serviceName)
@@ -1576,7 +1584,7 @@ namespace LightInject
             var serviceDecorators = GetDecorators(serviceRegistration.ServiceType);
             if (serviceDecorators.Length > 0)
             {
-                EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, (dm) => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dm));
+                EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, dm => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dm));
             }
             else
             {
@@ -1708,21 +1716,21 @@ namespace LightInject
         }
 
         private Delegate CreateTypedInstanceDelegate(Action<IMethodSkeleton> serviceEmitter, Type serviceType)
-        {
-            var openGenericMethod = GetType().GetMethod("CreateGenericDynamicMethodDelegate", BindingFlags.Instance | BindingFlags.NonPublic);
+        {                        
+            var openGenericMethod = GetType().GetPrivateMethod("CreateGenericDynamicMethodDelegate");
             var closedGenericMethod = openGenericMethod.MakeGenericMethod(serviceType);
             return (Delegate)closedGenericMethod.Invoke(this, new object[] { serviceEmitter });
         }
 
         private Func<T> CreateGenericDynamicMethodDelegate<T>(Action<IMethodSkeleton> serviceEmitter)
         {
-            var del = this.WrapAsFuncDelegate(CreateDynamicMethodDelegate(serviceEmitter, typeof(T)));
+            var del = WrapAsFuncDelegate(CreateDynamicMethodDelegate(serviceEmitter, typeof(T)));
             return () => (T)del();
         }
         
         private void EmitDependency(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
         {
-            var emitter = this.GetEmitMethodForDependency(dependency);
+            var emitter = GetEmitMethodForDependency(dependency);
 
             try
             {
@@ -1754,10 +1762,10 @@ namespace LightInject
                 return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
             }
 
-            Action<IMethodSkeleton> emitter = this.GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
+            Action<IMethodSkeleton> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
             if (emitter == null)
             {
-                emitter = this.GetEmitMethod(dependency.ServiceType, dependency.Name);
+                emitter = GetEmitMethod(dependency.ServiceType, dependency.Name);
                 if (emitter == null && dependency.IsRequired)
                 {
                     throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
@@ -1930,7 +1938,7 @@ namespace LightInject
         {
             Type openGenericServiceType = closedGenericServiceType.GetGenericTypeDefinition();
             ServiceRegistration openGenericServiceRegistration =
-                this.GetOpenGenericServiceRegistration(openGenericServiceType, serviceName);
+                GetOpenGenericServiceRegistration(openGenericServiceType, serviceName);
            
             if (openGenericServiceRegistration == null)
             {
@@ -1951,8 +1959,9 @@ namespace LightInject
                                                                   CloneLifeTime(
                                                                       openGenericServiceRegistration
                                                                   .Lifetime)
-                                                          };
-            return this.ResolveEmitDelegate(serviceRegistration);            
+                                                          };            
+            Register(serviceRegistration);
+            return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);            
         }
 
         private Action<IMethodSkeleton> CreateServiceEmitterBasedOnSingleNamedInstance(Type serviceType)
@@ -2026,9 +2035,8 @@ namespace LightInject
 
         private int CreateInstanceDelegateIndex(Action<IMethodSkeleton> instanceEmitter, Type serviceType)
         {
-            return constants.Add(
-                this.WrapAsFuncDelegate(CreateDynamicMethodDelegate(instanceEmitter, serviceType)));
-        }
+            return constants.Add(WrapAsFuncDelegate(CreateDynamicMethodDelegate(instanceEmitter, serviceType)));
+        }                
 
         private int CreateLifetimeIndex(ILifetime lifetime)
         {
@@ -2311,17 +2319,11 @@ namespace LightInject
 
 #if NET
         private class DynamicMethodSkeleton : IMethodSkeleton
-        {
-            private readonly Type returnType;
-
-            private readonly Type[] parameterTypes;
-
+        {            
             private DynamicMethod dynamicMethod;
 
-            public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
-            {
-                this.returnType = returnType;
-                this.parameterTypes = parameterTypes;
+            public DynamicMethodSkeleton()
+            {         
                 CreateDynamicMethod();
             }
 
@@ -2330,18 +2332,16 @@ namespace LightInject
                 return dynamicMethod.GetILGenerator();
             }
 
-            public Delegate CreateDelegate()
-            {
-                
+            public Func<object[], object> CreateDelegate()
+            {                                                         
                 dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
-                Type delegateType = Expression.GetFuncType(new[] { typeof(object[]), returnType });
-                return dynamicMethod.CreateDelegate(delegateType);
+                return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
             }
 
             private void CreateDynamicMethod()
             {
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, false);
+                    "DynamicMethod", typeof(object), new[]{typeof(object[])}, typeof(ServiceContainer).Module, false);
             }
         }
 #endif
@@ -2612,8 +2612,7 @@ namespace LightInject
             get
             {
                 var variables = locals.Select(l => l.Variable).ToList();
-                var ex = new List<Expression>(expressions);
-                ex.Add(stack.Peek());                
+                var ex = new List<Expression>(expressions) { stack.Peek() };
                 return Expression.Block(variables,ex);
             }
         }
@@ -2623,7 +2622,7 @@ namespace LightInject
             if (opCode == OpCodes.Newobj)
             {
                 var parameterCount = constructor.GetParameters().Length;
-                var expression = Expression.New(constructor, this.Pop(parameterCount));
+                var expression = Expression.New(constructor, Pop(parameterCount));
                 stack.Push(expression);
             }
             else
@@ -2634,13 +2633,13 @@ namespace LightInject
 
         private Expression[] Pop(int numberOfElements)
         {
-            Expression[] expression = new Expression[numberOfElements];
+            var expressionsToPop = new Expression[numberOfElements];
 
             for (int i = 0; i < numberOfElements; i++)
             {
-                expression[i] = stack.Pop();
+                expressionsToPop[i] = stack.Pop();
             }
-            return expression.Reverse().ToArray();
+            return expressionsToPop.Reverse().ToArray();
         }
 
         public void Emit(OpCode opCode)
@@ -2842,7 +2841,7 @@ namespace LightInject
         /// dependencies for the given <paramref name="type"/>.</returns>
         public virtual IEnumerable<PropertyDependency> Execute(Type type)
         {
-            return this.PropertySelector.Execute(type).Select(
+            return PropertySelector.Execute(type).Select(
                 p => new PropertyDependency { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
         }
     }
@@ -2942,8 +2941,8 @@ namespace LightInject
             Func<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilderFactory,
             Func<ITypeConstructionInfoBuilder> typeConstructionInfoBuilderFactory)
         {
-            this.typeConstructionInfoBuilder = new Lazy<ITypeConstructionInfoBuilder>(typeConstructionInfoBuilderFactory);
-            this.lambdaConstructionInfoBuilder = new Lazy<ILambdaConstructionInfoBuilder>(lambdaConstructionInfoBuilderFactory);
+            typeConstructionInfoBuilder = new Lazy<ITypeConstructionInfoBuilder>(typeConstructionInfoBuilderFactory);
+            lambdaConstructionInfoBuilder = new Lazy<ILambdaConstructionInfoBuilder>(lambdaConstructionInfoBuilderFactory);
         }
 
         /// <summary>
@@ -3844,7 +3843,7 @@ namespace LightInject
         {
             IEnumerable<Type> concreteTypes = GetConcreteTypes(assembly).ToList();
             var compositionRoots = concreteTypes.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
-            if (compositionRoots.Count > 0 && currentAssembly != assembly)
+            if (compositionRoots.Count > 0 && !Equals(currentAssembly, assembly))
             {
                 currentAssembly = assembly;
                 ExecuteCompositionRoots(compositionRoots, serviceRegistry);

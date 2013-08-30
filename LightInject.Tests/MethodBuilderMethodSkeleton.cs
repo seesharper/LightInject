@@ -17,14 +17,14 @@
         private TypeBuilder typeBuilder;
         private MethodBuilder methodBuilder;
 
-        public MethodBuilderMethodSkeleton(string outputPath, Type returnType, Type[] parameterTypes)
+        public MethodBuilderMethodSkeleton(string outputPath)
         {
             this.outputPath = outputPath;
         
             fileName = Path.GetFileName(outputPath);
             CreateAssemblyBuilder();
             CreateTypeBuilder();
-            CreateMethodBuilder(returnType, parameterTypes);
+            CreateMethodBuilder();
         }
 
         public ILGenerator GetILGenerator()
@@ -32,7 +32,7 @@
             return methodBuilder.GetILGenerator();
         }
 
-        public Delegate CreateDelegate()
+        public Func<object[], object> CreateDelegate()
         {            
             methodBuilder.GetILGenerator().Emit(OpCodes.Ret);
             var dynamicType = typeBuilder.CreateType();
@@ -40,7 +40,7 @@
             Console.WriteLine("Saving file " + fileName);
             AssemblyAssert.IsValidAssembly(outputPath);
             MethodInfo methodInfo = dynamicType.GetMethod("DynamicMethod", BindingFlags.Static | BindingFlags.Public);
-            return Delegate.CreateDelegate(typeof(Func<object[], object>), methodInfo);
+            return (Func<object[], object>)Delegate.CreateDelegate(typeof(Func<object[], object>), methodInfo);
         }
 
         private void CreateAssemblyBuilder()
@@ -62,10 +62,10 @@
             typeBuilder = module.DefineType("DynamicType", TypeAttributes.Public);
         }
 
-        private void CreateMethodBuilder(Type returnType, Type[] parameterTypes)
+        private void CreateMethodBuilder()
         {
             methodBuilder = typeBuilder.DefineMethod(
-                "DynamicMethod", MethodAttributes.Public | MethodAttributes.Static, returnType, parameterTypes);
+                "DynamicMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(object), new[]{typeof(object[])});
             methodBuilder.InitLocals = true;
 
         }

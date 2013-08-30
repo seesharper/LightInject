@@ -1,10 +1,13 @@
 ﻿namespace LightInject.Tests
 {
-    using LightInject.SampleLibrary;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using LightInject.SampleLibrary;  
     using LightInject.Mocking;
 
-    using Moq;
+#if NETFX_CORE
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#else
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+#endif
 
     [TestClass]
     public class MockingTests
@@ -189,14 +192,13 @@
         public void GetInstance_RegisterServiceAfterMockingIsStarted_ReturnsMockInstance()
         {
             var container = CreateContainer();
+            container.Register<IFoo, Foo>();            
+            container.StartMocking<IFoo>(() => new FooMock());
+            
             container.Register<IFoo, Foo>();
-            var fooMock = new Mock<IFoo>();
-            container.StartMocking(() => fooMock.Object);
-            container.Register<IFoo, Foo>();
-
             var instance = container.GetInstance<IFoo>();
 
-            Assert.AreSame(instance, fooMock.Object);
+            Assert.IsInstanceOfType(instance, typeof(FooMock));
         }
 
         [TestMethod]

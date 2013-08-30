@@ -112,6 +112,9 @@
     <Compile Include="..\LightInject.Annotation\LightInjectAnnotation.cs">
       <Link>LightInjectAnnotation.cs</Link>
     </Compile>
+    <Compile Include="..\LightInject.Mocking\LightInjectMocking.cs">
+      <Link>LightInjectMocking.cs</Link>
+    </Compile>
     <Compile Include="..\LightInject.SampleLibrary\Bar.cs">
       <Link>Bar.cs</Link>
     </Compile>
@@ -138,6 +141,9 @@
     </Compile>
     <Compile Include="..\LightInject.Tests\ExceptionAssert.cs">
       <Link>ExceptionAssert.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\MockingTests.cs">
+      <Link>MockingTests.cs</Link>
     </Compile>
     <Compile Include="..\LightInject.Tests\PropertyInjectionTests.cs">
       <Link>PropertyInjectionTests.cs</Link>
