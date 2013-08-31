@@ -577,7 +577,7 @@ namespace LightInject
         /// <summary>
         /// Gets the <see cref="ILGenerator"/> for the this dynamic method.
         /// </summary>
-        /// <returns>The <see cref="ILGenerator"/> for the this dynamic method</returns>
+        /// <returns>The <see cref="ILGenerator"/> for the this dynamic method.</returns>
         ILGenerator GetILGenerator();
 
         /// <summary>
@@ -589,8 +589,7 @@ namespace LightInject
 
     internal static class TypeHelper
     {
-#if NETFX_CORE
-       
+#if NETFX_CORE       
         public static Type[] GetGenericArguments(this Type type)
         {
             return type.GetTypeInfo().GenericTypeArguments;
@@ -614,7 +613,6 @@ namespace LightInject
         public static ConstructorInfo[] GetConstructors(this Type type)
         {
             return type.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
-
         }
         
         public static MethodInfo GetPrivateMethod(this Type type, string name)
@@ -683,8 +681,7 @@ namespace LightInject
         }
 
         public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
-        {            
-            
+        {                        
             return propertyInfo.SetMethod;
         }
 
@@ -708,7 +705,6 @@ namespace LightInject
             return
                 GetConstructors(type).FirstOrDefault(c => c.GetParameters().Select(p => p.ParameterType).SequenceEqual(types));
         }
-
 #endif
 #if NET
         public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
@@ -750,22 +746,7 @@ namespace LightInject
         {
             return type.IsGenericTypeDefinition;
         }
-
-        //public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
-        //{
-        //    return propertyInfo.GetSetMethod();
-        //}
-
-        //public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
-        //{
-        //    return propertyInfo.GetGetMethod();
-        //}
-
-        //public static Type[] GetTypes(this Assembly assembly)
-        //{
-        //    return assembly.GetTypes();
-        //}
-
+   
         public static Assembly GetAssembly(Type type)
         {
             return type.Assembly;
@@ -780,7 +761,6 @@ namespace LightInject
         {            
             return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
         }
-
 #endif
     }
 
@@ -829,6 +809,7 @@ namespace LightInject
             this.methodSkeletonFactory = methodSkeletonFactory;
         }
 #endif
+
         /// <summary>
         /// Gets or sets the <see cref="IPropertyDependencySelector"/> instance that 
         /// is responsible for selecting the property dependencies for a given type.
@@ -1559,8 +1540,7 @@ namespace LightInject
         private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
             var emitDelegate = ResolveEmitDelegate(serviceRegistration);
-            GetServiceEmitters(serviceRegistration.ServiceType).TryAdd(serviceRegistration.ServiceName, emitDelegate);
-                //.AddOrUpdate(serviceRegistration.ServiceName, s => emitDelegate, (s, m) => emitDelegate);
+            GetServiceEmitters(serviceRegistration.ServiceType).TryAdd(serviceRegistration.ServiceName, emitDelegate);                
             return serviceRegistration;
         }
 
@@ -1577,9 +1557,7 @@ namespace LightInject
             var serviceEmitters = GetServiceEmitters(newRegistration.ServiceType);
             serviceEmitters.TryGetValue(newRegistration.ServiceName, out existingDelegate);
             serviceEmitters.TryUpdate(newRegistration.ServiceName, emitDelegate, existingDelegate);
-            //GetServiceEmitters(newRegistration.ServiceType).TryUpdate(newRegistration.ServiceName, emitDelegate);
-                //.AddOrUpdate(newRegistration.ServiceName, s => emitDelegate, (s, m) => emitDelegate);
-            
+                        
             return newRegistration;
         }
 
@@ -2357,7 +2335,7 @@ namespace LightInject
             private void CreateDynamicMethod()
             {
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[]{typeof(object[])}, typeof(ServiceContainer).Module, false);
+                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
             }
         }
 #endif
@@ -2421,9 +2399,6 @@ namespace LightInject
         {
         }
     }
-
-
-
 #endif
 #if SILVERLIGHT
         
@@ -2612,16 +2587,14 @@ namespace LightInject
     internal class ILGenerator
     {
         private readonly ParameterExpression parameterExpression;
-
         private readonly Stack<Expression> stack = new Stack<Expression>();
+        private readonly List<LocalBuilder> locals = new List<LocalBuilder>();
+        private readonly List<Expression> expressions = new List<Expression>();
 
         public ILGenerator(ParameterExpression parameterExpression)
         {
             this.parameterExpression = parameterExpression;
         }
-
-        private readonly List<LocalBuilder> locals = new List<LocalBuilder>();
-        private readonly List<Expression> expressions = new List<Expression>();
 
         public Expression CurrentExpression
         {
@@ -2629,13 +2602,13 @@ namespace LightInject
             {
                 var variables = locals.Select(l => l.Variable).ToList();
                 var ex = new List<Expression>(expressions) { stack.Peek() };
-                return Expression.Block(variables,ex);
+                return Expression.Block(variables, ex);
             }
         }
 
-        public void Emit(OpCode opCode, ConstructorInfo constructor)
+        public void Emit(OpCode code, ConstructorInfo constructor)
         {
-            if (opCode == OpCodes.Newobj)
+            if (code == OpCodes.Newobj)
             {
                 var parameterCount = constructor.GetParameters().Length;
                 var expression = Expression.New(constructor, Pop(parameterCount));
@@ -2643,28 +2616,17 @@ namespace LightInject
             }
             else
             {
-                throw new NotSupportedException(opCode.ToString());
+                throw new NotSupportedException(code.ToString());
             }
         }
-
-        private Expression[] Pop(int numberOfElements)
+ 
+        public void Emit(OpCode code)
         {
-            var expressionsToPop = new Expression[numberOfElements];
-
-            for (int i = 0; i < numberOfElements; i++)
-            {
-                expressionsToPop[i] = stack.Pop();
-            }
-            return expressionsToPop.Reverse().ToArray();
-        }
-
-        public void Emit(OpCode opCode)
-        {
-            if (opCode == OpCodes.Ldarg_0)
+            if (code == OpCodes.Ldarg_0)
             {
                 stack.Push(parameterExpression);
             }
-            else if (opCode == OpCodes.Ldelem_Ref)
+            else if (code == OpCodes.Ldelem_Ref)
             {
                 Expression[] indexes = new[] { stack.Pop() };
                 Expression array = stack.Pop();
@@ -2672,38 +2634,37 @@ namespace LightInject
             }
             else
             {
-                throw new NotSupportedException(opCode.ToString());
+                throw new NotSupportedException(code.ToString());
             }
         }
 
-        public void Emit(OpCode opCode, LocalBuilder localBuilder)
+        public void Emit(OpCode code, LocalBuilder localBuilder)
         {
-            if (opCode == OpCodes.Stloc)
+            if (code == OpCodes.Stloc)
             {
                 Expression valueExpression = stack.Pop();
                 var assignExpression = Expression.Assign(localBuilder.Variable, valueExpression);
                 expressions.Add(assignExpression);
             }            
-            else if (opCode == OpCodes.Ldloc)
+            else if (code == OpCodes.Ldloc)
             {
                 stack.Push(localBuilder.Variable);
             }
             else
             {
-                throw new NotSupportedException(opCode.ToString());
+                throw new NotSupportedException(code.ToString());
             }
-
         }
 
-        public void Emit(OpCode opCode, int arg)
+        public void Emit(OpCode code, int arg)
         {
-            if (opCode == OpCodes.Ldc_I4)
+            if (code == OpCodes.Ldc_I4)
             {
                 stack.Push(Expression.Constant(arg, typeof(int)));
             }
             else
             {
-                throw new NotSupportedException(opCode.ToString());
+                throw new NotSupportedException(code.ToString());
             }
         }
 
@@ -2714,13 +2675,13 @@ namespace LightInject
             return localBuilder;
         }
 
-        public void Emit(OpCode opCode, Type type)
+        public void Emit(OpCode code, Type type)
         {
-            if (opCode == OpCodes.Newarr)
+            if (code == OpCodes.Newarr)
             {
                 stack.Push(Expression.NewArrayBounds(type, Pop(1)));
             }            
-            else if (opCode == OpCodes.Stelem)
+            else if (code == OpCodes.Stelem)
             {
                 var value = stack.Pop();
                 var index = stack.Pop();
@@ -2730,27 +2691,27 @@ namespace LightInject
                 var assignExpression = Expression.Assign(arrayAccess, value);
                 expressions.Add(assignExpression);
             }
-            else if (opCode == OpCodes.Castclass)
+            else if (code == OpCodes.Castclass)
             {
                 stack.Push(Expression.Convert(stack.Pop(), type));
             }
-            else if (opCode == OpCodes.Box)
+            else if (code == OpCodes.Box)
             {
                 stack.Push(Expression.Convert(stack.Pop(), typeof(object)));
             }
-            else if (opCode == OpCodes.Unbox_Any)
+            else if (code == OpCodes.Unbox_Any)
             {
                 stack.Push(Expression.Convert(stack.Pop(), type));
             }
             else
             {
-                throw new NotSupportedException(opCode.ToString());
+                throw new NotSupportedException(code.ToString());
             }            
         }
 
-        public void Emit(OpCode opCode, MethodInfo methodInfo)
+        public void Emit(OpCode code, MethodInfo methodInfo)
         {
-            if (opCode == OpCodes.Callvirt)
+            if (code == OpCodes.Callvirt)
             {
                 var parameterCount = methodInfo.GetParameters().Length;
                 Expression[] arguments = Pop(parameterCount);
@@ -2767,8 +2728,20 @@ namespace LightInject
             }
             else
             {
-                throw new NotSupportedException(opCode.ToString());
+                throw new NotSupportedException(code.ToString());
             }
+        }
+
+        private Expression[] Pop(int numberOfElements)
+        {
+            var expressionsToPop = new Expression[numberOfElements];
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                expressionsToPop[i] = stack.Pop();
+            }
+
+            return expressionsToPop.Reverse().ToArray();
         }
     }
 
@@ -2779,10 +2752,10 @@ namespace LightInject
             Variable = Expression.Parameter(type);
         }
 
-        public ParameterExpression Variable { get; private set; }
-         
+        public ParameterExpression Variable { get; private set; }         
     }
 #endif
+
     /// <summary>
     /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
     /// </summary>
@@ -3313,7 +3286,7 @@ namespace LightInject
         /// Determines whether the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>.
         /// </summary>
         /// <returns>
-        /// true if the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>; otherwise, false.
+        /// True if the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>; otherwise, false.
         /// </returns>
         /// <param name="obj">The <see cref="T:System.Object"/> to compare with the current <see cref="T:System.Object"/>. </param><filterpriority>2</filterpriority>
         public override bool Equals(object obj)
@@ -3679,7 +3652,7 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a scope 
+    /// Represents a scope. 
     /// </summary>
     internal class Scope : IDisposable
     {
