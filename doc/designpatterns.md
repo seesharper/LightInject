@@ -65,8 +65,10 @@ The dependencies of the decorator can be implicitly resolved.
 	container.Register<IFoo, Foo>();
 	container.Register<IBar, Bar>();
 	container.Decorate(typeof(IFoo), typeof(FooDecoratorWithDependency));
-	var instance = (FooDecoratorWithDependency)container.GetInstance<IFoo>();
-	Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
+	
+    var instance = (FooDecoratorWithDependency)container.GetInstance<IFoo>();
+	
+    Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
 	Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
 
 
@@ -76,7 +78,9 @@ By using a function factory, we can explicitly specify the depenendecies of the 
     container.Register<IBar, Bar>();
     container.Decorate<IFoo>((serviceFactory, target) 
         => new FooDecoratorWithDependency(target, serviceFactory.GetInstance<IBar>()));
+
     var instance = (FooDecoratorWithDependency)container.GetInstance<IFoo>();
+
     Assert.IsInstanceOfType(instance.Foo, typeof(IFoo));
     Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
 
@@ -92,6 +96,36 @@ Decorators can also be applied to open generic types.
 
     Assert.IsInstanceOfType(instance, typeof(FooDecorator<int>));
 
+##Lazy Decorators##
+
+A lazy decorator is a decorator that creates its target only when and if one of its methods are invoked.
+
+    public class LazyFooDecorator : IFoo
+    {
+        private Lazy<IFoo> lazyFoo;
+        public LazyFooDecorator(Lazy<IFoo> lazyFoo)
+        {
+            this.lazyFoo = lazyFoo;
+        }            
+
+        public void Execute()
+        {
+            lazyFoo.Value.Execute;
+        }
+    }
+
+This decorator then postpones the creation of the target **IFoo** instance until the Execute method is invoked.
+
+Since **LightInject** has native support for **Lazy&lt;T&gt;** this becomes very easy to configure.
+
+    container.Register(typeof(IFoo), typeof(Foo));
+    container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));    
+    
+    var instance = container.GetInstance<IFoo>();    
+
+    Assert.IsInstanceOfType(instance, typeof(LazyFooDecorator));
+ 
+ 
 
 ## Composite Pattern ##
 
