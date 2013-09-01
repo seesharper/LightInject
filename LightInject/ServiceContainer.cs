@@ -27,15 +27,17 @@ namespace LightInject
 {
     using System;
 #if NET || NETFX_CORE
+    using System.Collections;
     using System.Collections.Concurrent;
 #endif
 #if SILVERLIGHT
     using System.Collections;
 #endif
     using System.Collections.Generic;
-#if NET
+#if NET    
     using System.IO;
 #endif
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -1318,7 +1320,7 @@ namespace LightInject
             generator.Emit(TypeHelper.IsValueType(type) ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
         }
 
-        private static void EmitEnumerable(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
+        private static void EmitEnumerable_old(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
         {
             ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             LocalBuilder array = generator.DeclareLocal(elementType.MakeArrayType());
@@ -1336,6 +1338,24 @@ namespace LightInject
             }
 
             generator.Emit(OpCodes.Ldloc, array);
+        }
+
+        private void EmitEnumerable(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
+        {
+            Type enumerableType = ReflectionHelper.GetEnumerableType(elementType);
+            var factoryDelegate = CreateTypedInstanceDelegate(skeleton => EmitEnumerable_old(serviceEmitters, elementType, skeleton), enumerableType);
+            
+            Type lazyType = ReflectionHelper.GetLazyType(enumerableType);
+            ConstructorInfo lazyConstructor = ReflectionHelper.GetLazyConstructor(enumerableType);
+            Type lazyCollectionType = typeof(LazyReadOnlyCollection<>).MakeGenericType(elementType);
+            ConstructorInfo lazyCollectionConstructor =
+                lazyCollectionType.GetConstructor(new Type[] { lazyType, typeof(int) });
+
+            var constantIndex = constants.Add(factoryDelegate);
+            EmitLoadConstant(dynamicMethodSkeleton, constantIndex, ReflectionHelper.GetFuncType(enumerableType));
+            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Newobj, lazyConstructor);
+            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Ldc_I4, serviceEmitters.Count);
+            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Newobj, lazyCollectionConstructor);
         }
 
         private static bool IsEnumerableOfT(Type serviceType)
@@ -1701,12 +1721,12 @@ namespace LightInject
         {                        
             var openGenericMethod = GetType().GetPrivateMethod("CreateGenericDynamicMethodDelegate");
             var closedGenericMethod = openGenericMethod.MakeGenericMethod(serviceType);
-            return (Delegate)closedGenericMethod.Invoke(this, new object[] { serviceEmitter });
+            var del = WrapAsFuncDelegate(CreateDynamicMethodDelegate(serviceEmitter, serviceType));
+            return (Delegate)closedGenericMethod.Invoke(this, new object[] { del });
         }
 
-        private Func<T> CreateGenericDynamicMethodDelegate<T>(Action<IMethodSkeleton> serviceEmitter)
-        {
-            var del = WrapAsFuncDelegate(CreateDynamicMethodDelegate(serviceEmitter, typeof(T)));
+        private Func<T> CreateGenericDynamicMethodDelegate<T>(Func<object> del)
+        {            
             return () => (T)del();
         }
         
@@ -3819,6 +3839,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
+            InternalTypes.Add(typeof(LazyReadOnlyCollection<>));
 #if NET
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
@@ -4036,4 +4057,69 @@ namespace LightInject
         }
     }
 #endif
+
+    internal class LazyReadOnlyCollection<T> : ICollection<T>
+    {
+        private readonly Lazy<IEnumerable<T>> lazyEnumerable;
+        private readonly int count;
+
+        public LazyReadOnlyCollection(Lazy<IEnumerable<T>> lazyEnumerable, int count)
+        {
+            this.lazyEnumerable = lazyEnumerable;
+            this.count = count;
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return lazyEnumerable.Value.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+
+        public void Add(T item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Clear()
+        {
+            throw new NotSupportedException();
+        }
+
+        public bool Contains(T item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            throw new NotSupportedException();
+        }
+
+        public bool Remove(T item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public int Count
+        {
+            get
+            {
+                return count;
+            }
+        }
+
+        public bool IsReadOnly
+        {
+            get
+            {
+                return true;
+            }
+        }
+    }
+
+    
 }
