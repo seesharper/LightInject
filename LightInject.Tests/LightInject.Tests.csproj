@@ -85,6 +85,7 @@
     <Compile Include="ExceptionAssert.cs" />
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="LazyCompositionRootTests.cs" />
+    <Compile Include="LazyReadOnlyCollectionTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="MockingTests.cs" />
     <Compile Include="MvcTests.cs" />

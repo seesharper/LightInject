@@ -589,6 +589,183 @@ namespace LightInject
         Func<object[], object> CreateDelegate();
     }
 
+    internal static class ReflectionHelper
+    {
+        private static readonly Lazy<MethodInfo> LifetimeGetInstanceMethodInfo;
+        private static readonly Lazy<MethodInfo> OpenGenericGetInstanceMethodInfo;
+        private static readonly Lazy<MethodInfo> OpenGenericGetNamedInstanceMethodInfo;
+        private static readonly Lazy<MethodInfo[]> OpenGenericGetInstanceMethods;
+        private static readonly Lazy<MethodInfo> GetCurrentScopeMethodInfo;
+        private static readonly Lazy<MethodInfo> GetCurrentScopeManagerMethodInfo;
+        private static readonly Lazy<ThreadSafeDictionary<Type, Type>> LazyTypes;
+        private static readonly Lazy<ThreadSafeDictionary<Type, Type>> FuncTypes;
+        private static readonly Lazy<ThreadSafeDictionary<Type, Type>> StringFuncTypes;
+        private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyConstructors;
+        private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyCollectionConstructors;
+        private static readonly Lazy<ThreadSafeDictionary<Type, Type[]>> GenericArgumentTypes;
+
+        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceMethods;
+        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetNamedInstanceMethods;
+
+        private static readonly Lazy<ThreadSafeDictionary<Type, Type>> EnumerableTypes;
+
+        static ReflectionHelper()
+        {
+            LifetimeGetInstanceMethodInfo = new Lazy<MethodInfo>(() => typeof(ILifetime).GetMethod("GetInstance"));
+            OpenGenericGetInstanceMethods = new Lazy<MethodInfo[]>(
+                () => typeof(IServiceFactory).GetMethods().Where(TypeHelper.IsGenericGetInstanceMethod).ToArray());
+            OpenGenericGetInstanceMethodInfo = new Lazy<MethodInfo>(
+                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => !m.GetParameters().Any()));
+            OpenGenericGetNamedInstanceMethodInfo = new Lazy<MethodInfo>(
+                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => m.GetParameters().Any()));
+            GetCurrentScopeMethodInfo = new Lazy<MethodInfo>(
+                () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
+            GetCurrentScopeManagerMethodInfo = new Lazy<MethodInfo>(
+                () => typeof(ThreadLocal<ScopeManager>).GetProperty("Value").GetGetMethod());
+            LazyTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
+            FuncTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
+            StringFuncTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
+            LazyConstructors = new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
+            LazyCollectionConstructors = new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
+            GetInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
+            GetNamedInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
+
+            GenericArgumentTypes = new Lazy<ThreadSafeDictionary<Type, Type[]>>();
+
+            EnumerableTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
+        }
+
+        public static MethodInfo LifetimeGetInstanceMethod
+        {
+            get
+            {
+                return LifetimeGetInstanceMethodInfo.Value;
+            }
+        }
+
+        public static MethodInfo GetCurrentScopeMethod
+        {
+            get
+            {
+                return GetCurrentScopeMethodInfo.Value;
+            }
+        }
+
+        public static MethodInfo GetCurrentScopeManagerMethod
+        {
+            get
+            {
+                return GetCurrentScopeManagerMethodInfo.Value;
+            }
+        }
+
+        public static Delegate CreateGetInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
+        {
+            Type delegateType = GetFuncType(serviceType);
+            MethodInfo getInstanceMethod = GetGetInstanceMethod(serviceType);
+            return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
+        }
+
+        public static Delegate CreateGetNamedInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
+        {
+            Type delegateType = GetStringFuncType(serviceType);
+            MethodInfo getInstanceMethod = GetGetNamedInstanceMethod(serviceType);
+            return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
+        }
+
+        public static Type[] GetGenericArguments(Type type)
+        {
+            return GenericArgumentTypes.Value.GetOrAdd(type, ResolveGenericArguments);
+        }
+
+        public static Type GetEnumerableType(Type type)
+        {
+            return EnumerableTypes.Value.GetOrAdd(type, CreateEnumerableType);
+        }
+
+        public static Type GetFuncType(Type type)
+        {
+            return FuncTypes.Value.GetOrAdd(type, CreateFuncType);
+        }
+
+        public static Type GetStringFuncType(Type type)
+        {
+            return StringFuncTypes.Value.GetOrAdd(type, CreateStringFuncType);
+        }
+
+        public static Type GetLazyType(Type type)
+        {
+            return LazyTypes.Value.GetOrAdd(type, CreateLazyType);
+        }
+
+        public static ConstructorInfo GetLazyConstructor(Type type)
+        {
+            return LazyConstructors.Value.GetOrAdd(type, ResolveLazyConstructor);
+        }
+
+        public static ConstructorInfo GetLazyCollectionConstructor(Type elementType)
+        {
+            return LazyCollectionConstructors.Value.GetOrAdd(elementType, ResolveLazyCollectionConstructor);
+        }
+
+        private static Type CreateLazyType(Type type)
+        {
+            return typeof(Lazy<>).MakeGenericType(type);
+        }
+
+        private static Type CreateEnumerableType(Type type)
+        {
+            return typeof(IEnumerable<>).MakeGenericType(type);
+        }
+
+        private static Type[] ResolveGenericArguments(Type type)
+        {
+            return type.GetGenericArguments();
+        }
+
+        private static ConstructorInfo ResolveLazyConstructor(Type type)
+        {
+            return GetLazyType(type).GetConstructor(new[] { GetFuncType(type) });
+        }
+
+        private static ConstructorInfo ResolveLazyCollectionConstructor(Type elementType)
+        {
+            Type lazyType = GetLazyType(GetEnumerableType(elementType));
+            var collectionType = typeof(LazyReadOnlyCollection<>).MakeGenericType(elementType);
+            return collectionType.GetConstructor(new[] { lazyType, typeof(int) });
+        }
+
+        private static Type CreateFuncType(Type type)
+        {
+            return typeof(Func<>).MakeGenericType(type);
+        }
+
+        private static Type CreateStringFuncType(Type type)
+        {
+            return typeof(Func<,>).MakeGenericType(typeof(string), type);
+        }
+
+        private static MethodInfo GetGetInstanceMethod(Type type)
+        {
+            return GetInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetInstanceMethod);
+        }
+
+        private static MethodInfo CreateClosedGenericGetInstanceMethod(Type type)
+        {
+            return OpenGenericGetInstanceMethodInfo.Value.MakeGenericMethod(type);
+        }
+
+        private static MethodInfo GetGetNamedInstanceMethod(Type type)
+        {
+            return GetNamedInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetNamedInstanceMethod);
+        }
+
+        private static MethodInfo CreateClosedGenericGetNamedInstanceMethod(Type type)
+        {
+            return OpenGenericGetNamedInstanceMethodInfo.Value.MakeGenericMethod(type);
+        }
+    }
+
     internal static class TypeHelper
     {
 #if NETFX_CORE       
@@ -642,42 +819,42 @@ namespace LightInject
             return type.GetTypeInfo().GetDeclaredProperty(name);
         }
 
-                public static bool IsValueType(Type type)
+        public static bool IsValueType(this Type type)
         {
             return type.GetTypeInfo().IsValueType;
         }
 
-        public static bool IsClass(Type type)
+        public static bool IsClass(this Type type)
         {
             return type.GetTypeInfo().IsClass;
         }
 
-        public static bool IsAbstract(Type type)
+        public static bool IsAbstract(this Type type)
         {
             return type.GetTypeInfo().IsAbstract;
         }
 
-        public static bool IsNestedPrivate(Type type)
+        public static bool IsNestedPrivate(this Type type)
         {
             return type.GetTypeInfo().IsNestedPrivate;
         }
 
-        public static bool IsGenericType(Type type)
+        public static bool IsGenericType(this Type type)
         {
             return type.GetTypeInfo().IsGenericType;
         }
 
-        public static bool ContainsGenericParameters(Type type)
+        public static bool ContainsGenericParameters(this Type type)
         {
             return type.GetTypeInfo().ContainsGenericParameters;
         }
 
-        public static Type GetBaseType(Type type)
+        public static Type GetBaseType(this Type type)
         {
             return type.GetTypeInfo().BaseType;
         }
 
-        public static bool IsGenericTypeDefinition(Type type)
+        public static bool IsGenericTypeDefinition(this Type type)
         {
             return type.GetTypeInfo().IsGenericTypeDefinition;
         }
@@ -697,7 +874,7 @@ namespace LightInject
             return assembly.DefinedTypes.Select(t => t.AsType()).ToArray();
         }
 
-        public static Assembly GetAssembly(Type type)
+        public static Assembly GetAssembly(this Type type)
         {
             return type.GetTypeInfo().Assembly;
         }
@@ -714,47 +891,47 @@ namespace LightInject
             return Delegate.CreateDelegate(delegateType, target, methodInfo);
         }
 
-        public static bool IsClass(Type type)
+        public static bool IsClass(this Type type)
         {
             return type.IsClass;
         }
 
-        public static bool IsAbstract(Type type)
+        public static bool IsAbstract(this Type type)
         {
             return type.IsAbstract;
         }
 
-        public static bool IsNestedPrivate(Type type)
+        public static bool IsNestedPrivate(this Type type)
         {
             return type.IsNestedPrivate;
         }
 
-        public static bool IsGenericType(Type type)
+        public static bool IsGenericType(this Type type)
         {
             return type.IsGenericType;
         }
 
-        public static bool ContainsGenericParameters(Type type)
+        public static bool ContainsGenericParameters(this Type type)
         {
             return type.ContainsGenericParameters;
         }
 
-        public static Type GetBaseType(Type type)
+        public static Type GetBaseType(this Type type)
         {
             return type.BaseType;
         }
 
-        public static bool IsGenericTypeDefinition(Type type)
+        public static bool IsGenericTypeDefinition(this Type type)
         {
             return type.IsGenericTypeDefinition;
         }
    
-        public static Assembly GetAssembly(Type type)
+        public static Assembly GetAssembly(this Type type)
         {
             return type.Assembly;
         }
 
-        public static bool IsValueType(Type type)
+        public static bool IsValueType(this Type type)
         {
             return type.IsValueType;
         }        
@@ -764,6 +941,37 @@ namespace LightInject
             return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 #endif
+
+        public static bool IsEnumerableOfT(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
+        }
+
+        public static bool IsLazy(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(Lazy<>);
+        }
+
+        public static bool IsFunc(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(Func<>);
+        }
+
+        public static bool IsClosedGeneric(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && !serviceType.IsGenericTypeDefinition();
+        }
+
+        public static bool IsFuncWithStringArgument(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(Func<,>)
+                   && ReflectionHelper.GetGenericArguments(serviceType)[0] == typeof(string);
+        }
+
+        public static bool IsGenericGetInstanceMethod(MethodInfo m)
+        {
+            return m.Name == "GetInstance" && m.IsGenericMethodDefinition;
+        }
     }
 
     /// <summary>
@@ -1317,10 +1525,10 @@ namespace LightInject
             generator.Emit(OpCodes.Ldarg_0);
             generator.Emit(OpCodes.Ldc_I4, index);
             generator.Emit(OpCodes.Ldelem_Ref);
-            generator.Emit(TypeHelper.IsValueType(type) ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
+            generator.Emit(type.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
         }
 
-        private static void EmitEnumerable_old(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
+        private static void EmitNewArray(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
         {
             ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
             LocalBuilder array = generator.DeclareLocal(elementType.MakeArrayType());
@@ -1339,51 +1547,7 @@ namespace LightInject
 
             generator.Emit(OpCodes.Ldloc, array);
         }
-
-        private void EmitEnumerable(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
-        {
-            Type enumerableType = ReflectionHelper.GetEnumerableType(elementType);
-            var factoryDelegate = CreateTypedInstanceDelegate(skeleton => EmitEnumerable_old(serviceEmitters, elementType, skeleton), enumerableType);
-            
-            Type lazyType = ReflectionHelper.GetLazyType(enumerableType);
-            ConstructorInfo lazyConstructor = ReflectionHelper.GetLazyConstructor(enumerableType);
-            Type lazyCollectionType = typeof(LazyReadOnlyCollection<>).MakeGenericType(elementType);
-            ConstructorInfo lazyCollectionConstructor =
-                lazyCollectionType.GetConstructor(new Type[] { lazyType, typeof(int) });
-
-            var constantIndex = constants.Add(factoryDelegate);
-            EmitLoadConstant(dynamicMethodSkeleton, constantIndex, ReflectionHelper.GetFuncType(enumerableType));
-            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Newobj, lazyConstructor);
-            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Ldc_I4, serviceEmitters.Count);
-            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Newobj, lazyCollectionConstructor);
-        }
-
-        private static bool IsEnumerableOfT(Type serviceType)
-        {
-            return TypeHelper.IsGenericType(serviceType) && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
-        }
-
-        private static bool IsLazy(Type serviceType)
-        {
-            return TypeHelper.IsGenericType(serviceType) && serviceType.GetGenericTypeDefinition() == typeof(Lazy<>);
-        }
-
-        private static bool IsFunc(Type serviceType)
-        {
-            return TypeHelper.IsGenericType(serviceType) && serviceType.GetGenericTypeDefinition() == typeof(Func<>);
-        }
-
-        private static bool IsClosedGeneric(Type serviceType)
-        {
-            return TypeHelper.IsGenericType(serviceType) && !TypeHelper.IsGenericTypeDefinition(serviceType);
-        }
-
-        private static bool IsFuncWithStringArgument(Type serviceType)
-        {
-            return TypeHelper.IsGenericType(serviceType) && serviceType.GetGenericTypeDefinition() == typeof(Func<,>)
-                && ReflectionHelper.GetGenericArguments(serviceType)[0] == typeof(string);
-        }
-
+        
         private static ILifetime CloneLifeTime(ILifetime lifetime)
         {
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
@@ -1396,9 +1560,24 @@ namespace LightInject
                 constructionInfo.ConstructorDependencies.FirstOrDefault(
                     cd =>
                     cd.ServiceType == decoratorRegistration.ServiceType
-                    || (IsLazy(cd.ServiceType)
+                    || (cd.ServiceType.IsLazy()
                         && ReflectionHelper.GetGenericArguments(cd.ServiceType)[0] == decoratorRegistration.ServiceType));
             return constructorDependency;
+        }
+
+        private void EmitEnumerable(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
+        {
+            Type enumerableType = ReflectionHelper.GetEnumerableType(elementType);
+            var factoryDelegate = CreateTypedInstanceDelegate(skeleton => EmitNewArray(serviceEmitters, elementType, skeleton), enumerableType);
+
+            ConstructorInfo lazyConstructor = ReflectionHelper.GetLazyConstructor(enumerableType);
+            ConstructorInfo lazyCollectionConstructor = ReflectionHelper.GetLazyCollectionConstructor(elementType);
+
+            var constantIndex = constants.Add(factoryDelegate);
+            EmitLoadConstant(dynamicMethodSkeleton, constantIndex, ReflectionHelper.GetFuncType(enumerableType));
+            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Newobj, lazyConstructor);
+            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Ldc_I4, serviceEmitters.Count);
+            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Newobj, lazyCollectionConstructor);
         }
 
         private Func<object[], object> CreatePropertyInjectionDelegate(Type concreteType)
@@ -1486,7 +1665,7 @@ namespace LightInject
         {
             var methodSkeleton = methodSkeletonFactory();
             serviceEmitter(methodSkeleton);
-            if (TypeHelper.IsValueType(serviceType))
+            if (serviceType.IsValueType())
             {
                 methodSkeleton.GetILGenerator().Emit(OpCodes.Box, serviceType);
             }
@@ -1505,9 +1684,9 @@ namespace LightInject
 
             if (emitter == null)
             {
-                if (!HasProcessedTypesFromThisAssembly(TypeHelper.GetAssembly(serviceType)))
+                if (!HasProcessedTypesFromThisAssembly(serviceType.GetAssembly()))
                 {
-                    RegisterAssembly(TypeHelper.GetAssembly(serviceType));
+                    RegisterAssembly(serviceType.GetAssembly());
                     emitter = GetRegisteredEmitMethod(serviceType, serviceName);
                 }
             }
@@ -1597,7 +1776,7 @@ namespace LightInject
         private DecoratorRegistration[] GetDecorators(Type serviceType)
         {
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceType).ToList();
-            if (TypeHelper.IsGenericType(serviceType))
+            if (serviceType.IsGenericType())
             {
                 var openGenericServiceType = serviceType.GetGenericTypeDefinition();
                 var openGenericDecorators = decorators.Items.Where(d => d.ServiceType == openGenericServiceType);
@@ -1705,7 +1884,7 @@ namespace LightInject
                 }
                 else
                 {                    
-                    if (IsLazy(dependency.ServiceType))
+                    if (dependency.ServiceType.IsLazy())
                     {
                         Action<IMethodSkeleton> instanceEmitter = decoratorTargetEmitter;
                         decoratorTargetEmitter = CreateServiceEmitterBasedOnLazyServiceRequest(
@@ -1813,19 +1992,19 @@ namespace LightInject
             {
                 emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
             }
-            else if (IsLazy(serviceType))
+            else if (serviceType.IsLazy())
             {
                 emitter = CreateServiceEmitterBasedOnLazyServiceRequest(serviceType, t => ReflectionHelper.CreateGetInstanceDelegate(t, this));
             }
-            else if (IsFunc(serviceType))
+            else if (serviceType.IsFunc())
             {
                 emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, false);
             }
-            else if (IsEnumerableOfT(serviceType))
+            else if (serviceType.IsEnumerableOfT())
             {
                 emitter = CreateEnumerableServiceEmitter(serviceType);
             }
-            else if (IsFuncWithStringArgument(serviceType))
+            else if (serviceType.IsFuncWithStringArgument())
             {
                 emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, true);
             }
@@ -1833,7 +2012,7 @@ namespace LightInject
             {
                 emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
             }
-            else if (IsClosedGeneric(serviceType))
+            else if (serviceType.IsClosedGeneric())
             {
                 emitter = CreateServiceEmitterBasedOnClosedGenericServiceRequest(serviceType, serviceName);
             }
@@ -1867,7 +2046,7 @@ namespace LightInject
         private Action<IMethodSkeleton> CreateEnumerableServiceEmitter(Type serviceType)
         {
             Type actualServiceType = ReflectionHelper.GetGenericArguments(serviceType)[0];
-            if (TypeHelper.IsGenericType(actualServiceType))
+            if (actualServiceType.IsGenericType())
             {
                 EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
             }
@@ -2038,7 +2217,7 @@ namespace LightInject
                 generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
                 generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
                 generator.Emit(OpCodes.Callvirt, getInstanceMethod);
-                generator.Emit(TypeHelper.IsValueType(serviceRegistration.ServiceType) ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
+                generator.Emit(serviceRegistration.ServiceType.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
             }
         }
 
@@ -2101,175 +2280,6 @@ namespace LightInject
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, Lifetime = lifetime };
             Register(serviceRegistration);
-        }
-
-        private static class ReflectionHelper
-        {
-            private static readonly Lazy<MethodInfo> LifetimeGetInstanceMethodInfo;
-            private static readonly Lazy<MethodInfo> OpenGenericGetInstanceMethodInfo;
-            private static readonly Lazy<MethodInfo> OpenGenericGetNamedInstanceMethodInfo;
-            private static readonly Lazy<MethodInfo[]> OpenGenericGetInstanceMethods;
-            private static readonly Lazy<MethodInfo> GetCurrentScopeMethodInfo;
-            private static readonly Lazy<MethodInfo> GetCurrentScopeManagerMethodInfo;
-            private static readonly Lazy<ThreadSafeDictionary<Type, Type>> LazyTypes;
-            private static readonly Lazy<ThreadSafeDictionary<Type, Type>> FuncTypes;
-            private static readonly Lazy<ThreadSafeDictionary<Type, Type>> StringFuncTypes;
-            private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyConstructors;
-            private static readonly Lazy<ThreadSafeDictionary<Type, Type[]>> GenericArgumentTypes;
-
-            private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceMethods;
-            private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetNamedInstanceMethods;
-
-            private static readonly Lazy<ThreadSafeDictionary<Type, Type>> EnumerableTypes; 
-
-            static ReflectionHelper()
-            {
-                LifetimeGetInstanceMethodInfo = new Lazy<MethodInfo>(() => typeof(ILifetime).GetMethod("GetInstance"));
-                OpenGenericGetInstanceMethods = new Lazy<MethodInfo[]>(
-                    () => typeof(IServiceFactory).GetMethods().Where(IsGenericGetInstanceMethod).ToArray());
-                OpenGenericGetInstanceMethodInfo = new Lazy<MethodInfo>(
-                    () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => !m.GetParameters().Any()));
-                OpenGenericGetNamedInstanceMethodInfo = new Lazy<MethodInfo>(
-                    () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => m.GetParameters().Any()));
-                GetCurrentScopeMethodInfo = new Lazy<MethodInfo>(
-                    () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
-                GetCurrentScopeManagerMethodInfo = new Lazy<MethodInfo>(
-                    () => typeof(ThreadLocal<ScopeManager>).GetProperty("Value").GetGetMethod());
-                LazyTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
-                FuncTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
-                StringFuncTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());                
-                LazyConstructors = new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
-                
-                GetInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
-                GetNamedInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
-                
-                GenericArgumentTypes = new Lazy<ThreadSafeDictionary<Type, Type[]>>();                
-
-                EnumerableTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
-            }
-
-            public static MethodInfo LifetimeGetInstanceMethod
-            {
-                get
-                {
-                    return LifetimeGetInstanceMethodInfo.Value;
-                }
-            }
-
-            public static MethodInfo GetCurrentScopeMethod
-            {
-                get
-                {
-                    return GetCurrentScopeMethodInfo.Value;
-                }
-            }
-
-            public static MethodInfo GetCurrentScopeManagerMethod
-            {
-                get
-                {
-                    return GetCurrentScopeManagerMethodInfo.Value;
-                }
-            }
-
-            public static Delegate CreateGetInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
-            {
-                Type delegateType = GetFuncType(serviceType);                
-                MethodInfo getInstanceMethod = GetGetInstanceMethod(serviceType);
-                return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
-            }
-
-            public static Delegate CreateGetNamedInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
-            {
-                Type delegateType = GetStringFuncType(serviceType);                
-                MethodInfo getInstanceMethod = GetGetNamedInstanceMethod(serviceType);
-                return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
-            }
-
-            public static Type[] GetGenericArguments(Type type)
-            {
-                return GenericArgumentTypes.Value.GetOrAdd(type, ResolveGenericArguments);
-            }
-
-            public static Type GetEnumerableType(Type type)
-            {
-                return EnumerableTypes.Value.GetOrAdd(type, CreateEnumerableType);
-            }
-            
-            public static Type GetFuncType(Type type)
-            {
-                return FuncTypes.Value.GetOrAdd(type, CreateFuncType);
-            }
-            
-            public static Type GetStringFuncType(Type type)
-            {
-                return StringFuncTypes.Value.GetOrAdd(type, CreateStringFuncType);
-            }
-
-            public static Type GetLazyType(Type type)
-            {
-                return LazyTypes.Value.GetOrAdd(type, CreateLazyType);
-            }
-
-            public static ConstructorInfo GetLazyConstructor(Type type)
-            {
-                return LazyConstructors.Value.GetOrAdd(type, ResolveLazyConstructor);
-            }
-
-            private static Type CreateLazyType(Type type)
-            {
-                return typeof(Lazy<>).MakeGenericType(type);
-            }
-
-            private static Type CreateEnumerableType(Type type)
-            {
-                return typeof(IEnumerable<>).MakeGenericType(type);
-            }
-
-            private static bool IsGenericGetInstanceMethod(MethodInfo m)
-            {
-                return m.Name == "GetInstance" && m.IsGenericMethodDefinition;
-            }
-
-            private static Type[] ResolveGenericArguments(Type type)
-            {
-                return type.GetGenericArguments();
-            }
-
-            private static ConstructorInfo ResolveLazyConstructor(Type type)
-            {
-                return GetLazyType(type).GetConstructor(new[] { GetFuncType(type) });
-            }
-
-            private static Type CreateFuncType(Type type)
-            {
-                return typeof(Func<>).MakeGenericType(type);
-            }
-            
-            private static Type CreateStringFuncType(Type type)
-            {
-                return typeof(Func<,>).MakeGenericType(typeof(string), type);
-            }
-
-            private static MethodInfo GetGetInstanceMethod(Type type)
-            {
-                return GetInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetInstanceMethod);
-            }
-
-            private static MethodInfo CreateClosedGenericGetInstanceMethod(Type type)
-            {
-                return OpenGenericGetInstanceMethodInfo.Value.MakeGenericMethod(type);
-            }
-
-            private static MethodInfo GetGetNamedInstanceMethod(Type type)
-            {
-                return GetNamedInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetNamedInstanceMethod);
-            }
-
-            private static MethodInfo CreateClosedGenericGetNamedInstanceMethod(Type type)
-            {
-                return OpenGenericGetNamedInstanceMethodInfo.Value.MakeGenericMethod(type);
-            }
         }
 
         private class Storage<T>
@@ -2457,7 +2467,7 @@ namespace LightInject
             public ILifetime LifeTime { get; set; }
         }
     }
-
+    
 #if NET || NETFX_CORE
     internal class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
     {
@@ -3865,8 +3875,8 @@ namespace LightInject
         /// <returns>A set of concrete types found in the given <paramref name="assembly"/>.</returns>
         public IEnumerable<Type> Execute(Assembly assembly)
         {
-            return assembly.GetTypes().Where(t => TypeHelper.IsClass(t) && !TypeHelper.IsNestedPrivate(t)
-                && !TypeHelper.IsAbstract(t) && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t)).Except(InternalTypes);
+            return assembly.GetTypes().Where(t => t.IsClass() && !t.IsNestedPrivate()
+                && !t.IsAbstract() && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t)).Except(InternalTypes);
         }
 
         private static bool IsCompilerGenerated(Type type)
@@ -3930,7 +3940,7 @@ namespace LightInject
         {
             string implementingTypeName = implementingType.Name;
             string serviceTypeName = serviceType.Name;
-            if (TypeHelper.IsGenericTypeDefinition(implementingType))
+            if (implementingType.IsGenericTypeDefinition())
             {
                 var regex = new Regex("((?:[a-z][a-z]+))", RegexOptions.IgnoreCase);
                 implementingTypeName = regex.Match(implementingTypeName).Groups[1].Value;
@@ -3951,7 +3961,7 @@ namespace LightInject
             while (baseType != typeof(object) && baseType != null)
             {
                 yield return baseType;
-                baseType = TypeHelper.GetBaseType(baseType);
+                baseType = baseType.GetBaseType();
             }
         }
 
@@ -3982,7 +3992,7 @@ namespace LightInject
 
         private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry, ILifetime lifetime)
         {
-            if (TypeHelper.IsGenericType(serviceType) && TypeHelper.ContainsGenericParameters(serviceType))
+            if (serviceType.IsGenericType() && serviceType.ContainsGenericParameters())
             {
                 serviceType = serviceType.GetGenericTypeDefinition();
             }
@@ -4069,41 +4079,6 @@ namespace LightInject
             this.count = count;
         }
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            return lazyEnumerable.Value.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
-
-        public void Add(T item)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Clear()
-        {
-            throw new NotSupportedException();
-        }
-
-        public bool Contains(T item)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            throw new NotSupportedException();
-        }
-
-        public bool Remove(T item)
-        {
-            throw new NotSupportedException();
-        }
-
         public int Count
         {
             get
@@ -4119,7 +4094,40 @@ namespace LightInject
                 return true;
             }
         }
-    }
 
-    
+        public IEnumerator<T> GetEnumerator()
+        {
+            return lazyEnumerable.Value.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public void Add(T item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Clear()
+        {
+            throw new NotSupportedException();
+        }
+
+        public bool Contains(T item)
+        {
+            return lazyEnumerable.Value.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            lazyEnumerable.Value.ToArray().CopyTo(array, arrayIndex);
+        }
+
+        public bool Remove(T item)
+        {
+            throw new NotSupportedException();
+        }        
+    }    
 }
