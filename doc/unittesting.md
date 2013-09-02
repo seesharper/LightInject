@@ -12,7 +12,7 @@
 
 **Note:** *Use the [InternalVisibleTo](http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.internalsvisibletoattribute.aspx) attribute to give the test project access to the **LightInject** internal types.*
 
-## Example ##
+## Basic types ##
 
 	public class FooWithDependency : IFoo
 	{
@@ -52,3 +52,22 @@ The **StopMocking** method tells the container to replace the mock registration 
 	var foo = (FooWithDependency)container.GetInstance<IFoo>();
 
 	Assert.IsInstanceOfType(foo.Bar, typeof(Bar));
+
+
+
+
+
+##Open Generic Types##
+
+    public class Foo<T> : IFoo<T>
+    {
+    }
+
+Open generic types can be mocked by using type based mocking.
+
+    container.Register(typeof(IFoo<>), typeof(Foo<>));
+    container.StartMocking(typeof(IFoo<>), typeof(FooMock<>));
+
+    var instance = container.GetInstance<IFoo<int>>();
+
+    Assert.IsInstanceOfType(instance, typeof(FooMock<int>));
