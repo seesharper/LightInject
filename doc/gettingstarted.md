@@ -249,6 +249,28 @@ The container creates the closed generic type based on the service request.
     var instance = container.GetInstance(typeof(IFoo<int>));
     Assert.IsInstanceOfType(instance, typeof(Foo<int>));
 
+### Lazy&lt;T&gt; ###
+
+    public class FooWithLazyDependency : IFoo
+    {
+        public FooWithLazyDependency(Lazy<IBar> lazyBar)
+        {
+            LazyBar = lazyBar;
+        }
+
+        public Lazy<IBar> LazyBar { get; private set; } 
+    }
+
+The container creates an instance of **Lazy&lt;IBar&gt;** and passes it as a dependency to the **FooWithLazyDependency** constructor.
+
+    container.Register<IBar, Bar>();
+	container.Register<IFoo, FooWithLazyDependency>();
+
+	var instance = (FooWithLazyDependency)container.GetInstance<IFoo>();
+
+	Assert.IsInstanceOfType(instance.LazyBar.Value, typeof(Bar));
+
+
 ### Func&lt;T&gt; ###
 
     public class FooWithFuncDependency : IFoo

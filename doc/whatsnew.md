@@ -1,3 +1,40 @@
+## LightInject 3.0.0.7##
+
+###Lazy&lt;T&gt;###
+
+Services can now be resolved as lazy instances.
+
+    container.Register<IFoo, Foo>()
+    var lazyInstance = container.GetInstance<Lazy<IFoo>>();
+
+<a href="#" onclick = "$('#gettingstarted').trigger('click');"> Learn more... </a>
+
+###Mocking open generic types###
+
+    container.Register(typeof(IFoo<>), typeof(Foo<>));
+    container.StartMocking(typeof(IFoo<>), typeof(FooMock<>));
+
+    var instance = container.GetInstance<IFoo<int>>();
+
+    Assert.IsInstanceOfType(instance, typeof(FooMock<int>));
+
+<a href="#" onclick = "$('#unittesting').trigger('click');"> Learn more... </a>
+
+###Lazy Registration###
+
+Lazy registration means that we can register services on a need to have basis. We are no longer restricted to just one composition root that needs to reference all assemblies that possibly contain services that should be configured into the container.
+
+<a href="#" onclick = "$('#gettingstarted').trigger('click');"> Learn more... </a>
+
+###Overall performance improvements###
+
+Although **LightInject** already performs very well, a significant amount of work has been put into further performance improvements.
+
+
+
+ 
+
+
 ## LightInject 3.0.0.6##
 
 ### WinRT ##
