@@ -14,5 +14,8 @@
 
         public const string RecursivePropertyDependency =
             "Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithRecursiveDependency], [Parameter: foo(LightInject.SampleLibrary.IFoo)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IFoo, ServiceName:]";
+
+        public const string UnknownMockService =
+            "No mocked service found. ServiceType: LightInject.SampleLibrary.IBar, ServiceName: ";
     }
 }

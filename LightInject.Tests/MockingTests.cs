@@ -1,5 +1,7 @@
 ﻿namespace LightInject.Tests
 {
+    using System;
+
     using LightInject.SampleLibrary;  
     using LightInject.Mocking;
 
@@ -22,6 +24,7 @@
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>();
         }
 
         [TestMethod]
@@ -34,6 +37,7 @@
             var instance = container.GetInstance<IFoo>("SomeFoo");
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>("SomeFoo");
         }
 
         [TestMethod]
@@ -47,6 +51,8 @@
             var instance = (FooWithDependency)container.GetInstance<IFoo>();
             
             Assert.IsInstanceOfType(instance.Bar, typeof(BarMock));
+
+            container.EndMocking<IBar>();
         }
 
 
@@ -62,6 +68,7 @@
             var secondInstance = container.GetInstance<IFoo>();
 
             Assert.AreSame(firstInstance, secondInstance);
+            container.EndMocking<IFoo>();
         }
 
         [TestMethod]
@@ -93,6 +100,7 @@
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
+            container.EndMocking<IFoo>("AnotherFoo");
         }
 
         [TestMethod]
@@ -106,6 +114,7 @@
             var instance = container.GetInstance<IFoo>("AnotherFoo");
 
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
+            container.EndMocking<IFoo>();
         }
 
 
@@ -121,6 +130,7 @@
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>();
         }
 
 
@@ -135,6 +145,7 @@
             var instance = container.GetInstance<IFoo>("SomeFoo");
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>("SomeFoo");
         }
 
         [TestMethod]
@@ -146,6 +157,7 @@
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>();
         }
 
         [TestMethod]
@@ -157,6 +169,7 @@
             var instance = container.GetInstance<IFoo>("SomeFoo");
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>("SomeFoo");
         }
 
         [TestMethod]
@@ -199,6 +212,7 @@
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>();
         }
 
         [TestMethod]
@@ -211,6 +225,7 @@
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>("SomeFoo");
         }
 
         [TestMethod]
@@ -223,6 +238,7 @@
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(FooMock));
+            container.EndMocking<IFoo>();
         }
 
         [TestMethod]
@@ -235,6 +251,15 @@
             var instance = container.GetInstance<IFoo<int>>();
 
             Assert.IsInstanceOfType(instance, typeof(FooMock<int>));
+            container.EndMocking(typeof(IFoo<>));
+        }
+
+        [TestMethod]
+        public void EndMocking_UnknownService_ThrowsMeaningfulException()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
+            ExceptionAssert.Throws<InvalidOperationException>(container.EndMocking<IBar>, ErrorMessages.UnknownMockService);
         }
 
 

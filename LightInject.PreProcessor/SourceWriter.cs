@@ -49,17 +49,15 @@
                         line = line.Replace(line.Substring(10), "$rootnamespace$");
                     }
 
-                    if ((line.Contains("public class") || line.Contains("internal class")) && directive != "NETFX_CORE")
-                    {
-                        string tabString = string.Empty;
-                        string[] tabs = line.Where(c => c == '\t').Select(c => c.ToString()).ToArray();
-                        if (tabs.Length > 0)
-                        {
-                            tabString = tabs.Aggregate((current, next) => current + next);
-                        }                             
+                    if ((line.Contains("public class") || line.Contains("internal class") || line.Contains("internal static class")) && directive != "NETFX_CORE")
+                    {                        
+                        var lineWithOutIndent = line.TrimStart(new char[] { ' ' });
+                        var indentLength = line.Length - lineWithOutIndent.Length;
+                        var indent = line.Substring(0, indentLength);
+                        
                                 
                         
-                        writer.WriteLine("{0}{1}", tabString, "[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");                        
+                        writer.WriteLine("{0}{1}", indent, "[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");                        
                     }
 
                     

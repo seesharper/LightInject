@@ -37,7 +37,6 @@ namespace LightInject
 #if NET    
     using System.IO;
 #endif
-    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -274,6 +273,13 @@ namespace LightInject
         /// <param name="serviceType">The target service type.</param>
         /// <param name="decoratorType">The decorator type used to decorate the <paramref name="serviceType"/>.</param>        
         void Decorate(Type serviceType, Type decoratorType);
+
+        /// <summary>
+        /// Decorates the <typeparamref name="TService"/> with the given <typeparamref name="TDecorator"/>.
+        /// </summary>
+        /// <typeparam name="TService">The target service type.</typeparam>
+        /// <typeparam name="TDecorator">The decorator type used to decorate the <typeparamref name="TService"/>.</typeparam>
+        void Decorate<TService, TDecorator>() where TDecorator : TService;
 
         /// <summary>
         /// Decorates the <typeparamref name="TService"/> using the given decorator <paramref name="factory"/>.
@@ -1221,6 +1227,16 @@ namespace LightInject
         public void Decorate(Type serviceType, Type decoratorType)
         {
             Decorate(serviceType, decoratorType, si => true);
+        }
+
+        /// <summary>
+        /// Decorates the <typeparamref name="TService"/> with the given <typeparamref name="TDecorator"/>.
+        /// </summary>
+        /// <typeparam name="TService">The target service type.</typeparam>
+        /// <typeparam name="TDecorator">The decorator type used to decorate the <typeparamref name="TService"/>.</typeparam>
+        public void Decorate<TService, TDecorator>() where TDecorator : TService
+        {
+            Decorate(typeof(TService), typeof(TDecorator));
         }
 
         /// <summary>

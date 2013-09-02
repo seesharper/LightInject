@@ -13,11 +13,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject.Mocking version 1.0.0.3
+   LightInject.Mocking version 1.0.0.2
    http://seesharper.github.io/LightInject/
    http://twitter.com/bernhardrichter       
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 
 namespace LightInject.Mocking
 {
@@ -115,10 +116,39 @@ namespace LightInject.Mocking
         /// <param name="serviceName">The name of the service for which to end mocking.</param>
         public static void EndMocking<TService>(this IServiceRegistry serviceRegistry, string serviceName)
         {
-            var key = Tuple.Create(serviceRegistry, typeof(TService), serviceName);
+            EndMocking(serviceRegistry, typeof(TService), serviceName);
+        }
+
+        /// <summary>
+        /// Ends mocking the <paramref name="serviceType"/>.
+        /// </summary>        
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="serviceType">The type of service for which to end mocking.</param>        
+        public static void EndMocking(this IServiceRegistry serviceRegistry, Type serviceType)
+        {
+            EndMocking(serviceRegistry, serviceType, string.Empty);
+        }
+
+        /// <summary>
+        /// Ends mocking the <paramref name="serviceType"/> with the given <paramref name="serviceName"/>.
+        /// </summary>        
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="serviceType">The type of service for which to end mocking.</param>
+        /// <param name="serviceName">The name of the service for which to end mocking.</param>
+        public static void EndMocking(this IServiceRegistry serviceRegistry, Type serviceType, string serviceName)
+        {
+            var key = Tuple.Create(serviceRegistry, serviceType, serviceName);
             ServiceRegistration serviceRegistration;
 
             ServicesMocks.TryRemove(key, out serviceRegistration);
+
+            if (serviceRegistration == null)
+            {
+                throw new InvalidOperationException(
+                    string.Format(
+                        "No mocked service found. ServiceType: {0}, ServiceName: {1}", serviceType, serviceName));
+            }
+
             serviceRegistration.IsReadOnly = false;
 
             if (MockedServices.TryRemove(key, out serviceRegistration))

@@ -253,24 +253,76 @@
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
             container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
-            var instance = (LazyFooDecorator)container.GetInstance<IFoo>();
-             
-            IFoo test = instance.Foo.Value;
+            var instance = (LazyFooDecorator)container.GetInstance<IFoo>();                     
             Assert.IsInstanceOfType(instance.Foo.Value, typeof(Foo));
         }
 
+        [TestMethod]
+        public void GetInstance_SingletonInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        {
+            BarDecorator.Instances = 0;
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerContainerLifetime());
+            container.Decorate<IBar, BarDecorator>();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IFoo, AnotherFooWithDependency>("AnotherFooWithDependency");
 
-        //[TestMethod]
-        //public void GetInstance_DecoratorWithLazyTarget_DoesNotCreateTarget()
-        //{
-        //    Foo.Instances = 0;
-        //    var container = CreateContainer();
-        //    container.Register<IFoo, Foo>();
-        //    container.Decorate<IFoo>((factory, foo) => new LazyFooDecorator(new Lazy<IFoo>(factory.GetInstance<IFoo>)));
-        //    container.GetInstance<IFoo>();
-        //    Assert.AreEqual(0, Foo.Instances);
-        //}
-       
+            container.GetInstance<IFoo>();
+            container.GetInstance<IFoo>("AnotherFooWithDependency");
+
+            Assert.AreEqual(1, BarDecorator.Instances);
+        }
+
+        [TestMethod]
+        public void GetAllInstances_SingletonInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        {
+            BarDecorator.Instances = 0;
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerContainerLifetime());
+            container.Decorate<IBar, BarDecorator>();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IFoo, AnotherFooWithDependency>("AnotherFooWithDependency");
+
+            container.GetAllInstances<IFoo>();
+            
+            Assert.AreEqual(1, BarDecorator.Instances);
+        }
+
+        [TestMethod]
+        public void GetInstance_PerScopeInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        {
+            BarDecorator.Instances = 0;
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerScopeLifetime());
+            container.Decorate<IBar, BarDecorator>();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IFoo, AnotherFooWithDependency>("AnotherFooWithDependency");
+
+            using (container.BeginScope())
+            {
+                container.GetInstance<IFoo>();
+                container.GetInstance<IFoo>("AnotherFooWithDependency");
+            }
+            Assert.AreEqual(1, BarDecorator.Instances);
+        }
+
+        [TestMethod]
+        public void GetAllInstances_PerScopeInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        {
+            BarDecorator.Instances = 0;
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerScopeLifetime());
+            container.Decorate<IBar, BarDecorator>();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IFoo, AnotherFooWithDependency>("AnotherFooWithDependency");
+
+            using (container.BeginScope())
+            {
+                container.GetAllInstances<IFoo>().ToList();
+            }
+            Assert.AreEqual(1, BarDecorator.Instances);
+        }
+
         private static FooDecorator GetFooDecorator(IFoo target)
         {
             return new FooDecorator(target);

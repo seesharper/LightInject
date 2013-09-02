@@ -57,6 +57,16 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; private set; }
     }
 
+    public class AnotherFooWithDependency : IFoo
+    {
+        public AnotherFooWithDependency(IBar bar)
+        {
+            Bar = bar;
+        }
+
+        public IBar Bar { get; private set; }
+    }
+
     public class FooWithAnnotatedDependency : IFoo
     {
         public FooWithAnnotatedDependency([Inject]IBar bar)
@@ -214,6 +224,18 @@ namespace LightInject.SampleLibrary
             }
         }
     }
+
+    public class BarDecorator : IBar
+    {
+        [ThreadStatic]
+        public static int Instances;
+        
+        public BarDecorator(IBar bar)
+        {
+            Instances++;
+        }
+    }
+
 
     public class FooDecoratorWithDependency : IFoo
     {        

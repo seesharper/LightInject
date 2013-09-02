@@ -130,17 +130,29 @@
             Assert.AreEqual("[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\ninternal class SomeClass", output);
         }
 
-
         [TestMethod]
-        public void Write_InternalClasses_AddsExcludeFromCodeCoverageAttributeUsingSameIndentation()
+        public void Write_InternalStaticClasses_AddsExcludeFromCodeCoverageAttribute()
         {
-            string input = "\tinternal class SomeClass";
+            string input = "internal static class SomeClass";
 
             var inputStream = CreateInputStream(input);
 
             var output = Process("SOMEDIRECTIVE", inputStream);
 
-            Assert.AreEqual("\t[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\n\tinternal class SomeClass", output);
+            Assert.AreEqual("[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\ninternal static class SomeClass", output);
+        }
+
+
+        [TestMethod]
+        public void Write_InternalClasses_AddsExcludeFromCodeCoverageAttributeUsingSameIndentation()
+        {
+            string input = "    internal class SomeClass";
+
+            var inputStream = CreateInputStream(input);
+
+            var output = Process("SOMEDIRECTIVE", inputStream);
+
+            Assert.AreEqual("    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\n    internal class SomeClass", output);
         }
 
 

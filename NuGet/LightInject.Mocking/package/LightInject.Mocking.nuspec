@@ -2,15 +2,19 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject.Mocking</id>
-        <version>1.0.0.1</version>
+        <version>1.0.0.2</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Adds mocking capabilities to the LightInject service container.</description>
+        <releaseNotes>Added support for mocking open generic types.</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime Mocking UnitTesting</tags>
+        <dependencies>
+            <dependency id="LightInject" version="3.0.0.7" />
+        </dependencies>
     </metadata>
     <files>
         <file src="content\net40\LightInjectMocking.cs.pp" target="content\net40\LightInjectMocking.cs.pp" />
