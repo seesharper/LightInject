@@ -33,6 +33,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.PreProcessor", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRootTypeAttribute", "LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj", "{75EA6152-B0C9-40C1-AF22-10DBCA192239}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception", "LightInject.Interception\LightInject.Interception.csproj", "{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception.Tests", "LightInject.Interception.Tests\LightInject.Interception.Tests.csproj", "{D86591EE-BC99-455C-BF13-2FDF48B52486}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = LightInject.vsmdi
@@ -90,6 +94,14 @@ Global
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
