@@ -55,6 +55,16 @@
   <ItemGroup>
     <Compile Include="ProxyBuilderTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProxyBuilderVerificationTests.cs" />
+    <Compile Include="SampleInterceptor.cs" />
+    <Compile Include="SampleInterfaces.cs" />
+    <Compile Include="VerifiableTypeBuilderFactory.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
+      <Project>{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}</Project>
+      <Name>LightInject.Interception</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

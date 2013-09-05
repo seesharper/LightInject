@@ -11,6 +11,7 @@ namespace LightInject.Interception
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Reflection;
+    using System.Reflection.Emit;
 
     /// <summary>
     /// Represents a class that is capable of creating a proxy <see cref="Type"/>.
@@ -24,6 +25,15 @@ namespace LightInject.Interception
         /// proxy type to be created.</param>
         /// <returns>A proxy <see cref="Type"/>.</returns>
         Type GetProxyType(ProxyDefinition proxyDefinition);
+    }
+
+    /// <summary>
+    /// Represents a class that is capable of creating a <see cref="TypeBuilder"/> that 
+    /// is used to build the proxy type.
+    /// </summary>
+    internal interface ITypeBuilderFactory
+    {
+        TypeBuilder CreateTypeBuilder(Type baseType, Type[] additionalInterfaces);
     }
 
     /// <summary>
@@ -49,6 +59,19 @@ namespace LightInject.Interception
         /// contains information about the current method call.</param>
         /// <returns>The return value from the method.</returns>
         object Invoke(InvocationInfo invocationInfo);
+    }
+
+    internal static class TypeBuilderExtensions
+    {
+        public static FieldBuilder DefinePrivateField(this TypeBuilder typeBuilder, string fieldName, Type type)
+        {
+            return typeBuilder.DefineField(fieldName, type, FieldAttributes.Private);
+        }
+
+        public static FieldBuilder DefinePublicStaticField(this TypeBuilder typeBuilder, string fieldName, Type type)
+        {
+            return typeBuilder.DefineField(fieldName, type, FieldAttributes.Public | FieldAttributes.Static);
+        }
     }
 
     internal class InvocationInfo
@@ -130,7 +153,7 @@ namespace LightInject.Interception
     /// <summary>
     /// Contains information about a registered <see cref="IInterceptor"/>.
     /// </summary>
-    internal class InterceptionInfo
+    internal class InterceptorInfo
     {
         /// <summary>
         /// Gets or sets the function delegate used to create the <see cref="IInterceptor"/> instance.
@@ -143,7 +166,7 @@ namespace LightInject.Interception
         public Func<MethodInfo, bool> MethodSelector { get; set; }
 
         /// <summary>
-        /// Gets or sets the index of this <see cref="InterceptionInfo"/> instance.
+        /// Gets or sets the index of this <see cref="InterceptorInfo"/> instance.
         /// </summary>
         public int Index { get; set; }
     }
@@ -153,7 +176,7 @@ namespace LightInject.Interception
     /// </summary>
     internal class ProxyDefinition
     {
-        private readonly ICollection<InterceptionInfo> interceptors = new Collection<InterceptionInfo>();
+        private readonly ICollection<InterceptorInfo> interceptors = new Collection<InterceptorInfo>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProxyDefinition"/> class.
@@ -175,9 +198,9 @@ namespace LightInject.Interception
         internal Type[] AdditionalInterfaces { get; private set; }
 
         /// <summary>
-        /// Gets a list of the registered <see cref="InterceptionInfo"/> instances.
+        /// Gets a list of the registered <see cref="InterceptorInfo"/> instances.
         /// </summary>
-        internal IEnumerable<InterceptionInfo> Interceptors
+        internal IEnumerable<InterceptorInfo> Interceptors
         {
             get
             {
@@ -193,12 +216,132 @@ namespace LightInject.Interception
         /// <param name="methodSelector">A function delegate used to select the methods to be intercepted.</param>
         public void Intercept(Func<IInterceptor> interceptorFactory, Func<MethodInfo, bool> methodSelector)
         {
-            interceptors.Add(new InterceptionInfo
+            interceptors.Add(new InterceptorInfo
             {
                 InterceptionFactory = interceptorFactory,
                 MethodSelector = methodSelector,
                 Index = interceptors.Count
             });
+        }
+    }
+    
+    internal class TypeBuilderFactory : ITypeBuilderFactory
+    {
+        public TypeBuilder CreateTypeBuilder(Type baseType, Type[] additionalInterfaces)
+        {
+            ModuleBuilder moduleBuilder = GetModuleBuilder();
+            const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
+            var typeName = baseType.Name + "Proxy";
+            Type[] interfaceTypes = new[] { baseType }.Concat(additionalInterfaces).ToArray();
+            return moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);    
+        }
+        
+        private static ModuleBuilder GetModuleBuilder()
+        {
+            AssemblyBuilder assemblyBuilder = GetAssemblyBuilder();
+            return assemblyBuilder.DefineDynamicModule("ProxyAssembly");
+        }
+
+        private static AssemblyBuilder GetAssemblyBuilder()
+        {
+            var assemblybuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(
+            new AssemblyName("ProxyAssembly"), AssemblyBuilderAccess.Run);
+            return assemblybuilder;
+        }
+    }
+
+    internal class ProxyBuilder : IProxyBuilder
+    {
+        private static readonly ConstructorInfo LazyInterceptorConstructor;
+
+        private readonly ITypeBuilderFactory typeBuilderFactory;
+        
+        private FieldBuilder targetFactoryField;
+        private FieldBuilder lazyTargetField;
+        private FieldInfo[] lazyInterceptorFields;
+
+        private TypeBuilder typeBuilder;
+
+        private MethodBuilder initializerMethodBuilder;
+
+        static ProxyBuilder()
+        {
+            LazyInterceptorConstructor = typeof(Lazy<IInterceptor>).GetConstructor(new[] { typeof(Func<IInterceptor>) });
+        }
+
+        public ProxyBuilder()
+        {
+            typeBuilderFactory = new TypeBuilderFactory();
+        }
+#if TEST
+        public ProxyBuilder(ITypeBuilderFactory typeBuilderFactory)
+        {
+            this.typeBuilderFactory = typeBuilderFactory;
+        }
+#endif
+        public Type GetProxyType(ProxyDefinition proxyDefinition)
+        {
+            InitializeTypeBuilder(proxyDefinition);
+            DefineLazyTargetField(proxyDefinition.BaseType);
+            DefineStaticTargetFactoryField();
+            DefineInitializerMethod();
+            DefineInterceptorFields(proxyDefinition);
+
+            FinalizeInitializerMethod();
+            return typeBuilder.CreateType();
+        }
+
+        private void FinalizeInitializerMethod()
+        {
+            initializerMethodBuilder.GetILGenerator().Emit(OpCodes.Ret);
+        }
+
+        private void InitializeTypeBuilder(ProxyDefinition proxyDefinition)
+        {
+            typeBuilder = typeBuilderFactory.CreateTypeBuilder(proxyDefinition.BaseType, proxyDefinition.AdditionalInterfaces);
+        }
+
+        private void DefineLazyTargetField(Type baseType)
+        {
+            Type targetFieldType = typeof(Lazy<>).MakeGenericType(baseType);
+            lazyTargetField = typeBuilder.DefineField("target", targetFieldType, FieldAttributes.Private);
+        }
+
+        private void DefineStaticTargetFactoryField()
+        {            
+            targetFactoryField = typeBuilder.DefineField("TargetFactory", typeof(Func<object>), FieldAttributes.Public | FieldAttributes.Static);
+        }
+
+        private void DefineInitializerMethod()
+        {
+            initializerMethodBuilder = typeBuilder.DefineMethod(
+                "InitializeProxy", MethodAttributes.Private | MethodAttributes.HideBySig);
+        }
+
+        private void DefineInterceptorFields(ProxyDefinition proxyDefinition)
+        {
+            InterceptorInfo[] interceptors = proxyDefinition.Interceptors.ToArray();            
+            lazyInterceptorFields = new FieldInfo[interceptors.Length];
+            for (int index = 0; index < interceptors.Length; index++)
+            {
+                var interceptorField = typeBuilder.DefinePrivateField(
+                     "interceptor" + index, typeof(Lazy<IInterceptor>));
+
+                var interceptorFactoryField =
+                   typeBuilder.DefinePublicStaticField("InterceptorFactory" + index, typeof(Func<IInterceptor>));
+                ImplementLazyInterceptorInitialization(interceptorField, interceptorFactoryField);
+
+                lazyInterceptorFields[index] = interceptorField;
+            }            
+        }
+
+        private void ImplementLazyInterceptorInitialization(FieldInfo interceptorField, FieldInfo interceptorFactoryField)
+        {
+            var il = initializerMethodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldsfld, interceptorFactoryField);
+            il.Emit(OpCodes.Newobj, LazyInterceptorConstructor);
+            il.Emit(OpCodes.Stfld, interceptorField);
         }
     }
 }
