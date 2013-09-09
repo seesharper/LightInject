@@ -10,13 +10,21 @@
 
     public class VerifiableTypeBuilderFactory : ITypeBuilderFactory
     {
-        public TypeBuilder CreateTypeBuilder(Type baseType, Type[] additionalInterfaces)
+        public TypeBuilder CreateTypeBuilder(Type targetType, Type[] additionalInterfaces)
         {
             ModuleBuilder moduleBuilder = GetModuleBuilder();
             const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
-            var typeName = baseType.Name + "Proxy";
-            Type[] interfaceTypes = new[] { baseType }.Concat(additionalInterfaces).ToArray();
+            var typeName = targetType.Name + "Proxy";
+            Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
             return moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);
+        }
+
+        public Type CreateType(TypeBuilder typeBuilder)
+        {
+            Type proxyType = typeBuilder.CreateType();
+            ((AssemblyBuilder)typeBuilder.Assembly).Save("ProxyAssembly.dll");
+            AssemblyAssert.IsValidAssembly("ProxyAssembly.dll");
+            return proxyType;
         }
 
         private static ModuleBuilder GetModuleBuilder()
@@ -34,4 +42,6 @@
             return assemblybuilder;
         }
     }
+
+   
 }
