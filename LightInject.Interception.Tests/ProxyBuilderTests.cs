@@ -72,9 +72,26 @@ namespace LightInject.Interception.Tests
 
             var proxyType = CreateProxyType(proxyDefinition);
 
+            var test = proxyType.GetMethod("ToString");
+
             FieldInfo targetField = proxyType.GetField("InterceptorFactory0", BindingFlags.Public | BindingFlags.Static);
             Assert.AreEqual(typeof(Func<IInterceptor>), targetField.FieldType);
         }
+
+        [TestMethod]
+        public void GetProxyType_NonGenericMethod_DeclaresPrivateStaticInterceptedMethodInfoField()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            proxyDefinition.Intercept(() => new SampleInterceptor(), info => info.Name == "Execute");
+
+            var proxyType = CreateProxyType(proxyDefinition);
+
+            FieldInfo interceptedMethodInfoField = proxyType.GetField("ExecuteInterceptedMethodInfo", BindingFlags.NonPublic | BindingFlags.Static);
+
+            Assert.IsNotNull(interceptedMethodInfoField);
+        }
+
+
 
         [TestMethod]
         public void GetProxyType_MustImplementProxyInterface()
@@ -99,9 +116,36 @@ namespace LightInject.Interception.Tests
             Assert.AreEqual(42, hashCode);
         }
 
-        
+        [TestMethod]
+        public void Execute_NonGenericMethod_PassesMethodInfoToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
+            var proxyType = CreateProxyType(proxyDefinition);
+            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType);
+            MethodInfo expectedMethod = typeof(IMethodWithNoParameters).GetMethod("Execute");
 
-        
+            instance.Execute();
+
+            interceptorMock.Verify(i => i.Invoke(It.Is<InvocationInfo>(ii => ii.Method == expectedMethod)));
+        }
+
+        [TestMethod]
+        public void Execute_NonGenericMethod_PassesProceedDelegateToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
+            var proxyType = CreateProxyType(proxyDefinition);
+            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType);
+            
+            instance.Execute();
+
+            interceptorMock.Verify(i => i.Invoke(It.Is<InvocationInfo>(ii => ii.Proceed.GetType() == typeof(Func<object>))));
+
+
+        }
 
 
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
