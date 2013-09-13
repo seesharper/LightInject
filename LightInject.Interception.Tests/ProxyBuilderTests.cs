@@ -91,6 +91,17 @@ namespace LightInject.Interception.Tests
             Assert.IsNotNull(interceptedMethodInfoField);
         }
 
+        [TestMethod]
+        public void GetProxyType_WithOutTargetFactory_DeclaresConstructorWithLazyTargetParameter()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget), null);
+            var proxyType = CreateProxyType(proxyDefinition);
+            var constructor = proxyType.GetConstructor(new[] { typeof(Lazy<ITarget>) });
+
+            Assert.IsNotNull(constructor);
+        }
+
+
 
 
         [TestMethod]
@@ -143,10 +154,35 @@ namespace LightInject.Interception.Tests
             instance.Execute();
 
             interceptorMock.Verify(i => i.Invoke(It.Is<InvocationInfo>(ii => ii.Proceed.GetType() == typeof(Func<object>))));
-
-
         }
 
+        [TestMethod]
+        public void Execute_NonGenericMethod_PassesProxyInstanceToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
+            var proxyType = CreateProxyType(proxyDefinition);
+            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType);
+
+            instance.Execute();
+
+            interceptorMock.Verify(i => i.Invoke(It.Is<InvocationInfo>(ii => ii.Proxy == instance)));
+        }
+
+        [TestMethod]
+        public void Execute_NonGenericMethod_PassesArgumentArrayToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
+            var proxyType = CreateProxyType(proxyDefinition);
+            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType);
+
+            instance.Execute();
+
+            interceptorMock.Verify(i => i.Invoke(It.Is<InvocationInfo>(ii => ii.Arguments.GetType() == typeof(object[]))));
+        }
 
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
         {
