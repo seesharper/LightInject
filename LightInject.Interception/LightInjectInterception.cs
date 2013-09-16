@@ -292,13 +292,11 @@ namespace LightInject.Interception
         {
             var parameters = method.GetParameters();
             IMethodSkeleton methodSkeleton = methodSkeletonFactory();            
-            var il = methodSkeleton.GetILGenerator();
-            
+            var il = methodSkeleton.GetILGenerator();            
             PushInstance(method, il);
             PushArguments(parameters, il);
             CallTargetMethod(method, il);
             UpdateOutAndRefArguments(parameters, il);
-
             PushReturnValue(method, il);
             return methodSkeleton.CreateDelegate();
         }
@@ -704,6 +702,7 @@ namespace LightInject.Interception
             ImplementProxyInterface();
             PopulateTargetMethods();
             ImplementMethods();
+            ImplementProperties();
             FinalizeInitializerMethod();
             FinalizeStaticConstructor();
             Type proxyType = typeBuilderFactory.CreateType(typeBuilder);
@@ -718,6 +717,40 @@ namespace LightInject.Interception
             }
             
             return proxyType;
+        }
+
+        private PropertyInfo[] GetTargetProperties()
+        {
+            return proxyDefinition.TargetType.GetProperties().ToArray();
+        }
+
+        private void ImplementProperties()
+        {
+            var targetProperties = GetTargetProperties();
+
+            foreach (var property in targetProperties)
+            {
+                var propertyBuilder = GetPropertyBuilder(property);
+                MethodInfo setMethod = property.GetSetMethod();
+                if (setMethod != null)
+                {                    
+                    propertyBuilder.SetSetMethod(ImplementMethod(setMethod));
+                }
+
+                MethodInfo getMethod = property.GetGetMethod();
+
+                if (getMethod != null)
+                {                    
+                    propertyBuilder.SetGetMethod(ImplementMethod(getMethod));
+                }
+            }
+        }
+
+        private PropertyBuilder GetPropertyBuilder(PropertyInfo property)
+        {
+            var propertyBuilder = typeBuilder.DefineProperty(
+                  property.Name, property.Attributes, property.PropertyType, new[] { property.PropertyType });
+            return propertyBuilder;
         }
 
         private static void PushInvocationInfoForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
@@ -920,21 +953,21 @@ namespace LightInject.Interception
             }
         }
 
-        private void ImplementMethod(MethodInfo targetMethod)
+        private MethodBuilder ImplementMethod(MethodInfo targetMethod)
         {
             int[] interceptorIndicies = proxyDefinition.Interceptors
                                                        .Where(i => i.MethodSelector(targetMethod)).Select(i => i.Index).ToArray();
             if (interceptorIndicies.Length > 0)
             {
-                ImplementInterceptedMethod(targetMethod, interceptorIndicies);
+                return ImplementInterceptedMethod(targetMethod, interceptorIndicies);
             }
             else
             {
-                ImplementPassThroughMethod(targetMethod);
+                return ImplementPassThroughMethod(targetMethod);
             }
         }
 
-        private void ImplementInterceptedMethod(MethodInfo targetMethod, int[] interceptorIndicies)
+        private MethodBuilder ImplementInterceptedMethod(MethodInfo targetMethod, int[] interceptorIndicies)
         {
             MethodBuilder methodBuilder = GetMethodBuilder(targetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
@@ -962,6 +995,7 @@ namespace LightInject.Interception
                 UpdateRefArguments(parameters, il, argumentsArrayVariable);
                 PushReturnValue(il, targetMethod.ReturnType);              
             }
+            return methodBuilder;
         }
        
         private FieldBuilder DefineStaticInterceptedMethodInfoField(MethodInfo targetMethod)
@@ -1032,7 +1066,7 @@ namespace LightInject.Interception
             return memberName + count;
         }
 
-        private void ImplementPassThroughMethod(MethodInfo targetMethod)
+        private MethodBuilder ImplementPassThroughMethod(MethodInfo targetMethod)
         {
             MethodBuilder methodBuilder = GetMethodBuilder(targetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
@@ -1047,6 +1081,7 @@ namespace LightInject.Interception
 
             il.Emit(OpCodes.Callvirt, targetMethod);
             il.Emit(OpCodes.Ret);
+            return methodBuilder;
         }
 
         private void FinalizeInitializerMethod()

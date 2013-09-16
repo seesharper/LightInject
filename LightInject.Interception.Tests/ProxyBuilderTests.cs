@@ -260,6 +260,15 @@ namespace LightInject.Interception.Tests
                     It.Is<InvocationInfo>(ii => (int)ii.Arguments[0] == 42)));
         }
 
+        [TestMethod]
+        public void GetProxyType_InterfaceWithProperty_ProxyImplementsProperty()
+        {
+            var proxyBuiler = new ProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(typeof(IClassWithReferenceTypeProperty));
+            var proxyType = proxyBuiler.GetProxyType(proxyDefinition);
+            Assert.AreEqual(1, proxyType.GetProperties().Length);
+        }
+
 
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
         {
