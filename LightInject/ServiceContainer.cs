@@ -49,7 +49,7 @@ namespace LightInject
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
-    internal interface IServiceRegistry
+    internal partial interface IServiceRegistry
     {
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
@@ -287,6 +287,12 @@ namespace LightInject
         /// <typeparam name="TService">The target service type.</typeparam>
         /// <param name="factory">A factory delegate used to create a decorator instance.</param>
         void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);
+
+        /// <summary>
+        /// Registers a decorator based on a <see cref="DecoratorRegistration"/> instance.
+        /// </summary>
+        /// <param name="decoratorRegistration">The <see cref="DecoratorRegistration"/> instance that contains the decorator metadata.</param>
+        void Decorate(DecoratorRegistration decoratorRegistration);
     }
 
     /// <summary>
@@ -1214,9 +1220,8 @@ namespace LightInject
         /// should be applied to the target <paramref name="serviceType"/>.</param>
         public void Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate)
         {
-            var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = decoratorType, CanDecorate = predicate };
-            int index = decorators.Add(decoratorInfo);
-            decoratorInfo.Index = index;            
+            var decoratorRegistration = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = decoratorType, CanDecorate = predicate };
+            Decorate(decoratorRegistration);
         }
 
         /// <summary>
@@ -1246,9 +1251,14 @@ namespace LightInject
         /// <param name="factory">A factory delegate used to create a decorator instance.</param>
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
         {
-            var decoratorInfo = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
-            int index = decorators.Add(decoratorInfo);
-            decoratorInfo.Index = index;            
+            var decoratorRegistration = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
+            Decorate(decoratorRegistration);            
+        }
+
+        public void Decorate(DecoratorRegistration decoratorRegistration)
+        {
+            int index = decorators.Add(decoratorRegistration);
+            decoratorRegistration.Index = index;            
         }
 
         /// <summary>
@@ -1778,7 +1788,7 @@ namespace LightInject
 
         private void EmitNewInstance(ServiceRegistration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
         {
-            var serviceDecorators = GetDecorators(serviceRegistration.ServiceType);
+            var serviceDecorators = GetDecorators(serviceRegistration);
             if (serviceDecorators.Length > 0)
             {
                 EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, dm => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dm));
@@ -1789,7 +1799,7 @@ namespace LightInject
             }
         }
 
-        private DecoratorRegistration[] GetDecorators(Type serviceType)
+        private DecoratorRegistration[] GetDecorators_old(Type serviceType)
         {
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceType).ToList();
             if (serviceType.IsGenericType())
@@ -1804,6 +1814,39 @@ namespace LightInject
                 }
             }
 
+            return registeredDecorators.OrderBy(d => d.Index).ToArray();
+        }
+
+        private DecoratorRegistration[] GetDecorators(ServiceRegistration serviceRegistration)
+        {
+            var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();
+            if (serviceRegistration.ServiceType.IsGenericType())
+            {
+                var openGenericServiceType = serviceRegistration.ServiceType.GetGenericTypeDefinition();
+                var openGenericDecorators = decorators.Items.Where(d => d.ServiceType == openGenericServiceType);
+                foreach (DecoratorRegistration openGenericDecorator in openGenericDecorators)
+                {
+                    var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(ReflectionHelper.GetGenericArguments(serviceRegistration.ServiceType));
+                    var decoratorInfo = new DecoratorRegistration { ServiceType = serviceRegistration.ServiceType, ImplementingType = closedGenericDecoratorType, CanDecorate = openGenericDecorator.CanDecorate };
+                    registeredDecorators.Add(decoratorInfo);
+                }
+            }
+
+            var deferredDecorators =
+                decorators.Items.Where(ds => ds.CanDecorate(serviceRegistration) && ds.HasDeferredImplementingType);
+            foreach (var deferredDecorator in deferredDecorators)
+            {
+                var decoratorRegistration = new DecoratorRegistration()
+                {
+                    ServiceType = serviceRegistration.ServiceType,
+                    ImplementingType =
+                        deferredDecorator.ImplementingTypeFactory(
+                            serviceRegistration),
+                    CanDecorate = sr => true
+                };
+                registeredDecorators.Add(decoratorRegistration);                
+            }
+            
             return registeredDecorators.OrderBy(d => d.Index).ToArray();
         }
 
@@ -1860,6 +1903,12 @@ namespace LightInject
                 if (!decorator.CanDecorate(serviceRegistration))
                 {
                     continue;
+                }
+
+                if (decorator.HasDeferredImplementingType)
+                {
+                    decorator.ServiceType = serviceRegistration.ServiceType;
+                    decorator.ImplementingType = decorator.ImplementingTypeFactory(serviceRegistration);                    
                 }
 
                 Action<IMethodSkeleton> currentDecoratorTargetEmitter = decoratorTargetEmitter;
@@ -3316,7 +3365,7 @@ namespace LightInject
         /// <summary>
         /// Gets or sets the <see cref="Type"/> that implements the <see cref="Registration.ServiceType"/>.
         /// </summary>
-        public Type ImplementingType { get; internal set; }
+        public virtual Type ImplementingType { get; internal set; }
 
         /// <summary>
         /// Gets or sets the <see cref="LambdaExpression"/> used to create a service instance.
@@ -3336,9 +3385,25 @@ namespace LightInject
         public Func<ServiceRegistration, bool> CanDecorate { get; internal set; }
 
         /// <summary>
+        /// Gets or sets a <see cref="Lazy{T}"/> that defers resolving of the decorators implementing type.
+        /// </summary>
+        public Func<ServiceRegistration, Type> ImplementingTypeFactory { get; internal set; }
+
+        /// <summary>
         /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.
         /// </summary>
         public int Index { get; set; }
+
+        /// <summary>
+        /// Gets a <see cref="bool"/> value that indicates whether this registration has a deferred implementing type.
+        /// </summary>
+        public bool HasDeferredImplementingType
+        {
+            get
+            {
+                return (ImplementingType == null && FactoryExpression == null);
+            }
+        }       
     }
 
     /// <summary>

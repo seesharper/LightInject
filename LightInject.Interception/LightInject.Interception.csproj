@@ -42,6 +42,12 @@
     <Compile Include="LightInjectInterception.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LightInject\LightInject.csproj">
+      <Project>{3D54591B-B055-4EDD-96B6-E6F184E8CA6E}</Project>
+      <Name>LightInject</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

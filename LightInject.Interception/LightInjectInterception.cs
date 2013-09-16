@@ -97,6 +97,59 @@ namespace LightInject.Interception
         Type CreateType(TypeBuilder typeBuilder);
     }
 
+    /// <summary>
+    /// Extends the <see cref="IServiceRegistry"/> interface by adding methods for 
+    /// creating proxy-based decorators.
+    /// </summary>
+    internal static class InterceptionContainerExtensions
+    {
+
+        private static readonly ConcurrentDictionary<ServiceRegistration, Type> ProxyCache =
+            new ConcurrentDictionary<ServiceRegistration, Type>();
+        
+        /// <summary>
+        /// Decorates the service identified by the <paramref name="canDecorate"/> delegate with a dynamic proxy type
+        /// that is used to decorate the target type.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="canDecorate">A function delegate that is used to determine if the proxy-based decorator should be applied to the target service.</param>
+        /// <param name="additionalInterfaces">A list of additional interface that will be implemented by the proxy type.</param>
+        /// <param name="defineProxyType">An action delegate that is used to define the proxy type.</param>
+        public static void Decorate(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> canDecorate, Type[] additionalInterfaces, Action<ProxyDefinition> defineProxyType)
+        {
+            var decoratorRegistration = new DecoratorRegistration();
+            decoratorRegistration.CanDecorate = canDecorate;
+            decoratorRegistration.ImplementingTypeFactory = sr => GetProxyType(sr, additionalInterfaces, defineProxyType);
+            serviceRegistry.Decorate(decoratorRegistration);
+        }
+
+        /// <summary>
+        /// Decorates the service identified by the <paramref name="canDecorate"/> delegate with a dynamic proxy type
+        /// that is used to decorate the target type.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="canDecorate">A function delegate that is used to determine if the proxy-based decorator should be applied to the target service.</param>        
+        /// <param name="defineProxyType">An action delegate that is used to define the proxy type.</param>
+        public static void Decorate(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> canDecorate, Action<ProxyDefinition> defineProxyType)
+        {
+            Decorate(serviceRegistry, canDecorate, Type.EmptyTypes, defineProxyType);
+        }
+        
+        private static Type GetProxyType(ServiceRegistration serviceRegistration, Type[] additionalInterfaces, Action<ProxyDefinition> defineProxyType)
+        {
+            return ProxyCache.GetOrAdd(serviceRegistration, sr => CreateProxyType(sr, additionalInterfaces, defineProxyType));            
+        }
+
+        private static Type CreateProxyType(
+            ServiceRegistration registration, Type[] additionalInterfaces, Action<ProxyDefinition> defineProxyType)
+        {
+            var proxyBuilder = new ProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(registration.ServiceType, () => null, additionalInterfaces);
+            defineProxyType(proxyDefinition);
+            return proxyBuilder.GetProxyType(proxyDefinition);
+        }
+    }
+    
     public static class MethodInterceptorFactory
     {
         public static Lazy<IInterceptor> CreateMethodInterceptor(Lazy<IInterceptor>[] interceptors)

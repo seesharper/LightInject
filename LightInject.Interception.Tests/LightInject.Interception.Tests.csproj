@@ -61,6 +61,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AssemblyAssert.cs" />
+    <Compile Include="ContainerInterceptionTests.cs" />
     <Compile Include="DynamicMethodBuilderTests.cs" />
     <Compile Include="DynamicMethodBuilderVerificationTests.cs" />
     <Compile Include="MethodBuilderDynamicMethodSkeleton.cs" />
@@ -75,6 +76,14 @@
     <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
       <Project>{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}</Project>
       <Name>LightInject.Interception</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
+      <Project>{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}</Project>
+      <Name>LightInject.SampleLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject\LightInject.csproj">
+      <Project>{3D54591B-B055-4EDD-96B6-E6F184E8CA6E}</Project>
+      <Name>LightInject</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>

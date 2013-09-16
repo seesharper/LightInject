@@ -45,3 +45,5 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.Mocking")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("DynamicAssembly")]
+[assembly: InternalsVisibleTo("LightInject.Interception")]
+[assembly: InternalsVisibleTo("LightInject.Interception.Tests")]
