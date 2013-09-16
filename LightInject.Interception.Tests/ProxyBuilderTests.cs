@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+using FluentAssertions;
 namespace LightInject.Interception.Tests
 {
     using System.Reflection;
@@ -13,7 +13,7 @@ namespace LightInject.Interception.Tests
         [TestMethod]
         public void GetProxyType_SingleInterface_ImplementsInterface()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(ITarget), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget));
             
             var proxyType = CreateProxyType(proxyDefinition);
 
@@ -23,7 +23,7 @@ namespace LightInject.Interception.Tests
         [TestMethod]
         public void GetProxyType_AdditionalInterface_ImplementsInterface()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(ITarget), () => null, typeof(IAdditionalInterface));
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget), typeof(IAdditionalInterface));
 
             var proxyType = CreateProxyType(proxyDefinition);
 
@@ -33,7 +33,7 @@ namespace LightInject.Interception.Tests
         [TestMethod]
         public void GetProxyType_ForProxyDefinition_DeclaresLazyTargetField()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(ITarget), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget));
 
             var proxyType = CreateProxyType(proxyDefinition);
 
@@ -44,7 +44,7 @@ namespace LightInject.Interception.Tests
         [TestMethod]
         public void GetProxyType_SingleInterface_DeclaresPrivateInitializerMethod()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(ITarget), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget));
 
             var proxyType = CreateProxyType(proxyDefinition);
 
@@ -55,7 +55,7 @@ namespace LightInject.Interception.Tests
         [TestMethod]
         public void GetProxyType_SingleInterceptor_DeclaresPrivateLazyInterceptorField()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(ITarget), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget));
             proxyDefinition.Intercept(() => new SampleInterceptor(), info => true);
 
             var proxyType = CreateProxyType(proxyDefinition);
@@ -67,7 +67,7 @@ namespace LightInject.Interception.Tests
         [TestMethod]
         public void GetProxyType_SingleInterceptor_DeclaresPublicLazyInterceptorFactoryField()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(ITarget), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget));
             proxyDefinition.Intercept(() => new SampleInterceptor(), info => true);
 
             var proxyType = CreateProxyType(proxyDefinition);
@@ -81,7 +81,7 @@ namespace LightInject.Interception.Tests
         [TestMethod]
         public void GetProxyType_NonGenericMethod_DeclaresPrivateStaticInterceptedMethodInfoField()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
             proxyDefinition.Intercept(() => new SampleInterceptor(), info => info.Name == "Execute");
 
             var proxyType = CreateProxyType(proxyDefinition);
@@ -92,16 +92,24 @@ namespace LightInject.Interception.Tests
         }
 
         [TestMethod]
-        public void GetProxyType_WithOutTargetFactory_DeclaresConstructorWithLazyTargetParameter()
+        public void GetProxyType_WithoutTargetFactory_DeclaresConstructorWithLazyTargetParameter()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(ITarget), null);
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget));
             var proxyType = CreateProxyType(proxyDefinition);
             var constructor = proxyType.GetConstructor(new[] { typeof(Lazy<ITarget>) });
 
             Assert.IsNotNull(constructor);
         }
 
+        [TestMethod]
+        public void GetProxyType_WithoutTargetFactory_DoesNotDeclareParameterlessConstructor()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget));
+            var proxyType = CreateProxyType(proxyDefinition);
+            var constructor = proxyType.GetConstructor(Type.EmptyTypes);
 
+            Assert.IsNull(constructor);
+        }
 
 
         [TestMethod]
@@ -131,10 +139,10 @@ namespace LightInject.Interception.Tests
         public void Execute_NonGenericMethod_PassesMethodInfoToInterceptor()
         {
             var interceptorMock = new Mock<IInterceptor>();
-            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
             proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
             var proxyType = CreateProxyType(proxyDefinition);
-            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType);
+            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType, (object)null);
             MethodInfo expectedMethod = typeof(IMethodWithNoParameters).GetMethod("Execute");
 
             instance.Execute();
@@ -146,10 +154,10 @@ namespace LightInject.Interception.Tests
         public void Execute_NonGenericMethod_PassesProceedDelegateToInterceptor()
         {
             var interceptorMock = new Mock<IInterceptor>();
-            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
             proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
             var proxyType = CreateProxyType(proxyDefinition);
-            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType);
+            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType, (object)null);
             
             instance.Execute();
 
@@ -160,10 +168,10 @@ namespace LightInject.Interception.Tests
         public void Execute_NonGenericMethod_PassesProxyInstanceToInterceptor()
         {
             var interceptorMock = new Mock<IInterceptor>();
-            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
             proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
             var proxyType = CreateProxyType(proxyDefinition);
-            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType);
+            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType, (object)null);
 
             instance.Execute();
 
@@ -174,15 +182,84 @@ namespace LightInject.Interception.Tests
         public void Execute_NonGenericMethod_PassesArgumentArrayToInterceptor()
         {
             var interceptorMock = new Mock<IInterceptor>();
-            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => null);
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
             proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
             var proxyType = CreateProxyType(proxyDefinition);
-            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType);
+            var instance = (IMethodWithNoParameters)Activator.CreateInstance(proxyType, (object)null);
 
             instance.Execute();
 
             interceptorMock.Verify(i => i.Invoke(It.Is<InvocationInfo>(ii => ii.Arguments.GetType() == typeof(object[]))));
         }
+
+        [TestMethod]
+        public void Execute_MethodWithReferenceTypeParameter_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithReferenceTypeParameter));
+
+            proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
+            var proxyType = CreateProxyType(proxyDefinition);
+            var instance = (IMethodWithReferenceTypeParameter)Activator.CreateInstance(proxyType, (object)null);
+
+            instance.Execute("SomeValue");
+
+            interceptorMock.Verify(
+                i => i.Invoke(
+                    It.Is<InvocationInfo>(ii => (string)ii.Arguments[0] == "SomeValue")));
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithValueTypeParameter_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithValueTypeParameter));
+
+            proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
+            var proxyType = CreateProxyType(proxyDefinition);
+            var instance = (IMethodWithValueTypeParameter)Activator.CreateInstance(proxyType, (object)null);
+
+            instance.Execute(42);
+
+            interceptorMock.Verify(
+                i => i.Invoke(
+                    It.Is<InvocationInfo>(ii => (int)ii.Arguments[0] == 42)));
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithNullableParameter_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNullableParameter));
+
+            proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
+            var proxyType = CreateProxyType(proxyDefinition);
+            var instance = (IMethodWithNullableParameter)Activator.CreateInstance(proxyType, (object)null);
+
+            instance.Execute(42);
+
+            interceptorMock.Verify(
+                i => i.Invoke(
+                    It.Is<InvocationInfo>(ii => (int)ii.Arguments[0] == 42)));
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithGenericParameter_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithGenericParameter));
+
+            proxyDefinition.Intercept(() => interceptorMock.Object, info => info.Name == "Execute");
+            var proxyType = CreateProxyType(proxyDefinition);
+            var instance = (IMethodWithGenericParameter)Activator.CreateInstance(proxyType, (object)null);
+
+            instance.Execute(42);
+
+            interceptorMock.Verify(
+                i => i.Invoke(
+                    It.Is<InvocationInfo>(ii => (int)ii.Arguments[0] == 42)));
+        }
+
 
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
         {

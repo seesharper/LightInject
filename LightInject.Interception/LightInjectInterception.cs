@@ -16,7 +16,7 @@ namespace LightInject.Interception
     using System.Reflection.Emit;
 
     /// <summary>
-    /// Implemented by all proxy types.
+    /// Implemented by all proxy typeArguments.
     /// </summary>
     public interface IProxy
     {
@@ -103,7 +103,6 @@ namespace LightInject.Interception
     /// </summary>
     internal static class InterceptionContainerExtensions
     {
-
         private static readonly ConcurrentDictionary<ServiceRegistration, Type> ProxyCache =
             new ConcurrentDictionary<ServiceRegistration, Type>();
         
@@ -144,7 +143,7 @@ namespace LightInject.Interception
             ServiceRegistration registration, Type[] additionalInterfaces, Action<ProxyDefinition> defineProxyType)
         {
             var proxyBuilder = new ProxyBuilder();
-            var proxyDefinition = new ProxyDefinition(registration.ServiceType, () => null, additionalInterfaces);
+            var proxyDefinition = new ProxyDefinition(registration.ServiceType, additionalInterfaces);
             defineProxyType(proxyDefinition);
             return proxyBuilder.GetProxyType(proxyDefinition);
         }
@@ -166,11 +165,11 @@ namespace LightInject.Interception
 
     public static class ProceedDelegateBuilder
     {
-        private static DynamicMethodBuilder builder = new DynamicMethodBuilder();
+        private static readonly DynamicMethodBuilder Builder = new DynamicMethodBuilder();
 
         public static Func<object, object[], object> CreateDelegate(MethodInfo methodInfo)
         {
-            return builder.CreateDelegate(methodInfo);
+            return Builder.CreateDelegate(methodInfo);
         }
     }
 
@@ -193,6 +192,58 @@ namespace LightInject.Interception
         {
             ProceedDelegate = new Lazy<Func<object, object[], object>>(() => ProceedDelegateBuilder.CreateDelegate(method));
             Method = method;
+        }
+    }
+
+    public class OpenGenericInterceptedMethodInfo
+    {
+        private readonly MethodInfo openGenericMethod;
+
+        private readonly Dictionary<Type[], InterceptedMethodInfo> cache =
+            new Dictionary<Type[], InterceptedMethodInfo>(new TypeArrayComparer());
+
+        private readonly object lockObject = new object();
+
+        public OpenGenericInterceptedMethodInfo(MethodInfo openGenericMethod)
+        {
+            this.openGenericMethod = openGenericMethod;
+        }
+
+        public InterceptedMethodInfo GetInterceptedMethodInfo(Type[] typeArguments)
+        {
+            InterceptedMethodInfo delegateInfo;
+            if (!cache.TryGetValue(typeArguments, out delegateInfo))
+            {
+                lock (lockObject)
+                {
+                    if (!cache.TryGetValue(typeArguments, out delegateInfo))
+                    {
+                        delegateInfo = CreateDelegateInfo(typeArguments);
+                        cache.Add(typeArguments, delegateInfo);
+                    }
+                }
+            }
+
+            return delegateInfo;
+        }
+
+        private InterceptedMethodInfo CreateDelegateInfo(Type[] types)
+        {
+            var closedGenericMethod = openGenericMethod.MakeGenericMethod(types);
+            return new InterceptedMethodInfo(closedGenericMethod);
+        }
+    }
+
+    internal class TypeArrayComparer : IEqualityComparer<Type[]>
+    {
+        public bool Equals(Type[] x, Type[] y)
+        {
+            return ReferenceEquals(x, y) || (x != null && y != null && x.SequenceEqual(y));
+        }
+
+        public int GetHashCode(Type[] types)
+        {
+            return types.Aggregate(0, (current, type) => current ^ type.GetHashCode());
         }
     }
 
@@ -476,6 +527,16 @@ namespace LightInject.Interception
         /// <summary>
         /// Initializes a new instance of the <see cref="ProxyDefinition"/> class.
         /// </summary>
+        /// <param name="targetType">The type of object to proxy.</param>        
+        /// <param name="additionalInterfaces">A list of additional interfaces to be implemented by the proxy type.</param>
+        public ProxyDefinition(Type targetType, params Type[] additionalInterfaces) 
+            : this(targetType, null, additionalInterfaces)
+        {            
+        }
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProxyDefinition"/> class.
+        /// </summary>
         /// <param name="targetType">The type of object to proxy.</param>
         /// <param name="targetFactory">A function delegate used to create the target instance.</param>
         /// <param name="additionalInterfaces">A list of additional interfaces to be implemented by the proxy type.</param>
@@ -568,12 +629,16 @@ namespace LightInject.Interception
         private static readonly ConstructorInfo LazyInterceptorConstructor;
         private static readonly ConstructorInfo InvocationInfoConstructor;
         private static readonly ConstructorInfo InterceptedMethodInfoConstructor;
+        private static readonly ConstructorInfo OpenGenericInterceptedMethodInfoConstructor;
         private static readonly ConstructorInfo ObjectConstructor;
         private static readonly MethodInfo GetTargetMethod;        
         private static readonly MethodInfo CreateMethodInterceptorMethod;
-        private static readonly MethodInfo GetMethodFromHandleMethod;                
+        private static readonly MethodInfo GetMethodFromHandleMethod;
+        private static readonly MethodInfo GetTypeFromHandleMethod;        
         private static readonly MethodInfo LazyInterceptorGetValueMethod;
         private static readonly MethodInfo InterceptorInvokeMethod;
+        private static readonly MethodInfo GetInterceptedMethodInfoMethod;
+        
         private static readonly FieldInfo InterceptedMethodInfoProceedDelegateField;
         private static readonly FieldInfo InterceptedMethodInfoMethodField;
         
@@ -596,12 +661,15 @@ namespace LightInject.Interception
             ObjectConstructor = typeof(object).GetConstructor(Type.EmptyTypes);
             CreateMethodInterceptorMethod = typeof(MethodInterceptorFactory).GetMethod("CreateMethodInterceptor");
             GetMethodFromHandleMethod = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
+            GetTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Public | BindingFlags.Static);
             InterceptedMethodInfoConstructor = typeof(InterceptedMethodInfo).GetConstructors()[0];
+            OpenGenericInterceptedMethodInfoConstructor = typeof(OpenGenericInterceptedMethodInfo).GetConstructors()[0];
             LazyInterceptorGetValueMethod = typeof(Lazy<IInterceptor>).GetProperty("Value").GetGetMethod();
             InterceptedMethodInfoMethodField = typeof(InterceptedMethodInfo).GetField("Method");
             InterceptedMethodInfoProceedDelegateField = typeof(InterceptedMethodInfo).GetField("ProceedDelegate");
             InvocationInfoConstructor = typeof(InvocationInfo).GetConstructors()[0];
-            InterceptorInvokeMethod = typeof(IInterceptor).GetMethod("Invoke");            
+            InterceptorInvokeMethod = typeof(IInterceptor).GetMethod("Invoke");
+            GetInterceptedMethodInfoMethod = typeof(OpenGenericInterceptedMethodInfo).GetMethod("GetInterceptedMethodInfo");
         }
 
         public ProxyBuilder()
@@ -621,9 +689,16 @@ namespace LightInject.Interception
             DefineLazyTargetField();                        
             DefineInitializerMethod();
             DefineStaticTargetFactoryField();
+            if (definition.TargetFactory == null)
+            {
+                ImplementConstructorWithLazyTargetParameter();
+            }
+            else
+            {
+                ImplementParameterlessConstructor();    
+            }
+                
             
-            ImplementParameterlessConstructor();
-            ImplementConstructorWithLazyTargetParameter();
             
             DefineInterceptorFields(); 
             ImplementProxyInterface();
@@ -645,13 +720,46 @@ namespace LightInject.Interception
             return proxyType;
         }
 
-        private static void PushInvocationInfo(FieldInfo staticInterceptedMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
+        private static void PushInvocationInfoForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
         {
-            PushCurrentMethod(staticInterceptedMethodInfoField, il);
-            PushProceedDelegate(staticInterceptedMethodInfoField, il);
+            PushCurrentMethodForNonGenericMethod(staticInterceptedMethodInfoField, il);
+            PushProceedDelegateForNonGenericMethod(staticInterceptedMethodInfoField, il);
             PushProxyInstance(il);
             PushArguments(il, parameters, argumentsArrayVariable);
             il.Emit(OpCodes.Newobj, InvocationInfoConstructor);
+        }
+
+        private static void PushInvocationInfoForGenericMethod(FieldInfo staticOpenGenericInterceptedMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable, GenericTypeParameterBuilder[] genericParameters)
+        {
+            PushCurrentMethodForGenericMethod(staticOpenGenericInterceptedMethodInfoField, il, genericParameters);                        
+            PushProxyInstance(il);
+            PushArguments(il, parameters, argumentsArrayVariable);
+            il.Emit(OpCodes.Newobj, InvocationInfoConstructor);
+        }
+
+        private static GenericTypeParameterBuilder[] CreateGenericTypeParameters(MethodInfo targetMethod, MethodBuilder methodBuilder)
+        {
+            if (!targetMethod.IsGenericMethodDefinition)
+            {
+                return null;
+            }
+
+            Type[] genericArguments = targetMethod.GetGenericArguments().ToArray();
+            GenericTypeParameterBuilder[] genericTypeParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(a => a.Name).ToArray());
+            for (int i = 0; i < genericArguments.Length; i++)
+            {
+                genericTypeParameters[i].SetGenericParameterAttributes(genericArguments[i].GenericParameterAttributes);
+                ApplyGenericConstraints(genericArguments[i], genericTypeParameters[i]);
+            }
+
+            return genericTypeParameters;
+        }
+
+        private static void ApplyGenericConstraints(Type genericArgument, GenericTypeParameterBuilder genericTypeParameter)
+        {
+            var genericConstraints = genericArgument.GetGenericParameterConstraints();
+            genericTypeParameter.SetInterfaceConstraints(genericConstraints.Where(gc => gc.IsInterface).ToArray());
+            genericTypeParameter.SetBaseTypeConstraint(genericConstraints.FirstOrDefault(t => t.IsClass));
         }
 
         private static void PushArguments(ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
@@ -733,13 +841,41 @@ namespace LightInject.Interception
             }
         }
 
-        private static void PushCurrentMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il)
+        private static void PushCurrentMethodForGenericMethod(FieldInfo staticOpenGenericInterceptedMethodInfoField, ILGenerator il, GenericTypeParameterBuilder[] genericParameters)
+        {
+            var typeArrayField = il.DeclareLocal(typeof(Type[]));
+            il.Emit(OpCodes.Ldc_I4, genericParameters.Length);
+            il.Emit(OpCodes.Newarr, typeof(Type));
+            il.Emit(OpCodes.Stloc, typeArrayField);
+            var delegateInfoField = il.DeclareLocal(typeof(InterceptedMethodInfo));
+            for (int i = 0; i < genericParameters.Length; i++)
+            {
+                il.Emit(OpCodes.Ldloc, typeArrayField);
+                il.Emit(OpCodes.Ldc_I4, i);
+                il.Emit(OpCodes.Ldtoken, genericParameters[i]);
+                il.Emit(OpCodes.Call, GetTypeFromHandleMethod);
+                il.Emit(OpCodes.Stelem_Ref);
+            }
+
+            il.Emit(OpCodes.Ldsfld, staticOpenGenericInterceptedMethodInfoField);
+            il.Emit(OpCodes.Ldloc, typeArrayField);
+            il.Emit(OpCodes.Call, GetInterceptedMethodInfoMethod);
+            il.Emit(OpCodes.Stloc, delegateInfoField);
+
+            il.Emit(OpCodes.Ldloc, delegateInfoField);
+            il.Emit(OpCodes.Ldfld, InterceptedMethodInfoMethodField);
+            il.Emit(OpCodes.Ldloc, delegateInfoField);
+            il.Emit(OpCodes.Ldfld, InterceptedMethodInfoProceedDelegateField);            
+        }
+
+
+        private static void PushCurrentMethodForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il)
         {
             il.Emit(OpCodes.Ldsfld, staticInterceptedMethodInfoField);
             il.Emit(OpCodes.Ldfld, InterceptedMethodInfoMethodField);
         }
 
-        private static void PushProceedDelegate(FieldInfo staticInterceptedMethodInfoField, ILGenerator il)
+        private static void PushProceedDelegateForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il)
         {
             il.Emit(OpCodes.Ldsfld, staticInterceptedMethodInfoField);
             il.Emit(OpCodes.Ldfld, InterceptedMethodInfoProceedDelegateField);
@@ -810,10 +946,21 @@ namespace LightInject.Interception
             {
                 FieldInfo staticInterceptedMethodInfoField = DefineStaticInterceptedMethodInfoField(targetMethod);
                 PushInterceptorInstance(lazyMethodInterceptorField, il);
-                PushInvocationInfo(staticInterceptedMethodInfoField, il, parameters, argumentsArrayVariable);                
+                PushInvocationInfoForNonGenericMethod(staticInterceptedMethodInfoField, il, parameters, argumentsArrayVariable);                
                 il.Emit(OpCodes.Callvirt, InterceptorInvokeMethod);
                 UpdateRefArguments(parameters, il, argumentsArrayVariable);
                 PushReturnValue(il, targetMethod.ReturnType);                
+            }
+            else
+            {
+                FieldInfo staticOpenGenericInterceptedMethodInfoField =
+                    DefineStaticOpenGenericInterceptedMethodInfoField(targetMethod);
+                PushInterceptorInstance(lazyMethodInterceptorField, il);
+                var genericParameters = CreateGenericTypeParameters(targetMethod, methodBuilder);
+                PushInvocationInfoForGenericMethod(staticOpenGenericInterceptedMethodInfoField, il, parameters, argumentsArrayVariable, genericParameters);
+                il.Emit(OpCodes.Callvirt, InterceptorInvokeMethod);
+                UpdateRefArguments(parameters, il, argumentsArrayVariable);
+                PushReturnValue(il, targetMethod.ReturnType);              
             }
         }
        
@@ -826,6 +973,19 @@ namespace LightInject.Interception
             var il = staticConstructorBuilder.GetILGenerator();
             PushMethodInfo(targetMethod, il);
             il.Emit(OpCodes.Newobj, InterceptedMethodInfoConstructor);
+            il.Emit(OpCodes.Stsfld, fieldBuilder);
+            return fieldBuilder;
+        }
+
+        private FieldBuilder DefineStaticOpenGenericInterceptedMethodInfoField(MethodInfo targetMethod)
+        {
+            var fieldBuilder = typeBuilder.DefineField(
+                GetUniqueMemberName(targetMethod.Name) + "DelegateInfoCache",
+                typeof(OpenGenericInterceptedMethodInfo),
+                FieldAttributes.InitOnly | FieldAttributes.Private | FieldAttributes.Static);
+            var il = staticConstructorBuilder.GetILGenerator();            
+            PushMethodInfo(targetMethod, il);
+            il.Emit(OpCodes.Newobj, OpenGenericInterceptedMethodInfoConstructor);
             il.Emit(OpCodes.Stsfld, fieldBuilder);
             return fieldBuilder;
         }
