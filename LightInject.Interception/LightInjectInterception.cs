@@ -703,6 +703,7 @@ namespace LightInject.Interception
             PopulateTargetMethods();
             ImplementMethods();
             ImplementProperties();
+            ImplementEvents();
             FinalizeInitializerMethod();
             FinalizeStaticConstructor();
             Type proxyType = typeBuilderFactory.CreateType(typeBuilder);
@@ -746,6 +747,25 @@ namespace LightInject.Interception
             }
         }
 
+        private void ImplementEvents()
+        {
+            var targetEvents = GetTargetEvents();
+            
+            foreach (var targetEvent in targetEvents)
+            {
+                var eventBuilder = GetEventBuilder(targetEvent);
+                MethodInfo addMethod = targetEvent.GetAddMethod();               
+                eventBuilder.SetAddOnMethod(ImplementMethod(addMethod));
+                MethodInfo removeMethod = targetEvent.GetRemoveMethod();                
+                eventBuilder.SetRemoveOnMethod(ImplementMethod(removeMethod));
+            }
+        }
+
+        private EventInfo[] GetTargetEvents()
+        {
+            return proxyDefinition.TargetType.GetEvents().ToArray();
+        }     
+
         private PropertyBuilder GetPropertyBuilder(PropertyInfo property)
         {
             var propertyBuilder = typeBuilder.DefineProperty(
@@ -753,8 +773,14 @@ namespace LightInject.Interception
             return propertyBuilder;
         }
 
-        private static void PushInvocationInfoForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
+        private EventBuilder GetEventBuilder(EventInfo eventInfo)
         {
+            var eventBuilder = typeBuilder.DefineEvent(eventInfo.Name, eventInfo.Attributes, eventInfo.EventHandlerType);
+            return eventBuilder;
+        }
+
+        private static void PushInvocationInfoForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
+        {            
             PushCurrentMethodForNonGenericMethod(staticInterceptedMethodInfoField, il);
             PushProceedDelegateForNonGenericMethod(staticInterceptedMethodInfoField, il);
             PushProxyInstance(il);

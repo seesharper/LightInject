@@ -269,6 +269,14 @@ namespace LightInject.Interception.Tests
             Assert.AreEqual(1, proxyType.GetProperties().Length);
         }
 
+        [TestMethod]
+        public void GetProxyType_InterfaceWithEvent_ProxyImplementsEvent()
+        {
+            var proxyBuiler = new ProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(typeof(IClassWithEvent));
+            var proxyType = proxyBuiler.GetProxyType(proxyDefinition);
+            Assert.AreEqual(1, proxyType.GetEvents().Length);
+        }
 
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
         {
