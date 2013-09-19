@@ -40,7 +40,7 @@ namespace LightInject.Tests
         {
             var selector = new ConstructorSelector();
 
-            var constructorInfo = selector.Execute(typeof(FooWithStaticConstructor));
+            var constructorInfo = selector.Execute(typeof(FooWithPrivateConstructor));
 
             Assert.IsNull(constructorInfo);
         }
