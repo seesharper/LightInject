@@ -96,6 +96,14 @@
         void Execute(int value);
     }
 
+    public class MethodWithValueTypeParameter : IMethodWithValueTypeParameter
+    {
+        public void Execute(int value)
+        {
+            
+        }
+    }
+
     public interface IMethodWithNullableParameter
     {
         void Execute(int? value);

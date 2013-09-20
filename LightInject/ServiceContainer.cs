@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.7 
+   LightInject version 3.0.0.8 
    http://www.lightinject.net/
    http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -1799,24 +1799,6 @@ namespace LightInject
             }
         }
 
-        private DecoratorRegistration[] GetDecorators_old(Type serviceType)
-        {
-            var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceType).ToList();
-            if (serviceType.IsGenericType())
-            {
-                var openGenericServiceType = serviceType.GetGenericTypeDefinition();
-                var openGenericDecorators = decorators.Items.Where(d => d.ServiceType == openGenericServiceType);
-                foreach (DecoratorRegistration openGenericDecorator in openGenericDecorators)
-                {
-                    var closedGenericDecoratorType = openGenericDecorator.ImplementingType.MakeGenericType(ReflectionHelper.GetGenericArguments(serviceType));
-                    var decoratorInfo = new DecoratorRegistration { ServiceType = serviceType, ImplementingType = closedGenericDecoratorType, CanDecorate = openGenericDecorator.CanDecorate };
-                    registeredDecorators.Add(decoratorInfo);
-                }
-            }
-
-            return registeredDecorators.OrderBy(d => d.Index).ToArray();
-        }
-
         private DecoratorRegistration[] GetDecorators(ServiceRegistration serviceRegistration)
         {
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();
@@ -3395,13 +3377,13 @@ namespace LightInject
         public int Index { get; set; }
 
         /// <summary>
-        /// Gets a <see cref="bool"/> value that indicates whether this registration has a deferred implementing type.
+        /// Gets a value indicating whether this registration has a deferred implementing type.
         /// </summary>
         public bool HasDeferredImplementingType
         {
             get
             {
-                return (ImplementingType == null && FactoryExpression == null);
+                return ImplementingType == null && FactoryExpression == null;
             }
         }       
     }

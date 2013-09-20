@@ -8,7 +8,7 @@
     
 
     
-    public class MethodBuilderMethodSkeleton : IMethodSkeleton
+    public class MethodBuilderMethodSkeleton : IDynamicMethodSkeleton
     {
         private readonly string outputPath;
 

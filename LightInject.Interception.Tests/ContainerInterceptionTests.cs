@@ -12,7 +12,7 @@
         {
             var container = new ServiceContainer();
             container.Register<IFoo, Foo>();
-            container.Decorate(sr => sr.ServiceType == typeof(IFoo), pd => pd.Intercept(() => new SampleInterceptor(), info => true));
+            container.Decorate(sr => sr.ServiceType == typeof(IFoo), pd => pd.Implement(info => true, () => new SampleInterceptor()));
 
             var instance = container.GetInstance<IFoo>();
 

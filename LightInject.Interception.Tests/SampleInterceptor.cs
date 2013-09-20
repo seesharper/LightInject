@@ -2,8 +2,8 @@
 {
     internal class SampleInterceptor : IInterceptor
     {
-        public object Invoke(InvocationInfo invocationInfo)
-        {
+        public object Invoke(IInvocationInfo invocationInfo)
+        {            
             return invocationInfo.Proceed();
         }
     }
