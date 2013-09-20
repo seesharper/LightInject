@@ -568,6 +568,16 @@ namespace LightInject.Interception
                 Index = interceptors.Count
             });
         }
+
+        /// <summary>
+        /// Implements all methods by forwarding method calls
+        /// to the <see cref="IInterceptor"/> created by the <paramref name="interceptorFactory"/>.
+        /// </summary>        
+        /// <param name="interceptorFactory">A function delegate used to create the <see cref="IInterceptor"/> instance.</param>       
+        public void Implement(Func<IInterceptor> interceptorFactory)
+        {
+            Implement(method => !method.IsDeclaredBy(typeof(object)), interceptorFactory);
+        }
     }
 
     /// <summary>
@@ -642,6 +652,48 @@ namespace LightInject.Interception
 
             return declaringType;
         }
+
+        /// <summary>
+        /// Gets a value that indicates whether the <paramref name="method"/> is declared by the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="method">The <see cref="MethodInfo"/> for which to check the declaring type.</param>
+        /// <param name="type">The <see cref="Type"/> to check against the declaring type of the <paramref name="method"/>.</param>
+        /// <returns>true if the <paramref name="method"/> is declared by the given <paramref name="type"/>, otherwise, false.</returns>
+        public static bool IsDeclaredBy(this MethodInfo method, Type type)
+        {
+            return method.DeclaringType == type;
+        }
+
+        /// <summary>
+        /// Gets a value that indicates whether the <paramref name="method"/> represent a property setter.
+        /// </summary>
+        /// <param name="method">The target <see cref="MethodInfo"/>.</param>
+        /// <returns>true if the <paramref name="method"/> represent a property setter, otherwise , false.</returns>
+        public static bool IsPropertySetter(this MethodInfo method)
+        {
+            return method.GetDeclaringType().GetProperties().Any(prop => prop.GetSetMethod() == method);
+        }
+
+        /// <summary>
+        /// Gets a value that indicates whether the <paramref name="method"/> represent a property getter.
+        /// </summary>
+        /// <param name="method">The target <see cref="MethodInfo"/>.</param>
+        /// <returns>true if the <paramref name="method"/> represent a property getter, otherwise , false.</returns>
+        public static bool IsPropertyGetter(this MethodInfo method)
+        {
+            return method.GetDeclaringType().GetProperties().Any(prop => prop.GetGetMethod() == method);
+        }
+
+        /// <summary>
+        /// Gets the <see cref="PropertyInfo"/> for which the given <paramref name="method"/> represents a property accessor.
+        /// </summary>
+        /// <param name="method">The target <see cref="MethodInfo"/>.</param>
+        /// <returns>The <see cref="PropertyInfo"/> for which the given <paramref name="method"/> represents a property accessor.</returns>
+        public static PropertyInfo GetProperty(this MethodInfo method)
+        {
+            return method.GetDeclaringType().GetProperties().FirstOrDefault(p => p.GetGetMethod() == method || p.GetSetMethod() == method);
+        }
+        
     }
      
     internal static class TypeBuilderExtensions
