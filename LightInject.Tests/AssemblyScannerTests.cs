@@ -71,7 +71,7 @@
         }
 
         [TestMethod]
-        public void Scan_SampleAssembkyWithCompositionRoot_HandlesRegisterAssemblyWithinCompositionRoot()
+        public void Scan_SampleAssemblyWithCompositionRoot_HandlesRegisterAssemblyWithinCompositionRoot()
         {
             var container = new ServiceContainer();
             container.RegisterAssembly(typeof(SampleCompositionRoot).Assembly);

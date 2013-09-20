@@ -984,6 +984,11 @@ namespace LightInject
         {
             return m.Name == "GetInstance" && m.IsGenericMethodDefinition;
         }
+
+        public static bool IsVisible(this Type serviceType)
+        {
+            return serviceType.IsVisible;
+        }
     }
 
     /// <summary>
@@ -3938,8 +3943,11 @@ namespace LightInject
         /// <returns>A set of concrete types found in the given <paramref name="assembly"/>.</returns>
         public IEnumerable<Type> Execute(Assembly assembly)
         {
-            return assembly.GetTypes().Where(t => t.IsClass() && !t.IsNestedPrivate()
-                && !t.IsAbstract() && !(t.Namespace ?? string.Empty).StartsWith("System") && !IsCompilerGenerated(t)).Except(InternalTypes);
+            return assembly.GetTypes().Where(t => t.IsClass() 
+                                               && (t.IsVisible() || typeof(ICompositionRoot).IsAssignableFrom(t)) 
+                                               && !t.IsAbstract() 
+                                               && !(t.Namespace ?? string.Empty).StartsWith("System") 
+                                               && !IsCompilerGenerated(t)).Except(InternalTypes);
         }
 
         private static bool IsCompilerGenerated(Type type)
