@@ -128,7 +128,7 @@ namespace LightInject.Interception
             if (interceptors.Length > 1)
             {
                 return
-                    new Lazy<IInterceptor>(() => new CompositeInterceptor(interceptors.Select(i => i.Value).ToArray()));
+                    new Lazy<IInterceptor>(() => new CompositeInterceptor(interceptors));
             }
 
             return interceptors[0];            
@@ -445,13 +445,13 @@ namespace LightInject.Interception
     /// </summary>
     public class CompositeInterceptor : IInterceptor
     {
-        private readonly IInterceptor[] interceptors;
+        private readonly Lazy<IInterceptor>[] interceptors;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositeInterceptor"/> class.
         /// </summary>
         /// <param name="interceptors">The <see cref="IInterceptor"/> chain to be invoked.</param>
-        public CompositeInterceptor(IInterceptor[] interceptors)
+        public CompositeInterceptor(Lazy<IInterceptor>[] interceptors)
         {
             this.interceptors = interceptors;
         }
@@ -467,12 +467,15 @@ namespace LightInject.Interception
             for (int i = interceptors.Length - 1; i >= 0; i--)
             {
                 int index = i;
-                IInvocationInfo nextInvocationInfo = invocationInfo;                
-                var lazyNextProceedDelegate = new Lazy<Func<object, object[], object>>(() => (instance, arguments) => interceptors[index].Invoke(nextInvocationInfo));                    
-                invocationInfo = new InvocationInfo(invocationInfo.Method, lazyNextProceedDelegate, invocationInfo.Proxy, invocationInfo.Arguments);
+                IInvocationInfo nextInvocationInfo = invocationInfo;
+                var lazyNextProceedDelegate =
+                    new Lazy<Func<object, object[], object>>(
+                        () => (instance, arguments) => interceptors[index].Value.Invoke(nextInvocationInfo));
+                invocationInfo = new InvocationInfo(
+                    invocationInfo.Method, lazyNextProceedDelegate, invocationInfo.Proxy, invocationInfo.Arguments);
             }
 
-            return interceptors[0].Invoke(invocationInfo);
+            return interceptors[0].Value.Invoke(invocationInfo);
         }
     }
 

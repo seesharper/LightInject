@@ -69,7 +69,6 @@
     <Compile Include="ContainerInterceptionTests.cs" />
     <Compile Include="DynamicMethodBuilderTests.cs" />
     <Compile Include="DynamicMethodBuilderVerificationTests.cs" />
-    <Compile Include="GeneratedProxy.cs" />
     <Compile Include="MethodBuilderDynamicMethodSkeleton.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="ProxyBuilderTests.cs" />
