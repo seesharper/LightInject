@@ -2468,7 +2468,7 @@ namespace LightInject
             private void CreateDynamicMethod()
             {
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
+                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, true);
             }
         }
 #endif
@@ -2902,7 +2902,13 @@ namespace LightInject
         /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
         public ConstructorInfo Execute(Type implementingType)
         {
-            return implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
+            ConstructorInfo constructorInfo = implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
+            if (constructorInfo == null)
+            {
+                throw new InvalidOperationException("Missing public constructor for Type: " + implementingType.FullName);
+            }
+
+            return constructorInfo;
         }
     }
 
@@ -3943,8 +3949,8 @@ namespace LightInject
         /// <returns>A set of concrete types found in the given <paramref name="assembly"/>.</returns>
         public IEnumerable<Type> Execute(Assembly assembly)
         {
-            return assembly.GetTypes().Where(t => t.IsClass() 
-                                               && (t.IsVisible() || typeof(ICompositionRoot).IsAssignableFrom(t)) 
+            return assembly.GetTypes().Where(t => t.IsClass()
+                                               && !t.IsNestedPrivate()
                                                && !t.IsAbstract() 
                                                && !(t.Namespace ?? string.Empty).StartsWith("System") 
                                                && !IsCompilerGenerated(t)).Except(InternalTypes);

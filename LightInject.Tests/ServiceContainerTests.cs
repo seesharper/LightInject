@@ -1044,9 +1044,15 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
-        public void GetInstance_InternalClassWithPublicConstructor_ThrowsInvalidOperationException()
+        public void GetInstance_InternalClassWithPublicConstructor_ReturnInstance()
         {
-            VerifyGetInstanceThrowsInvalidOperationException(typeof (IPublicConstructorDummy));
+            VerifyGetInstanceReturnInstance(typeof(IPublicConstructorDummy));
+        }
+
+        [TestMethod]
+        public void GetInstance_InternalClassFromInternalsVisibleAssembly_ReturnInstance()
+        {
+            VerifyGetInstanceReturnInstance(typeof (IInternalsVisibleToDummy));
         }
 
         private void VerifyGetInstanceThrowsInvalidOperationException(Type requestedService)
@@ -1057,6 +1063,16 @@ namespace LightInject.Tests
             var exception = ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(requestedService));
             StringAssert.Contains(exception.Message, "Unable to resolve type");
             StringAssert.Contains(exception.Message, requestedService.FullName);
+        }
+
+        private void VerifyGetInstanceReturnInstance(Type requestedService)
+        {
+            var container = new ServiceContainer();
+            container.RegisterAssembly(requestedService.Assembly);
+
+            var result = container.GetInstance(requestedService);
+
+            Assert.IsNotNull(result);
         }
 
         #endregion
