@@ -1,4 +1,6 @@
-﻿namespace LightInject.Tests
+﻿using LightInject.SampleLibraryWithInternalClasses;
+
+namespace LightInject.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -1032,5 +1034,47 @@
 
             Assert.IsInstanceOfType(instance.Value, typeof(Foo));
         }
+
+        #region Internal Classes
+
+        [TestMethod]
+        public void GetInstance_InternalClassWithInternalConstructor_ThrowsInvalidOperationException()
+        {
+            VerifyGetInstanceThrowsInvalidOperationException(typeof(IInternalConstructorDummy));
+        }
+
+        [TestMethod]
+        public void GetInstance_InternalClassWithPublicConstructor_ReturnInstance()
+        {
+            VerifyGetInstanceReturnInstance(typeof(IPublicConstructorDummy));
+        }
+
+        [TestMethod]
+        public void GetInstance_InternalClassFromInternalsVisibleAssembly_ReturnInstance()
+        {
+            VerifyGetInstanceReturnInstance(typeof (IInternalsVisibleToDummy));
+        }
+
+        private void VerifyGetInstanceThrowsInvalidOperationException(Type requestedService)
+        {
+            var container = new ServiceContainer();
+            container.RegisterAssembly(requestedService.Assembly);
+
+            var exception = ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(requestedService));
+            StringAssert.Contains(exception.Message, "Unable to resolve type");
+            StringAssert.Contains(exception.Message, requestedService.FullName);
+        }
+
+        private void VerifyGetInstanceReturnInstance(Type requestedService)
+        {
+            var container = new ServiceContainer();
+            container.RegisterAssembly(requestedService.Assembly);
+
+            var result = container.GetInstance(requestedService);
+
+            Assert.IsNotNull(result);
+        }
+
+        #endregion
     }
 }

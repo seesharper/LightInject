@@ -19,10 +19,8 @@ namespace LightInject.Tests
         public void Execute_StaticConstructor_IsNotReturned()
         {
             var selector = new ConstructorSelector();
-           
-            var constructorInfo = selector.Execute(typeof(FooWithStaticConstructor));
 
-            Assert.IsNull(constructorInfo);
+            ExceptionAssert.Throws<InvalidOperationException>(() => selector.Execute(typeof(FooWithStaticConstructor)));
         }
 
         [TestMethod]
@@ -40,9 +38,7 @@ namespace LightInject.Tests
         {
             var selector = new ConstructorSelector();
 
-            var constructorInfo = selector.Execute(typeof(FooWithStaticConstructor));
-
-            Assert.IsNull(constructorInfo);
+            ExceptionAssert.Throws<InvalidOperationException>(() => selector.Execute(typeof(FooWithPrivateConstructor)));
         }
         
     }
