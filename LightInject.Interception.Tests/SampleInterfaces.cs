@@ -77,7 +77,6 @@
     }
 
     
-
     public interface IMethodWithReferenceTypeParameter
     {
         void Execute(string value);
@@ -158,6 +157,61 @@
     public interface IMethodWithGenericParameter
     {
         void Execute<T>(T value);
+    }
+
+    public interface IMethodWithGenericParameterThatHasClassConstraint
+    {
+        void Execute<T>(T value) where T : class;
+    }
+
+    public interface IMethodWithGenericParameterThatHasStructConstraint
+    {
+        void Execute<T>(T value) where T : struct;
+    }
+
+
+    public interface IMethodWithGenericParameterThatHasNewConstraint
+    {
+        void Execute<T>(T value) where T : new();
+    }
+
+    public interface IMethodWithGenericParameterThatHasNestedContraint
+    {
+        void Execute<T>(T value) where T : IComparable<T>;
+    }
+
+    public interface IMethodWithTypeLevelGenericParameter<T>
+    {
+        void Execute(T value);
+    }
+
+
+    public interface IMethodWithEnumParameter
+    {
+        void Execute(StringSplitOptions options);
+    }
+
+    public interface IMethodWithEnumOutParameter
+    {
+        void Execute(out StringSplitOptions options);
+    }
+
+    public interface IMethodWithEnumRefParameter
+    {
+        void Execute(ref StringSplitOptions options);
+    }
+
+    public class MethodWithEnumRefParameter : IMethodWithEnumRefParameter
+    {
+        public void Execute(ref StringSplitOptions options)
+        {
+            options = StringSplitOptions.None;
+        }
+    }
+
+    public interface IMethodWithEnumReturnValue
+    {
+        StringSplitOptions Execute();
     }
 
     public class ReferenceTypeFoo

@@ -1,5 +1,7 @@
 ﻿namespace LightInject.Interception.Tests
-{    
+{
+    using System;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -109,6 +111,45 @@
         }
 
         [TestMethod]
+        public void Execute_MethodWithEnumParameter_PassedValueToTarget()
+        {
+            var targetMock = new Mock<IMethodWithEnumParameter>();
+            var method = typeof(IMethodWithEnumParameter).GetMethods()[0];
+            var methodBuilder = GetMethodBuilder();
+
+            methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { StringSplitOptions.RemoveEmptyEntries });
+
+            targetMock.Verify(t => t.Execute(StringSplitOptions.RemoveEmptyEntries), Times.Once());
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithValueEnumOutParameter_ReturnsValueFromTarget()
+        {
+            var targetMock = new Mock<IMethodWithEnumOutParameter>();
+            StringSplitOptions returnValue = StringSplitOptions.None;
+            targetMock.Setup(t => t.Execute(out returnValue));
+            var method = typeof(IMethodWithEnumOutParameter).GetMethods()[0];
+            var methodBuilder = GetMethodBuilder();
+            var arguments = new object[] { StringSplitOptions.RemoveEmptyEntries };
+
+            methodBuilder.CreateDelegate(method)(targetMock.Object, arguments);
+
+            Assert.AreEqual(StringSplitOptions.None, arguments[0]);
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithEnumRefParameter_ReturnsValueFromTarget()
+        {
+            var method = typeof(IMethodWithEnumRefParameter).GetMethods()[0];
+            var methodBuilder = GetMethodBuilder();
+            var arguments = new object[] { StringSplitOptions.RemoveEmptyEntries };
+
+            methodBuilder.CreateDelegate(method)(new MethodWithEnumRefParameter(), arguments);
+
+            Assert.AreEqual(StringSplitOptions.None, arguments[0]);
+        }
+
+        [TestMethod]
         public void Execute_MethodWithReferenceTypeReturnValue_ReturnsValue()
         {
             var targetMock = new Mock<IMethodWithReferenceTypeReturnValue>();
@@ -132,6 +173,19 @@
             var result = methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { });
 
             Assert.AreEqual(42, (int)result);
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithEnumReturnValue_ReturnsValue()
+        {
+            var targetMock = new Mock<IMethodWithEnumReturnValue>();
+            targetMock.Setup(t => t.Execute()).Returns(StringSplitOptions.RemoveEmptyEntries);
+            var method = typeof(IMethodWithEnumReturnValue).GetMethods()[0];
+            var methodBuilder = GetMethodBuilder();
+
+            var result = methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { });
+
+            Assert.AreEqual(StringSplitOptions.RemoveEmptyEntries, result);
         }
 
         //[TestMethod]

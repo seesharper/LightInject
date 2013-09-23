@@ -1,4 +1,23 @@
-﻿[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
+﻿/*****************************************************************************   
+   Copyright 2013 bernhard.richter@gmail.com
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+******************************************************************************
+   LightInject.Interception version 1.0.0.0 
+   http://www.lightinject.net/
+   http://twitter.com/bernhardrichter
+******************************************************************************/
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
@@ -719,7 +738,8 @@ namespace LightInject.Interception
             const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
             var typeName = targetType.Name + "Proxy";
             Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
-            return moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);    
+            var typeBuilder =  moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);            
+            return typeBuilder;
         }
 
         public Type CreateType(TypeBuilder typeBuilder)
@@ -777,7 +797,7 @@ namespace LightInject.Interception
             LazyInterceptorConstructor = typeof(Lazy<IInterceptor>).GetConstructor(new[] { typeof(Func<IInterceptor>) });
             ObjectConstructor = typeof(object).GetConstructor(Type.EmptyTypes);
             CreateMethodInterceptorMethod = typeof(MethodInterceptorFactory).GetMethod("CreateMethodInterceptor");
-            GetMethodFromHandleMethod = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
+            GetMethodFromHandleMethod = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
             GetTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Public | BindingFlags.Static);
             InterceptedMethodInfoConstructor = typeof(InterceptedMethodInfo).GetConstructors()[0];
             OpenGenericInterceptedMethodInfoConstructor = typeof(OpenGenericInterceptedMethodInfo).GetConstructors()[0];
@@ -834,7 +854,7 @@ namespace LightInject.Interception
         }
 
         private static void AssignTargetFactory(Type proxyType, Delegate del)
-        {
+        {            
             proxyType.GetField("TargetFactory").SetValue(null, del);
         }
 
@@ -856,12 +876,7 @@ namespace LightInject.Interception
         }
 
         private static GenericTypeParameterBuilder[] CreateGenericTypeParameters(MethodInfo targetMethod, MethodBuilder methodBuilder)
-        {
-            if (!targetMethod.IsGenericMethodDefinition)
-            {
-                return null;
-            }
-
+        {            
             Type[] genericArguments = targetMethod.GetGenericArguments().ToArray();
             GenericTypeParameterBuilder[] genericTypeParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(a => a.Name).ToArray());
             for (int i = 0; i < genericArguments.Length; i++)
@@ -994,6 +1009,7 @@ namespace LightInject.Interception
         private static void PushMethodInfo(MethodInfo targetMethod, ILGenerator il)
         {
             il.Emit(OpCodes.Ldtoken, targetMethod);
+            il.Emit(OpCodes.Ldtoken, targetMethod.GetDeclaringType());
             il.Emit(OpCodes.Call, GetMethodFromHandleMethod);
             il.Emit(OpCodes.Castclass, typeof(MethodInfo));
         }

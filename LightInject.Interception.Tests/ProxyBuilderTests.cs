@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using FluentAssertions;
 namespace LightInject.Interception.Tests
 {
+    using System.Collections.Generic;
     using System.Reflection;
 
     using Moq;
@@ -231,22 +232,7 @@ namespace LightInject.Interception.Tests
                     It.Is<InvocationInfo>(ii => (int)ii.Arguments[0] == 42)));
         }
 
-        [TestMethod]
-        public void Execute_MethodWithGenericParameter_PassesValueToInterceptor()
-        {
-            var interceptorMock = new Mock<IInterceptor>();
-            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithGenericParameter));
-
-            proxyDefinition.Implement(info => info.Name == "Execute", () => interceptorMock.Object);
-            var proxyType = CreateProxyType(proxyDefinition);
-            var instance = (IMethodWithGenericParameter)Activator.CreateInstance(proxyType, (object)null);
-
-            instance.Execute(42);
-
-            interceptorMock.Verify(
-                i => i.Invoke(
-                    It.Is<InvocationInfo>(ii => (int)ii.Arguments[0] == 42)));
-        }
+       
 
         [TestMethod]
         public void GetProxyType_InterfaceWithProperty_ProxyImplementsProperty()
@@ -302,7 +288,109 @@ namespace LightInject.Interception.Tests
             Assert.IsInstanceOfType(result, typeof(IProxy));           
         }
 
+        #region Generics
 
+        [TestMethod]
+        public void GetProxyType_MethodWithTypeLevelValueTypeGenericParameter_ImplementsInterface()
+        {
+            Type proxyType = CreateProxyType(new ProxyDefinition(typeof(IMethodWithTypeLevelGenericParameter<int>)));            
+            Assert.IsTrue(typeof(IMethodWithTypeLevelGenericParameter<int>).IsAssignableFrom(proxyType));
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithValueTypeGenericParameter_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IMethodWithGenericParameter>(interceptorMock.Object);
+
+            instance.Execute(42);
+
+            VerifyArgument(interceptorMock, 42);
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithReferenceTypeGenericParameter_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IMethodWithGenericParameter>(interceptorMock.Object);
+
+            instance.Execute("SomeValue");
+
+            VerifyArgument(interceptorMock, "SomeValue");
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithGenericParameterThatHasClassConstraint_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IMethodWithGenericParameterThatHasClassConstraint>(interceptorMock.Object);
+            
+            instance.Execute("SomeValue");
+
+            VerifyArgument(interceptorMock, "SomeValue");
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithGenericParameterThatHasStructConstraint_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IMethodWithGenericParameterThatHasStructConstraint>(interceptorMock.Object);
+
+            instance.Execute(42);
+
+            VerifyArgument(interceptorMock, 42);
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithGenericParameterThatHasNewConstraint_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IMethodWithGenericParameterThatHasNewConstraint>(interceptorMock.Object);
+
+            instance.Execute(42);
+
+            VerifyArgument(interceptorMock, 42);
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithGenericParameterThatHasNestedConstraint_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IMethodWithGenericParameterThatHasNestedContraint>(interceptorMock.Object);
+
+            instance.Execute(42);
+
+            VerifyArgument(interceptorMock, 42);
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithTypeLevelValueTypeGenericParameter_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IMethodWithTypeLevelGenericParameter<int>>(interceptorMock.Object);
+
+            instance.Execute(42);
+
+            VerifyArgument(interceptorMock, 42);
+        }
+
+
+        #endregion
+
+        private T CreateProxy<T>(IInterceptor interceptor)
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(T));
+            proxyDefinition.Implement(info => info.Name == "Execute", () => interceptor);
+            Type proxyType = CreateProxyBuilder().GetProxyType(proxyDefinition);
+            return (T)Activator.CreateInstance(proxyType, (object)null);
+        }
+
+        private void VerifyArgument<T>(Mock<IInterceptor> interceptorMock, T value)
+        {                        
+            interceptorMock.Verify(
+               i => i.Invoke(
+                   It.Is<InvocationInfo>(ii => Equals(ii.Arguments[0] , value))));
+        }
 
 
 
