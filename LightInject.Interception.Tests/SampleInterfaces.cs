@@ -169,4 +169,10 @@
     {
         public string Value { get; set; }
     }
+
+
+    public interface IMethodWithTargetReturnType
+    {
+        IMethodWithTargetReturnType Execute();
+    }
 }

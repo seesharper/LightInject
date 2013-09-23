@@ -266,7 +266,44 @@ namespace LightInject.Interception.Tests
             Assert.AreEqual(1, proxyType.GetEvents().Length);
         }
 
-        
+        [TestMethod]
+        public void Execute_InterceptedMethodWithTargetReturnType_ReturnsProxy()
+        {
+            var proxyBuilder = CreateProxyBuilder();
+            var interceptorMock = new Mock<IInterceptor>();           
+            var targetMock = new Mock<IMethodWithTargetReturnType>();
+            interceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Returns(targetMock.Object);
+            targetMock.Setup(t => t.Execute()).Returns(targetMock.Object);
+
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithTargetReturnType));
+            proxyDefinition.Implement(() => interceptorMock.Object);
+
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+
+            var instance = (IMethodWithTargetReturnType)Activator.CreateInstance(proxyType, new Lazy<IMethodWithTargetReturnType>(() => targetMock.Object));
+
+            var result = instance.Execute();
+
+            Assert.IsInstanceOfType(result, typeof(IProxy));           
+        }
+
+        [TestMethod]
+        public void Execute_NonInterceptedMethodWithTargetReturnType_ReturnsProxy()
+        {
+            var proxyBuilder = CreateProxyBuilder();         
+            var targetMock = new Mock<IMethodWithTargetReturnType>();         
+            targetMock.Setup(t => t.Execute()).Returns(targetMock.Object);
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithTargetReturnType));
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            var instance = (IMethodWithTargetReturnType)Activator.CreateInstance(proxyType, new Lazy<IMethodWithTargetReturnType>(() => targetMock.Object));
+
+            var result = instance.Execute();
+
+            Assert.IsInstanceOfType(result, typeof(IProxy));           
+        }
+
+
+
 
 
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
