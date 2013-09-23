@@ -232,41 +232,85 @@ namespace LightInject.Interception.Tests
                     It.Is<InvocationInfo>(ii => (int)ii.Arguments[0] == 42)));
         }
 
-       
+        #region Properties       
 
         [TestMethod]
         public void GetProxyType_InterfaceWithProperty_ProxyImplementsProperty()
-        {
-            var proxyBuiler = new ProxyBuilder();
-            var proxyDefinition = new ProxyDefinition(typeof(IClassWithReferenceTypeProperty));
-            var proxyType = proxyBuiler.GetProxyType(proxyDefinition);
+        {            
+            var proxyType = CreateProxyType(new ProxyDefinition(typeof(IClassWithProperty)));
             Assert.AreEqual(1, proxyType.GetProperties().Length);
+        }
+        
+        [TestMethod]
+        public void SetValue_InterfaceWithProperty_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IClassWithProperty>(interceptorMock.Object, "set_Value");
+            
+            instance.Value = "SomeValue";
+
+            VerifyArgument(interceptorMock, "SomeValue");
         }
 
         [TestMethod]
-        public void GetProxyType_InterfaceWithEvent_ProxyImplementsEvent()
+        public void GetValue_InterfaceWithProperty_ReturnsValueFromInterceptor()
         {
-            var proxyBuiler = new ProxyBuilder();
-            var proxyDefinition = new ProxyDefinition(typeof(IClassWithEvent));
-            var proxyType = proxyBuiler.GetProxyType(proxyDefinition);
+            var interceptorMock = new Mock<IInterceptor>();
+            interceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Returns("SomeValue");
+            var instance = CreateProxy<IClassWithProperty>(interceptorMock.Object, "get_Value");
+
+            var value = instance.Value;
+
+            Assert.AreEqual("SomeValue", value);
+        }    
+
+
+        #endregion
+
+        #region Events
+
+        [TestMethod]
+        public void GetProxyType_InterfaceWithEvent_ProxyImplementsEvent()
+        {            
+            var proxyType = CreateProxyType(new ProxyDefinition(typeof(IClassWithEvent)));
+
             Assert.AreEqual(1, proxyType.GetEvents().Length);
         }
 
         [TestMethod]
-        public void Execute_InterceptedMethodWithTargetReturnType_ReturnsProxy()
+        public void AddHandler_InterfaceWithEvent_PassesSenderToInterceptor()
+        {                        
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IClassWithEvent>(interceptorMock.Object, "add_SomeEvent");
+            EventHandler<EventArgs> handler = (sender, args) => { };
+
+            instance.SomeEvent += handler;
+
+            VerifyArgument(interceptorMock, handler);            
+        }
+
+
+        [TestMethod]
+        public void RemoveHandler_InterfaceWithEvent_PassesSenderToInterceptor()
         {
-            var proxyBuilder = CreateProxyBuilder();
-            var interceptorMock = new Mock<IInterceptor>();           
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IClassWithEvent>(interceptorMock.Object, "remove_SomeEvent");
+            EventHandler<EventArgs> handler = (sender, args) => { };
+
+            instance.SomeEvent -= handler;
+
+            VerifyArgument(interceptorMock, handler);
+        }
+
+        #endregion
+
+        [TestMethod]
+        public void Execute_InterceptedMethodWithTargetReturnType_ReturnsProxy()
+        {            
             var targetMock = new Mock<IMethodWithTargetReturnType>();
+            var interceptorMock = new Mock<IInterceptor>();                       
             interceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Returns(targetMock.Object);
-            targetMock.Setup(t => t.Execute()).Returns(targetMock.Object);
-
-            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithTargetReturnType));
-            proxyDefinition.Implement(() => interceptorMock.Object);
-
-            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
-
-            var instance = (IMethodWithTargetReturnType)Activator.CreateInstance(proxyType, new Lazy<IMethodWithTargetReturnType>(() => targetMock.Object));
+            var instance = CreateProxy(interceptorMock.Object, targetMock.Object);
 
             var result = instance.Execute();
 
@@ -275,14 +319,11 @@ namespace LightInject.Interception.Tests
 
         [TestMethod]
         public void Execute_NonInterceptedMethodWithTargetReturnType_ReturnsProxy()
-        {
-            var proxyBuilder = CreateProxyBuilder();         
+        {            
             var targetMock = new Mock<IMethodWithTargetReturnType>();         
             targetMock.Setup(t => t.Execute()).Returns(targetMock.Object);
-            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithTargetReturnType));
-            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
-            var instance = (IMethodWithTargetReturnType)Activator.CreateInstance(proxyType, new Lazy<IMethodWithTargetReturnType>(() => targetMock.Object));
-
+            var instance = CreateProxy(targetMock.Object);
+            
             var result = instance.Execute();
 
             Assert.IsInstanceOfType(result, typeof(IProxy));           
@@ -385,11 +426,34 @@ namespace LightInject.Interception.Tests
             return (T)Activator.CreateInstance(proxyType, (object)null);
         }
 
+        private T CreateProxy<T>(IInterceptor interceptor, string methodName)
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(T));
+            proxyDefinition.Implement(info => info.Name == methodName, () => interceptor);
+            Type proxyType = CreateProxyBuilder().GetProxyType(proxyDefinition);
+            return (T)Activator.CreateInstance(proxyType, (object)null);
+        }
+
+        private T CreateProxy<T>(T target)
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(T));            
+            Type proxyType = CreateProxyBuilder().GetProxyType(proxyDefinition);
+            return (T)Activator.CreateInstance(proxyType, new Lazy<T>(() => target));
+        }
+
+        private T CreateProxy<T>(IInterceptor interceptor, T target)
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(T));
+            proxyDefinition.Implement(info => info.Name == "Execute", () => interceptor);
+            Type proxyType = CreateProxyBuilder().GetProxyType(proxyDefinition);
+            return (T)Activator.CreateInstance(proxyType, new Lazy<T>(() => target));
+        }
+
         private void VerifyArgument<T>(Mock<IInterceptor> interceptorMock, T value)
         {                        
             interceptorMock.Verify(
                i => i.Invoke(
-                   It.Is<InvocationInfo>(ii => Equals(ii.Arguments[0] , value))));
+                   It.Is<InvocationInfo>(ii => Equals(ii.Arguments[0] , value))), Times.Once());
         }
 
 

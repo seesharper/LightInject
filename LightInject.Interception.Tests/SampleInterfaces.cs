@@ -36,14 +36,14 @@
     {
     }
 
-    public interface IClassWithReferenceTypeProperty
+    public interface IClassWithProperty
     {
         string Value { get; set; }
     }
 
-    public class ClassWithReferenceTypeProperty : IClassWithReferenceTypeProperty
+    public class ClassWithProperty : IClassWithProperty
     {
-        string IClassWithReferenceTypeProperty.Value { get; set; }
+        string IClassWithProperty.Value { get; set; }
     }
 
     public interface IClassWithValueTypeProperty
@@ -61,7 +61,8 @@
         event EventHandler<EventArgs> IClassWithEvent.SomeEvent
         {
             add
-            {
+            {                
+                
                 throw new NotImplementedException();
             }
             remove
