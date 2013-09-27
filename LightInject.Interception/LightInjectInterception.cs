@@ -21,7 +21,7 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
-[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
+//[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 
 namespace LightInject.Interception
 {
@@ -45,6 +45,9 @@ namespace LightInject.Interception
         object Target { get; }
     }
 
+    /// <summary>
+    /// Represents a class that contains detailed information about the method being invoked.
+    /// </summary>
     public interface IInvocationInfo
     {
         /// <summary>
@@ -53,7 +56,7 @@ namespace LightInject.Interception
         MethodInfo Method { get; }
 
         /// <summary>
-        /// Gets the <see cref="IProxy"/> instance.
+        /// Gets the <see cref="IProxy"/> instance that intercepted the method call.
         /// </summary>
         IProxy Proxy { get; }
 
@@ -63,9 +66,10 @@ namespace LightInject.Interception
         object[] Arguments { get; }
 
         /// <summary>
-        /// Proceeds to the next interceptor.
+        /// Proceeds to the next <see cref="IInterceptor"/>, or of at the end of the interceptor chain, 
+        /// proceeds to the actual target.
         /// </summary>
-        /// <returns>The return value.</returns>
+        /// <returns>The return value from the method call.</returns>
         object Proceed();
     }
 
@@ -76,11 +80,11 @@ namespace LightInject.Interception
     public interface IMethodBuilder
     {
         /// <summary>
-        /// Creates a delegate that is used to invoke the <paramref name="targetMethod"/>.
+        /// Gets a delegate that is used to invoke the <paramref name="targetMethod"/>.
         /// </summary>
         /// <param name="targetMethod">The <see cref="MethodInfo"/> that represents the target method to invoke.</param>
         /// <returns>A delegate that represents compiled code used to invoke the <paramref name="targetMethod"/>.</returns>
-        Func<object, object[], object> CreateDelegate(MethodInfo targetMethod);
+        Func<object, object[], object> GetDelegate(MethodInfo targetMethod);
     }
 
     /// <summary>
@@ -135,13 +139,35 @@ namespace LightInject.Interception
     /// </summary>
     internal interface ITypeBuilderFactory
     {
+        /// <summary>
+        /// Creates a <see cref="TypeBuilder"/> instance that is used to build a proxy 
+        /// type that inherits/implements the <paramref name="targetType"/> with an optional 
+        /// set of <paramref name="additionalInterfaces"/>.
+        /// </summary>
+        /// <param name="targetType">The <see cref="Type"/> that the <see cref="TypeBuilder"/> will inherit/implement.</param>
+        /// <param name="additionalInterfaces">A set of additional interfaces to be implemented.</param>
+        /// <returns>A <see cref="TypeBuilder"/> instance for which to build the proxy type.</returns>
         TypeBuilder CreateTypeBuilder(Type targetType, Type[] additionalInterfaces);
 
+        /// <summary>
+        /// Creates a proxy <see cref="Type"/> based on the given <paramref name="typeBuilder"/>.
+        /// </summary>
+        /// <param name="typeBuilder">The <see cref="TypeBuilder"/> that represents the proxy type.</param>
+        /// <returns>The proxy <see cref="Type"/>.</returns>
         Type CreateType(TypeBuilder typeBuilder);
     }
 
+    /// <summary>
+    /// A factory class used to create a <see cref="CompositeInterceptor"/> if the target method has 
+    /// multiple interceptors.
+    /// </summary>
     public static class MethodInterceptorFactory
     {
+        /// <summary>
+        /// Creates a new <see cref="Lazy{T}"/> that represents getting the <see cref="IInterceptor"/> for a given method.
+        /// </summary>
+        /// <param name="interceptors">A list of interceptors that represents the interceptor chain for a given method.</param>
+        /// <returns>A new <see cref="Lazy{T}"/> that represents getting the <see cref="IInterceptor"/> for a given method.</returns>
         public static Lazy<IInterceptor> CreateMethodInterceptor(Lazy<IInterceptor>[] interceptors)
         {
             if (interceptors.Length > 1)
@@ -154,84 +180,94 @@ namespace LightInject.Interception
         }
     }
 
-    public static class ProceedDelegateBuilder
-    {
-        private static readonly DynamicMethodBuilder Builder = new DynamicMethodBuilder();
-
-        public static Func<object, object[], object> CreateDelegate(MethodInfo methodInfo)
-        {
-            return Builder.CreateDelegate(methodInfo);
-        }
-    }
-
     /// <summary>
-    /// Contains information about the method being intercepted.
+    /// Contains information about the target method being intercepted.
     /// </summary>
-    public class InterceptedMethodInfo
-    {
-        [SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]
+    public class TargetMethodInfo
+    {                
+        /// <summary>
+        /// The function delegate used to invoke the target method.
+        /// </summary>
+        [SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]        
         public Lazy<Func<object, object[], object>> ProceedDelegate;
 
+        /// <summary>
+        /// The <see cref="MethodInfo"/> that represents the target method.
+        /// </summary>
         [SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]
         public MethodInfo Method;
 
+        private static readonly IMethodBuilder ProceedDelegateBuilder = new CachedMethodBuilder(new DynamicMethodBuilder());
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="InterceptedMethodInfo"/> class.
+        /// Initializes a new instance of the <see cref="TargetMethodInfo"/> class.
         /// </summary>
         /// <param name="method">The target <see cref="MethodInfo"/> being intercepted.</param>
-        public InterceptedMethodInfo(MethodInfo method)
+        public TargetMethodInfo(MethodInfo method)
         {
-            ProceedDelegate = new Lazy<Func<object, object[], object>>(() => ProceedDelegateBuilder.CreateDelegate(method));
+            ProceedDelegate = new Lazy<Func<object, object[], object>>(() => ProceedDelegateBuilder.GetDelegate(method));
             Method = method;
         }
     }
 
-    public class OpenGenericInterceptedMethodInfo
+    /// <summary>
+    /// Contains information about the open generic target method being intercepted.
+    /// </summary>
+    public class OpenGenericTargetMethodInfo
     {
         private readonly MethodInfo openGenericMethod;
 
-        private readonly Dictionary<Type[], InterceptedMethodInfo> cache =
-            new Dictionary<Type[], InterceptedMethodInfo>(new TypeArrayComparer());
+        private readonly Dictionary<Type[], TargetMethodInfo> cache =
+            new Dictionary<Type[], TargetMethodInfo>(new TypeArrayComparer());
 
         private readonly object lockObject = new object();
 
-        public OpenGenericInterceptedMethodInfo(MethodInfo openGenericMethod)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OpenGenericTargetMethodInfo"/> class.
+        /// </summary>
+        /// <param name="openGenericMethod">The open generic target <see cref="MethodInfo"/>.</param>
+        public OpenGenericTargetMethodInfo(MethodInfo openGenericMethod)
         {
             this.openGenericMethod = openGenericMethod;
         }
 
-        public InterceptedMethodInfo GetInterceptedMethodInfo(Type[] typeArguments)
+        /// <summary>
+        /// Gets the <see cref="TargetMethodInfo"/> that represents the closed generic <see cref="MethodInfo"/>.
+        /// based on the given <paramref name="typeArguments"/>.
+        /// </summary>
+        /// <param name="typeArguments">A list of types used to create a closed generic target <see cref="MethodInfo"/>.</param>
+        /// <returns>The <see cref="TargetMethodInfo"/> that represents the closed generic <see cref="MethodInfo"/>.</returns>
+        public TargetMethodInfo GetInterceptedMethodInfo(Type[] typeArguments)
         {
-            InterceptedMethodInfo delegateInfo;
-            if (!cache.TryGetValue(typeArguments, out delegateInfo))
+            TargetMethodInfo targetMethodInfo;
+            if (!cache.TryGetValue(typeArguments, out targetMethodInfo))
             {
                 lock (lockObject)
                 {
-                    if (!cache.TryGetValue(typeArguments, out delegateInfo))
+                    if (!cache.TryGetValue(typeArguments, out targetMethodInfo))
                     {
-                        delegateInfo = CreateDelegateInfo(typeArguments);
-                        cache.Add(typeArguments, delegateInfo);
+                        targetMethodInfo = this.CreateInterceptedMethodInfo(typeArguments);
+                        cache.Add(typeArguments, targetMethodInfo);
                     }
                 }
             }
 
-            return delegateInfo;
+            return targetMethodInfo;
         }
 
-        private InterceptedMethodInfo CreateDelegateInfo(Type[] types)
+        private TargetMethodInfo CreateInterceptedMethodInfo(Type[] types)
         {
             var closedGenericMethod = openGenericMethod.MakeGenericMethod(types);
-            return new InterceptedMethodInfo(closedGenericMethod);
+            return new TargetMethodInfo(closedGenericMethod);
         }
     }
 
+    /// <summary>
+    /// A class that is capable of creating a delegate used to invoke 
+    /// a method without using late-bound invocation.
+    /// </summary>
     public class DynamicMethodBuilder : IMethodBuilder
-    {       
-        private static readonly Dictionary<MethodInfo, Func<object, object[], object>> Cache
-            = new Dictionary<MethodInfo, Func<object, object[], object>>();
-
-        private static readonly object SyncRoot = new object();
-
+    {             
         private readonly Func<IDynamicMethodSkeleton> methodSkeletonFactory;
 #if TEST
         public DynamicMethodBuilder(Func<IDynamicMethodSkeleton> methodSkeletonFactory)
@@ -240,39 +276,29 @@ namespace LightInject.Interception
         }
 #endif
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DynamicMethodBuilder"/> class.
+        /// </summary>
         public DynamicMethodBuilder()
         {
             methodSkeletonFactory = () => new DynamicMethodSkeleton();
         }
 
-        public object Invoke(MethodInfo method, object instance, object[] arguments)
+        /// <summary>
+        /// Gets a delegate that is used to invoke the <paramref name="targetMethod"/>.
+        /// </summary>
+        /// <param name="targetMethod">The <see cref="MethodInfo"/> that represents the target method to invoke.</param>
+        /// <returns>A delegate that represents compiled code used to invoke the <paramref name="targetMethod"/>.</returns>
+        public Func<object, object[], object> GetDelegate(MethodInfo targetMethod)
         {
-            Func<object, object[], object> del;
-            if (!Cache.TryGetValue(method, out del))
-            {
-                lock (SyncRoot)
-                {
-                    if (!Cache.TryGetValue(method, out del))
-                    {
-                        del = CreateDelegate(method);
-                        Cache.Add(method, del);
-                    }
-                }
-            }
-
-            return del(instance, arguments);            
-        }
-
-        public Func<object, object[], object> CreateDelegate(MethodInfo method)
-        {
-            var parameters = method.GetParameters();
+            var parameters = targetMethod.GetParameters();
             IDynamicMethodSkeleton methodSkeleton = methodSkeletonFactory();            
             var il = methodSkeleton.GetILGenerator();            
-            PushInstance(method, il);
+            PushInstance(targetMethod, il);
             PushArguments(parameters, il);
-            CallTargetMethod(method, il);
+            CallTargetMethod(targetMethod, il);
             UpdateOutAndRefArguments(parameters, il);
-            PushReturnValue(method, il);
+            PushReturnValue(targetMethod, il);
             return methodSkeleton.CreateDelegate();
         }
 
@@ -394,29 +420,59 @@ namespace LightInject.Interception
         }
     }
 
-    public class InvocationInfo : IInvocationInfo
+    /// <summary>
+    /// An <see cref="IMethodBuilder"/> cache decorator that ensures that 
+    /// for a given <see cref="MethodInfo"/>, only a single dynamic method is created.
+    /// </summary>
+    public class CachedMethodBuilder : IMethodBuilder
     {
-        private readonly Lazy<Func<object, object[], object>> lazyProceed;
+        private readonly IMethodBuilder methodBuilder;
 
-        private readonly IProxy proxy;
-
-        private readonly object[] arguments;
-
-        private readonly MethodInfo method;
+        private readonly ThreadSafeDictionary<MethodInfo, Func<object, object[], object>> cache
+            = new ThreadSafeDictionary<MethodInfo, Func<object, object[], object>>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="InvocationInfo"/> class.
+        /// Initializes a new instance of the <see cref="CachedMethodBuilder"/> class.
         /// </summary>
-        /// <param name="method">The <see cref="MethodInfo"/> currently being invoked.</param>
-        /// <param name="proceed">The function delegate use to invoke the target method.</param>        
-        /// <param name="proxy">The <see cref="IProxy"/> object from which methods are intercepted.</param>
-        /// <param name="arguments">The arguments currently being passed to the target method.</param>        
-        public InvocationInfo(MethodInfo method, Lazy<Func<object, object[], object>> proceed, IProxy proxy, object[] arguments)            
+        /// <param name="methodBuilder">The target <see cref="IMethodBuilder"/> instance.</param>
+        public CachedMethodBuilder(IMethodBuilder methodBuilder)
         {
-            this.method = method;
+            this.methodBuilder = methodBuilder;
+        }
+
+        /// <summary>
+        /// Gets a delegate that is used to invoke the <paramref name="targetMethod"/>.
+        /// </summary>
+        /// <param name="targetMethod">The <see cref="MethodInfo"/> that represents the target method to invoke.</param>
+        /// <returns>A delegate that represents compiled code used to invoke the <paramref name="targetMethod"/>.</returns>
+        public Func<object, object[], object> GetDelegate(MethodInfo targetMethod)
+        {
+            return cache.GetOrAdd(targetMethod, methodBuilder.GetDelegate);
+        }
+    }
+
+    /// <summary>
+    /// An implementation of the <see cref="IInvocationInfo"/> interface that forwards 
+    /// method calls the actual target.
+    /// </summary>    
+    public class TargetInvocationInfo : IInvocationInfo
+    {
+        private readonly TargetMethodInfo targetMethodInfo;
+        private readonly IProxy proxy;
+        private readonly object[] arguments;
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TargetInvocationInfo"/> class.
+        /// </summary>
+        /// <param name="targetMethodInfo">The <see cref="TargetMethodInfo"/> that contains 
+        /// information about the target method.</param>
+        /// <param name="proxy">The <see cref="IProxy"/> instance that intercepted the method call.</param>
+        /// <param name="arguments">The arguments currently being passed to the target method.</param>
+        public TargetInvocationInfo(TargetMethodInfo targetMethodInfo, IProxy proxy, object[] arguments)
+        {
+            this.targetMethodInfo = targetMethodInfo;
             this.proxy = proxy;
             this.arguments = arguments;
-            lazyProceed = proceed;            
         }
 
         /// <summary>
@@ -426,19 +482,19 @@ namespace LightInject.Interception
         {
             get
             {
-                return method;
-            }            
+                return this.targetMethodInfo.Method;
+            }
         }
 
         /// <summary>
-        /// Gets the <see cref="IProxy"/> instance.
+        /// Gets the <see cref="IProxy"/> instance that intercepted the method call.
         /// </summary>
         public IProxy Proxy
         {
             get
             {
                 return proxy;
-            }           
+            }
         }
 
         /// <summary>
@@ -449,18 +505,85 @@ namespace LightInject.Interception
             get
             {
                 return arguments;
-            }            
+            }
         }
 
+        /// <summary>
+        /// Proceeds to the actual <see cref="IProxy.Target"/>.
+        /// </summary>
+        /// <returns>The return value from the method call.</returns>
         public object Proceed()
         {
-            return lazyProceed.Value(proxy.Target, arguments);
+            return this.targetMethodInfo.ProceedDelegate.Value(proxy.Target, arguments);
         }
     }
 
     /// <summary>
-    /// An <see cref="IInterceptor"/> that is responsible for 
-    /// passing the <see cref="InvocationInfo"/> down the interceptor chain.
+    /// An implementation of the <see cref="IInvocationInfo"/> interface that forwards 
+    /// method calls to the next <see cref="IInterceptor"/> in the interceptor chain.
+    /// </summary>    
+    public class InterceptorInvocationInfo : IInvocationInfo
+    {
+        private readonly IInvocationInfo nextInvocationInfo;
+        private readonly Lazy<IInterceptor> nextInterceptor;
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InterceptorInvocationInfo"/> class.
+        /// </summary>
+        /// <param name="nextInvocationInfo">The next <see cref="IInvocationInfo"/> used to invoke the <paramref name="nextInterceptor"/>.</param>
+        /// <param name="nextInterceptor">The next <see cref="IInterceptor"/> in the interceptor chain.</param>
+        public InterceptorInvocationInfo(IInvocationInfo nextInvocationInfo, Lazy<IInterceptor> nextInterceptor)
+        {
+            this.nextInvocationInfo = nextInvocationInfo;
+            this.nextInterceptor = nextInterceptor;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="MethodInfo"/> currently being invoked.
+        /// </summary>
+        public MethodInfo Method
+        {
+            get
+            {
+                return nextInvocationInfo.Method;
+            }        
+        }
+
+        /// <summary>
+        /// Gets the <see cref="IProxy"/> instance that intercepted the method call.
+        /// </summary>
+        public IProxy Proxy
+        {
+            get
+            {
+                return nextInvocationInfo.Proxy;
+            }            
+        }
+
+        /// <summary>
+        /// Gets the arguments currently being passed to the target method.
+        /// </summary>
+        public object[] Arguments
+        {
+            get
+            {
+                return nextInvocationInfo.Arguments;
+            }            
+        }
+
+        /// <summary>
+        /// Proceeds to the next <see cref="IInterceptor"/> in the interceptor chain.
+        /// </summary>
+        /// <returns>The return value from the method call.</returns>
+        public object Proceed()
+        {
+            return nextInterceptor.Value.Invoke(nextInvocationInfo);
+        }
+    }
+
+    /// <summary>
+    /// A composite <see cref="IInterceptor"/> that is responsible for 
+    /// passing the <see cref="IInvocationInfo"/> down the interceptor chain.
     /// </summary>
     public class CompositeInterceptor : IInterceptor
     {
@@ -471,27 +594,22 @@ namespace LightInject.Interception
         /// </summary>
         /// <param name="interceptors">The <see cref="IInterceptor"/> chain to be invoked.</param>
         public CompositeInterceptor(Lazy<IInterceptor>[] interceptors)
-        {
+        {                                 
             this.interceptors = interceptors;
         }
 
         /// <summary>
         /// Invoked when a method call is intercepted.
         /// </summary>
-        /// <param name="invocationInfo">The <see cref="InvocationInfo"/> instance that 
+        /// <param name="invocationInfo">The <see cref="IInvocationInfo"/> instance that 
         /// contains information about the current method call.</param>
         /// <returns>The return value from the method.</returns>
         public object Invoke(IInvocationInfo invocationInfo)
         {
-            for (int i = interceptors.Length - 1; i >= 0; i--)
-            {
-                int index = i;
-                IInvocationInfo nextInvocationInfo = invocationInfo;
-                var lazyNextProceedDelegate =
-                    new Lazy<Func<object, object[], object>>(
-                        () => (instance, arguments) => interceptors[index].Value.Invoke(nextInvocationInfo));
-                invocationInfo = new InvocationInfo(
-                    invocationInfo.Method, lazyNextProceedDelegate, invocationInfo.Proxy, invocationInfo.Arguments);
+            for (int i = interceptors.Length - 1; i >= 1; i--)
+            {                                                
+                IInvocationInfo nextInvocationInfo = invocationInfo;                
+                invocationInfo = new InterceptorInvocationInfo(nextInvocationInfo, interceptors[i]);                               
             }
 
             return interceptors[0].Value.Invoke(invocationInfo);
@@ -608,8 +726,8 @@ namespace LightInject.Interception
     /// </summary>
     internal static class InterceptionContainerExtensions
     {
-        private static readonly ConcurrentDictionary<ServiceRegistration, Type> ProxyCache =
-            new ConcurrentDictionary<ServiceRegistration, Type>();
+        private static readonly ThreadSafeDictionary<ServiceRegistration, Type> ProxyCache =
+            new ThreadSafeDictionary<ServiceRegistration, Type>();
 
         /// <summary>
         /// Decorates the service identified by the <paramref name="serviceSelector"/> delegate with a dynamic proxy type
@@ -687,6 +805,17 @@ namespace LightInject.Interception
         }
 
         /// <summary>
+        /// Gets a value that indicates whether the <paramref name="method"/> is declared <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The <see cref="Type"/> to check against the declaring type of the <paramref name="method"/>.</typeparam>
+        /// <param name="method">The <see cref="MethodInfo"/> for which to check the declaring type.</param>
+        /// <returns>true if the <paramref name="method"/> is declared by <typeparamref name="T"/>, otherwise, false.</returns>
+        public static bool IsDeclaredBy<T>(this MethodInfo method)
+        {
+            return IsDeclaredBy(method, typeof(T));
+        }
+
+        /// <summary>
         /// Gets a value that indicates whether the <paramref name="method"/> represent a property setter.
         /// </summary>
         /// <param name="method">The target <see cref="MethodInfo"/>.</param>
@@ -716,32 +845,36 @@ namespace LightInject.Interception
             return method.GetDeclaringType().GetProperties().FirstOrDefault(p => p.GetGetMethod() == method || p.GetSetMethod() == method);
         }        
     }
-     
-    internal static class TypeBuilderExtensions
-    {
-        public static FieldBuilder DefinePrivateField(this TypeBuilder typeBuilder, string fieldName, Type type)
-        {
-            return typeBuilder.DefineField(fieldName, type, FieldAttributes.Private);
-        }
 
-        public static FieldBuilder DefinePublicStaticField(this TypeBuilder typeBuilder, string fieldName, Type type)
-        {
-            return typeBuilder.DefineField(fieldName, type, FieldAttributes.Public | FieldAttributes.Static);
-        }
-    }
-
+    /// <summary>
+    /// A class that is capable of creating a <see cref="TypeBuilder"/> that 
+    /// is used to build the proxy type.
+    /// </summary>
     internal class TypeBuilderFactory : ITypeBuilderFactory
     {
+        /// <summary>
+        /// Creates a <see cref="TypeBuilder"/> instance that is used to build a proxy 
+        /// type that inherits/implements the <paramref name="targetType"/> with an optional 
+        /// set of <paramref name="additionalInterfaces"/>.
+        /// </summary>
+        /// <param name="targetType">The <see cref="Type"/> that the <see cref="TypeBuilder"/> will inherit/implement.</param>
+        /// <param name="additionalInterfaces">A set of additional interfaces to be implemented.</param>
+        /// <returns>A <see cref="TypeBuilder"/> instance for which to build the proxy type.</returns>
         public TypeBuilder CreateTypeBuilder(Type targetType, Type[] additionalInterfaces)
         {
             ModuleBuilder moduleBuilder = GetModuleBuilder();
             const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
             var typeName = targetType.Name + "Proxy";
             Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
-            var typeBuilder =  moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);            
+            var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);            
             return typeBuilder;
         }
 
+        /// <summary>
+        /// Creates a proxy <see cref="Type"/> based on the given <paramref name="typeBuilder"/>.
+        /// </summary>
+        /// <param name="typeBuilder">The <see cref="TypeBuilder"/> that represents the proxy type.</param>
+        /// <returns>The proxy <see cref="Type"/>.</returns>
         public Type CreateType(TypeBuilder typeBuilder)
         {
             return typeBuilder.CreateType();
@@ -761,10 +894,13 @@ namespace LightInject.Interception
         }
     }
 
+    /// <summary>
+    /// A class that is capable of creating a proxy <see cref="Type"/>.
+    /// </summary>
     internal class ProxyBuilder : IProxyBuilder
     {        
-        private static readonly ConstructorInfo LazyInterceptorConstructor;
-        private static readonly ConstructorInfo InvocationInfoConstructor;
+        private static readonly ConstructorInfo LazyInterceptorConstructor;        
+        private static readonly ConstructorInfo TargetInvocationInfoConstructor;
         private static readonly ConstructorInfo InterceptedMethodInfoConstructor;
         private static readonly ConstructorInfo OpenGenericInterceptedMethodInfoConstructor;
         private static readonly ConstructorInfo ObjectConstructor;
@@ -774,11 +910,7 @@ namespace LightInject.Interception
         private static readonly MethodInfo GetTypeFromHandleMethod;        
         private static readonly MethodInfo LazyInterceptorGetValueMethod;        
         private static readonly MethodInfo InterceptorInvokeMethod;
-        private static readonly MethodInfo GetInterceptedMethodInfoMethod;
-        
-        private static readonly FieldInfo InterceptedMethodInfoProceedDelegateField;
-        private static readonly FieldInfo InterceptedMethodInfoMethodField;
-        
+        private static readonly MethodInfo GetInterceptedMethodInfoMethod;                
         private readonly Dictionary<string, int> memberNames = new Dictionary<string, int>();
         private readonly ITypeBuilderFactory typeBuilderFactory;
         
@@ -799,16 +931,17 @@ namespace LightInject.Interception
             CreateMethodInterceptorMethod = typeof(MethodInterceptorFactory).GetMethod("CreateMethodInterceptor");
             GetMethodFromHandleMethod = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
             GetTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Public | BindingFlags.Static);
-            InterceptedMethodInfoConstructor = typeof(InterceptedMethodInfo).GetConstructors()[0];
-            OpenGenericInterceptedMethodInfoConstructor = typeof(OpenGenericInterceptedMethodInfo).GetConstructors()[0];
-            LazyInterceptorGetValueMethod = typeof(Lazy<IInterceptor>).GetProperty("Value").GetGetMethod();
-            InterceptedMethodInfoMethodField = typeof(InterceptedMethodInfo).GetField("Method");
-            InterceptedMethodInfoProceedDelegateField = typeof(InterceptedMethodInfo).GetField("ProceedDelegate");
-            InvocationInfoConstructor = typeof(InvocationInfo).GetConstructors()[0];
+            InterceptedMethodInfoConstructor = typeof(TargetMethodInfo).GetConstructors()[0];
+            OpenGenericInterceptedMethodInfoConstructor = typeof(OpenGenericTargetMethodInfo).GetConstructors()[0];
+            LazyInterceptorGetValueMethod = typeof(Lazy<IInterceptor>).GetProperty("Value").GetGetMethod();                        
+            TargetInvocationInfoConstructor = typeof(TargetInvocationInfo).GetConstructors()[0];
             InterceptorInvokeMethod = typeof(IInterceptor).GetMethod("Invoke");
-            GetInterceptedMethodInfoMethod = typeof(OpenGenericInterceptedMethodInfo).GetMethod("GetInterceptedMethodInfo");
+            GetInterceptedMethodInfoMethod = typeof(OpenGenericTargetMethodInfo).GetMethod("GetInterceptedMethodInfo");
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProxyBuilder"/> class.
+        /// </summary>
         public ProxyBuilder()
         {
             typeBuilderFactory = new TypeBuilderFactory();
@@ -819,6 +952,13 @@ namespace LightInject.Interception
             this.typeBuilderFactory = typeBuilderFactory;
         }
 #endif
+
+        /// <summary>
+        /// Gets a proxy type based on the given <paramref name="definition"/>.
+        /// </summary>
+        /// <param name="definition">A <see cref="ProxyDefinition"/> instance that contains information about the 
+        /// proxy type to be created.</param>
+        /// <returns>A proxy <see cref="Type"/>.</returns>
         public Type GetProxyType(ProxyDefinition definition)
         {
             proxyDefinition = definition;
@@ -860,19 +1000,18 @@ namespace LightInject.Interception
 
         private static void PushInvocationInfoForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
         {            
-            PushCurrentMethodForNonGenericMethod(staticInterceptedMethodInfoField, il);
-            PushProceedDelegateForNonGenericMethod(staticInterceptedMethodInfoField, il);
+            PushTargetMethodInfoForNonGenericMethod(staticInterceptedMethodInfoField, il);            
             PushProxyInstance(il);
             PushArguments(il, parameters, argumentsArrayVariable);
-            il.Emit(OpCodes.Newobj, InvocationInfoConstructor);
+            il.Emit(OpCodes.Newobj, TargetInvocationInfoConstructor);
         }
 
         private static void PushInvocationInfoForGenericMethod(FieldInfo staticOpenGenericInterceptedMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable, GenericTypeParameterBuilder[] genericParameters)
         {
             PushCurrentMethodForGenericMethod(staticOpenGenericInterceptedMethodInfoField, il, genericParameters);                        
             PushProxyInstance(il);
-            PushArguments(il, parameters, argumentsArrayVariable);
-            il.Emit(OpCodes.Newobj, InvocationInfoConstructor);
+            PushArguments(il, parameters, argumentsArrayVariable);            
+            il.Emit(OpCodes.Newobj, TargetInvocationInfoConstructor);
         }
 
         private static GenericTypeParameterBuilder[] CreateGenericTypeParameters(MethodInfo targetMethod, MethodBuilder methodBuilder)
@@ -965,8 +1104,7 @@ namespace LightInject.Interception
             var typeArrayField = il.DeclareLocal(typeof(Type[]));
             il.Emit(OpCodes.Ldc_I4, genericParameters.Length);
             il.Emit(OpCodes.Newarr, typeof(Type));
-            il.Emit(OpCodes.Stloc, typeArrayField);
-            var delegateInfoField = il.DeclareLocal(typeof(InterceptedMethodInfo));
+            il.Emit(OpCodes.Stloc, typeArrayField);            
             for (int i = 0; i < genericParameters.Length; i++)
             {
                 il.Emit(OpCodes.Ldloc, typeArrayField);
@@ -979,24 +1117,11 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Ldsfld, staticOpenGenericInterceptedMethodInfoField);
             il.Emit(OpCodes.Ldloc, typeArrayField);
             il.Emit(OpCodes.Call, GetInterceptedMethodInfoMethod);
-            il.Emit(OpCodes.Stloc, delegateInfoField);
-
-            il.Emit(OpCodes.Ldloc, delegateInfoField);
-            il.Emit(OpCodes.Ldfld, InterceptedMethodInfoMethodField);
-            il.Emit(OpCodes.Ldloc, delegateInfoField);
-            il.Emit(OpCodes.Ldfld, InterceptedMethodInfoProceedDelegateField);            
         }
 
-        private static void PushCurrentMethodForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il)
+        private static void PushTargetMethodInfoForNonGenericMethod(FieldInfo staticTargetMethodInfoField, ILGenerator il)
         {
-            il.Emit(OpCodes.Ldsfld, staticInterceptedMethodInfoField);
-            il.Emit(OpCodes.Ldfld, InterceptedMethodInfoMethodField);
-        }
-
-        private static void PushProceedDelegateForNonGenericMethod(FieldInfo staticInterceptedMethodInfoField, ILGenerator il)
-        {
-            il.Emit(OpCodes.Ldsfld, staticInterceptedMethodInfoField);
-            il.Emit(OpCodes.Ldfld, InterceptedMethodInfoProceedDelegateField);
+            il.Emit(OpCodes.Ldsfld, staticTargetMethodInfoField);            
         }
 
         private static void PushInterceptorInstance(FieldInfo lazyMethodInterceptorField, ILGenerator il)
@@ -1233,8 +1358,8 @@ namespace LightInject.Interception
         private FieldBuilder DefineStaticInterceptedMethodInfoField(MethodInfo targetMethod)
         {
             var fieldBuilder = typeBuilder.DefineField(
-                GetUniqueMemberName(targetMethod.Name) + "InterceptedMethodInfo",
-                typeof(InterceptedMethodInfo),
+                GetUniqueMemberName(targetMethod.Name + "TargetMethodInfo"),
+                typeof(TargetMethodInfo),
                 FieldAttributes.InitOnly | FieldAttributes.Private | FieldAttributes.Static);
             var il = staticConstructorBuilder.GetILGenerator();
             PushMethodInfo(targetMethod, il);
@@ -1246,8 +1371,8 @@ namespace LightInject.Interception
         private FieldBuilder DefineStaticOpenGenericInterceptedMethodInfoField(MethodInfo targetMethod)
         {
             var fieldBuilder = typeBuilder.DefineField(
-                GetUniqueMemberName(targetMethod.Name) + "DelegateInfoCache",
-                typeof(OpenGenericInterceptedMethodInfo),
+                GetUniqueMemberName(targetMethod.Name + "OpenGenericMethodInfo"),
+                typeof(OpenGenericTargetMethodInfo),
                 FieldAttributes.InitOnly | FieldAttributes.Private | FieldAttributes.Static);
             var il = staticConstructorBuilder.GetILGenerator();            
             PushMethodInfo(targetMethod, il);
@@ -1282,7 +1407,8 @@ namespace LightInject.Interception
             var methodName = targetMethod.Name.Substring(0, 1).ToLower() + targetMethod.Name.Substring(1);
 
             var memberName = GetUniqueMemberName(methodName + "Interceptor");
-            return typeBuilder.DefinePrivateField(memberName, typeof(Lazy<IInterceptor>));
+
+            return typeBuilder.DefineField(memberName, typeof(Lazy<IInterceptor>), FieldAttributes.Private);            
         }
 
         private string GetUniqueMemberName(string memberName)
@@ -1290,12 +1416,14 @@ namespace LightInject.Interception
             int count;
             if (!memberNames.TryGetValue(memberName, out count))
             {
-                memberNames.Add(memberName, 0);
-                return memberName;
+                memberNames.Add(memberName, 0);                
+            }
+            else
+            {
+                memberNames[memberName] = count + 1;    
             }
 
-            memberNames[memberName] = count + 1;
-            return memberName + count;
+            return memberName + memberNames[memberName];
         }
 
         private MethodBuilder ImplementPassThroughMethod(MethodInfo targetMethod)
@@ -1358,11 +1486,14 @@ namespace LightInject.Interception
             lazyInterceptorFields = new FieldInfo[interceptors.Length];
             for (int index = 0; index < interceptors.Length; index++)
             {
-                var interceptorField = typeBuilder.DefinePrivateField(
-                     "interceptor" + index, typeof(Lazy<IInterceptor>));
+                var interceptorField = typeBuilder.DefineField(
+                    "interceptor" + index, typeof(Lazy<IInterceptor>), FieldAttributes.Private);
 
-                var interceptorFactoryField =
-                   typeBuilder.DefinePublicStaticField("InterceptorFactory" + index, typeof(Func<IInterceptor>));
+                var interceptorFactoryField = typeBuilder.DefineField(
+                    "InterceptorFactory" + index,
+                    typeof(Func<IInterceptor>),
+                    FieldAttributes.Public | FieldAttributes.Static);
+                
                 ImplementLazyInterceptorInitialization(interceptorField, interceptorFactoryField);
 
                 lazyInterceptorFields[index] = interceptorField;
@@ -1482,13 +1613,30 @@ namespace LightInject.Interception
         }
     }
 
+    /// <summary>
+    /// An <see cref="IEqualityComparer{T}"/> that is capable of comparing 
+    /// <see cref="Type"/> arrays.
+    /// </summary>
     internal class TypeArrayComparer : IEqualityComparer<Type[]>
     {
+        /// <summary>
+        /// Determines if two <see cref="Type"/> arrays are equal.
+        /// </summary>
+        /// <param name="x">The first <see cref="Type"/> array.</param>
+        /// <param name="y">The second <see cref="Type"/> array.</param>
+        /// <returns>true if the specified type arrays are equal; otherwise, false.</returns>
         public bool Equals(Type[] x, Type[] y)
         {
             return ReferenceEquals(x, y) || (x != null && y != null && x.SequenceEqual(y));
         }
 
+        /// <summary>
+        /// Returns a hash code for the given set of <paramref name="types"/>.
+        /// </summary>
+        /// <param name="types">The <see cref="Type"/> array for which to get the hash code.</param>        
+        /// <returns>
+        /// The hash code for the given set of <paramref name="types"/>.
+        /// </returns>
         public int GetHashCode(Type[] types)
         {
             return types.Aggregate(0, (current, type) => current ^ type.GetHashCode());

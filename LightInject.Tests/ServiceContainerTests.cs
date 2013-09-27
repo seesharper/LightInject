@@ -1032,5 +1032,18 @@
 
             Assert.IsInstanceOfType(instance.Value, typeof(Foo));
         }
+
+        [TestMethod]
+        public void GetInstance_SameServiceInjectedIntoConstructorAndProperty_InjectsDependency()
+        {
+            var container = new ServiceContainer();
+            container.Register<IBar, Bar>();
+            container.Register<IFoo, FooWithConstructorAndPropertyDependency>();
+
+            var instance = (FooWithConstructorAndPropertyDependency)container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
+            Assert.IsInstanceOfType(instance.ConstructorInjectedBar, typeof(IBar));
+        }
     }
 }

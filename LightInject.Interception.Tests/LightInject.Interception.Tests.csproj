@@ -70,6 +70,7 @@
     <Compile Include="DynamicMethodBuilderTests.cs" />
     <Compile Include="DynamicMethodBuilderVerificationTests.cs" />
     <Compile Include="MethodBuilderDynamicMethodSkeleton.cs" />
+    <Compile Include="MethodInfoExtensionsTests.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="ProxyBuilderTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

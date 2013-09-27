@@ -1,6 +1,7 @@
 ﻿namespace LightInject.Interception.Tests
 {
     using System;
+    using System.IO;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -9,13 +10,26 @@
     public class DynamicMethodBuilderTests
     {
         [TestMethod]
+        public void GetDelegate_TwiceForSameMethod_CallsGetDelegateOnlyOnce()
+        {
+            var method = typeof(IMethodWithNoParameters).GetMethods()[0];
+            var methodBuilderMock = new Mock<IMethodBuilder>();
+            var cachedMethodBuilder = new CachedMethodBuilder(methodBuilderMock.Object);
+
+            cachedMethodBuilder.GetDelegate(method);
+            cachedMethodBuilder.GetDelegate(method);
+
+            methodBuilderMock.Verify(m => m.GetDelegate(method),Times.Once());
+        }
+
+        [TestMethod]
         public void Execute_MethodWithNoParameters_IsInvoked()
         {
             var targetMock = new Mock<IMethodWithNoParameters>();
             var method = typeof(IMethodWithNoParameters).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
 
-            methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { });
+            methodBuilder.GetDelegate(method)(targetMock.Object, new object[] { });
             
             targetMock.Verify(t => t.Execute(), Times.Once());
         }
@@ -27,7 +41,7 @@
             var method = typeof(IMethodWithReferenceTypeParameter).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
 
-            methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { "SomeValue" });
+            methodBuilder.GetDelegate(method)(targetMock.Object, new object[] { "SomeValue" });
             
             targetMock.Verify(t => t.Execute("SomeValue"), Times.Once());
         }
@@ -39,7 +53,7 @@
             var method = typeof(IMethodWithValueTypeParameter).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
 
-            methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { 42 });
+            methodBuilder.GetDelegate(method)(targetMock.Object, new object[] { 42 });
 
             targetMock.Verify(t => t.Execute(42), Times.Once());
         }
@@ -54,7 +68,7 @@
             var methodBuilder = GetMethodBuilder();
             var arguments = new object[] { "SomeValue" };
 
-            methodBuilder.CreateDelegate(method)(targetMock.Object, arguments);
+            methodBuilder.GetDelegate(method)(targetMock.Object, arguments);
             
             Assert.AreEqual("AnotherValue", (string)arguments[0]);
         }
@@ -69,7 +83,7 @@
             var methodBuilder = GetMethodBuilder();
             var arguments = new object[] { 42 };
 
-            methodBuilder.CreateDelegate(method)(targetMock.Object, arguments);
+            methodBuilder.GetDelegate(method)(targetMock.Object, arguments);
 
             Assert.AreEqual(52, (int)arguments[0]);
         }
@@ -79,24 +93,25 @@
         {
             var method = typeof(IMethodWithReferenceTypeRefParameter).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
-            var arguments = new object[] { new ReferenceTypeFoo { Value = "SomeValue" } };
+            var arguments = new object[] { "SomeValue" };
 
-            methodBuilder.CreateDelegate(method)(new MethodWithReferenceTypeRefParameter(), arguments);
+            methodBuilder.GetDelegate(method)(new MethodWithReferenceTypeRefParameter("AnotherValue"), arguments);
             
-            Assert.AreEqual("AnotherValue", ((ReferenceTypeFoo)arguments[0]).Value);
+            Assert.AreEqual("AnotherValue", ((string)arguments[0]));
         }
-
+        
         [TestMethod]
         public void Execute_MethodWithValueTypeRefParameter_ReturnsValueFromTarget()
         {
             var method = typeof(IMethodWithValueTypeRefParameter).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
-            var arguments = new object[] { new ValueTypeFoo() { Value = "SomeValue" } };
+            var arguments = new object[] { 42 };
             
-            methodBuilder.CreateDelegate(method)(new MethodWithValueTypeRefParameter(), arguments);
-            
-            Assert.AreEqual("AnotherValue", ((ValueTypeFoo)arguments[0]).Value);
+            methodBuilder.GetDelegate(method)(new MethodWithValueTypeRefParameter(), arguments);
+
+            Assert.AreEqual(84, (int)arguments[0]);
         }
+
 
         [TestMethod]
         public void Execute_MethodWithNullableTypeParameter_PassedValueToTarget()
@@ -105,7 +120,7 @@
             var method = typeof(IMethodWithNullableParameter).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
 
-            methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { 42 });
+            methodBuilder.GetDelegate(method)(targetMock.Object, new object[] { 42 });
             
             targetMock.Verify(t => t.Execute(42), Times.Once());
         }
@@ -117,7 +132,7 @@
             var method = typeof(IMethodWithEnumParameter).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
 
-            methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { StringSplitOptions.RemoveEmptyEntries });
+            methodBuilder.GetDelegate(method)(targetMock.Object, new object[] { StringSplitOptions.RemoveEmptyEntries });
 
             targetMock.Verify(t => t.Execute(StringSplitOptions.RemoveEmptyEntries), Times.Once());
         }
@@ -132,7 +147,7 @@
             var methodBuilder = GetMethodBuilder();
             var arguments = new object[] { StringSplitOptions.RemoveEmptyEntries };
 
-            methodBuilder.CreateDelegate(method)(targetMock.Object, arguments);
+            methodBuilder.GetDelegate(method)(targetMock.Object, arguments);
 
             Assert.AreEqual(StringSplitOptions.None, arguments[0]);
         }
@@ -144,7 +159,7 @@
             var methodBuilder = GetMethodBuilder();
             var arguments = new object[] { StringSplitOptions.RemoveEmptyEntries };
 
-            methodBuilder.CreateDelegate(method)(new MethodWithEnumRefParameter(), arguments);
+            methodBuilder.GetDelegate(method)(new MethodWithEnumRefParameter(), arguments);
 
             Assert.AreEqual(StringSplitOptions.None, arguments[0]);
         }
@@ -157,7 +172,7 @@
             var method = typeof(IMethodWithReferenceTypeReturnValue).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
 
-            var result = methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { });
+            var result = methodBuilder.GetDelegate(method)(targetMock.Object, new object[] { });
 
             Assert.AreEqual("SomeValue", (string)result);
         }
@@ -170,7 +185,7 @@
             var method = typeof(IMethodWithValueTypeReturnValue).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
 
-            var result = methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { });
+            var result = methodBuilder.GetDelegate(method)(targetMock.Object, new object[] { });
 
             Assert.AreEqual(42, (int)result);
         }
@@ -183,10 +198,11 @@
             var method = typeof(IMethodWithEnumReturnValue).GetMethods()[0];
             var methodBuilder = GetMethodBuilder();
 
-            var result = methodBuilder.CreateDelegate(method)(targetMock.Object, new object[] { });
+            var result = methodBuilder.GetDelegate(method)(targetMock.Object, new object[] { });
 
             Assert.AreEqual(StringSplitOptions.RemoveEmptyEntries, result);
         }
+
 
         //[TestMethod]
         //public void PerformanceTest()
@@ -201,10 +217,10 @@
         //    var methodInvoker = GetMethodBuilder();
         //    Measure(() => methodInvoker.Invoke(method, target, new object[] { "SomeValue" }), iterations, "MethodInvoker");
 
-        //    Func<object, object[], object> del = GetMethodBuilder().CreateDelegate(method);
+        //    Func<object, object[], object> del = GetMethodBuilder().GetDelegate(method);
         //    Measure(() => del(target, new object[] { "someValue" }), iterations, "CachedDelegate");
 
-        //    Lazy<Func<object, object[], object>> lazy = new Lazy<Func<object, object[], object>>(() => methodInvoker.CreateDelegate(method));
+        //    Lazy<Func<object, object[], object>> lazy = new Lazy<Func<object, object[], object>>(() => methodInvoker.GetDelegate(method));
         //    Measure(() => lazy.Value(target, new object[] { "someValue" }), iterations, "LazyDelegate");
 
         //}

@@ -111,38 +111,83 @@
 
     public interface IMethodWithReferenceTypeRefParameter
     {
-        void Execute(ref ReferenceTypeFoo value);
+        void Execute(ref string value);
     }
 
     public class MethodWithReferenceTypeRefParameter : IMethodWithReferenceTypeRefParameter
     {
-        public void Execute(ref ReferenceTypeFoo value)
+        private readonly string valueToReturn;
+
+        public MethodWithReferenceTypeRefParameter(string valueToReturn)
         {
-            value = new ReferenceTypeFoo() { Value = "AnotherValue" };
+            this.valueToReturn = valueToReturn;
+        }
+
+        public void Execute(ref string value)
+        {
+            value = valueToReturn;
         }
     }
 
     public interface IMethodWithValueTypeRefParameter
     {
-        void Execute(ref ValueTypeFoo value);
+        void Execute(ref int value);
     }
 
     public class MethodWithValueTypeRefParameter : IMethodWithValueTypeRefParameter
     {
-        public void Execute(ref ValueTypeFoo value)
+        public void Execute(ref int value)
         {
-            value = new ValueTypeFoo { Value = "AnotherValue" };
+            value = 84;
         }
     }
+
+    //public class MethodWithValueTypeRefParameter : IMethodWithValueTypeRefParameter
+    //{
+    //    public void Execute(ref ValueTypeFoo value)
+    //    {
+    //        value = new ValueTypeFoo { Value = "AnotherValue" };
+    //    }
+    //}
 
     public interface IMethodWithValueTypeOutParameter
     {
         void Execute(out int value);
     }
 
+    public class MethodWithValueTypeOutParameter : IMethodWithValueTypeOutParameter
+    {
+        private readonly int valueToReturn;
+
+        public MethodWithValueTypeOutParameter(int valueToReturn)
+        {
+            this.valueToReturn = valueToReturn;
+        }
+
+        public void Execute(out int value)
+        {
+            value = valueToReturn;
+        }
+    }
+
     public interface IMethodWithReferenceTypeOutParameter
     {
         void Execute(out string value);
+    }
+
+    public class MethodWithReferenceTypeOutParameter : IMethodWithReferenceTypeOutParameter
+    {
+        private readonly string valueToReturn;
+
+        public MethodWithReferenceTypeOutParameter(string valueToReturn)
+        {
+            this.valueToReturn = valueToReturn;
+        }
+
+        public void Execute(out string value)
+        {
+            value = valueToReturn;
+        }
     }
 
     public interface IMethodWithReferenceTypeReturnValue
@@ -229,5 +274,13 @@
     public interface IMethodWithTargetReturnType
     {
         IMethodWithTargetReturnType Execute();
+    }
+
+    public interface IClassWithOverloadedMethods
+    {
+        void Execute();
+
+        void Execute(string value);
+
     }
 }

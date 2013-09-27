@@ -532,4 +532,16 @@ namespace LightInject.SampleLibrary
             Foo = foo;
         }
     }
+
+    public class FooWithConstructorAndPropertyDependency : IFoo
+    {
+        public FooWithConstructorAndPropertyDependency(IBar bar)
+        {
+            ConstructorInjectedBar = bar;
+        }
+
+        public IBar ConstructorInjectedBar { get; private set; }
+
+        public IBar Bar { get; set; }
+    }
 }
