@@ -8,11 +8,11 @@
     public class ContainerInterceptionTests
     {
         [TestMethod]         
-        public void Decorate_Service_ReturnsProxyInstance()
+        public void Intercept_Service_ReturnsProxyInstance()
         {
             var container = new ServiceContainer();
             container.Register<IFoo, Foo>();
-            container.Decorate(sr => sr.ServiceType == typeof(IFoo), pd => pd.Implement(info => true, () => new SampleInterceptor()));
+            container.Intercept(sr => sr.ServiceType == typeof(IFoo), pd => pd.Implement(info => true, () => new SampleInterceptor()));
 
             var instance = container.GetInstance<IFoo>();
 
