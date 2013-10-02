@@ -2,6 +2,8 @@
 {
     using System;
 
+    using LightInject.Interception.Tests.NamespaceB;
+
     public interface ITarget
     {        
     }
@@ -61,8 +63,7 @@
         event EventHandler<EventArgs> IClassWithEvent.SomeEvent
         {
             add
-            {                
-                
+            {                                
                 throw new NotImplementedException();
             }
             remove
@@ -215,6 +216,15 @@
         void Execute<T>(T value) where T : struct;
     }
 
+    public interface IMethodWithCovariantTypeParameter<out T>
+    {
+        T Execute();
+    }
+
+    public interface IMethodWithContravariantTypeParameter<in T>
+    {
+        void Execute(T value);
+    }
 
     public interface IMethodWithGenericParameterThatHasNewConstraint
     {
@@ -283,4 +293,29 @@
         void Execute(string value);
 
     }
+
+
+    public interface IA
+    {
+        void Execute();
+    }
+
+    namespace NamespaceA
+    {
+        public interface IMethodWithNoParameters
+        {
+            void Execute();
+        }
+    }
+
+    namespace NamespaceB
+    {
+        public interface IMethodWithNoParameters
+        {
+            void Execute();
+        }
+    }
+    
+
+    
 }

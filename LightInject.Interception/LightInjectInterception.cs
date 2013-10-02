@@ -155,7 +155,7 @@ namespace LightInject.Interception
         /// <returns>The proxy <see cref="Type"/>.</returns>
         Type CreateType(TypeBuilder typeBuilder);
     }
-
+   
     /// <summary>
     /// A factory class used to create a <see cref="CompositeInterceptor"/> if the target method has 
     /// multiple interceptors.
@@ -481,7 +481,7 @@ namespace LightInject.Interception
         {
             get
             {
-                return this.targetMethodInfo.Method;
+                return targetMethodInfo.Method;
             }
         }
 
@@ -513,7 +513,7 @@ namespace LightInject.Interception
         /// <returns>The return value from the method call.</returns>
         public object Proceed()
         {
-            return this.targetMethodInfo.ProceedDelegate.Value(proxy.Target, arguments);
+            return targetMethodInfo.ProceedDelegate.Value(proxy.Target, arguments);
         }
     }
 
@@ -1332,27 +1332,24 @@ namespace LightInject.Interception
             ImplementLazyMethodInterceptorInitialization(lazyMethodInterceptorField, interceptorIndicies);
             ParameterInfo[] parameters = targetMethod.GetParameters();
             LocalBuilder argumentsArrayVariable = DeclareArgumentArray(il, parameters.Length);
-            if (!targetMethod.IsGenericMethod)
-            {
-                FieldInfo staticTargetMethodInfoField = DefineStaticTargetMethodInfoField(targetMethod);
-                PushInterceptorInstance(lazyMethodInterceptorField, il);
-                PushInvocationInfoForNonGenericMethod(staticTargetMethodInfoField, il, parameters, argumentsArrayVariable);                
-                il.Emit(OpCodes.Callvirt, InterceptorInvokeMethod);
-                UpdateRefArguments(parameters, il, argumentsArrayVariable);
-                PushReturnValue(il, targetMethod.ReturnType);                
+            PushInterceptorInstance(lazyMethodInterceptorField, il);
+            
+            if (targetMethod.IsGenericMethod)
+            {                                                
+                var genericParameters = CreateGenericTypeParameters(targetMethod, methodBuilder);
+                FieldInfo staticOpenGenericTargetMethodInfoField =
+                       DefineStaticOpenGenericTargetMethodInfoField(targetMethod);
+                PushInvocationInfoForGenericMethod(staticOpenGenericTargetMethodInfoField, il, parameters, argumentsArrayVariable, genericParameters);                                                
             }
             else
-            {
-                FieldInfo staticOpenGenericTargetMethodInfoField =
-                    DefineStaticOpenGenericTargetMethodInfoField(targetMethod);
-                PushInterceptorInstance(lazyMethodInterceptorField, il);
-                var genericParameters = CreateGenericTypeParameters(targetMethod, methodBuilder);
-                PushInvocationInfoForGenericMethod(staticOpenGenericTargetMethodInfoField, il, parameters, argumentsArrayVariable, genericParameters);
-                il.Emit(OpCodes.Callvirt, InterceptorInvokeMethod);
-                UpdateRefArguments(parameters, il, argumentsArrayVariable);
-                PushReturnValue(il, targetMethod.ReturnType);              
+            {                
+                FieldInfo staticTargetMethodInfoField = DefineStaticTargetMethodInfoField(targetMethod);                
+                PushInvocationInfoForNonGenericMethod(staticTargetMethodInfoField, il, parameters, argumentsArrayVariable);                
             }
 
+            Call(il, InterceptorInvokeMethod);
+            UpdateRefArguments(parameters, il, argumentsArrayVariable);
+            PushReturnValue(il, targetMethod.ReturnType);              
             return methodBuilder;
         }
        
@@ -1606,9 +1603,9 @@ namespace LightInject.Interception
         private void PopulateTargetMethods()
         {
             targetMethods = proxyDefinition.TargetType.GetMethods()
-                                           .Where(m => m.IsVirtual && !m.IsSpecialName)
+                                           .Where(m => !m.IsSpecialName)
                                            .Concat(typeof(object).GetMethods().Where(m => m.IsVirtual))
-                                           .Concat(proxyDefinition.AdditionalInterfaces.SelectMany(i => i.GetMethods().Where(m => m.IsVirtual && !m.IsSpecialName)))
+                                           .Concat(proxyDefinition.AdditionalInterfaces.SelectMany(i => i.GetMethods()))
                                            .Distinct()
                                            .ToArray();
         }
@@ -1628,7 +1625,7 @@ namespace LightInject.Interception
         /// <returns>true if the specified type arrays are equal; otherwise, false.</returns>
         public bool Equals(Type[] x, Type[] y)
         {
-            return ReferenceEquals(x, y) || (x != null && y != null && x.SequenceEqual(y));
+            return x.SequenceEqual(y);
         }
 
         /// <summary>

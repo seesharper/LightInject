@@ -33,6 +33,19 @@ namespace LightInject.Interception.Tests
         }
 
         [TestMethod]
+        public void GetProxyType_AdditionalInterfacesWithSameTypeAndMethodName_ImplementsBothInterfaces()
+        {
+            var proxyType = CreateProxyType(
+                typeof(IMethodWithNoParameters),
+                typeof(NamespaceA.IMethodWithNoParameters),
+                typeof(NamespaceB.IMethodWithNoParameters));
+
+            Assert.IsTrue(typeof(NamespaceA.IMethodWithNoParameters).IsAssignableFrom(proxyType));
+            Assert.IsTrue(typeof(NamespaceB.IMethodWithNoParameters).IsAssignableFrom(proxyType));
+        }
+
+
+        [TestMethod]
         public void GetProxyType_ForProxyDefinition_DeclaresLazyTargetField()
         {
             var proxyDefinition = new ProxyDefinition(typeof(ITarget));
@@ -363,6 +376,13 @@ namespace LightInject.Interception.Tests
         }
         
         [TestMethod]
+        public void GetProxyType_AdditionalInterfaceWithProperty_DoesNotImplementProperty()
+        {
+            var proxyType = CreateProxyType(typeof(IMethodWithNoParameters), typeof(IClassWithProperty));
+            Assert.AreEqual(0, proxyType.GetProperties().Length);
+        }
+        
+        [TestMethod]
         public void SetValue_InterfaceWithProperty_PassesValueToInterceptor()
         {
             var interceptorMock = new Mock<IInterceptor>();
@@ -396,6 +416,13 @@ namespace LightInject.Interception.Tests
             var proxyType = CreateProxyType(new ProxyDefinition(typeof(IClassWithEvent)));
 
             Assert.AreEqual(1, proxyType.GetEvents().Length);
+        }
+
+        [TestMethod]
+        public void GetProxyType_AdditionalInterfaceWithProperty_DoesNotImplementEvent()
+        {
+            var proxyType = CreateProxyType(typeof(IMethodWithNoParameters), typeof(IClassWithEvent));
+            Assert.AreEqual(0, proxyType.GetEvents().Length);
         }
 
         [TestMethod]
@@ -448,6 +475,21 @@ namespace LightInject.Interception.Tests
             var result = instance.Execute();
 
             Assert.IsInstanceOfType(result, typeof(IProxy));           
+        }
+
+        [TestMethod]
+        public void Execute_ProxyDefinitionWithoutMethodSelector_DoesNotInterceptObjectMethods()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var targetMock = new Mock<IMethodWithNoParameters>();
+            ProxyDefinition proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters), () => targetMock.Object);
+            proxyDefinition.Implement(() => interceptorMock.Object);
+            var instance = CreateProxyFromDefinition<IMethodWithNoParameters>(proxyDefinition);
+            instance.GetHashCode();
+            instance.Equals(instance);
+            instance.ToString();
+            instance.GetType();
+            interceptorMock.Verify(i => i.Invoke(It.IsAny<IInvocationInfo>()), Times.Never());
         }
 
         #region Generics
@@ -548,6 +590,29 @@ namespace LightInject.Interception.Tests
             VerifyArgument(interceptorMock, 42);
         }
 
+        [TestMethod]
+        public void Execute_MethodWithContravariantTypeParameter_PassesValueToInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var instance = CreateProxy<IMethodWithContravariantTypeParameter<int>>(interceptorMock.Object);
+
+            instance.Execute(42);
+
+            VerifyArgument(interceptorMock, 42);
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithCovariantTypeParameter_ReturnsValueFromInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            interceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Returns(42);
+            var instance = CreateProxy<IMethodWithCovariantTypeParameter<int>>(interceptorMock.Object);
+
+            var result = instance.Execute();
+
+            Assert.AreEqual(42, result);
+        }
+
 
         #endregion
 
@@ -572,38 +637,7 @@ namespace LightInject.Interception.Tests
             Assert.AreEqual(0, callCount);
         }
 
-        [TestMethod]
-        public void Execute_CompositeInterceptor_CallsProceedInExpectedSequence()
-        {
-
-            int callOrder = 0;
-            var firstInterceptorMock = new Mock<IInterceptor>();
-            firstInterceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>()))
-                                .Callback(() => Assert.AreEqual(0, callOrder++))
-                                .Returns<IInvocationInfo>(ii => ii.Proceed());
-
-
-            var secondInterceptorMock = new Mock<IInterceptor>();
-            secondInterceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>()))
-                                 .Callback(() => Assert.AreEqual(1, callOrder++))
-                                .Returns<IInvocationInfo>(ii => ii.Proceed());
-
-            var thirdInterceptorMock = new Mock<IInterceptor>();
-            thirdInterceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>()))
-                                .Callback(() => Assert.AreEqual(2, callOrder++))
-                                .Returns<IInvocationInfo>(ii => ii.Proceed());
-
-            var invocationMock = new Mock<IInvocationInfo>();
-
-            var compositeInterceptor = new CompositeInterceptor(new[]
-                                                                    {
-                                                                        new Lazy<IInterceptor>(() => firstInterceptorMock.Object), 
-                                                                        new Lazy<IInterceptor>(() => secondInterceptorMock.Object),
-                                                                        new Lazy<IInterceptor>(() => thirdInterceptorMock.Object)
-                                                                    });
-
-            compositeInterceptor.Invoke(invocationMock.Object);
-        }
+     
 
         
 
@@ -677,6 +711,18 @@ namespace LightInject.Interception.Tests
         {
             var proxyDefinition = new ProxyDefinition(targetType);
             proxyDefinition.Implement(m => m.IsDeclaredBy(targetType), () => null);
+            return CreateProxyBuilder().GetProxyType(proxyDefinition);
+        }
+
+        private Type CreateProxyType(Type targetType, params Type[] additionalInterfaces)
+        {
+            var proxyDefinition = new ProxyDefinition(targetType, additionalInterfaces);
+            proxyDefinition.Implement(m => m.IsDeclaredBy(targetType), () => null);
+            foreach (Type additionalInterface in additionalInterfaces)
+            {
+                Type @interface = additionalInterface;
+                proxyDefinition.Implement(m => m.IsDeclaredBy(@interface), () => null);
+            }
             return CreateProxyBuilder().GetProxyType(proxyDefinition);
         }
 

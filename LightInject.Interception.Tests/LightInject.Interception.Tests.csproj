@@ -69,6 +69,7 @@
     <Compile Include="ContainerInterceptionTests.cs" />
     <Compile Include="DynamicMethodBuilderTests.cs" />
     <Compile Include="DynamicMethodBuilderVerificationTests.cs" />
+    <Compile Include="InterceptorTests.cs" />
     <Compile Include="MethodBuilderDynamicMethodSkeleton.cs" />
     <Compile Include="MethodInfoExtensionsTests.cs" />
     <Compile Include="PerformanceTests.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="ProxyBuilderVerificationTests.cs" />
     <Compile Include="SampleInterceptor.cs" />
     <Compile Include="SampleInterfaces.cs" />
+    <Compile Include="TypeArrayComparerTests.cs" />
     <Compile Include="VerifiableTypeBuilderFactory.cs" />
   </ItemGroup>
   <ItemGroup>
