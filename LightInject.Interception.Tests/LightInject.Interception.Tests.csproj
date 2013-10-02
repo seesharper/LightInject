@@ -38,9 +38,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FluentAssertions">
-      <HintPath>..\packages\FluentAssertions.2.1.0.0\lib\net45\FluentAssertions.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Build.Utilities.v4.0" />
     <Reference Include="Moq">
       <HintPath>..\LightInject.Tests\bin\Debug\Moq.dll</HintPath>
@@ -94,9 +91,6 @@
       <Project>{3D54591B-B055-4EDD-96B6-E6F184E8CA6E}</Project>
       <Name>LightInject</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
