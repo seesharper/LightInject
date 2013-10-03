@@ -1791,11 +1791,11 @@ namespace LightInject
             var serviceDecorators = GetDecorators(serviceRegistration);
             if (serviceDecorators.Length > 0)
             {
-                EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, dm => DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dm));
+                EmitDecorators(serviceRegistration, serviceDecorators, dynamicMethodSkeleton, dm => DoEmitNewInstance(serviceRegistration, dm));
             }
             else
             {
-                DoEmitNewInstance(GetConstructionInfo(serviceRegistration), dynamicMethodSkeleton);
+                DoEmitNewInstance(serviceRegistration, dynamicMethodSkeleton);
             }
         }
 
@@ -1822,8 +1822,7 @@ namespace LightInject
                 {
                     ServiceType = serviceRegistration.ServiceType,
                     ImplementingType =
-                        deferredDecorator.ImplementingTypeFactory(
-                            serviceRegistration),
+                        deferredDecorator.ImplementingTypeFactory(this, serviceRegistration),                           
                     CanDecorate = sr => true
                 };
                 registeredDecorators.Add(decoratorRegistration);                
@@ -1866,16 +1865,27 @@ namespace LightInject
             generator.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
-        private void DoEmitNewInstance(ConstructionInfo constructionInfo, IMethodSkeleton dynamicMethodSkeleton)
+        private void DoEmitNewInstance(ServiceRegistration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
         {
-            if (constructionInfo.FactoryDelegate != null)
+            if (serviceRegistration.Value != null)
             {
-                EmitNewInstanceUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodSkeleton);
+                int index = constants.Add(serviceRegistration.Value);
+                Type serviceType = serviceRegistration.ServiceType;
+                EmitLoadConstant(dynamicMethodSkeleton, index, serviceType);                
             }
             else
             {
-                EmitNewInstanceUsingImplementingType(dynamicMethodSkeleton, constructionInfo, null);
-            }
+                var constructionInfo = GetConstructionInfo(serviceRegistration);
+
+                if (constructionInfo.FactoryDelegate != null)
+                {
+                    EmitNewInstanceUsingFactoryDelegate(constructionInfo.FactoryDelegate, dynamicMethodSkeleton);
+                }
+                else
+                {
+                    EmitNewInstanceUsingImplementingType(dynamicMethodSkeleton, constructionInfo, null);
+                }    
+            }                        
         }
 
         private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> decoratorTargetEmitter)
@@ -1886,13 +1896,7 @@ namespace LightInject
                 {
                     continue;
                 }
-
-                if (decorator.HasDeferredImplementingType)
-                {
-                    decorator.ServiceType = serviceRegistration.ServiceType;
-                    decorator.ImplementingType = decorator.ImplementingTypeFactory(serviceRegistration);                    
-                }
-
+                
                 Action<IMethodSkeleton> currentDecoratorTargetEmitter = decoratorTargetEmitter;
                 DecoratorRegistration currentDecorator = decorator;
                 decoratorTargetEmitter = dm => DoEmitDecoratorInstance(currentDecorator, dynamicMethodSkeleton, currentDecoratorTargetEmitter);
@@ -1951,7 +1955,9 @@ namespace LightInject
             return (Delegate)closedGenericMethod.Invoke(this, new object[] { del });
         }
 
+// ReSharper disable UnusedMember.Local
         private Func<T> CreateGenericDynamicMethodDelegate<T>(Func<object> del)
+// ReSharper restore UnusedMember.Local
         {            
             return () => (T)del();
         }
@@ -2222,16 +2228,9 @@ namespace LightInject
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime };
             Register(serviceRegistration);         
         }
-
+        
         private Action<IMethodSkeleton> ResolveEmitDelegate(ServiceRegistration serviceRegistration)
-        {
-            if (serviceRegistration.Value != null)
-            {
-                int index = constants.Add(serviceRegistration.Value);
-                Type serviceType = serviceRegistration.ServiceType;
-                return methodSkeleton => EmitLoadConstant(methodSkeleton, index, serviceType);
-            }
-            
+        {                    
             if (serviceRegistration.Lifetime == null)
             {
                 return methodSkeleton => EmitNewInstance(serviceRegistration, methodSkeleton);
@@ -2239,7 +2238,7 @@ namespace LightInject
 
             return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstance(serviceRegistration, ms), methodSkeleton);
         }
-
+        
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IMethodSkeleton> instanceEmitter, IMethodSkeleton dynamicMethodSkeleton)
         {
             if (serviceRegistration.Lifetime is PerContainerLifetime)
@@ -2318,7 +2317,7 @@ namespace LightInject
         
         private void RegisterValue(Type serviceType, object value, string serviceName)
         {
-            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Value = value };
+            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Value = value, Lifetime = new PerContainerLifetime() };
             Register(serviceRegistration);            
         }
 
@@ -3369,7 +3368,7 @@ namespace LightInject
         /// <summary>
         /// Gets or sets a <see cref="Lazy{T}"/> that defers resolving of the decorators implementing type.
         /// </summary>
-        public Func<ServiceRegistration, Type> ImplementingTypeFactory { get; internal set; }
+        public Func<IServiceFactory, ServiceRegistration, Type> ImplementingTypeFactory { get; internal set; }
 
         /// <summary>
         /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.

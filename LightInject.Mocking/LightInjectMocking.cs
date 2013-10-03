@@ -199,7 +199,7 @@ namespace LightInject.Mocking
         }
 
         private static ServiceRegistration GetExistingServiceRegistration(IServiceRegistry serviceRegistry, Type serviceType, string serviceName)
-        {
+        {            
             return serviceRegistry.AvailableServices.FirstOrDefault(sr => sr.ServiceType == serviceType && sr.ServiceName == serviceName);
         }
     }

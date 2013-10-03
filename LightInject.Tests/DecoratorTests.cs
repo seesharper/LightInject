@@ -323,6 +323,48 @@
             Assert.AreEqual(1, BarDecorator.Instances);
         }
 
+        [TestMethod]
+        public void GetInstance_ValueWithDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(new Foo());
+            container.Decorate<IFoo, FooDecorator>();
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+        }
+
+        [TestMethod]
+        public void GetInstance_ValueWithDecoratorRequestedTwice_DoesNotReapplyDecorators()
+        {
+            BarDecorator.Instances = 0;
+            var container = CreateContainer();
+            container.Register<IBar>(new Bar());
+            container.Decorate<IBar, BarDecorator>();
+
+            container.GetInstance<IBar>();
+            container.GetInstance<IBar>();
+
+            Assert.AreEqual(1, BarDecorator.Instances);
+        }
+
+        [TestMethod]
+        public void GetInstance_ValueInjectedIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        {
+            BarDecorator.Instances = 0;
+            var container = CreateContainer();
+            container.Register<IBar>(new Bar());
+            container.Decorate<IBar, BarDecorator>();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IFoo, AnotherFooWithDependency>("AnotherFooWithDependency");
+
+            container.GetAllInstances<IFoo>();
+
+            Assert.AreEqual(1, BarDecorator.Instances);
+        }
+
+
         private static FooDecorator GetFooDecorator(IFoo target)
         {
             return new FooDecorator(target);

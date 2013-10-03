@@ -34,7 +34,7 @@ namespace LightInject.Interception
     using System.Reflection.Emit;
 
     /// <summary>
-    /// Implemented by all proxy typeArguments.
+    /// Implemented by all proxy types.
     /// </summary>
     public interface IProxy
     {
@@ -696,9 +696,10 @@ namespace LightInject.Interception
         /// Implements the methods identified by the <paramref name="methodSelector"/> by forwarding method calls
         /// to the <see cref="IInterceptor"/> created by the <paramref name="interceptorFactory"/>.
         /// </summary>
-        /// <param name="methodSelector">A function delegate used to select the methods to be implemented</param>
         /// <param name="interceptorFactory">A function delegate used to create the <see cref="IInterceptor"/> instance.</param>
-        public void Implement(Func<MethodInfo, bool> methodSelector, Func<IInterceptor> interceptorFactory)
+        /// <param name="methodSelector">A function delegate used to select the methods to be implemented</param>
+        /// <returns>This instance.</returns>
+        public ProxyDefinition Implement(Func<IInterceptor> interceptorFactory, Func<MethodInfo, bool> methodSelector)
         {
             interceptors.Add(new InterceptorInfo
             {
@@ -706,6 +707,8 @@ namespace LightInject.Interception
                 MethodSelector = methodSelector,
                 Index = interceptors.Count
             });
+
+            return this;
         }
 
         /// <summary>
@@ -713,9 +716,12 @@ namespace LightInject.Interception
         /// to the <see cref="IInterceptor"/> created by the <paramref name="interceptorFactory"/>.
         /// </summary>        
         /// <param name="interceptorFactory">A function delegate used to create the <see cref="IInterceptor"/> instance.</param>       
-        public void Implement(Func<IInterceptor> interceptorFactory)
+        /// <returns>This instance.</returns>
+        public ProxyDefinition Implement(Func<IInterceptor> interceptorFactory)
         {
-            Implement(method => !method.IsDeclaredBy(typeof(object)), interceptorFactory);
+            Implement(interceptorFactory, method => !method.IsDeclaredBy(typeof(object)));
+
+            return this;
         }
     }
 
@@ -724,10 +730,7 @@ namespace LightInject.Interception
     /// creating proxy-based decorators.
     /// </summary>
     internal static class InterceptionContainerExtensions
-    {
-        private static readonly ThreadSafeDictionary<ServiceRegistration, Type> ProxyCache =
-            new ThreadSafeDictionary<ServiceRegistration, Type>();
-
+    {        
         /// <summary>
         /// Decorates the service identified by the <paramref name="serviceSelector"/> delegate with a dynamic proxy type
         /// that is used to decorate the target type.
@@ -736,11 +739,12 @@ namespace LightInject.Interception
         /// <param name="serviceSelector">A function delegate that is used to determine if the proxy-based decorator should be applied to the target service.</param>
         /// <param name="additionalInterfaces">A list of additional interface that will be implemented by the proxy type.</param>
         /// <param name="defineProxyType">An action delegate that is used to define the proxy type.</param>
-        public static void Intercept(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> serviceSelector, Type[] additionalInterfaces, Action<ProxyDefinition> defineProxyType)
+        public static void Intercept(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> serviceSelector, Type[] additionalInterfaces, Action<IServiceFactory, ProxyDefinition> defineProxyType)
         {
-            var decoratorRegistration = new DecoratorRegistration();
-            decoratorRegistration.CanDecorate = serviceSelector;
-            decoratorRegistration.ImplementingTypeFactory = sr => GetProxyType(sr, additionalInterfaces, defineProxyType);
+            var decoratorRegistration = new DecoratorRegistration();            
+            decoratorRegistration.CanDecorate =
+                registration => serviceSelector(registration) && registration.ServiceType != typeof(IInterceptor);
+            decoratorRegistration.ImplementingTypeFactory = (serviceFactory, serviceRegistration) => CreateProxyType(serviceRegistration, additionalInterfaces, serviceFactory, defineProxyType);
             serviceRegistry.Decorate(decoratorRegistration);
         }
 
@@ -751,22 +755,29 @@ namespace LightInject.Interception
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="serviceSelector">A function delegate that is used to determine if the proxy-based decorator should be applied to the target service.</param>        
         /// <param name="defineProxyType">An action delegate that is used to define the proxy type.</param>
-        public static void Intercept(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> serviceSelector, Action<ProxyDefinition> defineProxyType)
+        public static void Intercept(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> serviceSelector, Action<IServiceFactory, ProxyDefinition> defineProxyType)
         {
             Intercept(serviceRegistry, serviceSelector, Type.EmptyTypes, defineProxyType);
         }
 
-        private static Type GetProxyType(ServiceRegistration serviceRegistration, Type[] additionalInterfaces, Action<ProxyDefinition> defineProxyType)
+        /// <summary>
+        /// Decorates the service identified by the <paramref name="serviceSelector"/> delegate with a dynamic proxy type
+        /// that is used to decorate the target type.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        /// <param name="serviceSelector">A function delegate that is used to determine if the proxy-based decorator should be applied to the target service.</param>        
+        /// <param name="getInterceptor">A function delegate that is used to create the <see cref="IInterceptor"/> instance.</param>        
+        public static void Intercept(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> serviceSelector, Func<IServiceFactory, IInterceptor> getInterceptor)
         {
-            return ProxyCache.GetOrAdd(serviceRegistration, sr => CreateProxyType(sr, additionalInterfaces, defineProxyType));
+            Intercept(serviceRegistry, serviceSelector, Type.EmptyTypes, (factory, definition) => definition.Implement(() => getInterceptor(factory)));
         }
-
+        
         private static Type CreateProxyType(
-            ServiceRegistration registration, Type[] additionalInterfaces, Action<ProxyDefinition> defineProxyType)
-        {
+            ServiceRegistration registration, Type[] additionalInterfaces, IServiceFactory serviceFactory,  Action<IServiceFactory, ProxyDefinition> defineProxyType)
+        {           
             var proxyBuilder = new ProxyBuilder();
             var proxyDefinition = new ProxyDefinition(registration.ServiceType, additionalInterfaces);
-            defineProxyType(proxyDefinition);
+            defineProxyType(serviceFactory, proxyDefinition);
             return proxyBuilder.GetProxyType(proxyDefinition);
         }
     }

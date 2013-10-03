@@ -1044,6 +1044,6 @@
 
             Assert.IsInstanceOfType(instance.Bar, typeof(IBar));
             Assert.IsInstanceOfType(instance.ConstructorInjectedBar, typeof(IBar));
-        }
+        }        
     }
 }

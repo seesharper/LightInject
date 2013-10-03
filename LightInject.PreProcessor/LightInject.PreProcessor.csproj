@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="DirectiveEvaluator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Publicizer.cs" />
     <Compile Include="SourceWriter.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
