@@ -49,7 +49,7 @@ namespace LightInject
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
-    internal partial interface IServiceRegistry
+    internal interface IServiceRegistry
     {
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
@@ -1955,9 +1955,9 @@ namespace LightInject
             return (Delegate)closedGenericMethod.Invoke(this, new object[] { del });
         }
 
-// ReSharper disable UnusedMember.Local
+        // ReSharper disable UnusedMember.Local
         private Func<T> CreateGenericDynamicMethodDelegate<T>(Func<object> del)
-// ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedMember.Local
         {            
             return () => (T)del();
         }
