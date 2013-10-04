@@ -40,7 +40,7 @@
   <ItemGroup>
     <Reference Include="Microsoft.Build.Utilities.v4.0" />
     <Reference Include="Moq">
-      <HintPath>..\LightInject.Tests\bin\Debug\Moq.dll</HintPath>
+      <HintPath>..\packages\Moq.4.1.1309.1617\lib\net40\Moq.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -91,6 +91,9 @@
       <Project>{3D54591B-B055-4EDD-96B6-E6F184E8CA6E}</Project>
       <Name>LightInject</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

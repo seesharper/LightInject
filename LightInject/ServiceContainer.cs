@@ -984,11 +984,6 @@ namespace LightInject
         {
             return m.Name == "GetInstance" && m.IsGenericMethodDefinition;
         }
-
-        public static bool IsVisible(this Type serviceType)
-        {
-            return serviceType.IsVisible;
-        }
     }
 
     /// <summary>

@@ -544,4 +544,14 @@ namespace LightInject.SampleLibrary
 
         public IBar Bar { get; set; }
     }
+
+    internal class InternalFooWithPublicConstructor : IFoo
+    {
+        public InternalFooWithPublicConstructor () {}
+    }
+
+    internal class InternalFooWithInternalConstructor : IFoo
+    {
+        internal InternalFooWithInternalConstructor() { }
+    }
 }

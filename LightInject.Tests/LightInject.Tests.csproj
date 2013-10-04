@@ -131,10 +131,6 @@
       <Project>{65ff0ceb-76b4-44fd-898a-00c32c21738c}</Project>
       <Name>LightInject.SampleLibraryWithCompositionRoot</Name>
     </ProjectReference>
-    <ProjectReference Include="..\LightInject.SampleLibraryWithInternalClasses\LightInject.SampleLibraryWithInternalClasses.csproj">
-      <Project>{1643aa06-e6fd-4569-bf2a-318e252d4a7f}</Project>
-      <Name>LightInject.SampleLibraryWithInternalClasses</Name>
-    </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
       <Project>{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}</Project>
       <Name>LightInject.SampleLibrary</Name>

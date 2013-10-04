@@ -1,4 +1,4 @@
-﻿using LightInject.SampleLibraryWithInternalClasses;
+﻿//using LightInject.SampleLibraryWithInternalClasses;
 
 namespace LightInject.Tests
 {
@@ -7,6 +7,8 @@ namespace LightInject.Tests
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
+    using System.Security;
+    
     using System.Text;
     using System.Threading.Tasks;
 
@@ -1003,7 +1005,7 @@ namespace LightInject.Tests
 
         [TestMethod]
         public void GetInstance_LazyService_ReturnsInstance()
-        {
+        {            
             var container = new ServiceContainer();
             container.Register<IFoo, Foo>();
 
@@ -1040,41 +1042,21 @@ namespace LightInject.Tests
         [TestMethod]
         public void GetInstance_InternalClassWithInternalConstructor_ThrowsInvalidOperationException()
         {
-            VerifyGetInstanceThrowsInvalidOperationException(typeof(IInternalConstructorDummy));
+            var container = CreateContainer();
+            container.Register<IFoo, InternalFooWithInternalConstructor>();
+            var exception = ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            StringAssert.Contains(exception.InnerException.Message, "Missing public constructor for Type");            
         }
 
         [TestMethod]
         public void GetInstance_InternalClassWithPublicConstructor_ReturnInstance()
         {
-            VerifyGetInstanceReturnInstance(typeof(IPublicConstructorDummy));
+            var container = CreateContainer();
+            container.Register<IFoo, InternalFooWithPublicConstructor>();
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsNotNull(instance);
         }
-
-        [TestMethod]
-        public void GetInstance_InternalClassFromInternalsVisibleAssembly_ReturnInstance()
-        {
-            VerifyGetInstanceReturnInstance(typeof (IInternalsVisibleToDummy));
-        }
-
-        private void VerifyGetInstanceThrowsInvalidOperationException(Type requestedService)
-        {
-            var container = new ServiceContainer();
-            container.RegisterAssembly(requestedService.Assembly);
-
-            var exception = ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(requestedService));
-            StringAssert.Contains(exception.Message, "Unable to resolve type");
-            StringAssert.Contains(exception.Message, requestedService.FullName);
-        }
-
-        private void VerifyGetInstanceReturnInstance(Type requestedService)
-        {
-            var container = new ServiceContainer();
-            container.RegisterAssembly(requestedService.Assembly);
-
-            var result = container.GetInstance(requestedService);
-
-            Assert.IsNotNull(result);
-        }
-
+     
         #endregion
     }
 }
