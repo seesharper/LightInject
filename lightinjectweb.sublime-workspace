@@ -184,93 +184,6 @@
 	"buffers":
 	[
 		{
-			"contents": "container.Configure<DataAccess>();\ncontainer.Configure<DataAccess>();",
-			"settings":
-			{
-				"buffer_size": 69,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "/C/Users/bri/Documents/Visual Studio 2012/Projects/ScanAndVerify/ScanAndVerify/bin/Debug/AssemblyVerification.txt",
-			"settings":
-			{
-				"buffer_size": 48175,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Common/DIPS.MessageBroker/CapselHeader.cs",
-			"settings":
-			{
-				"buffer_size": 20639,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "/C/Utv/Product/EPJ-PAS/Main/Modules/Core/Server/Database/DIPS.Core.Data.Server/OracleDataReaderExtensions.cs",
-			"settings":
-			{
-				"buffer_size": 1464,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "/C/Program Files (x86)/DIPS/EPJ-PAS/result.txt",
-			"settings":
-			{
-				"buffer_size": 30855,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Common/DIPS.MessageBroker/WorkflowSpecification/Transition.cs",
-			"settings":
-			{
-				"buffer_size": 21595,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"contents": "container.ConfigureDataAccess();\n\n",
-			"settings":
-			{
-				"buffer_size": 34,
-				"line_ending": "Windows",
-				"name": "container.ConfigureDataAccess();"
-			}
-		},
-		{
-			"contents": "using LightProxy;\nusing System;\n\npublic class IMethodWithNoParametersProxy : IProxy2\n{\n    private Lazy<IInterceptor2> EqualsInterceptor;\n    private Lazy<IInterceptor2> ExecuteInterceptor;\n    private Lazy<IInterceptor2> GetHashCodeInterceptor;\n    private Lazy<IInterceptor2> interceptor0;\n    public static Func<IInterceptor2> InterceptorFactory0;\n    private Lazy<IMethodWithNoParameters> target;\n    public static Func<object> TargetFactory;\n    private Lazy<IInterceptor2> ToStringInterceptor;\n\n    public IMethodWithNoParametersProxy()\n    {\n        this.InitializeProxy();\n    }\n\n    private void InitializeProxy()\n    {\n        this.interceptor0 = new Lazy<IInterceptor2>(InterceptorFactory0);\n        this.ExecuteInterceptor = MethodInterceptorFactory.CreateMethodInterceptor(new Lazy<IInterceptor2>[] { this.interceptor0 });\n        this.GetHashCodeInterceptor = MethodInterceptorFactory.CreateMethodInterceptor(new Lazy<IInterceptor2>[] { this.interceptor0 });\n        this.EqualsInterceptor = MethodInterceptorFactory.CreateMethodInterceptor(new Lazy<IInterceptor2>[] { this.interceptor0 });\n        this.ToStringInterceptor = MethodInterceptorFactory.CreateMethodInterceptor(new Lazy<IInterceptor2>[] { this.interceptor0 });\n    }\n\n    object IProxy2.get_Target()\n    {\n        return this.target.Value;\n    }\n}\n",
-			"settings":
-			{
-				"buffer_size": 1326,
-				"line_ending": "Windows",
-				"name": "using LightProxy;"
-			}
-		},
-		{
-			"contents": "Lazy registration \n\n\nWhen requesting a service, execute delegate \n\n\n\nPossible solution, search for composition roots in the same assembly as the requested service.\n\ndr.FetchSize = cmd.RowSize * numRows;\n",
-			"file": "/C/Log/log.txt",
-			"file_size": 13909,
-			"file_write_time": 130179307185396974,
-			"settings":
-			{
-				"buffer_size": 203,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"contents": "Package Control Messages\n========================\n\nPackage Control:\n---------------\n\n  Package Control 2.0.0 Changelog:\n  \n  \n  Today I'd like to announce two big milestones:\n  \n   - Package Control 2.0 for ST2 and ST3\n   - A new Package Control website at https://sublime.wbond.net\n  \n  The full announcement about the PC 2.0 release is available on the news page at\n  https://sublime.wbond.net/news.\n  \n  If you are running the \"testing\" version of Package Control (1.6.9 - 1.6.11),\n  you will likely need to restart Sublime Text before Package Control will work\n  properly.\n  \n  \n  Giving Back\n  \n  Part of the new Package Control website is in-depth information about each\n  package. The new package pages include a link where you can give a tip to the\n  developer/maintainer of your favorite packages.\n  \n  The donate links go to https://www.gittip.com, which is building an excellent,\n  and open platform for users to say \"thank you\" to open source developers. It\n  is possible to give a small amount each week, such as $0.25, however these small\n  amounts multiplied by the large size of the community can be a big thank you!\n  \n  One of the less glamorous jobs involved with making Package Control happen is\n  reviewing and giving package developers feedback before adding their packages\n  to the default channel. The follow contributors deserve a big thank you:\n  \n  FichteFoll - https://www.gittip.com/FichteFoll/\n  joneshf    - https://www.gittip.com/on/github/joneshf/\n  sentience  - https://www.gittip.com/on/github/sentience/\n  \n  Finally, I'm looking to raise some money to obtain a Mac Mini for the purposes\n  of supporting ST3 on OS X and a license for a Windows 8 VM. If you are inclined\n  to donate to those, or want to just buy me a beer, check out:\n  \n  https://sublime.wbond.net/say_thanks\n  \n  \n  Notable Features\n  \n   - A new Windows downloader that uses WinINet and should provide much better\n     proxy support\n  \n   - Using operating system-supplied SSL CA certs on all platforms, with a\n     deprecated fallback to certificates served through the channel\n  \n   - Proxy server fixes for OS X\n  \n   - A completely revamped channel and repository system with support for more\n     information about packages including labels; readme, issues, donate and buy\n     URLs; tag-based releases; platform targetting without a custom packages.json\n     file; and Sublime Text version targetting\n  \n   - Support for installing via .sublime-package files in ST3, which allows users\n     to easily override specific files from the package. Package developers who\n     need a loose folder of files may include a .no-sublime-package file in their\n     repo.\n  \n   - In the coming days the new Package Control website will be released as open\n     source on GitHub\n  \n",
-			"settings":
-			{
-				"buffer_size": 2779,
-				"line_ending": "Windows",
-				"name": "Package Control Messages",
-				"scratch": true
-			}
-		},
-		{
 			"contents": "Web\nEnables LightInject to be used in a web application and provides support for PerWebRequest scoped service instances.\n\nPM> Install-Package LightInject.Web\nThe following example shows how to enable LightInject in the Application_Start event.\n\nprotected void Application_Start()\n{\n    var serviceContainer = new ServiceContainer();            \n    serviceContainer.Register<IFoo, Foo>(new PerScopeLifetime()); \n    LightInjectHttpModule.SetServiceContainer(serviceContainer);        \n}\nA service	 registered with PerScopeLifetime is scoped per web request and is disposed at the end of the request if it implements IDisposable.\n\n",
 			"settings":
 			{
@@ -280,54 +193,48 @@
 			}
 		},
 		{
-			"contents": "\npublic void SaveLogItems(LogItem[] logItems)\n{\n	using(var dbClient = new DbClient())\n	{\n		dbClient.ExecuteNonQuery(\"DIPSDB.LogPackage.InsertLogItem\", logItems);\n	}\n}\n\ndbClient.AsEnumerable<Customer>();\n\n\ndbClient.AsEnumerable<Customer>(c => c.CustomerID == \"ALFKI\");\n\n\n\nAsyncBufferedAppender\n\nAsyncOracleAppender\n\n\n\npublic class Customer\n{\n	string CustomerId {get;set;}\n\n	IList<Order> Orders {get; private set;}\n}\n\n\n//Find Customers that has at least one order \n\n\n",
+			"contents": "container.Register<IFoo, Foo>();\ncontainer.Register<IFoo, AnotherFoo>(\"AnotherFoo\");\n\ncontainer.Decorate(typeof(IFoo), typeof(FooDecorator));\ncontainer.Intercept(sr => sr.ServiceType == typeof(IFoo), m => m.name = \"Execute\", f => f.GetInstance<IInterceptor>(\"LogInterceptor\"));\ncontainer.Intercept(sr => sr.ImplementingType == typeof(AnotherFoo), m => m.name = \"Execute\", f => f.GetInstance<IInterceptor>(\"CacheInterceptor\"));\ncontainer.Decorate(typepf(IFoo), typeof(AnotherFooDecorator));\n\nFoo gets only Loginterceptor, while AnotherFoo gets both. These are two different proxy types, the keys is ?\n\n\n\n\n\n\nDecorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate);\n\n\nDecorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate);\n\n\n\ncontainer.Decorate(sr => sr.ServiceType == typeof(IFoo), pd => pd.Intercept(() => new CacheInterceptor()));\n\ncontainer.Decorate(sr => sr.ServiceType == typeof(IFoo), pd => pd.Intercept(() => new CacheInterceptor()));\n\n\ncontainer.Decorate(sr => sr.ServiceType == typeof(IFoo), pd => pd.Intercept(() => new CacheInterceptor()));\n\n\ncontainer.Intercept(sr => sr.ServiceType == typeof(IFoo), pd => pd.Implement(() => new CacheInterceptor()));\n\n\n\nAdd the IsDeclaredBy and IsPropertySetter/Getter extension methods?\n\n\n\ncontainer.StartMocking<IFoo>(f => f.Execute)",
 			"settings":
 			{
-				"buffer_size": 465,
+				"buffer_size": 1349,
+				"line_ending": "Windows",
+				"name": "container.Register<IFoo, Foo>();"
+			}
+		},
+		{
+			"file": "/C/DIPS-Log/DIPS-EPJ-PAS-Server-WcfService-Main.log",
+			"settings":
+			{
+				"buffer_size": 16433468,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Server/Database/DIPS.MessageBroker.Server.DB/DbTransactionCapselHeader.cs",
+			"file": "/C/Program Files (x86)/DIPS/Arena/Arena.exe.config",
 			"settings":
 			{
-				"buffer_size": 37929,
+				"buffer_size": 7919,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Server/Database/DIPS.MessageBroker.Server.DB/CapselHeaderMap.cs",
+			"contents": "using System.Data;\nusing DIPS.Core.Security.Authorization;\nusing DIPS.Infrastructure.AutoConfig;\nusing DIPS.Infrastructure.Data.NHibernate;\nusing DIPS.Infrastructure.SpringUtils;\nusing DIPS.ProcessManager;\nusing Oracle.DataAccess.Client;\n\nnamespace DIPS.Workflow.Server.DB.WorkflowTasks\n{\n    /// <summary>\n    /// Hack!!!\n    /// Uses NHibernateSession to get same transaction as the original HealthRecord session that triggered the event.\n    /// </summary>\n    public class WorkflowTasksDataAccess : IWorkflowTasksDataAccess\n    {\n        public void CreateTask(WorkflowTask task)\n        {\n            using (var command = QueryRepository.Session.Connection.CreateCommand())\n            {\n                command.CommandText = \"DIPSDB.dpWorkflow.CreateTask\";\n                command.CommandType = CommandType.StoredProcedure;\n\n                command.Parameters.Add(\n                    new OracleParameter\n                    {\n                        DbType = DbType.Int64,\n                        Direction = ParameterDirection.ReturnValue,\n                    });\n\n                command.Parameters.Add(\n                    new OracleParameter\n                    {\n                        ParameterName = \"p_PatientId_in\",\n                        Value = task.PatientId,\n                        DbType = DbType.Int64,\n                        Direction = ParameterDirection.Input\n                    });\n\n                command.Parameters.Add(\n                    new OracleParameter\n                    {\n                        ParameterName = \"p_TaskType_in\",\n                        Value = task.WorkflowTaskTypeId,\n                        DbType = DbType.Int64,\n                        Direction = ParameterDirection.Input\n                    });\n\n                command.Parameters.Add(\n                    new OracleParameter\n                    {\n                        ParameterName = \"p_WorkGroupId_in\",\n                        Value = task.WorkflowGroupId,\n                        DbType = DbType.Int64,\n                        Direction = ParameterDirection.Input\n                    });\n\n                command.Parameters.Add(\n                    new OracleParameter\n                    {\n                        ParameterName = \"p_DocumentId_in\",\n                        Value = task.JournalId,\n                        DbType = DbType.Int64,\n                        Direction = ParameterDirection.Input\n                    });\n\n                command.Parameters.Add(\n                    new OracleParameter\n                    {\n                        ParameterName = \"p_CreatedTime_in\",\n                        Value = task.CreatedDate,\n                        DbType = DbType.Date,\n                        Direction = ParameterDirection.Input\n                    });\n\n                var result = command.ExecuteNonQuery();\n            }\n        }\n\n        using (var dbClient = new DbClient())\n        {\n            dbClient.ExecuteNonQuery(\"DIPSDB.dpWorkflow.CreateTask\", \n                                                                    task.PatientId, \n                                                                    task.WorkflowTaskTypeId, \n                                                                    task.WorkflowGroupId, \n                                                                    task.JournalId, \n                                                                    task.CreatedDate);\n        }\n\n\n        [Mandatory]\n        public INHibernateQueryRepository<DummyDto> QueryRepository { get; set; }\n\n        [RepositoryObject(ElementTypeId = ElementTypeId.ElementWithUnrestrictedAccess)]\n        public class DummyDto\n        {\n        }\n    }\n}\n",
+			"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/CoreModules/Workflow/Server/Database/DIPS.Workflow.Server.DB/WorkflowTasks/WorkflowTasksDataAccess.cs",
+			"file_size": 3219,
+			"file_write_time": 130056496880804925,
 			"settings":
 			{
-				"buffer_size": 8942,
+				"buffer_size": 3708,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"contents": "<p><em>&quot;From the example given, you have lazy Registration, but still only a single place where you compose your application. That still sounds like a single Composition Root to me.&quot;</em></p>\n<p>I agree that the example was a little confusing since it executed the composition root within the <strong>Main</strong> method. \nThe example has been modified so that it emphasizes the fact that composition roots are executed on demand.</p>\n<p><em>&quot;There are lots of ways you can address performance problems during Composition. For a brief overview, refer to my article Compose object graphs with confidence. For a more detailed treatment, you can watch my NDC 2013 talk Big Object Graphs Up Front. These resource explain various techniques for optimizing Composition speed. However, they don't discuss the speed of Registration, which also seems to be a problem here.&quot;</em> </p>\n<p>I actually attended your &quot;Big Object Graphs Up Front&quot; talk at NDC this year :) Although I totally agree that constructing large object graphs up front might be bad for performance, I think that loading a lot of &quot;unnecessary&quot; assemblies up front is something that can hurt startup-time (and memory consumption) even more. So where you go &quot;lazy&quot; about the object construction, I just add in laziness for the assembly loading as well. Together this would work pretty much in the same way an application loads assemblies and creates objects in a non-DI application.</p>\n<p><em>&quot;First of all, I would suggest that needing to scan and load hundreds of dlls isn't that common.&quot;</em></p>\n<p>This might be true and I agree that this is not an ideal situation by any means, but this is a very large application and   </p>\n",
+			"contents": "     <add key=\"DefaultAddressHostAndPort\" value=\"VD-V-Next2\"/>",
 			"settings":
 			{
-				"buffer_size": 1751,
+				"buffer_size": 62,
 				"line_ending": "Windows",
-				"name": "<p><em>&quot;From the example given, you have lazy"
-			}
-		},
-		{
-			"contents": "using (var scope = SpringContext.Instance.Get<SpringTransactionScope>())\n{\n	using (var dbClient = new DbClient())\n	{\n	    dbClient.ExecuteNonQuery(\"update dipsdb.dwFolder set title = :p1, starttime = sysdate  where folderid = :p2\", title, folderId);\n\n	    dbClient.ExecuteNonQuery(\n	        \"update dipsdb.dwFolderContent set journalid = :p1 where folderid = :p2 and CONTENTTYPE = 2\", newHeaderDocumentId, folderId);\n	}	\n\n	scope.Complete();\n}\n\n\n\n",
-			"settings":
-			{
-				"buffer_size": 446,
-				"line_ending": "Windows",
-				"name": "using (var scope = SpringContext.Instance.Get<Spri"
-			}
-		},
-		{
-			"contents": "using (var scope = SpringContext.Instance.Get<SpringTransactionScope>())\n{\n    using (var dbClient = new DbClient())\n    {\n 		//do stuff\n    }              \n\n    scope.Complete();\n}\n",
-			"settings":
-			{
-				"buffer_size": 182,
-				"line_ending": "Windows",
-				"name": "using (var scope = SpringContext.Instance.Get<Spri"
+				"name": "<add key=\"DefaultAddressHostAndPort\" value=\"V"
 			}
 		}
 	],
@@ -375,7 +282,18 @@
 	},
 	"file_history":
 	[
+		"/C/DIPS-Log/DIPS-EPJ-PAS-Server-WcfService-Main.log",
+		"/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Server/Database/DIPS.MessageBroker.Server.DB/CapselHeaderMap.cs",
+		"/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Server/Database/DIPS.MessageBroker.Server.DB/DbTransactionCapselHeader.cs",
 		"/C/Log/log.txt",
+		"/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Common/DIPS.MessageBroker/WorkflowSpecification/Transition.cs",
+		"/C/Program Files (x86)/DIPS/EPJ-PAS/result.txt",
+		"/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/Core/Test/IntegrationTest/TestDIPS.Core.Integration/Config/AutoConfigSanityTests.cs",
+		"/C/Utv/Product/Application/MessageBroker/Modules/MessageBroker/Server/Database/DIPS.MessageBroker.Server.DB/DbTransactionCapselHeader.cs",
+		"/C/Users/bri/Documents/Visual Studio 2012/Projects/ScanAndVerify/ScanAndVerify/bin/Debug/AssemblyVerification.txt",
+		"/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Common/DIPS.MessageBroker/CapselHeader.cs",
+		"/C/Utv/Product/EPJ-PAS/Main/Modules/Core/Server/Database/DIPS.Core.Data.Server/OracleDataReaderExtensions.cs",
+		"/C/Utv/Product/EPJ-PAS/Main/Modules/MessageBroker/Server/Database/DIPS.MessageBroker.Server.DB/DbTransactionCapselHeader.cs",
 		"/C/Users/bri/AppData/Roaming/NuGet/NuGet.Config",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/index.html",
 		"/C/Install/RSDev/RSDev/Development/RSApplication/Source/VismaRetail/Common/VismaRetail.Common/Query/ISpecification.cs",
@@ -391,7 +309,6 @@
 		"/C/Temp/logs/proxy/client.txt.1",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/LightInject/doc/web.md",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/ScanAndVerify/ScanAndVerify/bin/Debug/IgnoreErrors.txt",
-		"/C/Users/bri/Documents/Visual Studio 2012/Projects/ScanAndVerify/ScanAndVerify/bin/Debug/AssemblyVerification.txt",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/ClassLibrary7/ClassLibrary7Tests/bin/Debug/AssemblyVerification.txt",
 		"/C/Users/bri/Documents/Visual Studio 2012/Projects/ScanAndVerify/ScanAndVerify/bin/Debug/AssemblyVerification2.txt",
 		"/C/Users/bri/Documents/My Received Files/AssemblyVerification2.txt",
@@ -468,6 +385,7 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"GetHeaderXml",
 			"DbClient",
 			"DWGRUPPETYPEKOBLING",
 			"AVUREPRGROUP",
@@ -497,280 +415,11 @@
 	"groups":
 	[
 		{
-			"selected": 7,
+			"selected": 4,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"settings":
-					{
-						"buffer_size": 69,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								65,
-								55
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C#/C#.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "/C/Users/bri/Documents/Visual Studio 2012/Projects/ScanAndVerify/ScanAndVerify/bin/Debug/AssemblyVerification.txt",
-					"settings":
-					{
-						"buffer_size": 48175,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								9902,
-								9919
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Common/DIPS.MessageBroker/CapselHeader.cs",
-					"settings":
-					{
-						"buffer_size": 20639,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C#/C#.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 6210.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "/C/Utv/Product/EPJ-PAS/Main/Modules/Core/Server/Database/DIPS.Core.Data.Server/OracleDataReaderExtensions.cs",
-					"settings":
-					{
-						"buffer_size": 1464,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								89,
-								89
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C#/C#.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "/C/Program Files (x86)/DIPS/EPJ-PAS/result.txt",
-					"settings":
-					{
-						"buffer_size": 30855,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								877,
-								956
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Common/DIPS.MessageBroker/WorkflowSpecification/Transition.cs",
-					"settings":
-					{
-						"buffer_size": 21595,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C#/C#.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"settings":
-					{
-						"buffer_size": 34,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								34,
-								34
-							]
-						],
-						"settings":
-						{
-							"auto_name": "container.ConfigureDataAccess();",
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"settings":
-					{
-						"buffer_size": 1326,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1326,
-								1326
-							]
-						],
-						"settings":
-						{
-							"auto_name": "using LightProxy;",
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 8,
-					"file": "/C/Log/log.txt",
-					"settings":
-					{
-						"buffer_size": 203,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								202,
-								165
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 9,
-					"settings":
-					{
-						"buffer_size": 2779,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								2779,
-								2779
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true,
-							"word_wrap": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 10,
 					"settings":
 					{
 						"buffer_size": 630,
@@ -796,132 +445,23 @@
 					"type": "text"
 				},
 				{
-					"buffer": 11,
+					"buffer": 1,
 					"settings":
 					{
-						"buffer_size": 465,
+						"buffer_size": 1349,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								465,
-								465
+								1348,
+								1348
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C#/C#.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 12,
-					"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Server/Database/DIPS.MessageBroker.Server.DB/DbTransactionCapselHeader.cs",
-					"settings":
-					{
-						"buffer_size": 37929,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C#/C#.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 13,
-					"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/Modules/MessageBroker/Server/Database/DIPS.MessageBroker.Server.DB/CapselHeaderMap.cs",
-					"settings":
-					{
-						"buffer_size": 8942,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C#/C#.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 14,
-					"settings":
-					{
-						"buffer_size": 1751,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1751,
-								1751
-							]
-						],
-						"settings":
-						{
-							"auto_name": "<p><em>&quot;From the example given, you have lazy",
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 15,
-					"settings":
-					{
-						"buffer_size": 446,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								442
-							]
-						],
-						"settings":
-						{
-							"auto_name": "using (var scope = SpringContext.Instance.Get<Spri",
+							"auto_name": "container.Register<IFoo, Foo>();",
 							"syntax": "Packages/Text/Plain text.tmLanguage"
 						},
 						"translation.x": 0.0,
@@ -931,10 +471,11 @@
 					"type": "text"
 				},
 				{
-					"buffer": 16,
+					"buffer": 2,
+					"file": "/C/DIPS-Log/DIPS-EPJ-PAS-Server-WcfService-Main.log",
 					"settings":
 					{
-						"buffer_size": 182,
+						"buffer_size": 16433468,
 						"regions":
 						{
 						},
@@ -942,12 +483,93 @@
 						[
 							[
 								0,
-								181
+								0
 							]
 						],
 						"settings":
 						{
-							"auto_name": "using (var scope = SpringContext.Instance.Get<Spri",
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 314532.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/C/Program Files (x86)/DIPS/Arena/Arena.exe.config",
+					"settings":
+					{
+						"buffer_size": 7919,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3440,
+								3440
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/C/Utv/Product/EPJ-PAS/Dev/V-NEXT/CoreModules/Workflow/Server/Database/DIPS.Workflow.Server.DB/WorkflowTasks/WorkflowTasksDataAccess.cs",
+					"settings":
+					{
+						"buffer_size": 3708,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2772,
+								2772
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C#/C#.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 702.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"settings":
+					{
+						"buffer_size": 62,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								62,
+								62
+							]
+						],
+						"settings":
+						{
+							"auto_name": "<add key=\"DefaultAddressHostAndPort\" value=\"V",
 							"syntax": "Packages/Text/Plain text.tmLanguage"
 						},
 						"translation.x": 0.0,

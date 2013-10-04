@@ -1,3 +1,29 @@
+## LightInject 3.0.0.8 ##
+
+### Internals ###
+
+When running under the .Net platform, **LightInject** is now capable of instantiating classes with the internal access modifier.
+
+<a href="#" onclick = "$('#gettingstarted').trigger('click');"> Learn more... </a>
+
+
+### Interception ###
+
+LightInject now enables Aspect Oriented Programming through method interception. 
+
+<a href="#" onclick = "$('#interception').trigger('click');"> Learn more... </a>
+
+
+### Decorators - Bugfix ###
+
+Decorators were not applied when the service was registered as a value.
+
+    var foo = new Foo();    
+    container.Register<IFoo>(foo);
+
+
+
+
 ## LightInject 3.0.0.7##
 
 ###Lazy&lt;T&gt;###

@@ -61,6 +61,12 @@ $(document).ready(function() {
         renderMarkdown();        
     });
 
+     $("#interception").click(function() {
+        var markdownElement = $("markdown");
+        markdownElement.attr("src","doc/interception.md");
+        renderMarkdown();        
+    });
+
      $("#whatsnew").click(function() {
         var markdownElement = $("markdown");
         markdownElement.attr("src","doc/whatsnew.md");
@@ -96,6 +102,7 @@ $(document).ready(function() {
             <li><a id="annotation" href="#">Annotation</a></li> 
             <li><a id="servicelocator" href="#">Service Locator</a></li> 
             <li><a id="unittesting" href="#">Unit Testing</a></li> 
+            <li><a id="interception" href="#">Interception</a></li> 
             <li><a id="whatsnew" href="#">What's New</a></li> 
             <li><a id="source" href="https://github.com/seesharper/LightInject">Source</a></li> 
           </ul>
@@ -143,6 +150,15 @@ $(document).ready(function() {
         <div class="carousel-caption">
           <h1>Hidden by default</h1>
           <p class="lead">LightInject is especially designed not to bleed into other parts of the application.</p>          
+        </div>
+      </div>
+    </div>    
+    <div class="item">
+      <img src="images/abstract2.jpg" alt="">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1>Interception</h1>
+          <p class="lead">Implement cross cutting concerns using the AOP capabilities of LightInject.</p>          
         </div>
       </div>
     </div>    

@@ -493,3 +493,16 @@ A lifetime object controls the lifetime of a single service and can **never** be
 	container.Register<IBar,Bar>(new PerContainerLifeTime());
 
 A lifetime object is also shared across threads and that is something we must take into consideration when developing new lifetime implementations.
+
+
+## Internals ##
+
+When running under the .Net platform, **LightInject** is capable of creating instances of classes that has the [internal](http://msdn.microsoft.com/en-us/library/7c5ka91b(v=vs.110).aspx) modifier. 
+
+The only requirement is that the internal class exposes a public constructor.
+
+    internal class InternalFooWithPublicConstructor : IFoo
+    {
+        public InternalFooWithPublicConstructor () {}
+    }
+
