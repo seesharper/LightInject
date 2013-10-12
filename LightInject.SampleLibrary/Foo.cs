@@ -554,4 +554,42 @@ namespace LightInject.SampleLibrary
     {
         internal InternalFooWithInternalConstructor() { }
     }
+
+
+
+    public interface IFooFactory
+    {
+        IFoo CreateFoo();
+    }
+
+    public class FooFactory : IFooFactory
+    {
+        private readonly Func<IFoo> getFoo;
+
+        public FooFactory(Func<IFoo> getFoo)
+        {
+            this.getFoo = getFoo;
+        }
+
+        public IFoo CreateFoo()
+        {
+            return getFoo();
+        }
+    }
+
+
+    public class FooWithDependencyAndArgument : IFoo
+    {
+        public int Value { get; private set; }
+
+        public IBar Bar { get; private set; }
+
+        public FooWithDependencyAndArgument(IBar bar, int value)
+        {
+            Value = value;
+            Bar = bar;
+        }
+    }
+
+    
 }
