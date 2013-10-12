@@ -27,8 +27,7 @@ namespace LightInject.Interception
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics.CodeAnalysis;
+    using System.Collections.ObjectModel;    
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -187,13 +186,13 @@ namespace LightInject.Interception
         /// <summary>
         /// The function delegate used to invoke the target method.
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]        
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]        
         public Lazy<Func<object, object[], object>> ProceedDelegate;
 
         /// <summary>
         /// The <see cref="MethodInfo"/> that represents the target method.
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]        
         public MethodInfo Method;
 
         private static readonly IMethodBuilder ProceedDelegateBuilder = new CachedMethodBuilder(new DynamicMethodBuilder());
