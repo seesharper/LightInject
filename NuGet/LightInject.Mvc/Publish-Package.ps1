@@ -10,7 +10,7 @@ $keyfile = "$env:USERPROFILE\DropBox\NuGet Access Key.txt"
 
 
 $apikey = get-content $keyfile
-$appid = "LightInject"
+$appid = "LightInject.Annotation"
 
 .\NuGet.exe SetApiKey $apikey
 .\NuGet.exe push $package 
