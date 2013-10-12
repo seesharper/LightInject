@@ -2,13 +2,13 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject.Interception</id>
-        <version>1.0.0.0</version>
+        <version>1.0.0.1</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>An extension to the LightInject service container that enables AOP(Aspect Oriented Programming)through method interception.</description>
+        <description>An extension to the LightInject service container that enables AOP(Aspect Oriented Programming) through method interception.</description>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Aspect-Oriented-Programming AOP Interception</tags>
         <dependencies>
