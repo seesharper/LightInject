@@ -484,6 +484,7 @@ namespace LightInject.Tests
             var instance2 = factory();
             Assert.AreNotSame(instance1, instance2);
         }
+  
         #endregion
 
         #region Func Factory
@@ -1037,6 +1038,20 @@ namespace LightInject.Tests
             Assert.IsInstanceOfType(instance.Value, typeof(Foo));
         }
 
+        [TestMethod]
+        public void GetInstance_TypedFactory_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Register<IFooFactory, FooFactory>();
+
+            var factory = container.GetInstance<IFooFactory>();
+            var instance = factory.CreateFoo();
+
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+
         #region Internal Classes
 
         [TestMethod]
@@ -1059,4 +1074,11 @@ namespace LightInject.Tests
      
         #endregion
     }
+
+    public interface IFooFactoryWithArgument
+    {
+        IFoo CreateFoo(int value);
+    }
+
+ 
 }
