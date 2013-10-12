@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject.Web version 1.0.0.1
+   LightInject.Web version 1.0.0.2
    http://seesharper.github.io/LightInject/
    http://twitter.com/bernhardrichter    
 ******************************************************************************/
@@ -21,8 +21,31 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1403:FileMayOnlyContainASingleNamespace", Justification = "Extension methods must be visible within the root namespace")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
+
+namespace LightInject
+{
+    using LightInject.Web;
+    
+    /// <summary>
+    /// Extends the <see cref="IServiceContainer"/> interface with a method
+    /// to enable services that are scoped per web request.
+    /// </summary>
+    internal static class WebContainerExtensions
+    {
+        /// <summary>
+        /// Ensures that services registered with the <see cref="PerScopeLifetime"/> is properly 
+        /// disposed when the web request ends.
+        /// </summary>
+        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
+        public static void EnablePerWebRequestScope(this IServiceContainer serviceContainer)
+        {            
+            LightInjectHttpModule.SetServiceContainer(serviceContainer);
+        }      
+    }
+}
 
 namespace LightInject.Web
 {
