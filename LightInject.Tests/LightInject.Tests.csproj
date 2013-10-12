@@ -73,7 +73,6 @@
     <Compile Include="AnnotatedPropertyDependencySelectorTests.cs" />
     <Compile Include="AssemblyAssert.cs" />
     <Compile Include="AssemblyScannerTests.cs" />
-    <Compile Include="CompilerDirectiveTests.cs" />
     <Compile Include="ConstructorInjectionTests.cs" />
     <Compile Include="ConstructorInjectionVerificationTests.cs" />
     <Compile Include="ConstructorSelectorTests.cs" />
@@ -118,10 +117,6 @@
     <ProjectReference Include="..\LightInject.Mvc\LightInject.Mvc.csproj">
       <Project>{2bbfa6de-d28e-4040-9c1c-ff05d330a063}</Project>
       <Name>LightInject.Mvc</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\LightInject.PreProcessor\LightInject.PreProcessor.csproj">
-      <Project>{d4fc2c76-196f-4da9-9716-baa5fea5d257}</Project>
-      <Name>LightInject.PreProcessor</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj">
       <Project>{75ea6152-b0c9-40c1-af22-10dbca192239}</Project>

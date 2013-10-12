@@ -23,8 +23,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Web", "LightInj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Mvc", "LightInject.Mvc\LightInject.Mvc.csproj", "{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.PreProcessor", "LightInject.PreProcessor\LightInject.PreProcessor.csproj", "{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRootTypeAttribute", "LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj", "{75EA6152-B0C9-40C1-AF22-10DBCA192239}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception", "LightInject.Interception\LightInject.Interception.csproj", "{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}"
@@ -77,10 +75,6 @@ Global
 		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Release|Any CPU.Build.0 = Release|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Release|Any CPU.ActiveCfg = Release|Any CPU
