@@ -968,7 +968,7 @@ namespace LightInject
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(Func<>);
         }
-
+       
         public static bool IsClosedGeneric(this Type serviceType)
         {
             return serviceType.IsGenericType() && !serviceType.IsGenericTypeDefinition();
@@ -1087,6 +1087,11 @@ namespace LightInject
             return scopeManagers.Value.BeginScope();
         }
 
+        /// <summary>
+        /// Injects the property dependencies for a given <paramref name="instance"/>.
+        /// </summary>
+        /// <param name="instance">The target instance for which to inject its property dependencies.</param>
+        /// <returns>The <paramref name="instance"/> with its property dependencies injected.</returns>
         public object InjectProperties(object instance)
         {
             var type = instance.GetType();
@@ -1255,6 +1260,10 @@ namespace LightInject
             Decorate(decoratorRegistration);            
         }
 
+        /// <summary>
+        /// Registers a decorator based on a <see cref="DecoratorRegistration"/> instance.
+        /// </summary>
+        /// <param name="decoratorRegistration">The <see cref="DecoratorRegistration"/> instance that contains the decorator metadata.</param>
         public void Decorate(DecoratorRegistration decoratorRegistration)
         {
             int index = decorators.Add(decoratorRegistration);
@@ -2060,7 +2069,7 @@ namespace LightInject
             else if (serviceType.IsFuncWithStringArgument())
             {
                 emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, true);
-            }
+            }           
             else if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
             {
                 emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
@@ -2074,7 +2083,7 @@ namespace LightInject
 
             return emitter;
         }
-        
+   
         private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = rule.LifeTime };
@@ -2506,9 +2515,9 @@ namespace LightInject
 
         private class FactoryRule
         {
-            public Func<Type, string, bool> CanCreateInstance { get; internal set; }
+            public Func<Type, string, bool> CanCreateInstance { get; set; }
 
-            public Func<ServiceRequest, object> Factory { get; internal set; }
+            public Func<ServiceRequest, object> Factory { get; set; }
 
             public ILifetime LifeTime { get; set; }
         }
@@ -2977,6 +2986,15 @@ namespace LightInject
         private readonly IConstructorDependencySelector constructorDependencySelector;
         private readonly IPropertyDependencySelector propertyDependencySelector;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TypeConstructionInfoBuilder"/> class.
+        /// </summary>
+        /// <param name="constructorSelector">The <see cref="IConstructorSelector"/> that is responsible
+        /// for selecting the constructor to be used for constructor injection.</param>
+        /// <param name="constructorDependencySelector">The <see cref="IConstructorDependencySelector"/> that is 
+        /// responsible for selecting the constructor dependencies for a given <see cref="ConstructionInfo"/>.</param>
+        /// <param name="propertyDependencySelector">The <see cref="IPropertyDependencySelector"/> that is responsible
+        /// for selecting the property dependencies for a given <see cref="Type"/>.</param>
         public TypeConstructionInfoBuilder(
             IConstructorSelector constructorSelector,
             IConstructorDependencySelector constructorDependencySelector,
