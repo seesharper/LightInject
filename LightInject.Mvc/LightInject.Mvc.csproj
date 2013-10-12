@@ -32,6 +32,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Mvc, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -44,6 +45,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LightInject.Web\LightInject.Web.csproj">
+      <Project>{92e9b349-5655-4d6c-924c-707d05a5d812}</Project>
+      <Name>LightInject.Web</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LightInject\LightInject.csproj">
       <Project>{3d54591b-b055-4edd-96b6-e6f184e8ca6e}</Project>
       <Name>LightInject</Name>

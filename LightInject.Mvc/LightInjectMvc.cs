@@ -25,14 +25,54 @@
 
 namespace LightInject.Mvc
 {
-    using System;
-    using System.Collections.Generic;    
+    using System;    
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Web.Mvc;
+    
+    /// <summary>
+    /// Extends the <see cref="IServiceContainer"/> interface with a method that 
+    /// enables dependency injection in an ASP.NET MVC application.
+    /// </summary>
+    internal static class MvcContainerExtensions
+    {
+        /// <summary>
+        /// Enables dependency injection in an ASP.NET MVC application.
+        /// </summary>
+        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
+        public static void EnableMvc(this IServiceContainer serviceContainer)
+        {
+            serviceContainer.EnablePerWebRequestScope();
+            SetDependencyResolver(serviceContainer);
+            InitializeFilterAttributeProvider(serviceContainer);
+        }
+
+        private static void SetDependencyResolver(IServiceContainer serviceContainer)
+        {
+            DependencyResolver.SetResolver(new LightInjectMvcDependencyResolver(serviceContainer));
+        }
+
+        private static void InitializeFilterAttributeProvider(IServiceContainer serviceContainer)
+        {
+            RemoveExistingFilterAttributeFilterProviders();
+            FilterProviders.Providers.Add(new LightInjectFilterProvider(serviceContainer));
+        }
+
+        private static void RemoveExistingFilterAttributeFilterProviders()
+        {
+            var existingFilterAttributeProviders =
+                FilterProviders.Providers.OfType<FilterAttributeFilterProvider>().ToArray();
+            foreach (FilterAttributeFilterProvider filterAttributeFilterProvider in existingFilterAttributeProviders)
+            {
+                FilterProviders.Providers.Remove(filterAttributeFilterProvider);
+            }
+        }
+    }
 
     /// <summary>
     /// An <see cref="IDependencyResolver"/> adapter for the LightInject service container.
     /// </summary>
-    public class LightInjectMvcDependencyResolver : IDependencyResolver
+    internal class LightInjectMvcDependencyResolver : IDependencyResolver
     {
         private readonly IServiceContainer serviceContainer;
 
