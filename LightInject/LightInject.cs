@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.8 
+   LightInject version 3.0.0.9 
    http://www.lightinject.net/
    http://twitter.com/bernhardrichter
 ******************************************************************************/
