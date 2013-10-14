@@ -2,20 +2,20 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject</id>
-        <version>3.0.0.8</version>
+        <version>3.0.0.9</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>http://www.lightinject.net/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An ultra lightweight single file Inversion of Control container for the .Net framework.</description>
-        <releaseNotes>Added extension point that allows interception based decorators. See LightInject.Interception for more information.</releaseNotes>
+        <releaseNotes>Now installs into a dedicated LightInject folder.</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime</tags>
     </metadata>
     <files>
-        <file src="content\net40\ServiceContainer.cs.pp" target="content\net40\ServiceContainer.cs.pp" />
-        <file src="content\net45\ServiceContainer.cs.pp" target="content\net45\ServiceContainer.cs.pp" />
-        <file src="content\netcore45\ServiceContainer.cs.pp" target="content\netcore45\ServiceContainer.cs.pp" />
+        <file src="content\net40\LightInject\LightInject.cs.pp" target="content\net40\LightInject\LightInject.cs.pp" />
+        <file src="content\net45\LightInject\LightInject.cs.pp" target="content\net45\LightInject\LightInject.cs.pp" />
+        <file src="content\netcore45\LightInject\LightInject.cs.pp" target="content\netcore45\LightInject\LightInject.cs.pp" />
     </files>
 </package>
