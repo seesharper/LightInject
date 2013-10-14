@@ -1,5 +1,17 @@
 using System.Diagnostics;
 
+public static class DirectoryUtils
+{
+    public static void DeleteContentFolder(string currentDirectory)
+    {
+        string contentFolder = Path.Combine(currentDirectory , @"package\content");
+        if (Directory.Exists(contentFolder))
+        {
+            Directory.Delete(contentFolder, true);
+        }
+    }
+}
+
 public static class Command
 {
     public static string Execute(string commandPath, string arguments)
@@ -155,7 +167,8 @@ public class SourceWriter
             {
                 if (line.Contains("namespace") && processNameSpace)
                 {
-                    line = line.Replace(line.Substring(10), "$rootnamespace$");
+                    line = line.Insert(10, "$rootnamespace$.");
+
                 }
 
                 if ((line.Contains("public class") || line.Contains("internal class") || line.Contains("internal static class")) && directive != "NETFX_CORE")
