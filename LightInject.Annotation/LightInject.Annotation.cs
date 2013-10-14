@@ -20,15 +20,14 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1403:FileMayOnlyContainASingleNamespace", Justification = "Extension methods must be visible within the root namespace")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 
-namespace LightInject.Annotation
+namespace LightInject
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Reflection;
+    using System;    
+    using LightInject.Annotation;
 
     /// <summary>
     /// Indicates a required property dependency or a named constructor dependency.
@@ -82,10 +81,18 @@ namespace LightInject.Annotation
         /// <param name="serviceContainer">The target <see cref="ServiceContainer"/>
         /// for which to enable annotated constructor injection.</param>
         public static void EnableAnnotatedConstructorInjection(this ServiceContainer serviceContainer)
-        {            
+        {
             serviceContainer.ConstructorDependencySelector = new AnnotatedConstructorDependencySelector();
         }
     }
+}
+
+namespace LightInject.Annotation
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reflection;
     
     /// <summary>
     /// An <see cref="IPropertyDependencySelector"/> that uses the <see cref="InjectAttribute"/>
@@ -112,7 +119,8 @@ namespace LightInject.Annotation
         /// dependencies for the given <paramref name="type"/>.</returns>
         public override IEnumerable<PropertyDependency> Execute(Type type)
         {
-            var properties = PropertySelector.Execute(type).Where(p => p.IsDefined(typeof(InjectAttribute), true)).ToArray();
+            var properties =
+                PropertySelector.Execute(type).Where(p => p.IsDefined(typeof(InjectAttribute), true)).ToArray();
             foreach (var propertyInfo in properties)
             {
                 var injectAttribute =
@@ -128,7 +136,7 @@ namespace LightInject.Annotation
                                 IsRequired = true
                             };
                 }
-            }            
+            }
         }
     }
 
@@ -140,7 +148,8 @@ namespace LightInject.Annotation
             foreach (var constructorDependency in constructorDependencies)
             {
                 var injectAttribute =
-                    (InjectAttribute)constructorDependency.Parameter.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault();
+                    (InjectAttribute)
+                    constructorDependency.Parameter.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault();
                 if (injectAttribute != null)
                 {
                     constructorDependency.ServiceName = injectAttribute.ServiceName;
@@ -148,6 +157,6 @@ namespace LightInject.Annotation
             }
 
             return constructorDependencies;
-        } 
+        }
     }
 }
