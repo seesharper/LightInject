@@ -452,17 +452,7 @@ namespace LightInject.Tests
             var instance = factory();
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-
-        [TestMethod]
-        public void GetInstance_FuncWithStringArgument_IsAbleToCreateInstance()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
-            var factory = (Func<string, IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
-            var instance = factory("SomeFoo");
-            Assert.IsInstanceOfType(instance, typeof(Foo));
-        }
-
+        
         [TestMethod]
         public void GetInstance_FuncWithSingletonTarget_ReturnsSameInstance()
         {

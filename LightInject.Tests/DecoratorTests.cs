@@ -364,6 +364,37 @@
             Assert.AreEqual(1, BarDecorator.Instances);
         }
 
+        [TestMethod]
+        public void GetInstance_DecoratorAppliedToFunctionFactory_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(factory => CreateFoo());
+            container.Decorate(typeof(IFoo), typeof(FooDecorator));
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+        }
+
+        [TestMethod]
+        public void GetInstance_DecoratorAppliedToDependencyViaFunctionFactory_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register(factory => CreateFooWithDependency(factory));
+            container.Register<IBar, Bar>();
+            container.Decorate(typeof(IBar), typeof(BarDecorator));
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance.Bar, typeof(BarDecorator));
+        }
+
+        private IFoo CreateFooWithDependency(IServiceFactory factory)
+        {
+            return new FooWithDependency(factory.GetInstance<IBar>());
+        }
+
+        private static Foo CreateFoo()
+        {
+            return new Foo();
+        }
 
         private static FooDecorator GetFooDecorator(IFoo target)
         {

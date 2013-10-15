@@ -251,16 +251,6 @@
         }
 
         [TestMethod]
-        public void GetInstance_NamedFuncDependency_InjectsDependency()
-        {
-            var container = CreateContainer();
-            container.Register(typeof(IBar), typeof(Bar), "SomeBar");
-            container.Register(typeof(IFoo), typeof(FooWithNamedFuncDependency));
-            var instance = (FooWithNamedFuncDependency)container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance.GetBar("SomeBar"), typeof(Bar));
-        }
-
-        [TestMethod]
         public void GetInstance_IEnumerableDependency_InjectsAllInstances()
         {
             var container = CreateContainer();

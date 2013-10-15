@@ -82,6 +82,8 @@
     <Compile Include="DisposableTests.cs" />
     <Compile Include="ErrorMessages.cs" />
     <Compile Include="ExceptionAssert.cs" />
+    <Compile Include="FunctionFactoryTests.cs" />
+    <Compile Include="FunctionFactoryVerificationTests.cs" />
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="LazyCompositionRootTests.cs" />
     <Compile Include="LazyReadOnlyCollectionTests.cs" />

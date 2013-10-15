@@ -83,7 +83,16 @@
             var constructionInfo = builder.Execute(e);
             Assert.IsTrue(constructionInfo.ConstructorDependencies[0].ServiceType == typeof(IEnumerable<IBar>));
         }
-                
+
+        [TestMethod]
+        public void CreateConstructionInfo_WithParameters_ReturnsExpression()
+        {
+            var builder = new LambdaConstructionInfoBuilder();
+            Expression<Func<IServiceFactory, int , IFoo>> e = (f,a) => new FooWithValueTypeDependency(a);
+            var constructionInfo = builder.Execute(e);
+            Assert.IsNotNull(constructionInfo.FactoryDelegate);
+        }
+        
         private IBar GetInstance()
         {
             return null;
