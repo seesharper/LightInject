@@ -165,7 +165,86 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>        
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
         void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory);
-       
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T">The parameter type.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param> 
+        /// <param name="serviceName">The name of the service.</param>        
+        void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory, string serviceName);
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory);
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        /// <param name="serviceName">The name of the service.</param>
+        void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory, string serviceName);
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory);
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        /// <param name="serviceName">The name of the service.</param>
+        void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory, string serviceName);
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory);
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        /// <param name="serviceName">The name of the service.</param>
+        void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory, string serviceName);
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="expression"/> that 
         /// describes the dependencies of the service. 
@@ -332,6 +411,15 @@ namespace LightInject
         object GetInstance(Type serviceType, object[] arguments);
 
         /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <param name="arguments">The arguments to be passed to the target instance.</param>        
+        /// <returns>The requested service instance.</returns>
+        object GetInstance(Type serviceType, string serviceName, object[] arguments);
+
+        /// <summary>
         /// Gets a named instance of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
@@ -355,14 +443,106 @@ namespace LightInject
         TService GetInstance<TService>(string serviceName);
 
         /// <summary>
-        /// Gets a named instance of the given <typeparamref name="TService"/>.
+        /// Gets an instance of the given <typeparamref name="TService"/>.
         /// </summary>
         /// <typeparam name="T">The type of the argument.</typeparam>
         /// <typeparam name="TService">The type of the requested service.</typeparam>        
         /// <param name="value">The argument value.</param>
         /// <returns>The requested service instance.</returns>    
         TService GetInstance<T, TService>(T value);
-       
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="value">The argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
+        TService GetInstance<T, TService>(T value, string serviceName);
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <returns>The requested service instance.</returns>    
+        TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2);
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
+        TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2, string serviceName);
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <returns>The requested service instance.</returns>    
+        TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3);
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The second argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
+        TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3, string serviceName);
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <param name="arg4">The fourth argument value.</param>
+        /// <returns>The requested service instance.</returns>    
+        TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4);
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <param name="arg4">The fourth argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
+        TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, string serviceName);
+
+
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
@@ -655,6 +835,8 @@ namespace LightInject
 
         private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>>
             GetInstanceWithParametersMethods;
+        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>>
+           NamedGetInstanceWithParametersMethods;
         private static readonly Lazy<ThreadSafeDictionary<Type, Type>> EnumerableTypes;
 
         static ReflectionHelper()
@@ -688,6 +870,7 @@ namespace LightInject
             GetInstanceWithParametersMethods =
                 new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
                     () => new ThreadSafeDictionary<Type, MethodInfo>());
+            NamedGetInstanceWithParametersMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
         }
 
         public static MethodInfo LifetimeGetInstanceMethod
@@ -742,19 +925,34 @@ namespace LightInject
             return getInstanceWithArgumentsMethod.CreateDelegate(serviceType, serviceFactory);
         }
 
-        private static MethodInfo GetGetInstanceWithParametersMethod(Type serviceType)
+        public static MethodInfo GetGetInstanceWithParametersMethod(Type serviceType)
         {
-            return GetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateGetInstanceWithParametersMethod);
-            
+            return GetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateGetInstanceWithParametersMethod);            
+        }
+
+        public static MethodInfo GetNamedGetInstanceWithParametersMethod(Type serviceType)
+        {
+            return NamedGetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateNamedGetInstanceWithParametersMethod);
         }
 
         private static MethodInfo CreateGetInstanceWithParametersMethod(Type serviceType)
         {
-            Type[] genericArguments = serviceType.GetGenericArguments();
-            //Type returnType = genericArguments[genericArguments.Length - 1];
+            Type[] genericArguments = serviceType.GetGenericArguments();            
             MethodInfo openGenericMethod =
-                typeof(IServiceFactory).GetMethods().FirstOrDefault(m => m.Name == "GetInstance"            
-                    && m.GetGenericArguments().Length == genericArguments.Length);
+                typeof(IServiceFactory).GetMethods().Single(m => m.Name == "GetInstance"            
+                    && m.GetGenericArguments().Length == genericArguments.Length && m.GetParameters().All(p => p.Name != "serviceName"));
+
+            MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericArguments);
+
+            return closedGenericMethod;
+        }
+
+        private static MethodInfo CreateNamedGetInstanceWithParametersMethod(Type serviceType)
+        {
+            Type[] genericArguments = serviceType.GetGenericArguments();
+            MethodInfo openGenericMethod =
+                typeof(IServiceFactory).GetMethods().Single(m => m.Name == "GetInstance"
+                    && m.GetGenericArguments().Length == genericArguments.Length && m.GetParameters().Any(p => p.Name == "serviceName"));
 
             MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericArguments);
 
@@ -833,7 +1031,7 @@ namespace LightInject
             return typeof(Func<,>).MakeGenericType(typeof(string), type);
         }
 
-        private static MethodInfo GetGetInstanceMethod(Type type)
+        public static MethodInfo GetGetInstanceMethod(Type type)
         {
             return GetInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetInstanceMethod);
         }
@@ -843,7 +1041,7 @@ namespace LightInject
             return OpenGenericGetInstanceMethodInfo.Value.MakeGenericMethod(type);
         }
 
-        private static MethodInfo GetGetNamedInstanceMethod(Type type)
+        public static MethodInfo GetGetNamedInstanceMethod(Type type)
         {
             return GetNamedInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetNamedInstanceMethod);
         }
@@ -1422,7 +1620,12 @@ namespace LightInject
         {
             Register(typeof(TService), typeof(TImplementation), serviceName, lifetime);
         }
-       
+
+        public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory, string serviceName)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -1503,7 +1706,35 @@ namespace LightInject
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
-       
+        public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory, string serviceName)
+        {
+            RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
+        }
+
+        public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory, string serviceName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory, string serviceName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
@@ -1545,6 +1776,15 @@ namespace LightInject
             return del(constantsWithArguments);
         }
 
+        public object GetInstance(Type serviceType, string serviceName, object[] arguments)
+        {
+            var del = GetNamedDelegate(serviceType, serviceName, true);
+
+            object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
+
+            return del(constantsWithArguments);
+        }
+
         /// <summary>
         /// Gets an instance of the given <typeparamref name="TService"/> type.
         /// </summary>
@@ -1569,6 +1809,41 @@ namespace LightInject
         public TService GetInstance<T, TService>(T value)
         {
             return (TService)GetInstance(typeof(TService), new object[] { value });
+        }
+
+        public TService GetInstance<T, TService>(T value, string serviceName)
+        {
+            return (TService)GetInstance(typeof(TService), serviceName, new object[] { value });
+        }
+
+        public TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2, string serviceName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3, string serviceName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, string serviceName)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -2206,21 +2481,17 @@ namespace LightInject
 
             else if (serviceType.IsFuncWithParameters())
             {
-                emitter = CreateServiceEmitterBasedParameterizedFuncRequest(serviceType);
+                emitter = CreateServiceEmitterBasedParameterizedFuncRequest(serviceType, serviceName);
             }
 
             else if (serviceType.IsFunc())
             {
-                emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, false);
+                emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, serviceName);
             }
             else if (serviceType.IsEnumerableOfT())
             {
                 emitter = CreateEnumerableServiceEmitter(serviceType);
-            }
-            else if (serviceType.IsFuncWithStringArgument())
-            {
-                emitter = CreateServiceEmitterBasedOnFuncServiceRequest(serviceType, true);
-            }           
+            }            
             else if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
             {
                 emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
@@ -2234,10 +2505,57 @@ namespace LightInject
 
             return emitter;
         }
+        
+        private Action<IMethodSkeleton> CreateServiceEmitterBasedParameterizedFuncRequest(Type serviceType, string serviceName)
+        {
+            Type[] genericArguments = serviceType.GetGenericArguments();
+            Type returnType = genericArguments[genericArguments.Length - 1];
+            Type[] parameterTypes = genericArguments.Take(genericArguments.Length - 1).ToArray();
+            Type[] methodParameterTypes = new[] { typeof(IServiceFactory) }.Concat(parameterTypes).ToArray();
+            var dynamicMethod = new DynamicMethod("DynamicMethod", returnType, methodParameterTypes, typeof(IServiceFactory).Module, true);
+                        
+            MethodInfo getInstanceMethod;
+            var generator = dynamicMethod.GetILGenerator();
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldarg_1);
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                getInstanceMethod = ReflectionHelper.GetGetInstanceWithParametersMethod(serviceType);
+            }
+            else
+            {
+                getInstanceMethod = ReflectionHelper.GetNamedGetInstanceWithParametersMethod(serviceType);
+                generator.Emit(OpCodes.Ldstr, serviceName);
+            }
+            generator.Emit(OpCodes.Callvirt, getInstanceMethod);
+            generator.Emit(OpCodes.Ret);
+            
+            var getInstanceDelegate = dynamicMethod.CreateDelegate(serviceType, this);            
+            var constantIndex = constants.Add(getInstanceDelegate);
+            return ms => EmitLoadConstant(ms, constantIndex, serviceType);
+        }
 
-        private Action<IMethodSkeleton> CreateServiceEmitterBasedParameterizedFuncRequest(Type serviceType)
-        {                        
-            Delegate getInstanceDelegate = ReflectionHelper.CreateGetInstanceWithParametersDelegate(serviceType, this);
+        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, string serviceName)
+        {
+            var returnType = serviceType.GetGenericArguments().Single();
+            var dynamicMethod = new DynamicMethod("DynamicMethod", returnType, new[] { typeof(IServiceFactory) }, typeof(IServiceFactory).Module, true);
+            var generator = dynamicMethod.GetILGenerator();
+            MethodInfo getInstanceMethod;
+            generator.Emit(OpCodes.Ldarg_0);            
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                getInstanceMethod = ReflectionHelper.GetGetInstanceMethod(returnType);
+            }
+            else
+            {
+                getInstanceMethod = ReflectionHelper.GetGetNamedInstanceMethod(returnType);
+                generator.Emit(OpCodes.Ldstr, serviceName);
+            }
+
+            generator.Emit(OpCodes.Callvirt, getInstanceMethod);
+            generator.Emit(OpCodes.Ret);
+
+            var getInstanceDelegate = dynamicMethod.CreateDelegate(serviceType, this);            
             var constantIndex = constants.Add(getInstanceDelegate);
             return ms => EmitLoadConstant(ms, constantIndex, serviceType);
         }
@@ -2306,16 +2624,16 @@ namespace LightInject
                 };
         }
 
-        private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
-        {            
-            var actualServiceType = ReflectionHelper.GetGenericArguments(serviceType).Last();
+        //private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, bool namedService)
+        //{            
+        //    var actualServiceType = ReflectionHelper.GetGenericArguments(serviceType).Last();
 
-            Delegate getInstanceDelegate = namedService ? ReflectionHelper.CreateGetNamedInstanceDelegate(actualServiceType, this)
-                                               : ReflectionHelper.CreateGetInstanceDelegate(actualServiceType, this);
+        //    Delegate getInstanceDelegate = namedService ? ReflectionHelper.CreateGetNamedInstanceDelegate(actualServiceType, this)
+        //                                       : ReflectionHelper.CreateGetInstanceDelegate(actualServiceType, this);
 
-            var constantIndex = constants.Add(getInstanceDelegate);
-            return ms => EmitLoadConstant(ms, constantIndex, serviceType);
-        }
+        //    var constantIndex = constants.Add(getInstanceDelegate);
+        //    return ms => EmitLoadConstant(ms, constantIndex, serviceType);
+        //}
         
         private ServiceRegistration GetOpenGenericServiceRegistration(Type openGenericServiceType, string serviceName)
         {

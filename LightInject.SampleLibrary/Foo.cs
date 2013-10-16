@@ -309,6 +309,16 @@ namespace LightInject.SampleLibrary
         public int Value { get; private set; }
     }
 
+    public class AnotherFooWithValueTypeDependency : IFoo
+    {
+        public AnotherFooWithValueTypeDependency(int value)
+        {
+            Value = value;
+        }
+
+        public int Value { get; private set; }
+    }
+
     public class FooWithValueTypePropertyDependency : IFoo
     {
         public int Value { get; set; }
