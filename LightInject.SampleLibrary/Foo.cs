@@ -309,6 +309,66 @@ namespace LightInject.SampleLibrary
         public int Value { get; private set; }
     }
 
+    public class FooWithOneParameter : IFoo
+    {
+        public int Arg1 { get; private set; }
+
+        public FooWithOneParameter(int arg1)
+        {
+            Arg1 = arg1;
+        }
+    }
+
+    public class FooWithTwoParameters : IFoo
+    {
+        public int Arg1 { get; private set; }
+
+        public int Arg2 { get; private set; }
+
+        public FooWithTwoParameters(int arg1, int arg2)
+        {
+            Arg1 = arg1;
+            Arg2 = arg2;
+        }
+    }
+
+    public class FooWithThreeParameters : IFoo
+    {
+        public int Arg1 { get; private set; }
+
+        public int Arg2 { get; private set; }
+
+        public int Arg3 { get; private set; }
+
+        public FooWithThreeParameters(int arg1, int arg2, int arg3)
+        {
+            Arg1 = arg1;
+            Arg2 = arg2;
+            Arg3 = arg3;
+        }
+    }
+
+    public class FooWithFourParameters : IFoo
+    {
+        public int Arg1 { get; private set; }
+
+        public int Arg2 { get; private set; }
+
+        public int Arg3 { get; private set; }
+
+        public int Arg4 { get; private set; }
+
+        public FooWithFourParameters(int arg1, int arg2, int arg3, int arg4)
+        {
+            Arg1 = arg1;
+            Arg2 = arg2;
+            Arg3 = arg3;
+            Arg4 = arg4;
+        }
+    }
+
+
+
     public class AnotherFooWithValueTypeDependency : IFoo
     {
         public AnotherFooWithValueTypeDependency(int value)
