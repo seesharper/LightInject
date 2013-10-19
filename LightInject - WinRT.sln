@@ -31,8 +31,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Mvc", "LightInj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.WinRT.Tests", "LightInject.WinRT.Tests\LightInject.WinRT.Tests.csproj", "{147C98AE-BB6A-4D43-920E-C8BC94C9C84F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.PreProcessor", "LightInject.PreProcessor\LightInject.PreProcessor.csproj", "{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRootTypeAttribute", "LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj", "{75EA6152-B0C9-40C1-AF22-10DBCA192239}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception", "LightInject.Interception\LightInject.Interception.csproj", "{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}"
@@ -178,16 +176,6 @@ Global
 		{147C98AE-BB6A-4D43-920E-C8BC94C9C84F}.Release|x86.ActiveCfg = Release|x86
 		{147C98AE-BB6A-4D43-920E-C8BC94C9C84F}.Release|x86.Build.0 = Release|x86
 		{147C98AE-BB6A-4D43-920E-C8BC94C9C84F}.Release|x86.Deploy.0 = Release|x86
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Release|ARM.ActiveCfg = Release|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Release|x64.ActiveCfg = Release|Any CPU
-		{D4FC2C76-196F-4DA9-9716-BAA5FEA5D257}.Release|x86.ActiveCfg = Release|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Debug|ARM.ActiveCfg = Debug|Any CPU

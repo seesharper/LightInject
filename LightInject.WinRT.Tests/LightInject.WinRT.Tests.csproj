@@ -109,8 +109,8 @@
     <SDKReference Include="TestPlatform, Version=11.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\LightInject.Annotation\LightInjectAnnotation.cs">
-      <Link>LightInjectAnnotation.cs</Link>
+    <Compile Include="..\LightInject.Annotation\LightInject.Annotation.cs">
+      <Link>LightInject.Annotation.cs</Link>
     </Compile>
     <Compile Include="..\LightInject.Mocking\LightInjectMocking.cs">
       <Link>LightInjectMocking.cs</Link>
@@ -157,8 +157,8 @@
     <Compile Include="..\LightInject.Tests\TestBase.cs">
       <Link>TestBase.cs</Link>
     </Compile>
-    <Compile Include="..\LightInject\ServiceContainer.cs">
-      <Link>ServiceContainer.cs</Link>
+    <Compile Include="..\LightInject\LightInject.cs">
+      <Link>LightInject.cs</Link>
     </Compile>
     <Compile Include="ILGeneratorTests.cs" />
     <Compile Include="UnitTest1.cs" />

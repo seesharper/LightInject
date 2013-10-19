@@ -10,7 +10,51 @@ public static class DirectoryUtils
             Directory.Delete(contentFolder, true);
         }
     }
+
+    public static void DeleteLibFolder(string currentDirectory)
+    {
+        string libFolder = Path.Combine(currentDirectory , @"package\lib");
+        if (Directory.Exists(libFolder))
+        {
+            Directory.Delete(libFolder, true);
+        }
+    }
+
+    public static void DeleteBuildFolder(string currentDirectory)
+    {
+        string buildFolder = Path.Combine(currentDirectory , @"build");
+        if (Directory.Exists(buildFolder))
+        {
+            Directory.Delete(buildFolder, true);
+        }
+    }
 }
+
+public class FileUtils
+{
+    public static void CopyAll(string sourceDirectory, string targetDirectory)
+    {
+        Directory.CreateDirectory(targetDirectory);
+        foreach(var file in Directory.GetFiles(sourceDirectory))
+        {
+            File.Copy(file, Path.Combine(targetDirectory, Path.GetFileName(file)));    
+        }        
+    }
+
+    public static void DeleteAllTempFiles(string directory)
+    {
+        foreach(var file in Directory.GetFiles(directory, "*.tmp"))
+        {
+            File.Delete(file);
+        }
+
+        foreach(var file in Directory.GetFiles(directory, "*.cs"))
+        {
+            File.Delete(file);
+        }
+    }
+}
+
 
 public static class Command
 {
@@ -77,13 +121,15 @@ public class Compiler
         var processOutput = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
         Console.WriteLine(processOutput);
+        FileUtils.DeleteAllTempFiles(sourceDirectory);
 	}
 
     private static ProcessStartInfo CreateProcessStartInfo(string sourceDirectory, string outputFileName)
     {
         var startInformation = new ProcessStartInfo(@"C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe");
         startInformation.CreateNoWindow = true;
-        startInformation.Arguments =  "/target:library /optimize "  + "/doc:" + Quote(outputFileName + ".xml") + " /out:" + Quote(outputFileName + ".dll") +  " " + Quote(CreateFileList(sourceDirectory));
+        startInformation.Arguments =  "/target:library /warnaserror+ /warn:1 /optimize /debug:pdbonly "  + "/doc:" + Quote(Path.Combine(sourceDirectory,outputFileName + ".xml")) + " /out:" + Quote(Path.Combine(sourceDirectory, outputFileName + ".dll")) +  " " + Quote(Path.Combine(sourceDirectory, "*.cs"));
+        Console.WriteLine(startInformation.Arguments);
         startInformation.RedirectStandardOutput = true;
         startInformation.UseShellExecute = false;
         return startInformation;
@@ -105,7 +151,7 @@ public class Compiler
 
     private static string CreateFileList(string sourceDirectory)
     {
-    	return Directory.GetFiles(sourceDirectory, "*.cs").Aggregate ((current,next) => current + " " + next);
+    	return Directory.GetFiles(sourceDirectory, "*.cs").Aggregate ((current,next) =>  Quote(current) + " " + Quote(next));
     }
 }
 
@@ -218,12 +264,12 @@ public class Publicizer
     public static void Write(string inputFile, string outputFile)
      {
          using (var reader = new StreamReader(inputFile))
-         {
+         {             
              using (var writer = new StreamWriter(outputFile))
              {
                  Write(reader, writer);
              }
-         }
+         }    
      }
 
     public static void Write(StreamReader reader, StreamWriter writer)
@@ -238,4 +284,39 @@ public class Publicizer
              writer.WriteLine(line);
          }
     }
+}
+
+public class AssemblyInfoWriter
+{
+    private static readonly List<string> Exceptions = new List<string>();
+
+    static AssemblyInfoWriter()
+    {
+        Exceptions.Add("InternalsVisibleTo");                        
+    }
+
+    public static void Write(string inputFile, string outputFile)
+     {
+         using (var reader = new StreamReader(inputFile))
+         {             
+             using (var writer = new StreamWriter(outputFile))
+             {
+                 Write(reader, writer);
+             }
+         }    
+     }
+
+    public static void Write(StreamReader reader, StreamWriter writer)
+    {
+         while (!reader.EndOfStream)
+         {
+             var line = reader.ReadLine();
+             if (!Exceptions.Any(e => line.Contains(e)))
+             {
+                 writer.WriteLine(line);
+             }             
+         }
+    }
+
+    
 }

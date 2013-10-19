@@ -343,7 +343,7 @@ namespace LightInject
         /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void RegisterAssembly(string searchPattern);
+        void RegisterAssembly(string searchPattern);       
 #endif
 
         /// <summary>
@@ -1451,7 +1451,7 @@ namespace LightInject
             {
                 RegisterAssembly(assembly);
             }
-        }
+        }        
 #endif
 
         /// <summary>
