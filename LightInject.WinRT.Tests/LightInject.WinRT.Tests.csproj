@@ -142,6 +142,9 @@
     <Compile Include="..\LightInject.Tests\ExceptionAssert.cs">
       <Link>ExceptionAssert.cs</Link>
     </Compile>
+    <Compile Include="..\LightInject.Tests\FunctionFactoryTests.cs">
+      <Link>FunctionFactoryTests.cs</Link>
+    </Compile>
     <Compile Include="..\LightInject.Tests\MockingTests.cs">
       <Link>MockingTests.cs</Link>
     </Compile>
@@ -160,7 +163,6 @@
     <Compile Include="..\LightInject\LightInject.cs">
       <Link>LightInject.cs</Link>
     </Compile>
-    <Compile Include="ILGeneratorTests.cs" />
     <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

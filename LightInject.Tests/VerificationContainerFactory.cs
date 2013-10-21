@@ -14,7 +14,7 @@ namespace LightInject.Tests
             }
            
 
-            var serviceContainer = new ServiceContainer(() => new MethodBuilderMethodSkeleton(path));
+            var serviceContainer = new ServiceContainer((returnType, parameterTypes) => new MethodBuilderMethodSkeleton(returnType, parameterTypes, path));
             return serviceContainer;
         }
     }

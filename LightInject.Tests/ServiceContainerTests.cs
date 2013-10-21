@@ -786,22 +786,6 @@ namespace LightInject.Tests
 
             //Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
         }
-#if NETFX_CORE
-        [TestMethod]
-        public void TestMethod5()
-        {
-            ConstructorInfo barConstructorInfo = typeof(Bar).GetTypeInfo().DeclaredConstructors.First();
-            ConstructorInfo fooConstructorInfo = typeof(FooWithDependency).GetTypeInfo().DeclaredConstructors.First();
-            DynamicMethodSkeleton dynamicMethodSkeleton = new DynamicMethodSkeleton();
-            var generator = dynamicMethodSkeleton.GetILGenerator();
-            generator.Emit(OpCodes.Newobj, barConstructorInfo);
-            generator.Emit(OpCodes.Newobj, fooConstructorInfo);
-            var del = dynamicMethodSkeleton.CreateDelegate();
-            var instance = del(new object[] { });
-            Assert.IsNotNull(instance);
-        }
-#endif
-
 
         [TestMethod]
         public void GetInstance_SingletonRegisterAfterInvalidate_ReturnsInstanceOfSecondRegistration()
