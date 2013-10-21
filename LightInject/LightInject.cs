@@ -1270,15 +1270,11 @@ namespace LightInject
             AssemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor());
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
-            constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);                        
-#if NET
+            constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
+#if NET      
             AssemblyLoader = new AssemblyLoader();
 #endif
-#if NETFX_CORE
-            methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
-#endif
-
         }
 #if TEST
  
@@ -1972,7 +1968,7 @@ namespace LightInject
 
         private Func<object[], object> CreatePropertyInjectionDelegate(Type concreteType)
         {
-            IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[]{ typeof(object[]) });            
+            IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
             ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
             EmitLoadConstant(methodSkeleton, 0, concreteType);
             try
@@ -2476,7 +2472,6 @@ namespace LightInject
             Type[] parameterTypes = genericArguments.Take(genericArguments.Length - 1).ToArray();
             Type[] methodParameterTypes = new[] { typeof(IServiceFactory) }.Concat(parameterTypes).ToArray();
             
-
             var methodSkeleton = methodSkeletonFactory(returnType, methodParameterTypes);
             var generator = methodSkeleton.GetILGenerator();
 
@@ -2525,7 +2520,6 @@ namespace LightInject
 
             generator.Emit(OpCodes.Callvirt, getInstanceMethod);
             
-
             var getInstanceDelegate = methodSkeleton.CreateDelegate(serviceType, this);            
             var constantIndex = constants.Add(getInstanceDelegate);
             return ms => EmitLoadConstant(ms, constantIndex, serviceType);
@@ -2883,7 +2877,6 @@ namespace LightInject
             }
         }
 
-#if NET
         private class DynamicMethodSkeleton : IMethodSkeleton
         {            
             private DynamicMethod dynamicMethod;
@@ -2912,11 +2905,16 @@ namespace LightInject
 
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
+#if NET
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", returnType, parameterTypes , typeof(ServiceContainer).Module, true);
+#endif
+#if NETFX_CORE
+                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
+                    
+#endif
             }
         }
-#endif
 
 #if SILVERLIGHT
         private class DynamicMethodSkeleton : IMethodSkeleton
@@ -3138,35 +3136,35 @@ namespace LightInject
 #if NETFX_CORE 
 
 
-    internal class DynamicMethodSkeleton : IMethodSkeleton
-    {
-        private DynamicMethod dynamicMethod;
+    //internal class DynamicMethodSkeleton : IMethodSkeleton
+    //{
+    //    private DynamicMethod dynamicMethod;
         
-        public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
-        {
-             CreateDynamicMethod(returnType, parameterTypes);
-        }
+    //    public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
+    //    {
+    //         CreateDynamicMethod(returnType, parameterTypes);
+    //    }
 
-        private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
-        {
-            dynamicMethod = new DynamicMethod(returnType, parameterTypes);
-        }
+    //    private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
+    //    {
+    //        dynamicMethod = new DynamicMethod(returnType, parameterTypes);
+    //    }
 
-        public ILGenerator GetILGenerator()
-        {
-            return dynamicMethod.GetILGenerator();
-        }
+    //    public ILGenerator GetILGenerator()
+    //    {
+    //        return dynamicMethod.GetILGenerator();
+    //    }
 
-        public Delegate CreateDelegate(Type delegateType)
-        {
-            return dynamicMethod.CreateDelegate(delegateType);
-        }
+    //    public Delegate CreateDelegate(Type delegateType)
+    //    {
+    //        return dynamicMethod.CreateDelegate(delegateType);
+    //    }
 
-        public Delegate CreateDelegate(Type delegateType, object target)
-        {
-            return dynamicMethod.CreateDelegate(delegateType, target);
-        }
-    }
+    //    public Delegate CreateDelegate(Type delegateType, object target)
+    //    {
+    //        return dynamicMethod.CreateDelegate(delegateType, target);
+    //    }
+    //}
 
 
     internal class DynamicMethod
@@ -3195,17 +3193,16 @@ namespace LightInject
 
         public Delegate CreateDelegate(Type delegateType, object target)
         {
-            var delegateWithTargetParameter =
+            Type delegateTypeWithTargetParameter =
                 Expression.GetDelegateType(parameterTypes.Concat(new[] { returnType }).ToArray());
-            var lambda = Expression.Lambda(delegateWithTargetParameter,ilGenerator.CurrentExpression,true, parameters);
+            var lambdaWithTargetParameter = Expression.Lambda(
+                delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
 
-            Expression[] ex = new Expression[] {Expression.Constant(target)}.Concat(parameters.Skip(1)).ToArray();
-            var invokeExpression = Expression.Invoke(lambda, ex);
+            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Skip(1)).ToArray();
+            var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
 
-            var l2 = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
-            var m = l2.Compile();
-
-            return m;
+            var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
+            return lambda.Compile();            
         }
 
         public ILGenerator GetILGenerator()
@@ -3282,10 +3279,12 @@ namespace LightInject
             else if (code == OpCodes.Sub)
             {
                 var right = stack.Pop();
-                var left = stack.Pop();
-                var substractExpression = Expression.Subtract(left, right);
-                stack.Push(substractExpression);
-                //stack.Push(Expression.Constant(1, typeof(int)));
+                var left = stack.Pop();                
+                stack.Push(Expression.Subtract(left, right));                
+            }
+            else if (code == OpCodes.Ret)
+            {
+                
             }
 
             else
