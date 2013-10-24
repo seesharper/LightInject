@@ -128,7 +128,7 @@ public class Compiler
     {
         var startInformation = new ProcessStartInfo(@"C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe");
         startInformation.CreateNoWindow = true;
-        startInformation.Arguments =  "/target:library /warnaserror+ /warn:1 /optimize /debug:pdbonly "  + "/doc:" + Quote(Path.Combine(sourceDirectory,outputFileName + ".xml")) + " /out:" + Quote(Path.Combine(sourceDirectory, outputFileName + ".dll")) +  " " + Quote(Path.Combine(sourceDirectory, "*.cs"));
+        startInformation.Arguments =  "/target:library /platform:ARM /warnaserror+ /warn:1 /optimize /debug:pdbonly "  + "/doc:" + Quote(Path.Combine(sourceDirectory,outputFileName + ".xml")) + " /out:" + Quote(Path.Combine(sourceDirectory, outputFileName + ".dll")) +  " " + Quote(Path.Combine(sourceDirectory, "*.cs"));
         Console.WriteLine(startInformation.Arguments);
         startInformation.RedirectStandardOutput = true;
         startInformation.UseShellExecute = false;
@@ -173,24 +173,23 @@ public class SourceWriter
 {
     private static DirectiveEvaluator directiveEvaluator = new DirectiveEvaluator();
 
-    public static void Write(string directive, string inputFile, string outputFile, bool processNameSpace)
+    public static void Write(string directive, string inputFile, string outputFile, bool processNameSpace, bool excludeFromCodeCoverage)
     {
         
-    	Console.WriteLine("Start processing file {0}", inputFile);
+    	Console.WriteLine("[SourceWriter] Start processing file '{0}'' with directive '{1}'.", inputFile, directive);
         using (var reader = new StreamReader(inputFile))
         {
             using (var writer = new StreamWriter(outputFile))
             {
-                Write(directive, reader, writer, processNameSpace);                    
+                Write(directive, reader, writer, processNameSpace, excludeFromCodeCoverage);                    
             }
         }
-        Console.WriteLine("Finished processing file {0}", inputFile);
-        Console.WriteLine("Output was written to {0}", outputFile);
+        Console.WriteLine("[SourceWriter] Finished processing file '{0}'' with directive '{1}'. Output was written to {2}", inputFile, directive, outputFile);        
     }
 
 
 
-    public static void Write(string directive, StreamReader reader, StreamWriter writer, bool processNameSpace)
+    public static void Write(string directive, StreamReader reader, StreamWriter writer, bool processNameSpace, bool excludeFromCodeCoverage)
     {
         bool shouldWrite = true;                        
         while (!reader.EndOfStream)
@@ -217,15 +216,18 @@ public class SourceWriter
 
                 }
 
-                if ((line.Contains("public class") || line.Contains("internal class") || line.Contains("internal static class")) && directive != "NETFX_CORE")
+                if (line.Contains("public class") || line.Contains("internal class") || line.Contains("internal static class"))
                 {                        
                     var lineWithOutIndent = line.TrimStart(new char[] { ' ' });
                     var indentLength = line.Length - lineWithOutIndent.Length;
                     var indent = line.Substring(0, indentLength);
                     
                             
+                    if (excludeFromCodeCoverage)
+                    {
+                        writer.WriteLine("{0}{1}", indent, "[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");                        
+                    }
                     
-                    writer.WriteLine("{0}{1}", indent, "[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");                        
                 }
 
                 
@@ -251,25 +253,41 @@ public class Publicizer
     static Publicizer()
     {
         Exceptions.Add("TypeHelper");
-        Exceptions.Add("ReflectionHelper");
-        Exceptions.Add("LazyReadOnlyCollection<T>");
+        Exceptions.Add("ReflectionHelper");        
+        Exceptions.Add("OpCodes");
+        Exceptions.Add("OpCode");
+        Exceptions.Add("ILGenerator");        
+        Exceptions.Add("DynamicMethodSkeleton");
+        Exceptions.Add("DynamicMethod");
+        //Exceptions.Add("MethodInfoExtensions");
+        
+
 
 
         Includes.Add("internal static class");
         Includes.Add("internal class");
         Includes.Add("internal interface");
         Includes.Add("internal abstract class");
+        Includes.Add("internal LightInjectServiceLocator");
+        Includes.Add("internal static void SetServiceContainer");
+        Includes.Add("internal LightInjectMvcDependencyResolver");
+                
+
     }
     
-    public static void Write(string inputFile, string outputFile)
+    public static void Write(string directive, string inputFile, string outputFile)
      {
-         using (var reader = new StreamReader(inputFile))
+         var tempFile = Path.GetTempFileName();
+         SourceWriter.Write(directive, inputFile, tempFile, false, false);
+         Console.WriteLine("[Publicizer] Start processing file '{0}''.", tempFile);
+         using (var reader = new StreamReader(tempFile))
          {             
              using (var writer = new StreamWriter(outputFile))
              {
                  Write(reader, writer);
              }
          }    
+         Console.WriteLine("[Publicizer] Finished processing file '{0}'. Output was written to {1}", tempFile, outputFile);        
      }
 
     public static void Write(StreamReader reader, StreamWriter writer)

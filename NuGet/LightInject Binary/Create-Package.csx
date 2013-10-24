@@ -13,8 +13,8 @@ Directory.CreateDirectory(buildDirectory);
 
 Console.WriteLine("Current build directory is : {0}", buildDirectory);
 
-SourceWriter.Write("NET", sourceFile, Path.Combine(buildDirectory, "LightInject.cs.tmp"), false); 
-Publicizer.Write(Path.Combine(buildDirectory, "LightInject.cs.tmp"), Path.Combine(buildDirectory, "LightInject.cs"));
+//SourceWriter.Write("NETFX_CORE", sourceFile, Path.Combine(buildDirectory, "LightInject.cs.tmp"), false); 
+Publicizer.Write("NETFX_CORE", sourceFile, Path.Combine(buildDirectory, "LightInject.cs"));
 AssemblyInfoWriter.Write(assemblyInfoFile, Path.Combine(buildDirectory, "AssemblyInfo.cs"));
 Compiler.Compile(buildDirectory, "LightInject");
 

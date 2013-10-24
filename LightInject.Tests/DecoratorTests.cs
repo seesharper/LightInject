@@ -57,6 +57,17 @@
         }
 
         [TestMethod]
+        public void GetInstance_SingletonWithNestedDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>(new PerContainerLifetime());
+            container.Decorate(typeof(IFoo), typeof(FooDecorator));
+            container.Decorate(typeof(IFoo), typeof(AnotherFooDecorator));
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance, typeof(AnotherFooDecorator));
+        }
+
+        [TestMethod]
         public void GetInstance_WithDecorator_DecoratesServicesAccordingToPredicate()
         {
             var container = CreateContainer();
@@ -170,6 +181,21 @@
         }
 
         [TestMethod]
+        public void GetInstance_OpenGenericDecoratorAfterClosedGenericDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>)); 
+            // Register twice to provoke an decorator index == 1
+            container.Decorate<IFoo<int>>((factory, foo) => new FooDecorator<int>(foo));
+            container.Decorate<IFoo<int>>((factory, foo) => new FooDecorator<int>(foo));
+            container.Decorate(typeof(IFoo<>), typeof(AnotherFooDecorator<>));
+
+            var instance = container.GetInstance<IFoo<int>>();
+
+            Assert.IsInstanceOfType(instance, typeof(AnotherFooDecorator<int>));
+        }
+
+        [TestMethod]
         public void GetInstance_DecoratorFactory_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
@@ -256,6 +282,49 @@
             var instance = (LazyFooDecorator)container.GetInstance<IFoo>();                     
             Assert.IsInstanceOfType(instance.Foo.Value, typeof(Foo));
         }
+
+        [TestMethod]
+        public void GetInstance_NestedLazyDecorators_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
+            container.Decorate(typeof(IFoo), typeof(AnotherLazyFooDecorator));
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(AnotherLazyFooDecorator));
+        }
+
+
+
+        [TestMethod]
+        public void GetInstance_NonLazyDecoratorFollowedByLazyDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate(typeof(IFoo), typeof(FooDecorator));
+            container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(LazyFooDecorator));
+        }
+
+        [TestMethod]
+        public void GetInstance_LazyDecoratorFollowedByNonLazyDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();           
+            container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
+            container.Decorate(typeof(IFoo), typeof(FooDecorator));
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+        }
+
+
 
         [TestMethod]
         public void GetInstance_SingletonInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()

@@ -6,7 +6,7 @@
     using Moq;
 
     [TestClass]
-    public class ContainerInterceptionTests
+    public class ContainerInterceptionTests : TestBase
     {
         [TestMethod]         
         public void Intercept_Service_ReturnsProxyInstance()
@@ -75,7 +75,20 @@
             interceptorMock.Verify(i => i.Invoke(It.IsAny<IInvocationInfo>()), Times.Once());
         }
 
-       
+        [TestMethod]
+        public virtual void GetInstance_InterceptorAfterDecorator_ReturnsProxy()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate(typeof(IFoo), typeof(FooDecorator));
+            container.Decorate(typeof(IFoo), typeof(AnotherFooDecorator));
+            container.Intercept(registration => true, factory => null);
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(IProxy));
+        }
+
 
     }
 }

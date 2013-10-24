@@ -112,8 +112,8 @@
     <Compile Include="..\LightInject.Annotation\LightInject.Annotation.cs">
       <Link>LightInject.Annotation.cs</Link>
     </Compile>
-    <Compile Include="..\LightInject.Mocking\LightInjectMocking.cs">
-      <Link>LightInjectMocking.cs</Link>
+    <Compile Include="..\LightInject.Mocking\LightInject.Mocking.cs">
+      <Link>LightInject.Mocking.cs</Link>
     </Compile>
     <Compile Include="..\LightInject.SampleLibrary\Bar.cs">
       <Link>Bar.cs</Link>

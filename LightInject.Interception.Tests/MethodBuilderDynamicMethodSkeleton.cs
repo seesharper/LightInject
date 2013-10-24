@@ -4,11 +4,8 @@
     using System.IO;
     using System.Reflection;
     using System.Reflection.Emit;
-
-    
-
-    
-    public class MethodBuilderMethodSkeleton : IDynamicMethodSkeleton
+       
+    public class InterceptionMethodBuilderMethodSkeleton : IDynamicMethodSkeleton
     {
         private readonly string outputPath;
 
@@ -25,7 +22,7 @@
         private ILGenerator ilGenerator;
 
 
-        public MethodBuilderMethodSkeleton(string outputPath)
+        public InterceptionMethodBuilderMethodSkeleton(string outputPath)
         {
             this.outputPath = outputPath;
             fileName = Path.GetFileName(outputPath);

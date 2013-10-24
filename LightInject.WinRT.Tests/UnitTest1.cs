@@ -12,6 +12,9 @@ namespace LightInject.WinRT.Tests
         [TestMethod]
         public void TestMethod1()
         {
+            Type test = typeof(string);
+
+
         }
     }
 }

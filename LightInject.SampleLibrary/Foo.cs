@@ -603,6 +603,16 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class AnotherLazyFooDecorator : IFoo
+    {
+        public Lazy<IFoo> Foo { get; private set; }
+
+        public AnotherLazyFooDecorator(Lazy<IFoo> foo)
+        {
+            Foo = foo;
+        }
+    }
+
     public class FooWithConstructorAndPropertyDependency : IFoo
     {
         public FooWithConstructorAndPropertyDependency(IBar bar)
@@ -661,5 +671,15 @@ namespace LightInject.SampleLibrary
         }
     }
 
+
+    public abstract class AbstractFoo : IFoo {}
     
+
+    public class FooWithNestedPrivate : IFoo
+    {
+        private class NestedPrivateBar
+        {
+            
+        }
+    }
 }

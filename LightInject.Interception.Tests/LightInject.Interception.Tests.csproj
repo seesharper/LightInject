@@ -63,11 +63,14 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AssemblyAssert.cs" />
+    <Compile Include="ContainerFactory.cs" />
     <Compile Include="ContainerInterceptionTests.cs" />
+    <Compile Include="ContainerInterceptorVerificationTests.cs" />
     <Compile Include="DynamicMethodBuilderTests.cs" />
     <Compile Include="DynamicMethodBuilderVerificationTests.cs" />
     <Compile Include="InterceptorTests.cs" />
     <Compile Include="MethodBuilderDynamicMethodSkeleton.cs" />
+    <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="MethodInfoExtensionsTests.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="ProxyBuilderTests.cs" />
@@ -75,8 +78,10 @@
     <Compile Include="ProxyBuilderVerificationTests.cs" />
     <Compile Include="SampleInterceptor.cs" />
     <Compile Include="SampleInterfaces.cs" />
+    <Compile Include="TestBase.cs" />
     <Compile Include="TypeArrayComparerTests.cs" />
     <Compile Include="VerifiableTypeBuilderFactory.cs" />
+    <Compile Include="VerificationContainerFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">

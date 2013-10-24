@@ -1,4 +1,4 @@
-namespace LightInject.Tests
+﻿namespace LightInject.Interception.Tests
 {
     using System;
     using System.IO;

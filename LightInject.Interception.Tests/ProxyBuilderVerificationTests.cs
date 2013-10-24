@@ -1,5 +1,7 @@
 ﻿namespace LightInject.Interception.Tests
 {
+    using System.Reflection;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -7,7 +9,11 @@
     {
         internal override IProxyBuilder CreateProxyBuilder()
         {
-            return new ProxyBuilder(new VerifiableTypeBuilderFactory());
+            var proxyBuilder = new ProxyBuilder();
+            var field = typeof(ProxyBuilder).GetField(
+                "typeBuilderFactory", BindingFlags.Instance | BindingFlags.NonPublic);
+            field.SetValue(proxyBuilder, new VerifiableTypeBuilderFactory());
+            return proxyBuilder;
         }
     }
 }

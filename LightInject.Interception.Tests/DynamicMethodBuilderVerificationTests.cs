@@ -2,6 +2,7 @@
 {
     using System;
     using System.IO;
+    using System.Reflection;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -10,8 +11,13 @@
     {
         protected override IMethodBuilder GetMethodBuilder()
         {
+            var dynamicMethodBuilder = new DynamicMethodBuilder();
+            var field = typeof(DynamicMethodBuilder).GetField(
+                "methodSkeletonFactory", BindingFlags.Instance | BindingFlags.NonPublic);
             var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DynamicMethodAssembly.dll");
-            return new DynamicMethodBuilder(() => new MethodBuilderMethodSkeleton(path));
+            Func<IDynamicMethodSkeleton> methodSkeletonFactory = () => new InterceptionMethodBuilderMethodSkeleton(path);
+            field.SetValue(dynamicMethodBuilder, methodSkeletonFactory);
+            return dynamicMethodBuilder;
         }
     }
 }

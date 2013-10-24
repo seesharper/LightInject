@@ -81,12 +81,36 @@
 
         [TestMethod]
         public void Scan_SampleAssembly_DoesNotRegisterCompilerGeneratedTypes()
-        {
-            FooWithCompilerGeneratedType foo = new FooWithCompilerGeneratedType();
+        {         
             var container = new ServiceContainer();
             container.RegisterAssembly(typeof(Foo).Assembly);
             Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.IsDefined(typeof(CompilerGeneratedAttribute), false)));
         }
+
+        [TestMethod]
+        public void Scan_SampleAssembly_DoesNotRegisterAbstractTypes()
+        {            
+            var container = new ServiceContainer();
+            container.RegisterAssembly(typeof(Foo).Assembly);
+            Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType == typeof(AbstractFoo)));
+        }
+
+        [TestMethod]
+        public void Scan_SampleAssembly_DoesNotRegisterSystemTypes()
+        {
+            var container = new ServiceContainer();
+            container.RegisterAssembly(typeof(string).Assembly);
+            Assert.AreEqual(0, container.AvailableServices.Count());
+        }
+
+        [TestMethod]
+        public void Scan_SampleAssembly_DoesNotRegisterNestedPrivateTypes()
+        {
+            var container = new ServiceContainer();
+            container.RegisterAssembly(typeof(Foo).Assembly);
+            Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType.Name == "NestedPrivateBar"));
+        }
+
 
         [TestMethod]
         public void Scan_HostAssembly_DoesNotConfigureInternalServices()
@@ -118,7 +142,7 @@
                 scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());
             }
         }
-          
+#if NET          
         [TestMethod]
         public void Register_AssemblyFile_CallsAssemblyScanner()
         {
@@ -128,7 +152,7 @@
             serviceContainer.RegisterAssembly("*SampleLibrary.dll");
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());
         }
-
+#endif
         [TestMethod]
         public void Register_Assembly_CallsAssemblyScanner()
         {
