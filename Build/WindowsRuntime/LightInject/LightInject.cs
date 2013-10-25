@@ -1137,14 +1137,6 @@ namespace LightInject
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
         }
-//#if TEST
- 
-//        public ServiceContainer(Func<Type, Type[] ,IMethodSkeleton> methodSkeletonFactory)
-//            : this()
-//        {
-//            this.methodSkeletonFactory = methodSkeletonFactory;
-//        }
-//#endif
 
         /// <summary>
         /// Gets or sets the <see cref="IPropertyDependencySelector"/> instance that 
@@ -1992,12 +1984,10 @@ namespace LightInject
             }
 
             Invalidate();
-            Action<IMethodSkeleton> emitDelegate = ResolveEmitDelegate(newRegistration);
-            Action<IMethodSkeleton> existingDelegate;
+            Action<IMethodSkeleton> emitDelegate = ResolveEmitDelegate(newRegistration);            
+            
             var serviceEmitters = GetServiceEmitters(newRegistration.ServiceType);
-            serviceEmitters.TryGetValue(newRegistration.ServiceName, out existingDelegate);
-            serviceEmitters.TryUpdate(newRegistration.ServiceName, emitDelegate, existingDelegate);
-                        
+            serviceEmitters[newRegistration.ServiceName] = emitDelegate;                                               
             return newRegistration;
         }
 
@@ -2787,7 +2777,7 @@ namespace LightInject
         }
     }
 
-    internal class OpCodes
+    public class OpCodes
     {
         public static readonly OpCode Ldarg_0;
         public static readonly OpCode Ldc_I4;
@@ -2833,7 +2823,7 @@ namespace LightInject
         }
     }
 
-    internal struct OpCode
+    public struct OpCode
     {
         public OpCode(short value)
             : this()
@@ -2897,7 +2887,7 @@ namespace LightInject
             var lambdaWithTargetParameter = Expression.Lambda(
                 delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
 
-            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Skip(1)).ToArray();
+            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
             var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
             
             var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
@@ -2911,7 +2901,7 @@ namespace LightInject
     }
 
 
-    internal class ILGenerator
+    public class ILGenerator
     {
         private readonly ParameterExpression[] parameters;
         private readonly Stack<Expression> stack = new Stack<Expression>();
@@ -4180,6 +4170,7 @@ namespace LightInject
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
+
         }
 
         /// <summary>

@@ -1137,7 +1137,7 @@ namespace LightInject
                 GetConstructors(type).FirstOrDefault(c => c.GetParameters().Select(p => p.ParameterType).SequenceEqual(types));
         }
 #endif
-#if NET || NETFX_CORE_PCL
+#if NET || NETFX_CORE_PCL || WP_PCL
         public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
         {
             return Delegate.CreateDelegate(delegateType, target, methodInfo);
@@ -1274,14 +1274,6 @@ namespace LightInject
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
-//#if TEST
- 
-//        public ServiceContainer(Func<Type, Type[] ,IMethodSkeleton> methodSkeletonFactory)
-//            : this()
-//        {
-//            this.methodSkeletonFactory = methodSkeletonFactory;
-//        }
-//#endif
 
         /// <summary>
         /// Gets or sets the <see cref="IPropertyDependencySelector"/> instance that 
@@ -2152,12 +2144,10 @@ namespace LightInject
             }
 
             Invalidate();
-            Action<IMethodSkeleton> emitDelegate = ResolveEmitDelegate(newRegistration);
-            Action<IMethodSkeleton> existingDelegate;
+            Action<IMethodSkeleton> emitDelegate = ResolveEmitDelegate(newRegistration);            
+            
             var serviceEmitters = GetServiceEmitters(newRegistration.ServiceType);
-            serviceEmitters.TryGetValue(newRegistration.ServiceName, out existingDelegate);
-            serviceEmitters.TryUpdate(newRegistration.ServiceName, emitDelegate, existingDelegate);
-                        
+            serviceEmitters[newRegistration.ServiceName] = emitDelegate;                                               
             return newRegistration;
         }
 
@@ -2943,7 +2933,7 @@ namespace LightInject
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", returnType, parameterTypes , typeof(ServiceContainer).Module, true);
 #endif
-#if NETFX_CORE || NETFX_CORE_PCL
+#if NETFX_CORE || NETFX_CORE_PCL || WP_PCL
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);
                     
 #endif
@@ -2981,7 +2971,7 @@ namespace LightInject
         }
     }
 #endif
-#if PCL
+#if WP_PCL
         
         public class ThreadLocal<T>
 {
@@ -2993,12 +2983,8 @@ namespace LightInject
      }
 
     [ThreadStatic]
-    private static ConditionalWeakTable<object, Holder> _state;
-
-    public ThreadLocal():this(() => default(T))
-    {
-    }
-
+    private static ConditionalWeakTable<object, Holder> State;
+   
     public ThreadLocal(Func<T> valueCreator)
     {
         this.valueCreator = valueCreator;
@@ -3009,7 +2995,7 @@ namespace LightInject
         get
         {
             Holder value;
-            if (_state == null || _state.TryGetValue(this, out value) == false)
+            if (State == null ||State.TryGetValue(this, out value) == false)
             {
                 var val = valueCreator();
                 Value = val;
@@ -3019,9 +3005,9 @@ namespace LightInject
         }
         set
         {
-            if (_state == null)
-                _state = new ConditionalWeakTable<object, Holder>();
-            var holder = _state.GetOrCreateValue(this);
+            if (State == null)
+                State = new ConditionalWeakTable<object, Holder>();
+            var holder = State.GetOrCreateValue(this);
             holder.Val = value;
         }
     }
@@ -3040,6 +3026,17 @@ namespace LightInject
             public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
             {
                 dictionary = new Dictionary<TKey, TValue>(comparer);
+            }
+
+            public TValue this[TKey key]
+            {
+                set
+                {
+                    lock (syncObject)
+                    {
+                        dictionary[key] = value;
+                    }                    
+                }                
             }
 
             public int Count
@@ -3144,12 +3141,6 @@ namespace LightInject
                 }
             }
 
-            public bool TryUpdate(TKey key, TValue value, TValue comparisonValue)
-            {
-                return false;
-            }
-
-
             public void Clear()
             {
                 lock (syncObject)
@@ -3173,7 +3164,7 @@ namespace LightInject
         }        
 #endif
 
-#if NETFX_CORE_PCL
+#if NETFX_CORE_PCL || WP_PCL
     internal class OpCodes
     {
         public static readonly OpCode Ldarg_0;
@@ -3253,7 +3244,7 @@ namespace LightInject
 
 #endif
 
-#if NETFX_CORE || NETFX_CORE_PCL
+#if NETFX_CORE || NETFX_CORE_PCL || WP_PCL
    
     internal class DynamicMethod
     {
@@ -3286,7 +3277,7 @@ namespace LightInject
             var lambdaWithTargetParameter = Expression.Lambda(
                 delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
 
-            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Skip(1)).ToArray();
+            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
             var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
             
             var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
@@ -4581,12 +4572,17 @@ namespace LightInject
             InternalTypes.Add(typeof(PropertyDependencySelector));
             InternalTypes.Add(typeof(CompositionRootTypeAttribute));
             InternalTypes.Add(typeof(ConcreteTypeExtractor));
-#if NETFX_CORE_PCL
+#if NETFX_CORE_PCL || WP_PCL
             InternalTypes.Add(typeof(OpCodes));
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
 #endif
+#if WP_PCL
+            InternalTypes.Add(typeof(ThreadLocal<>));
+            InternalTypes.Add(typeof(ThreadLocal<>.Holder));
+#endif
+
         }
 
         /// <summary>

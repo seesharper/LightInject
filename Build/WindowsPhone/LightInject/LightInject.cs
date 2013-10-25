@@ -1,4 +1,4 @@
-/*****************************************************************************   
+﻿/*****************************************************************************   
    Copyright 2013 bernhard.richter@gmail.com
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,14 +26,11 @@
 namespace LightInject
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.RegularExpressions;
@@ -331,11 +328,6 @@ namespace LightInject
         /// </remarks>     
         void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister);
 
-        /// <summary>
-        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void RegisterAssembly(string searchPattern);       
 
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
@@ -1143,7 +1135,6 @@ namespace LightInject
             ConstructorDependencySelector = new ConstructorDependencySelector();
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
-            AssemblyLoader = new AssemblyLoader();
         }
 
         /// <summary>
@@ -1162,11 +1153,6 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning. 
-        /// </summary>
-        public IAssemblyLoader AssemblyLoader { get; set; }
 
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the registered services.           
@@ -1314,17 +1300,6 @@ namespace LightInject
             AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
         }
 
-        /// <summary>
-        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        public void RegisterAssembly(string searchPattern)
-        {
-            foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
-            {
-                RegisterAssembly(assembly);
-            }
-        }        
 
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
@@ -2033,7 +2008,6 @@ namespace LightInject
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();            
             
             registeredDecorators.AddRange(GetOpenGenericDecoratorRegistrations(serviceRegistration));            
-            registeredDecorators.AddRange(GetDeferredDecoratorRegistrations(serviceRegistration));                      
             return registeredDecorators.OrderBy(d => d.Index).ToArray();
         }
 
@@ -2049,28 +2023,6 @@ namespace LightInject
                     openGenericDecorators.Select(
                         openGenericDecorator =>
                         CreateClosedGenericDecoratorRegistration(serviceRegistration, openGenericDecorator)));
-            }
-
-            return registrations;
-        }
-        private IEnumerable<DecoratorRegistration> GetDeferredDecoratorRegistrations(
-            ServiceRegistration serviceRegistration)
-        {
-            var registrations = new List<DecoratorRegistration>();
-            
-            var deferredDecorators =
-                decorators.Items.Where(ds => ds.CanDecorate(serviceRegistration) && ds.HasDeferredImplementingType);
-            foreach (var deferredDecorator in deferredDecorators)
-            {
-                var decoratorRegistration = new DecoratorRegistration()
-                {
-                    ServiceType = serviceRegistration.ServiceType,
-                    ImplementingType =
-                        deferredDecorator.ImplementingTypeFactory(this, serviceRegistration),
-                    CanDecorate = sr => true, 
-                    Index = deferredDecorator.Index
-                };
-                registrations.Add(decoratorRegistration);
             }
 
             return registrations;
@@ -2789,8 +2741,8 @@ namespace LightInject
             
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
-                dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", returnType, parameterTypes , typeof(ServiceContainer).Module, true);
+                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
+                    
             }
         }
 
@@ -2812,19 +2764,534 @@ namespace LightInject
         }
     }
     
-    public class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
+        
+        public class ThreadLocal<T>
+{
+    private readonly Func<T> valueCreator;
+
+    public class Holder
+     {
+         public T Val;
+     }
+
+    [ThreadStatic]
+    private static ConditionalWeakTable<object, Holder> State;
+   
+    public ThreadLocal(Func<T> valueCreator)
     {
-        public ThreadSafeDictionary()
+        this.valueCreator = valueCreator;
+    }
+
+    public T Value
+    {
+        get
         {
+            Holder value;
+            if (State == null ||State.TryGetValue(this, out value) == false)
+            {
+                var val = valueCreator();
+                Value = val;
+                return val;
+            }
+            return value.Val;
+        }
+        set
+        {
+            if (State == null)
+                State = new ConditionalWeakTable<object, Holder>();
+            var holder = State.GetOrCreateValue(this);
+            holder.Val = value;
+        }
+    }
+}
+    
+        public class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+        {
+            private readonly Dictionary<TKey, TValue> dictionary;
+            private readonly object syncObject = new object();
+
+            public ThreadSafeDictionary()
+            {
+                dictionary = new Dictionary<TKey, TValue>();
+            }            
+
+            public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
+            {
+                dictionary = new Dictionary<TKey, TValue>(comparer);
+            }
+
+            public TValue this[TKey key]
+            {
+                set
+                {
+                    lock (syncObject)
+                    {
+                        dictionary[key] = value;
+                    }                    
+                }                
+            }
+
+            public int Count
+            {
+                get { return dictionary.Count; }
+            }
+
+            public ICollection<TValue> Values
+            {
+                get
+                {
+                    lock (syncObject)
+                    {
+                        return dictionary.Values;
+                    }
+                }
+            }
+
+            public ICollection<TKey> Keys
+            {
+                get
+                {
+                    lock (syncObject)
+                    {
+                        return dictionary.Keys;
+                    }
+                }
+            }
+
+            public TValue GetOrAdd(TKey key, Func<TKey, TValue> valuefactory)
+            {
+                lock (syncObject)
+                {
+                    TValue value;
+                    if (!dictionary.TryGetValue(key, out value))
+                    {
+                        value = valuefactory(key);
+                        dictionary.Add(key, value);
+                    }
+
+                    return value;
+                }
+            }    
+        
+            public void AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
+            {
+                lock (syncObject)
+                {
+                    TValue value;
+                    if (!dictionary.TryGetValue(key, out value))
+                    {
+                        dictionary.Add(key, addValueFactory(key));
+                    }
+                    else
+                    {
+                        dictionary[key] = updateValueFactory(key, value);
+                    }
+                }
+            }
+
+            public void TryGetValue(TKey key, out TValue value)
+            {
+                lock (syncObject)
+                {
+                    dictionary.TryGetValue(key, out value);
+                }
+            }
+
+            public bool TryRemove(TKey key, out TValue value)
+            {
+                lock (syncObject)
+                {                    
+                    if (dictionary.TryGetValue(key, out value))
+                    {                 
+                        return true;
+                    }
+                    else
+                    {
+                        value = default(TValue);
+                        return false;
+                    }
+                }
+            }
+
+            public bool TryAdd(TKey key, TValue value)
+            {
+                if (dictionary.ContainsKey(key))
+                {
+                    return false;
+                }
+                lock (syncObject)
+                {
+                    if (dictionary.ContainsKey(key))
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        dictionary.Add(key, value);
+                        return true;
+                    }
+                }
+            }
+
+            public void Clear()
+            {
+                lock (syncObject)
+                {
+                    dictionary.Clear();    
+                }                
+            }
+
+            public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+            {
+                lock (syncObject)
+                {
+                    return dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value).GetEnumerator();
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }        
+
+    public class OpCodes
+    {
+        public static readonly OpCode Ldarg_0;
+        public static readonly OpCode Ldc_I4;
+        public static readonly OpCode Ldelem_Ref;
+        public static readonly OpCode Castclass;
+        public static readonly OpCode Newarr;
+        public static readonly OpCode Stloc;
+        public static readonly OpCode Ldloc;
+        public static readonly OpCode Newobj;
+        public static readonly OpCode Unbox_Any;
+        public static readonly OpCode Stelem;
+        public static readonly OpCode Box;
+        public static readonly OpCode Callvirt;
+        public static readonly OpCode Ldlen;
+        public static readonly OpCode Conv_I4;
+        public static readonly OpCode Sub;
+        public static readonly OpCode Ldc_I4_1;
+        public static readonly OpCode Ldstr;
+        public static readonly OpCode Ldarg;
+        public static readonly OpCode Ret;
+
+        static OpCodes()
+        {
+            Ldarg_0 = new OpCode(1);
+            Ldc_I4 = new OpCode(2);
+            Ldelem_Ref = new OpCode(3);
+            Castclass = new OpCode(4);
+            Newarr = new OpCode(5);
+            Stloc = new OpCode(6);
+            Ldloc = new OpCode(7);
+            Newobj = new OpCode(8);
+            Unbox_Any = new OpCode(9);
+            Stelem = new OpCode(10);
+            Box = new OpCode(11);
+            Callvirt = new OpCode(12);
+            Ldlen = new OpCode(13);
+            Conv_I4 = new OpCode(14);
+            Sub = new OpCode(15);
+            Ldc_I4_1 = new OpCode(16);
+            Ldstr = new OpCode(17);
+            Ldarg = new OpCode(18);
+            Ret = new OpCode(19);
+        }
+    }
+
+    public struct OpCode
+    {
+        public OpCode(short value)
+            : this()
+        {
+            Value = value;
         }
 
-        public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
-            : base(comparer)
+        public short Value { get; private set; }
+
+        public override bool Equals(object obj)
         {
+            return ((OpCode)obj).Value == Value;
+        }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+
+        public static bool operator ==(OpCode a, OpCode b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(OpCode a, OpCode b)
+        {
+            return !(a == b);
         }
     }
 
 
+   
+    internal class DynamicMethod
+    {
+        private readonly Type returnType;
+
+        private readonly Type[] parameterTypes;
+
+        private readonly ParameterExpression[] parameters;
+
+        private readonly ILGenerator ilGenerator;
+
+        public DynamicMethod(Type returnType, Type[] parameterTypes)
+        {
+            this.returnType = returnType;
+            this.parameterTypes = parameterTypes;
+            parameters = parameterTypes.Select(Expression.Parameter).ToArray();
+            ilGenerator = new ILGenerator(parameters);
+        }
+
+        public Delegate CreateDelegate(Type delegateType)
+        {
+            var lambda = Expression.Lambda(delegateType, ilGenerator.CurrentExpression, parameters);
+            return lambda.Compile();
+        }
+
+        public Delegate CreateDelegate(Type delegateType, object target)
+        {
+            Type delegateTypeWithTargetParameter =
+                Expression.GetDelegateType(parameterTypes.Concat(new[] { returnType }).ToArray());
+            var lambdaWithTargetParameter = Expression.Lambda(
+                delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
+
+            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
+            var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
+            
+            var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
+            return lambda.Compile();            
+        }
+
+        public ILGenerator GetILGenerator()
+        {
+            return ilGenerator;
+        }
+    }
+
+
+    public class ILGenerator
+    {
+        private readonly ParameterExpression[] parameters;
+        private readonly Stack<Expression> stack = new Stack<Expression>();
+        private readonly List<LocalBuilder> locals = new List<LocalBuilder>();
+        private readonly List<Expression> expressions = new List<Expression>();
+
+        public ILGenerator(ParameterExpression[] parameters)
+        {
+            this.parameters = parameters;
+        }
+
+        public Expression CurrentExpression
+        {
+            get
+            {
+                var variables = locals.Select(l => l.Variable).ToList();
+                var ex = new List<Expression>(expressions) { stack.Peek() };
+                return Expression.Block(variables, ex);
+            }
+        }
+
+        public void Emit(OpCode code, ConstructorInfo constructor)
+        {
+            if (code == OpCodes.Newobj)
+            {
+                var parameterCount = constructor.GetParameters().Length;
+                var expression = Expression.New(constructor, Pop(parameterCount));
+                stack.Push(expression);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+ 
+        public void Emit(OpCode code)
+        {
+            if (code == OpCodes.Ldarg_0)
+            {
+                stack.Push(parameters[0]);
+            }
+            else if (code == OpCodes.Ldelem_Ref)
+            {
+                Expression[] indexes = new[] { stack.Pop() };
+                Expression array = stack.Pop();
+                stack.Push(Expression.ArrayAccess(array, indexes));
+            }
+            else if (code == OpCodes.Ldlen)
+            {
+                Expression array = stack.Pop();
+                stack.Push(Expression.ArrayLength(array));
+            }
+        
+            else if (code == OpCodes.Conv_I4)
+            {
+                stack.Push(Expression.Convert(stack.Pop(), typeof(int)));
+            }
+
+            else if (code == OpCodes.Ldc_I4_1)
+            {
+                stack.Push(Expression.Constant(1, typeof(int)));
+            }
+
+            else if (code == OpCodes.Sub)
+            {
+                var right = stack.Pop();
+                var left = stack.Pop();                
+                stack.Push(Expression.Subtract(left, right));                
+            }
+            else if (code == OpCodes.Ret)
+            {
+                
+            }
+
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        public void Emit(OpCode code, LocalBuilder localBuilder)
+        {
+            if (code == OpCodes.Stloc)
+            {
+                Expression valueExpression = stack.Pop();
+                var assignExpression = Expression.Assign(localBuilder.Variable, valueExpression);
+                expressions.Add(assignExpression);
+            }            
+            else if (code == OpCodes.Ldloc)
+            {
+                stack.Push(localBuilder.Variable);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        public void Emit(OpCode code, int arg)
+        {
+            if (code == OpCodes.Ldc_I4)
+            {
+                stack.Push(Expression.Constant(arg, typeof(int)));
+            }
+            else if (code == OpCodes.Ldarg)
+            {
+                stack.Push(parameters[arg]);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        public void Emit(OpCode code, string arg)
+        {
+            if (code == OpCodes.Ldstr)
+            {
+                stack.Push(Expression.Constant(arg, typeof(string)));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        public LocalBuilder DeclareLocal(Type type)
+        {
+            var localBuilder = new LocalBuilder(type);
+            locals.Add(localBuilder);
+            return localBuilder;
+        }
+
+        public void Emit(OpCode code, Type type)
+        {
+            if (code == OpCodes.Newarr)
+            {
+                stack.Push(Expression.NewArrayBounds(type, Pop(1)));
+            }            
+            else if (code == OpCodes.Stelem)
+            {
+                var value = stack.Pop();
+                var index = stack.Pop();
+                var array = stack.Pop();                
+                var arrayAccess = Expression.ArrayAccess(array, index);
+                
+                var assignExpression = Expression.Assign(arrayAccess, value);
+                expressions.Add(assignExpression);
+            }
+            else if (code == OpCodes.Castclass)
+            {
+                stack.Push(Expression.Convert(stack.Pop(), type));
+            }
+            else if (code == OpCodes.Box)
+            {
+                stack.Push(Expression.Convert(stack.Pop(), typeof(object)));
+            }
+            else if (code == OpCodes.Unbox_Any)
+            {
+                stack.Push(Expression.Convert(stack.Pop(), type));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }            
+        }
+
+        public void Emit(OpCode code, MethodInfo methodInfo)
+        {
+            if (code == OpCodes.Callvirt)
+            {
+                var parameterCount = methodInfo.GetParameters().Length;
+                Expression[] arguments = Pop(parameterCount);
+                var instance = stack.Pop();
+                var methodCallExpression = Expression.Call(instance, methodInfo, arguments);
+                if (methodInfo.ReturnType == typeof(void))
+                {
+                    expressions.Add(methodCallExpression);
+                }
+                else
+                {
+                    stack.Push(Expression.Call(instance, methodInfo, arguments));    
+                }                
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        private Expression[] Pop(int numberOfElements)
+        {
+            var expressionsToPop = new Expression[numberOfElements];
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                expressionsToPop[i] = stack.Pop();
+            }
+
+            return expressionsToPop.Reverse().ToArray();
+        }
+    }
+
+    public class LocalBuilder
+    {
+        public LocalBuilder(Type type)
+        {
+            Variable = Expression.Parameter(type);
+        }
+
+        public ParameterExpression Variable { get; private set; }         
+    }
 
     /// <summary>
     /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
@@ -3337,16 +3804,6 @@ namespace LightInject
         /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.
         /// </summary>
         public int Index { get; set; }
-        /// <summary>
-        /// Gets a value indicating whether this registration has a deferred implementing type.
-        /// </summary>
-        public bool HasDeferredImplementingType
-        {
-            get
-            {
-                return ImplementingType == null && FactoryExpression == null;
-            }
-        }       
     }
 
     /// <summary>
@@ -3874,7 +4331,6 @@ namespace LightInject
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
             InternalTypes.Add(typeof(LazyReadOnlyCollection<>));
-            InternalTypes.Add(typeof(AssemblyLoader));
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(ConstructionInfoBuilder));
@@ -3888,6 +4344,12 @@ namespace LightInject
             InternalTypes.Add(typeof(PropertyDependencySelector));
             InternalTypes.Add(typeof(CompositionRootTypeAttribute));
             InternalTypes.Add(typeof(ConcreteTypeExtractor));
+            InternalTypes.Add(typeof(OpCodes));
+            InternalTypes.Add(typeof(DynamicMethod));
+            InternalTypes.Add(typeof(ILGenerator));
+            InternalTypes.Add(typeof(LocalBuilder));
+            InternalTypes.Add(typeof(ThreadLocal<>));
+            InternalTypes.Add(typeof(ThreadLocal<>.Holder));
 
         }
 
@@ -4055,40 +4517,6 @@ namespace LightInject
         private static bool IsReadOnly(PropertyInfo propertyInfo)
         {
             return propertyInfo.GetSetMethod() == null || propertyInfo.GetSetMethod().IsStatic || propertyInfo.GetSetMethod().IsPrivate;
-        }
-    }
-
-    /// <summary>
-    /// Loads all assemblies from the application base directory that matches the given search pattern.
-    /// </summary>
-    public class AssemblyLoader : IAssemblyLoader
-    {
-        /// <summary>
-        /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern to use.</param>
-        /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
-        public IEnumerable<Assembly> Load(string searchPattern)
-        {
-            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
-            if (directory != null)
-            {
-                string[] searchPatterns = searchPattern.Split('|');
-                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
-                {
-                    yield return Assembly.LoadFrom(file);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Indicates if the current <paramref name="fileName"/> represent a file that can be loaded.
-        /// </summary>
-        /// <param name="fileName">The name of the target file.</param>
-        /// <returns><b>true</b> if the file can be loaded, otherwise <b>false</b>.</returns>
-        protected virtual bool CanLoad(string fileName)
-        {
-            return true;
         }
     }
 

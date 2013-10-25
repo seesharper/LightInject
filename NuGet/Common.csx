@@ -254,16 +254,16 @@ public class Publicizer
     {
         Exceptions.Add("TypeHelper");
         Exceptions.Add("ReflectionHelper");        
-        Exceptions.Add("OpCodes");
-        Exceptions.Add("OpCode");
-        Exceptions.Add("ILGenerator");        
+        //Exceptions.Add("OpCodes");
+        //Exceptions.Add("OpCode");
+        //Exceptions.Add("ILGenerator");        
         Exceptions.Add("DynamicMethodSkeleton");
         Exceptions.Add("DynamicMethod");
         //Exceptions.Add("MethodInfoExtensions");
-        
+       
 
 
-
+        Includes.Add("internal struct OpCode");
         Includes.Add("internal static class");
         Includes.Add("internal class");
         Includes.Add("internal interface");

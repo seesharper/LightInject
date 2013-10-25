@@ -1,6 +1,7 @@
 ﻿namespace LightInject.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -31,6 +32,53 @@
             {
                 tasks[i].Wait();
             }
+        }
+
+        public static void Invoke(int taskCount, params Action[] actions)
+        {
+            int totalTaskCount = taskCount * actions.Length;
+            int actionCount = actions.Length;
+            int taskIndex = 0;
+            var tasks = new Task[totalTaskCount];
+
+            for (int i = 0; i < actionCount; i++)
+            {
+                for (int j = 0; j < taskCount; j++)
+                {
+                    tasks[taskIndex] = new Task(actions[i]);
+                    taskIndex++;
+                }
+            }
+
+            var startIndicies = GetRandomStartIndicies(totalTaskCount);
+
+            for (int i = 0; i < totalTaskCount; i++)
+            {
+                tasks[startIndicies[i]].Start();
+            }
+
+
+            for (int i = 0; i < totalTaskCount; i++)
+            {
+                tasks[i].Wait();
+            }
+        }
+
+        private static int[] GetRandomStartIndicies(int count)
+        {
+            var result = new List<int>(count);
+
+            Random random = new Random();
+            while (result.Count < count)
+            {
+                var value = random.Next(0, count);
+                if (!result.Contains(value))
+                {
+                    result.Add(value);
+                }
+            }
+
+            return result.ToArray();
         }
 
         /// <summary>

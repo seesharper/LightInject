@@ -22,8 +22,7 @@
 
 namespace LightInject.Mocking
 {
-    using System;
-    using System.Collections.Concurrent;
+    using System;    
     using System.Linq;
     using System.Linq.Expressions;
 
@@ -32,11 +31,11 @@ namespace LightInject.Mocking
     /// </summary>
     public static class LightInjectMocking
     {
-        private static readonly ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration> MockedServices
-            = new ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration>();
+        private static readonly ThreadSafeDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration> MockedServices
+            = new ThreadSafeDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration>();
 
-        private static readonly ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration> ServicesMocks
-            = new ConcurrentDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration>();
+        private static readonly ThreadSafeDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration> ServicesMocks
+            = new ThreadSafeDictionary<Tuple<IServiceRegistry, Type, string>, ServiceRegistration>();
 
         /// <summary>
         /// Allows a service to be mocked using the given <paramref name="implementingType"/>.
