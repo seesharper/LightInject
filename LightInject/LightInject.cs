@@ -21,7 +21,7 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
-[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
+//[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 
 namespace LightInject
 {
@@ -1655,41 +1655,113 @@ namespace LightInject
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T">The parameter type.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
         public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T">The parameter type.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param> 
+        /// <param name="serviceName">The name of the service.</param>        
         public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
         public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        /// <param name="serviceName">The name of the service.</param>
         public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
         public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        /// <param name="serviceName">The name of the service.</param>
         public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
         public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
+        /// describes the dependencies of the service. 
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The service type to register.</typeparam>        
+        /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>    
+        /// <param name="serviceName">The name of the service.</param>
         public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
@@ -1726,6 +1798,12 @@ namespace LightInject
             return GetDefaultDelegate(serviceType, true)(constants.Items);
         }
 
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="arguments">The arguments to be passed to the target instance.</param>
+        /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, object[] arguments)
         {
             var del = GetDefaultDelegate(serviceType, true);
@@ -1735,6 +1813,13 @@ namespace LightInject
             return del(constantsWithArguments);
         }
 
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <param name="arguments">The arguments to be passed to the target instance.</param>        
+        /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName, object[] arguments)
         {
             var del = GetNamedDelegate(serviceType, serviceName, true);
@@ -1765,41 +1850,125 @@ namespace LightInject
             return (TService)GetInstance(typeof(TService), serviceName);
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the argument.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="value">The argument value.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<T, TService>(T value)
         {
             return (TService)GetInstance(typeof(TService), new object[] { value });
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="value">The argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<T, TService>(T value, string serviceName)
         {
             return (TService)GetInstance(typeof(TService), serviceName, new object[] { value });
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2)
         {
             return (TService)GetInstance(typeof(TService), new object[] { arg1, arg2 });
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2, string serviceName)
         {
             return (TService)GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2 });
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3)
         {
             return (TService)GetInstance(typeof(TService), new object[] { arg1, arg2, arg3 });
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3, string serviceName)
         {
             return (TService)GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2, arg3 });
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <param name="arg4">The fourth argument value.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
         {
             return (TService)GetInstance(typeof(TService), new object[] { arg1, arg2, arg3, arg4 });
         }
 
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>        
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <param name="arg4">The fourth argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>    
         public TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, string serviceName)
         {
             return (TService)GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2, arg3, arg4 });
@@ -2959,12 +3128,25 @@ namespace LightInject
     }
     
 #if NET || NETFX_CORE || NETFX_CORE_PCL
+    /// <summary>
+    /// A thread safe dictionary.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
     internal class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class.
+        /// </summary>
         public ThreadSafeDictionary()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> using the 
+        /// given <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing keys</param>
         public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
             : base(comparer)
         {
@@ -2972,219 +3154,386 @@ namespace LightInject
     }
 #endif
 #if WP_PCL
-        
-        public class ThreadLocal<T>
-{
-    private readonly Func<T> valueCreator;
+   /// <summary>
+    /// An alternative implementation of the ThreadLocal class created by Ayende.
+    /// http://ayende.com/blog/4825/an-elegant-threadlocal-for-silverlight
+    /// </summary>
+    /// <typeparam name="T">Specifies the type of data stored per-thread.</typeparam>        
+    public class ThreadLocal<T>
+    {
+        private readonly Func<T> valueFactory;
 
-    public class Holder
-     {
-         public T Val;
-     }
+        /// <summary>
+        /// A "holder" class that holds the per-thread value.
+        /// </summary>
+        public class Holder
+        {
+            /// <summary>
+            /// Gets or sets the value represented by this instance.
+            /// </summary>
+            public T Val;
+        }
 
-    [ThreadStatic]
-    private static ConditionalWeakTable<object, Holder> State;
+        [ThreadStatic]
+        private static ConditionalWeakTable<object, Holder> State;
    
-    public ThreadLocal(Func<T> valueCreator)
-    {
-        this.valueCreator = valueCreator;
+        /// <summary>
+        /// Initializes the <see cref="ThreadLocal{T}"/> instance with the specified valueFactory function.
+        /// </summary>
+        /// <param name="valueFactory"></param>
+        public ThreadLocal(Func<T> valueFactory)
+        {
+            this.valueFactory = valueFactory;
+        }
+
+        /// <summary>
+        /// Gets or sets the value of this instance for the current thread.
+        /// </summary>
+        public T Value
+        {
+            get
+            {
+                Holder value;
+                if (State == null ||State.TryGetValue(this, out value) == false)
+                {
+                    var val = valueFactory();
+                    Value = val;
+                    return val;
+                }
+                return value.Val;
+            }
+            set
+            {
+                if (State == null)
+                    State = new ConditionalWeakTable<object, Holder>();
+                var holder = State.GetOrCreateValue(this);
+                holder.Val = value;
+            }
+        }
     }
 
-    public T Value
+    /// <summary>
+    /// A thread safe dictionary.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
+    public class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     {
-        get
-        {
-            Holder value;
-            if (State == null ||State.TryGetValue(this, out value) == false)
-            {
-                var val = valueCreator();
-                Value = val;
-                return val;
-            }
-            return value.Val;
-        }
-        set
-        {
-            if (State == null)
-                State = new ConditionalWeakTable<object, Holder>();
-            var holder = State.GetOrCreateValue(this);
-            holder.Val = value;
-        }
-    }
-}
-    
-        internal class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
-        {
-            private readonly Dictionary<TKey, TValue> dictionary;
-            private readonly object syncObject = new object();
+        private readonly Dictionary<TKey, TValue> dictionary;
+        private readonly object syncObject = new object();
 
-            public ThreadSafeDictionary()
-            {
-                dictionary = new Dictionary<TKey, TValue>();
-            }            
-
-            public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
-            {
-                dictionary = new Dictionary<TKey, TValue>(comparer);
-            }
-
-            public TValue this[TKey key]
-            {
-                set
-                {
-                    lock (syncObject)
-                    {
-                        dictionary[key] = value;
-                    }                    
-                }                
-            }
-
-            public int Count
-            {
-                get { return dictionary.Count; }
-            }
-
-            public ICollection<TValue> Values
-            {
-                get
-                {
-                    lock (syncObject)
-                    {
-                        return dictionary.Values;
-                    }
-                }
-            }
-
-            public ICollection<TKey> Keys
-            {
-                get
-                {
-                    lock (syncObject)
-                    {
-                        return dictionary.Keys;
-                    }
-                }
-            }
-
-            public TValue GetOrAdd(TKey key, Func<TKey, TValue> valuefactory)
-            {
-                lock (syncObject)
-                {
-                    TValue value;
-                    if (!dictionary.TryGetValue(key, out value))
-                    {
-                        value = valuefactory(key);
-                        dictionary.Add(key, value);
-                    }
-
-                    return value;
-                }
-            }    
         
-            public void AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class. 
+        /// </summary>
+        public ThreadSafeDictionary()
+        {
+            dictionary = new Dictionary<TKey, TValue>();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> using the 
+        /// given <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing keys</param>
+        public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
+        {
+            dictionary = new Dictionary<TKey, TValue>(comparer);
+        }
+
+        /// <summary>
+        /// Gets or sets the value associated with the specified key.
+        /// </summary>
+        /// <param name="key">The key of the value to get or set.</param>
+        /// <returns></returns>
+        public TValue this[TKey key]
+        {
+            set
             {
                 lock (syncObject)
                 {
-                    TValue value;
-                    if (!dictionary.TryGetValue(key, out value))
-                    {
-                        dictionary.Add(key, addValueFactory(key));
-                    }
-                    else
-                    {
-                        dictionary[key] = updateValueFactory(key, value);
-                    }
-                }
-            }
+                    dictionary[key] = value;
+                }                    
+            }                
+        }
 
-            public void TryGetValue(TKey key, out TValue value)
+        /// <summary>
+        /// Gets the number of key/value pairs contained in the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>
+        public int Count
+        {
+            get { return dictionary.Count; }
+        }
+
+        /// <summary>
+        /// Gets a collection that contains the values in the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>
+        public ICollection<TValue> Values
+        {
+            get
             {
                 lock (syncObject)
                 {
-                    dictionary.TryGetValue(key, out value);
+                    return dictionary.Values;
                 }
             }
+        }
 
-            public bool TryRemove(TKey key, out TValue value)
+        /// <summary>
+        /// Gets a collection containing the keys in the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>
+        public ICollection<TKey> Keys
+        {
+            get
             {
                 lock (syncObject)
-                {                    
-                    if (dictionary.TryGetValue(key, out value))
-                    {                 
-                        return true;
-                    }
-                    else
-                    {
-                        value = default(TValue);
-                        return false;
-                    }
+                {
+                    return dictionary.Keys;
                 }
             }
+        }
 
-            public bool TryAdd(TKey key, TValue value)
+        /// <summary>
+        /// Adds a key/value pair to the <see cref="ThreadSafeDictionary{TKey,TValue}"/> by using the specified function, if the key does not already exist.
+        /// </summary>
+        /// <param name="key">The key of the element to add.</param>
+        /// <param name="valuefactory">The function used to generate a value for the key</param>
+        /// <returns>The value for the key.</returns>
+        public TValue GetOrAdd(TKey key, Func<TKey, TValue> valuefactory)
+        {
+            lock (syncObject)
+            {
+                TValue value;
+                if (!dictionary.TryGetValue(key, out value))
+                {
+                    value = valuefactory(key);
+                    dictionary.Add(key, value);
+                }
+
+                return value;
+            }
+        }    
+        
+        /// <summary>
+        /// Uses the specified functions to add a key/value pair to the <see cref="ThreadSafeDictionary{TKey,TValue}"/> if the key does not already exist, 
+        /// or to update a key/value pair in the <see cref="ThreadSafeDictionary{TKey,TValue}"/> if the key already exists.
+        /// </summary>
+        /// <param name="key">The key to be added or whose value should be updated</param>
+        /// <param name="addValueFactory">The function used to generate a value for an absent key</param>
+        /// <param name="updateValueFactory">The function used to generate a new value for an existing key based on the key's existing value</param>
+        public void AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
+        {
+            lock (syncObject)
+            {
+                TValue value;
+                if (!dictionary.TryGetValue(key, out value))
+                {
+                    dictionary.Add(key, addValueFactory(key));
+                }
+                else
+                {
+                    dictionary[key] = updateValueFactory(key, value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to get the value associated with the specified key from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>
+        /// <param name="key">The key of the value to get.</param>
+        /// <param name="value">When this method returns, contains the object from the <see cref="ThreadSafeDictionary{TKey,TValue}"/> that has the specified key, 
+        /// or the default value of <typeparamref name="TValue"/>, if the operation failed.</param>
+        public void TryGetValue(TKey key, out TValue value)
+        {
+            lock (syncObject)
+            {
+                dictionary.TryGetValue(key, out value);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to remove and return the value that has the specified key from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>
+        /// <param name="key">The key of the element to remove and return.</param>
+        /// <param name="value"></param>
+        /// <returns>When this method returns, contains the object removed from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>, 
+        /// or the default value of the <typeparamref name="TValue"/> type if key does not exist.</returns>
+        public bool TryRemove(TKey key, out TValue value)
+        {
+            lock (syncObject)
+            {                    
+                if (dictionary.TryGetValue(key, out value))
+                {                 
+                    return true;
+                }
+                else
+                {
+                    value = default(TValue);
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to add the specified key and value to the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>
+        /// <param name="key">The key of the element to add.</param>
+        /// <param name="value">The value of the element to add.</param>
+        /// <returns>true if the key/value pair was added to the <see cref="ThreadSafeDictionary{TKey,TValue}"/> successfully; false if the key already exists.</returns>
+        public bool TryAdd(TKey key, TValue value)
+        {
+            if (dictionary.ContainsKey(key))
+            {
+                return false;
+            }
+            lock (syncObject)
             {
                 if (dictionary.ContainsKey(key))
                 {
                     return false;
                 }
-                lock (syncObject)
+                else
                 {
-                    if (dictionary.ContainsKey(key))
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        dictionary.Add(key, value);
-                        return true;
-                    }
+                    dictionary.Add(key, value);
+                    return true;
                 }
             }
+        }
 
-            public void Clear()
+        /// <summary>
+        /// Removes all keys and values from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>        
+        public void Clear()
+        {
+            lock (syncObject)
             {
-                lock (syncObject)
-                {
-                    dictionary.Clear();    
-                }                
-            }
+                dictionary.Clear();    
+            }                
+        }
 
-            public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        /// <summary>
+        /// Returns an enumerator that iterates through the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>
+        /// <returns>An enumerator for the <see cref="ThreadSafeDictionary{TKey,TValue}"/></returns>
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            lock (syncObject)
             {
-                lock (syncObject)
-                {
-                    return dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value).GetEnumerator();
-                }
+                return dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value).GetEnumerator();
             }
+        }
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-        }        
+        /// <summary>
+        /// Returns an enumerator that iterates through the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
+        /// </summary>
+        /// <returns>An enumerator for the <see cref="ThreadSafeDictionary{TKey,TValue}"/></returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }                
+
 #endif
 
 #if NETFX_CORE_PCL || WP_PCL
-    internal class OpCodes
+    /// <summary>
+    /// Provides field representations of the Microsoft Intermediate Language (MSIL) instructions.
+    /// </summary>
+    public class OpCodes
     {
+        /// <summary>
+        /// Loads the argument at index 0 onto the evaluation stack.
+        /// </summary>
         public static readonly OpCode Ldarg_0;
+        
+        /// <summary>
+        /// Pushes a supplied value of type int32 onto the evaluation stack as an int32.
+        /// </summary>
         public static readonly OpCode Ldc_I4;
+        
+        /// <summary>
+        /// Loads the element containing an object reference at a specified array index onto the top of the evaluation stack as type O (object reference).
+        /// </summary>
         public static readonly OpCode Ldelem_Ref;
+        
+        /// <summary>
+        /// Attempts to cast an object passed by reference to the specified class.
+        /// </summary>
         public static readonly OpCode Castclass;
+
+        /// <summary>
+        /// Pushes an object reference to a new zero-based, one-dimensional array whose elements are of a specific type onto the evaluation stack.
+        /// </summary>
         public static readonly OpCode Newarr;
+        
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at a specified index.
+        /// </summary>
         public static readonly OpCode Stloc;
+
+        /// <summary>
+        /// Loads the local variable at a specific index onto the evaluation stack.
+        /// </summary>        
         public static readonly OpCode Ldloc;
+        
+        /// <summary>
+        /// Creates a new object or a new instance of a value type, pushing an object reference (type O) onto the evaluation stack.
+        /// </summary>
         public static readonly OpCode Newobj;
+        
+        /// <summary>
+        /// Converts the boxed representation of a type specified in the instruction to its unboxed form.
+        /// </summary>
         public static readonly OpCode Unbox_Any;
+
+        /// <summary>
+        /// Replaces the array element at a given index with the value on the evaluation stack, whose type is specified in the instruction.
+        /// </summary>
         public static readonly OpCode Stelem;
+        
+        /// <summary>
+        /// Converts a value type to an object reference (type O).
+        /// </summary>
         public static readonly OpCode Box;
+
+        /// <summary>
+        /// Calls a late-bound method on an object, pushing the return value onto the evaluation stack.
+        /// </summary>
         public static readonly OpCode Callvirt;
+
+        /// <summary>
+        /// Pushes the number of elements of a zero-based, one-dimensional array onto the evaluation stack.
+        /// </summary>
         public static readonly OpCode Ldlen;
+
+        /// <summary>
+        /// Converts the value on top of the evaluation stack to int32.
+        /// </summary>
         public static readonly OpCode Conv_I4;
+
+        /// <summary>
+        /// Subtracts one value from another and pushes the result onto the evaluation stack.
+        /// </summary>
         public static readonly OpCode Sub;
+
+        /// <summary>
+        /// Pushes the integer value of 1 onto the evaluation stack as an int32.
+        /// </summary>
         public static readonly OpCode Ldc_I4_1;
+
+        /// <summary>
+        /// Pushes a new object reference to a string literal stored in the metadata.
+        /// </summary>
         public static readonly OpCode Ldstr;
+
+        /// <summary>
+        /// Loads an argument (referenced by a specified index value) onto the stack.
+        /// </summary>
         public static readonly OpCode Ldarg;
+
+        /// <summary>
+        /// Returns from the current method, pushing a return value (if present) from the callee's evaluation stack onto the caller's evaluation stack.
+        /// </summary>
         public static readonly OpCode Ret;
 
         static OpCodes()
@@ -3211,31 +3560,63 @@ namespace LightInject
         }
     }
 
-    internal struct OpCode
+    /// <summary>
+    /// Describes a Microsoft intermediate language (MSIL) instruction.
+    /// </summary>
+    public struct OpCode
     {
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OpCode"/> struct.
+        /// </summary>
+        /// <param name="value">The value that identifies this <see cref="OpCode"/>.</param>
         public OpCode(short value)
             : this()
         {
             Value = value;
         }
 
+        /// <summary>
+        /// Gets a <see cref="short"/> value that identifies this <see cref="OpCode"/>.
+        /// </summary>
         public short Value { get; private set; }
 
+        /// <summary>
+        /// Determines whether the specified object is equal to the current object.
+        /// </summary>
+        /// <param name="obj">The object to compare with the current object.</param>
+        /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
         public override bool Equals(object obj)
         {
             return ((OpCode)obj).Value == Value;
         }
 
+        /// <summary>
+        /// Serves as the default hash function.
+        /// </summary>
+        /// <returns>A hash code for the current object.</returns>
         public override int GetHashCode()
         {
             return Value.GetHashCode();
         }
 
+        /// <summary>
+        /// Overloads the equals operator.
+        /// </summary>
+        /// <param name="a">The left-hand <see cref="OpCode"/>.</param>
+        /// <param name="b">The right-hand <see cref="OpCode"/>.</param>
+        /// <returns>true if <paramref name="a"/> is equal to <paramref name="b"/>; otherwise, false.</returns>
         public static bool operator ==(OpCode a, OpCode b)
         {
             return a.Equals(b);
         }
 
+        /// <summary>
+        /// Overloads the not equals operator.
+        /// </summary>
+        /// <param name="a">The left-hand <see cref="OpCode"/>.</param>
+        /// <param name="b">The right-hand <see cref="OpCode"/>.</param>
+        /// <returns>true if <paramref name="a"/> is not equal to <paramref name="b"/>; otherwise, false.</returns>
         public static bool operator !=(OpCode a, OpCode b)
         {
             return !(a == b);
@@ -3245,7 +3626,9 @@ namespace LightInject
 #endif
 
 #if NETFX_CORE || NETFX_CORE_PCL || WP_PCL
-   
+    /// <summary>
+    /// Defines and represents a dynamic method that can be compiled and executed.
+    /// </summary>    
     internal class DynamicMethod
     {
         private readonly Type returnType;
@@ -3256,6 +3639,11 @@ namespace LightInject
 
         private readonly ILGenerator ilGenerator;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DynamicMethod"/> class.
+        /// </summary>
+        /// <param name="returnType">A <see cref="Type"/> object that specifies the return type of the dynamic method.</param>
+        /// <param name="parameterTypes">An array of <see cref="Type"/> objects specifying the types of the parameters of the dynamic method, or null if the method has no parameters.</param>
         public DynamicMethod(Type returnType, Type[] parameterTypes)
         {
             this.returnType = returnType;
@@ -3264,12 +3652,23 @@ namespace LightInject
             ilGenerator = new ILGenerator(parameters);
         }
 
+        /// <summary>
+        /// Completes the dynamic method and creates a delegate that can be used to execute it
+        /// </summary>
+        /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method.</param>
+        /// <returns>A delegate of the specified type, which can be used to execute the dynamic method.</returns>
         public Delegate CreateDelegate(Type delegateType)
         {
             var lambda = Expression.Lambda(delegateType, ilGenerator.CurrentExpression, parameters);
             return lambda.Compile();
         }
 
+        /// <summary>
+        /// Completes the dynamic method and creates a delegate that can be used to execute it, specifying the delegate type and an object the delegate is bound to.
+        /// </summary>
+        /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method, minus the first parameter.</param>
+        /// <param name="target">An object the delegate is bound to. Must be of the same type as the first parameter of the dynamic method.</param>
+        /// <returns>A delegate of the specified type, which can be used to execute the dynamic method with the specified target object.</returns>
         public Delegate CreateDelegate(Type delegateType, object target)
         {
             Type delegateTypeWithTargetParameter =
@@ -3284,25 +3683,38 @@ namespace LightInject
             return lambda.Compile();            
         }
 
+        /// <summary>
+        /// Returns a <see cref="ILGenerator"/> for the method
+        /// </summary>
+        /// <returns>An <see cref="ILGenerator"/> object for the method.</returns>
         public ILGenerator GetILGenerator()
         {
             return ilGenerator;
         }
     }
 
-
-    internal class ILGenerator
+    /// <summary>
+    /// A generator that transforms <see cref="OpCodes"/> into an expression tree.
+    /// </summary>
+    public class ILGenerator
     {
         private readonly ParameterExpression[] parameters;
         private readonly Stack<Expression> stack = new Stack<Expression>();
         private readonly List<LocalBuilder> locals = new List<LocalBuilder>();
         private readonly List<Expression> expressions = new List<Expression>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ILGenerator"/> class.
+        /// </summary>
+        /// <param name="parameters">An array of parameters used by the target <see cref="DynamicMethod"/>.</param>
         public ILGenerator(ParameterExpression[] parameters)
         {
             this.parameters = parameters;
         }
 
+        /// <summary>
+        /// Gets the current expression based the emitted <see cref="OpCodes"/>. 
+        /// </summary>
         public Expression CurrentExpression
         {
             get
@@ -3313,6 +3725,11 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Puts the specified instruction and metadata token for the specified constructor onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="constructor">A <see cref="ConstructorInfo"/> representing a constructor.</param>
         public void Emit(OpCode code, ConstructorInfo constructor)
         {
             if (code == OpCodes.Newobj)
@@ -3327,6 +3744,10 @@ namespace LightInject
             }
         }
  
+        /// <summary>
+        /// Puts the specified instruction onto the stream of instructions.
+        /// </summary>
+        /// <param name="code">The Microsoft Intermediate Language (MSIL) instruction to be put onto the stream.</param>
         public void Emit(OpCode code)
         {
             if (code == OpCodes.Ldarg_0)
@@ -3372,6 +3793,11 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the index of the given local variable.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="localBuilder">A local variable.</param>
         public void Emit(OpCode code, LocalBuilder localBuilder)
         {
             if (code == OpCodes.Stloc)
@@ -3390,6 +3816,11 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         public void Emit(OpCode code, int arg)
         {
             if (code == OpCodes.Ldc_I4)
@@ -3406,6 +3837,11 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="arg">The String to be emitted.</param>
         public void Emit(OpCode code, string arg)
         {
             if (code == OpCodes.Ldstr)
@@ -3418,6 +3854,11 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Declares a local variable of the specified type.
+        /// </summary>
+        /// <param name="type">A <see cref="Type"/> object that represents the type of the local variable.</param>
+        /// <returns>The declared local variable.</returns>
         public LocalBuilder DeclareLocal(Type type)
         {
             var localBuilder = new LocalBuilder(type);
@@ -3425,6 +3866,11 @@ namespace LightInject
             return localBuilder;
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given type.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="type">A <see cref="Type"/>.</param>
         public void Emit(OpCode code, Type type)
         {
             if (code == OpCodes.Newarr)
@@ -3459,6 +3905,11 @@ namespace LightInject
             }            
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given method.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="methodInfo">A <see cref="MethodInfo"/> representing a method.</param>
         public void Emit(OpCode code, MethodInfo methodInfo)
         {
             if (code == OpCodes.Callvirt)
@@ -3495,15 +3946,27 @@ namespace LightInject
         }
     }
 
-    internal class LocalBuilder
+    /// <summary>
+    /// Represents a local variable within a method or constructor.
+    /// </summary>
+    public class LocalBuilder
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LocalBuilder"/> class.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> of the variable that this <see cref="LocalBuilder"/> represents.</param>
         public LocalBuilder(Type type)
         {
             Variable = Expression.Parameter(type);
         }
 
+        /// <summary>
+        /// Gets the <see cref="ParameterExpression"/> that represents the variable.
+        /// </summary>
         public ParameterExpression Variable { get; private set; }         
     }
+   
+
 #endif
 
     /// <summary>
@@ -4582,7 +5045,6 @@ namespace LightInject
             InternalTypes.Add(typeof(ThreadLocal<>));
             InternalTypes.Add(typeof(ThreadLocal<>.Holder));
 #endif
-
         }
 
         /// <summary>
@@ -4788,17 +5250,32 @@ namespace LightInject
     }
 #endif
 
+    /// <summary>
+    /// Represents a read-only collection that is initialized with a lazy <see cref="IEnumerable{T}"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of values in the collection.</typeparam>
     internal class LazyReadOnlyCollection<T> : ICollection<T>
     {
         private readonly Lazy<IEnumerable<T>> lazyEnumerable;
         private readonly int count;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LazyReadOnlyCollection{T}"/> class.
+        /// </summary>
+        /// <param name="lazyEnumerable">A lazy <see cref="IEnumerable{T}"/> that represents the elements in the collection.</param>
+        /// <param name="count">The number of elements in the <paramref name="lazyEnumerable"/>.</param>
         public LazyReadOnlyCollection(Lazy<IEnumerable<T>> lazyEnumerable, int count)
         {
             this.lazyEnumerable = lazyEnumerable;
             this.count = count;
         }
 
+        /// <summary>
+        /// Gets the number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+        /// </summary>
+        /// <returns>
+        /// The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+        /// </returns>
         public int Count
         {
             get
@@ -4807,6 +5284,12 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.
+        /// </summary>
+        /// <returns>
+        /// true if the <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only; otherwise, false.
+        /// </returns>
         public bool IsReadOnly
         {
             get
@@ -4815,36 +5298,76 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+        /// </returns>
+        /// <filterpriority>1</filterpriority>
         public IEnumerator<T> GetEnumerator()
         {
             return lazyEnumerable.Value.GetEnumerator();
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through a collection.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+        /// </returns>
+        /// <filterpriority>2</filterpriority>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// Adds an item to the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+        /// </summary>
+        /// <param name="item">The object to add to the <see cref="T:System.Collections.Generic.ICollection`1"/>.</param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.</exception>
         public void Add(T item)
         {
             throw new NotSupportedException();
         }
 
+        /// <summary>
+        /// Removes all items from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+        /// </summary>
+        /// <exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only. </exception>
         public void Clear()
         {
             throw new NotSupportedException();
         }
 
+        /// <summary>
+        /// Determines whether the <see cref="T:System.Collections.Generic.ICollection`1"/> contains a specific value.
+        /// </summary>
+        /// <returns>
+        /// True if <paramref name="item"/> is found in the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false.
+        /// </returns>
+        /// <param name="item">The object to locate in the <see cref="T:System.Collections.Generic.ICollection`1"/>.</param>
         public bool Contains(T item)
         {
             return lazyEnumerable.Value.Contains(item);
         }
 
+        /// <summary>
+        /// Copies the elements of the <see cref="T:System.Collections.Generic.ICollection`1"/> to an <see cref="T:System.Array"/>, starting at a particular <see cref="T:System.Array"/> index.
+        /// </summary>
+        /// <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of the elements copied from <see cref="T:System.Collections.Generic.ICollection`1"/>. The <see cref="T:System.Array"/> must have zero-based indexing.</param><param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param><exception cref="T:System.ArgumentNullException"><paramref name="array"/> is null.</exception><exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex"/> is less than 0.</exception><exception cref="T:System.ArgumentException">The number of elements in the source <see cref="T:System.Collections.Generic.ICollection`1"/> is greater than the available space from <paramref name="arrayIndex"/> to the end of the destination <paramref name="array"/>.</exception>
         public void CopyTo(T[] array, int arrayIndex)
         {
             lazyEnumerable.Value.ToArray().CopyTo(array, arrayIndex);
         }
 
+        /// <summary>
+        /// Removes the first occurrence of a specific object from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+        /// </summary>
+        /// <returns>
+        /// true if <paramref name="item"/> was successfully removed from the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false. This method also returns false if <paramref name="item"/> is not found in the original <see cref="T:System.Collections.Generic.ICollection`1"/>.
+        /// </returns>
+        /// <param name="item">The object to remove from the <see cref="T:System.Collections.Generic.ICollection`1"/>.</param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.</exception>
         public bool Remove(T item)
         {
             throw new NotSupportedException();
