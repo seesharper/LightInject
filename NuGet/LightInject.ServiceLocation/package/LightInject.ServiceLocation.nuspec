@@ -9,13 +9,9 @@
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator</tags>
 		<dependencies> 
 			<group>
-			  <dependency id="LightInject" version="3.0.0.1" />
+			  <dependency id="LightInject" version="3.0.0.9" />
 			  <dependency id="CommonServiceLocator" version="1.0" />
 			</group>		   
 		</dependencies>
     </metadata>   
-    <files>
-        <file src="content\net40\LightInjectServiceLocator.cs.pp" target="content\net40\LightInjectServiceLocator.cs.pp" />
-        <file src="content\net45\LightInjectServiceLocator.cs.pp" target="content\net45\LightInjectServiceLocator.cs.pp" />
-    </files> 
 </package>

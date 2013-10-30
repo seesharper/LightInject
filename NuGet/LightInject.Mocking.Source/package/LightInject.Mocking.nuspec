@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
-        <id>LightInject.Mocking</id>
+        <id>LightInject.Mocking.Source</id>
         <version>1.0.0.2</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
@@ -13,7 +13,12 @@
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime Mocking UnitTesting</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.0.9" />
+            <dependency id="LightInject" version="3.0.0.7" />
         </dependencies>
-    </metadata>    
+    </metadata>
+    <files>
+        <file src="content\net40\LightInject\Mocking\LightInject.Mocking.cs.pp" target="content\net40\LightInject\Mocking\LightInject.Mocking.cs.pp" />
+        <file src="content\net45\LightInject\Mocking\LightInject.Mocking.cs.pp" target="content\net45\LightInject\Mocking\LightInject.Mocking.cs.pp" />
+        <file src="content\netcore45\LightInject\Mocking\LightInject.Mocking.cs.pp" target="content\netcore45\LightInject\Mocking\LightInject.Mocking.cs.pp" />
+    </files>
 </package>

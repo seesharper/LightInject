@@ -1,0 +1,209 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{CC843B40-4A3B-482A-8526-506DF43BC5FC}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>LightInject.Tests</RootNamespace>
+    <AssemblyName>LightInject.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
+    <IsCodedUITest>False</IsCodedUITest>
+    <TestProjectType>UnitTest</TestProjectType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;WINFX_CORE_PCL</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'NuGet|AnyCPU'">
+    <OutputPath>bin\NuGet\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Practices.ServiceLocation">
+      <HintPath>..\packages\Portable.CommonServiceLocator.1.2.2\lib\net35\Microsoft.Practices.ServiceLocation.dll</HintPath>
+    </Reference>
+    <Reference Include="Moq">
+      <HintPath>..\packages\Moq.4.1.1309.1617\lib\net40\Moq.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <Choose>
+    <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedConstructorDependencySelectorTests.cs">
+      <Link>AnnotatedConstructorDependencySelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedParametersTests.cs">
+      <Link>AnnotatedParametersTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedPropertiesTests.cs">
+      <Link>AnnotatedPropertiesTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedPropertyDependencySelectorTests.cs">
+      <Link>AnnotatedPropertyDependencySelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AssemblyScannerTests.cs">
+      <Link>AssemblyScannerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ConstructorInjectionTests.cs">
+      <Link>ConstructorInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ConstructorSelectorTests.cs">
+      <Link>ConstructorSelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ContainerFactory.cs">
+      <Link>ContainerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\DecoratorTests.cs">
+      <Link>DecoratorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\DisposableTests.cs">
+      <Link>DisposableTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ErrorMessages.cs">
+      <Link>ErrorMessages.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ExceptionAssert.cs">
+      <Link>ExceptionAssert.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\FunctionFactoryTests.cs">
+      <Link>FunctionFactoryTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\LambdaExpressionParserTests.cs">
+      <Link>LambdaExpressionParserTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\LazyCompositionRootTests.cs">
+      <Link>LazyCompositionRootTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\LazyReadOnlyCollectionTests.cs">
+      <Link>LazyReadOnlyCollectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\MockingTests.cs">
+      <Link>MockingTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ParallelInvoker.cs">
+      <Link>ParallelInvoker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\PropertyInjectionTests.cs">
+      <Link>PropertyInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\PropertySelectorTests.cs">
+      <Link>PropertySelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ScopeTests.cs">
+      <Link>ScopeTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ServiceContainerTests.cs">
+      <Link>ServiceContainerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ServiceLocatorTests.cs">
+      <Link>ServiceLocatorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ServiceRegistrationTests.cs">
+      <Link>ServiceRegistrationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\TestBase.cs">
+      <Link>TestBase.cs</Link>
+    </Compile>
+    <Compile Include="OpCodeTests.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj">
+      <Project>{75ea6152-b0c9-40c1-af22-10dbca192239}</Project>
+      <Name>LightInject.SampleLibraryWithCompositionRootTypeAttribute</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
+      <Project>{65ff0ceb-76b4-44fd-898a-00c32c21738c}</Project>
+      <Name>LightInject.SampleLibraryWithCompositionRoot</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
+      <Project>{2acc6b94-364a-40b5-9d4b-1f74b85cacfd}</Project>
+      <Name>LightInject.SampleLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Annotation\LightInject.Annotation.csproj">
+      <Project>{f8f8e560-b46a-41e6-8b71-406705c0e05b}</Project>
+      <Name>LightInject.Annotation</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Mocking\LightInject.Mocking.csproj">
+      <Project>{97cf853e-c34d-4429-9db0-bbd17698ba77}</Project>
+      <Name>LightInject.Mocking</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.ServiceLocation\LightInject.ServiceLocation.csproj">
+      <Project>{8ac49385-f860-4bbb-916f-b10d2a05808a}</Project>
+      <Name>LightInject.ServiceLocation</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject\LightInject.csproj">
+      <Project>{c9bc8127-d401-4bdc-9af7-346b23513250}</Project>
+      <Name>LightInject</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Choose>
+    <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.CodedUITestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITest.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITest.Extension, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITesting, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

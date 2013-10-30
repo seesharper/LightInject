@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
-        <id>LightInject.Interception</id>
+        <id>LightInject.Interception.Source</id>
         <version>1.0.0.1</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
@@ -12,7 +12,11 @@
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Aspect-Oriented-Programming AOP Interception</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.0.9" />
+            <dependency id="LightInject" version="3.0.0.8" />
         </dependencies>
-    </metadata>    
+    </metadata>
+    <files>
+        <file src="content\net40\LightInject\Interception\LightInject.Interception.cs.pp" target="content\net40\LightInject\Interception\LightInject.Interception.cs.pp" />
+        <file src="content\net45\LightInject\Interception\LightInject.Interception.cs.pp" target="content\net45\LightInject\Interception\LightInject.Interception.cs.pp" />
+    </files>
 </package>
