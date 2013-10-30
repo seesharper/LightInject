@@ -1,7 +1,37 @@
 using System.Diagnostics;
 
+public static class MsBuild
+{
+    public static void Build(string pathToSolutionFile)
+    {
+        string pathToMsBuild = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\MsBuild.exe";
+        string result = Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release");
+        Console.WriteLine(result);
+    }
+}
+
+
+
 public static class DirectoryUtils
 {
+    public static void Delete(string directory)
+    {
+         if (Directory.Exists(directory))
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    public static void DeleteAllPackages(string directory)
+    {
+        foreach(var file in Directory.GetFiles(directory, "*.nupkg"))
+        {
+            Console.WriteLine("Deleting package {0}", file);
+            File.Delete(file);
+        }
+    }
+
+
     public static void DeleteContentFolder(string currentDirectory)
     {
         string contentFolder = Path.Combine(currentDirectory , @"package\content");
@@ -53,6 +83,9 @@ public class FileUtils
             File.Delete(file);
         }
     }
+
+
+
 }
 
 
