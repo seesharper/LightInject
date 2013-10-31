@@ -14,7 +14,7 @@ namespace LightInject.Tests
 
     using LightInject;
     using LightInject.SampleLibrary;
-#if NETFX_CORE
+#if NETFX_CORE || WINDOWS_PHONE
     using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
 #else
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -799,7 +799,7 @@ namespace LightInject.Tests
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
             
         }
-
+#if !WINDOWS_PHONE    
         [TestMethod]
         public void Run()
         {
@@ -808,7 +808,7 @@ namespace LightInject.Tests
                 GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance();
             }
         }
-        
+ 
         [TestMethod]
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
         {
@@ -823,7 +823,7 @@ namespace LightInject.Tests
                       
             Assert.AreEqual(1,Foo.Instances);
         }
-
+#endif
         [TestMethod]
         public void GetInstance_UnknownDependencyService_DoesNotThrowRecursiveDependencyExceptionOnSecondAttempt()
         {
@@ -853,7 +853,7 @@ namespace LightInject.Tests
                 }
             }
         }
-#if !NETFX_CORE
+#if !NETFX_CORE && !WINDOWS_PHONE
         [TestMethod]
         public void Dispose_ServiceContainer_DisposesDisposableLifeTimeInstances()
         {
@@ -883,7 +883,7 @@ namespace LightInject.Tests
 
             disposableFooMock.Verify(d => d.Dispose(), Times.Once());
         }
-#endif
+
 
 
         private static void RunParallel(IServiceContainer container)
@@ -932,9 +932,9 @@ namespace LightInject.Tests
                 () => container.GetInstance<IFoo>(),
                 () => container.GetInstance<IFoo>());
         }
+#endif
+        #endregion
 
-        #endregion        
-        
 
         [TestMethod]
         public void TryGetInstance_UnknownService_ReturnsNull()

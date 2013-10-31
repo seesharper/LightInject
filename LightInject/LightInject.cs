@@ -21,7 +21,7 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
-//[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 
 namespace LightInject
 {
@@ -37,7 +37,7 @@ namespace LightInject
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-#if NET || NETFX_CORE    
+#if NET || NETFX_CORE || WINDOWS_PHONE || SILVERLIGHT
     using System.Reflection.Emit;
 #endif
     using System.Runtime.CompilerServices;
@@ -1020,7 +1020,7 @@ namespace LightInject
 
     internal static class TypeHelper
     {
-#if NETFX_CORE       
+#if NETFX_CORE || WINDOWS_PHONE      
         public static Type[] GetGenericArguments(this Type type)
         {
             return type.GetTypeInfo().GenericTypeArguments;
@@ -2060,7 +2060,7 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
-#if !PCL
+#if NET || NETFX_CORE || NETFX_CORE_PCL
             scopeManagers.Dispose();
 #endif
         }
@@ -3102,7 +3102,7 @@ namespace LightInject
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", returnType, parameterTypes , typeof(ServiceContainer).Module, true);
 #endif
-#if NETFX_CORE || NETFX_CORE_PCL || WP_PCL
+#if NETFX_CORE || NETFX_CORE_PCL || WP_PCL || WINDOWS_PHONE || SILVERLIGHT
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);
                     
 #endif
@@ -3153,8 +3153,8 @@ namespace LightInject
         }
     }
 #endif
-#if WP_PCL
-   /// <summary>
+#if WP_PCL || WINDOWS_PHONE || SILVERLIGHT
+    /// <summary>
     /// An alternative implementation of the ThreadLocal class created by Ayende.
     /// http://ayende.com/blog/4825/an-elegant-threadlocal-for-silverlight
     /// </summary>
@@ -3625,7 +3625,7 @@ namespace LightInject
 
 #endif
 
-#if NETFX_CORE || NETFX_CORE_PCL || WP_PCL
+#if NETFX_CORE || NETFX_CORE_PCL || WP_PCL || WINDOWS_PHONE || SILVERLIGHT
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
     /// </summary>    
