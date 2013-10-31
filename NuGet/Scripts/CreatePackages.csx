@@ -110,6 +110,7 @@ private void CreateLightInjectAnnotationBinaryPackage()
 	Directory.CreateDirectory(@"..\LightInject.Annotation\package\lib\net40");
 	Directory.CreateDirectory(@"..\LightInject.Annotation\package\lib\net45");
 	Directory.CreateDirectory(@"..\LightInject.Annotation\package\lib\netcore45");
+	Directory.CreateDirectory(@"..\LightInject.Annotation\package\lib\windowsphone8");
 
 	File.Copy(@"..\Build\Net\LightInject.Annotation\bin\release\LightInject.Annotation.dll", @"..\LightInject.Annotation\package\lib\net40\LightInject.Annotation.dll", true);
 	File.Copy(@"..\Build\Net\LightInject.Annotation\bin\release\LightInject.Annotation.pdb", @"..\LightInject.Annotation\package\lib\net40\LightInject.Annotation.pdb", true);
@@ -122,6 +123,11 @@ private void CreateLightInjectAnnotationBinaryPackage()
 	File.Copy(@"..\Build\WindowsRuntime\LightInject.Annotation\bin\release\LightInject.Annotation.dll", @"..\LightInject.Annotation\package\lib\netcore45\LightInject.Annotation.dll", true);
 	File.Copy(@"..\Build\WindowsRuntime\LightInject.Annotation\bin\release\LightInject.Annotation.pdb", @"..\LightInject.Annotation\package\lib\netcore45\LightInject.Annotation.pdb", true);
 	File.Copy(@"..\Build\WindowsRuntime\LightInject.Annotation\bin\release\LightInject.Annotation.xml", @"..\LightInject.Annotation\package\lib\netcore45\LightInject.Annotation.xml", true);
+
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.dll", @"..\LightInject.Annotation\package\lib\windowsphone8\LightInject.Annotation.dll", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.pdb", @"..\LightInject.Annotation\package\lib\windowsphone8\LightInject.Annotation.pdb", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.xml", @"..\LightInject.Annotation\package\lib\windowsphone8\LightInject.Annotation.xml", true);
+
 
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Annotation\package\LightInject.Annotation.nuspec", @"..");
 
