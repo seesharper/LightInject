@@ -293,11 +293,13 @@ private void CreateLightInjectSourcePackage()
 	Directory.CreateDirectory(@"..\LightInject.Source\package\content\net40\LightInject");
 	Directory.CreateDirectory(@"..\LightInject.Source\package\content\net45\LightInject");
 	Directory.CreateDirectory(@"..\LightInject.Source\package\content\netcore45\LightInject");
+	Directory.CreateDirectory(@"..\LightInject.Source\package\content\windowsphone8\LightInject");
 
 	SourceWriter.Write("NET", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\net40\LightInject\LightInject.cs.pp", true, true);
 	SourceWriter.Write("NET", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\net45\LightInject\LightInject.cs.pp", true, true);
 	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\netcore45\LightInject\LightInject.cs.pp", true, true);
-	
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\windowsphone8\LightInject\LightInject.cs.pp", true, true);
+
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Source\package\LightInject.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.Source NuGet package");
