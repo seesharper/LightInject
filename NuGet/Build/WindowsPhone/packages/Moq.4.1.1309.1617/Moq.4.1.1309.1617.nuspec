@@ -158,8 +158,6 @@ Version 1.1
 Version 1.0
 
 * Initial release, initial documentation process in place, etc.</releaseNotes>
-    <copyright />
-    <language />
     <tags>tdd mocking mocks unittesting agile</tags>
   </metadata>
 </package>
