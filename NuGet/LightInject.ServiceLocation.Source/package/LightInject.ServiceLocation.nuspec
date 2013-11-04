@@ -5,18 +5,32 @@
         <version>1.0.0.2</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>      
-        <description>A CommonServiceLocator adapter for the LightInject service container.</description>
-        <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator</tags>
-		<dependencies> 
-			<group>
-			  <dependency id="LightInject" version="3.0.0.1" />
-			  <dependency id="CommonServiceLocator" version="1.0" />
-			</group>		   
+        <description>A CommonServiceLocator adapter for the LightInject service container.</description>        
+        <releaseNotes>Now installs into a dedicated LightInject folder.</releaseNotes>
+        <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator</tags>		
+        <dependencies> 			
+             <group targetFramework="net40">
+                <dependency id="LightInject.Source" version="3.0.0.9" />              
+                <dependency id="CommonServiceLocator" version="1.0" />
+            </group>   
+            <group targetFramework="net45">
+                <dependency id="LightInject.Source" version="3.0.0.9" />              
+                <dependency id="CommonServiceLocator" version="1.0" />
+            </group>   
+            <group targetFramework="netcore45">
+                <dependency id="LightInject.Source" version="3.0.0.9" />              
+                <dependency id="Portable.CommonServiceLocator" version="1.2.2" />
+            </group>   
+            <group targetFramework="wp8">
+                <dependency id="LightInject.Source" version="3.0.0.9" />              
+                <dependency id="Portable.CommonServiceLocator" version="1.2.2" />
+            </group>           	   
 		</dependencies>
     </metadata>   
     <files>
         <file src="content\net40\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\net40\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />
         <file src="content\net45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\net45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />
         <file src="content\netcore45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\netcore45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />    
+        <file src="content\windowsphone8\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\windowsphone8\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />    
     </files> 
 </package>

@@ -9,7 +9,7 @@
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An extension to the LightInject service container that allows properties and constructor parameters to be annotated with the InjectAttribute class.</description>
-        <releaseNotes>Now installs into a dedicated LightInject folder.</releaseNotes>
+        <releaseNotes>Available as a binary distribution. See LightInject.Annotation.Source for the source distribution.</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator WinRT Windows-Runtime</tags>
         <dependencies>

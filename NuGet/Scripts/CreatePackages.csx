@@ -3,7 +3,7 @@
 DirectoryUtils.DeleteAllPackages("..");
 
 CreateSourcePackages();
-CreateBinaryPackages();
+//CreateBinaryPackages();
 
 
 private void CreateSourcePackages()
@@ -297,8 +297,8 @@ private void CreateLightInjectSourcePackage()
 
 	SourceWriter.Write("NET", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\net40\LightInject\LightInject.cs.pp", true, true);
 	SourceWriter.Write("NET", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\net45\LightInject\LightInject.cs.pp", true, true);
-	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\netcore45\LightInject\LightInject.cs.pp", true, true);
-	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\windowsphone8\LightInject\LightInject.cs.pp", true, true);
+	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\netcore45\LightInject\LightInject.cs.pp", true, false);
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\windowsphone8\LightInject\LightInject.cs.pp", true, false);
 
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Source\package\LightInject.nuspec", @"..");
 
@@ -313,10 +313,12 @@ private void CreateLightInjectAnnotationSourcePackage()
 	Directory.CreateDirectory(@"..\LightInject.Annotation.Source\package\content\net40\LightInject\Annotation");
 	Directory.CreateDirectory(@"..\LightInject.Annotation.Source\package\content\net45\LightInject\Annotation");
 	Directory.CreateDirectory(@"..\LightInject.Annotation.Source\package\content\netcore45\LightInject\Annotation");
+	Directory.CreateDirectory(@"..\LightInject.Annotation.Source\package\content\windowsphone8\LightInject\Annotation");
 
 	SourceWriter.Write("NET", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\LightInject.Annotation.Source\package\content\net40\LightInject\Annotation\LightInject.Annotation.cs.pp", true, true);
 	SourceWriter.Write("NET", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\LightInject.Annotation.Source\package\content\net45\LightInject\Annotation\LightInject.Annotation.cs.pp", true, true);
-	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\LightInject.Annotation.Source\package\content\netcore45\LightInject\Annotation\LightInject.Annotation.cs.pp", true, true);
+	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\LightInject.Annotation.Source\package\content\netcore45\LightInject\Annotation\LightInject.Annotation.cs.pp", true, false);
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\LightInject.Annotation.Source\package\content\windowsphone8\LightInject\Annotation\LightInject.Annotation.cs.pp", true, false);
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Annotation.Source\package\LightInject.Annotation.nuspec", @"..");
 
@@ -349,11 +351,12 @@ private void CreateLightInjectMockingSourcePackage()
 	Directory.CreateDirectory(@"..\LightInject.Mocking.Source\package\content\net40\LightInject\Mocking");
 	Directory.CreateDirectory(@"..\LightInject.Mocking.Source\package\content\net45\LightInject\Mocking");
 	Directory.CreateDirectory(@"..\LightInject.Mocking.Source\package\content\netcore45\LightInject\Mocking");
+	Directory.CreateDirectory(@"..\LightInject.Mocking.Source\package\content\windowsphone8\LightInject\Mocking");
 
 	SourceWriter.Write("NET", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\LightInject.Mocking.Source\package\content\net40\LightInject\Mocking\LightInject.Mocking.cs.pp", true, true);
 	SourceWriter.Write("NET", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\LightInject.Mocking.Source\package\content\net45\LightInject\Mocking\LightInject.Mocking.cs.pp", true, true);
-	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\LightInject.Mocking.Source\package\content\netcore45\LightInject\Mocking\LightInject.Mocking.cs.pp", true, true);
-	
+	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\LightInject.Mocking.Source\package\content\netcore45\LightInject\Mocking\LightInject.Mocking.cs.pp", true, false);
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\LightInject.Mocking.Source\package\content\windowsphone8\LightInject\Mocking\LightInject.Mocking.cs.pp", true, false);
 	
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Mocking.Source\package\LightInject.Mocking.nuspec", @"..");
@@ -406,11 +409,12 @@ private void CreateLightInjectServiceLocationSourcePackage()
 	Directory.CreateDirectory(@"..\LightInject.ServiceLocation.Source\package\content\net40\LightInject\ServiceLocation");
 	Directory.CreateDirectory(@"..\LightInject.ServiceLocation.Source\package\content\net45\LightInject\ServiceLocation");
 	Directory.CreateDirectory(@"..\LightInject.ServiceLocation.Source\package\content\netcore45\LightInject\ServiceLocation");
+	Directory.CreateDirectory(@"..\LightInject.ServiceLocation.Source\package\content\windowsphone8\LightInject\ServiceLocation");
 
 	SourceWriter.Write("NET", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\LightInject.ServiceLocation.Source\package\content\net40\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp", true, true);
 	SourceWriter.Write("NET", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\LightInject.ServiceLocation.Source\package\content\net45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp", true, true);
-	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\LightInject.ServiceLocation.Source\package\content\netcore45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp", true, true);
-	
+	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\LightInject.ServiceLocation.Source\package\content\netcore45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp", true, false);
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\LightInject.ServiceLocation.Source\package\content\windowsphone8\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp", true, false);
 	
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.ServiceLocation.Source\package\LightInject.ServiceLocation.nuspec", @"..");

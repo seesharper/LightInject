@@ -884,8 +884,8 @@ namespace LightInject.Tests
             disposableFooMock.Verify(d => d.Dispose(), Times.Once());
         }
 
-
-
+#endif
+#if !WINDOWS_PHONE
         private static void RunParallel(IServiceContainer container)
         {
             Parallel.Invoke(

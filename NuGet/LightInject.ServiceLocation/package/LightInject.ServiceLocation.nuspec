@@ -7,11 +7,23 @@
         <owners>Bernhard Richter</owners>      
         <description>A CommonServiceLocator adapter for the LightInject service container.</description>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator</tags>
+        <releaseNotes>Available as a binary distribution. See LightInject.ServiceLocation.Source for the source distribution.</releaseNotes>
 		<dependencies> 
-			<group>
-			  <dependency id="LightInject" version="3.0.0.9" />
-			  <dependency id="CommonServiceLocator" version="1.0" />
+            <group>
+                <dependency id="LightInject" version="3.0.0.9" />			     
 			</group>		   
+            <group targetFramework="net40">
+                <dependency id="CommonServiceLocator" version="1.0" />
+            </group>   
+            <group targetFramework="net45">
+                <dependency id="CommonServiceLocator" version="1.0" />
+            </group>   
+            <group targetFramework="netcore45">
+                <dependency id="Portable.CommonServiceLocator" version="1.2.2" />
+            </group>   
+            <group targetFramework="wp8">
+                <dependency id="Portable.CommonServiceLocator" version="1.2.2" />
+            </group>               
 		</dependencies>
     </metadata>   
 </package>

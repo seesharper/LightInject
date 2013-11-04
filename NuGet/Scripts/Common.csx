@@ -246,7 +246,11 @@ public class SourceWriter
                 if (line.Contains("namespace") && processNameSpace)
                 {
                     line = line.Insert(10, "$rootnamespace$.");
+                }
 
+                if (line.Contains("typeof(LightInject.Web.LightInjectHttpModuleInitializer)") && processNameSpace)
+                {
+                    line = line.Replace("typeof(LightInject.Web.LightInjectHttpModuleInitializer)", "typeof($rootnamespace$.LightInject.Web.LightInjectHttpModuleInitializer)");
                 }
 
                 if (line.Contains("public class") || line.Contains("internal class") || line.Contains("internal static class"))

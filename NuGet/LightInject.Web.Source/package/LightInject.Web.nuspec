@@ -9,11 +9,16 @@
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Enables the LightInject service container to be used in a web application by providing per web request scoped services.</description>
+        <releaseNotes>Now installs into a dedicated LightInject folder.</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.0.3" />
+            <dependency id="LightInject.Source" version="3.0.0.9" />            
         </dependencies>
+        <frameworkAssemblies>
+            <frameworkAssembly assemblyName="System.Web"/>            
+            <frameworkAssembly assemblyName="Microsoft.Web.InfraStructure"/>            
+        </frameworkAssemblies>
     </metadata>
     <files>
         <file src="content\net40\LightInject\Web\LightInject.Web.cs.pp" target="content\net40\LightInject\Web\LightInject.Web.cs.pp" />

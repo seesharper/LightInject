@@ -9,10 +9,11 @@
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An extension to the LightInject service container that enables dependency injection for ASP.NET MVC applications.</description>
+        <releaseNotes>Now installs into a dedicated LightInject folder.</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP MVC</tags>
         <dependencies>
-	    <dependency id="LightInject.Web" version="1.0.0.1" />
+	    <dependency id="LightInject.Web.Source" version="1.0.0.1" />
         </dependencies>
     </metadata>
     <files>

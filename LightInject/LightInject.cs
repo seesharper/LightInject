@@ -26,10 +26,10 @@
 namespace LightInject
 {
     using System;
-#if NET || NETFX_CORE || NETFX_CORE_PCL    
+    using System.Collections;
+#if NET || NETFX_CORE || NETFX_CORE_PCL
     using System.Collections.Concurrent;
 #endif
-    using System.Collections;
     using System.Collections.Generic;
 #if NET    
     using System.IO;
@@ -342,9 +342,9 @@ namespace LightInject
         /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void RegisterAssembly(string searchPattern);       
+        void RegisterAssembly(string searchPattern);    
+   
 #endif
-
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
         /// </summary>
@@ -1198,6 +1198,7 @@ namespace LightInject
             return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 #endif
+
         public static bool IsEnumerableOfT(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
@@ -1456,9 +1457,9 @@ namespace LightInject
             {
                 RegisterAssembly(assembly);
             }
-        }        
+        }    
+    
 #endif
-
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
         /// </summary>
@@ -2061,6 +2062,7 @@ namespace LightInject
                 disposableLifetimeInstance.Dispose();
             }
 #if NET || NETFX_CORE || NETFX_CORE_PCL
+
             scopeManagers.Dispose();
 #endif
         }
@@ -2360,6 +2362,7 @@ namespace LightInject
 
             return registrations;
         }
+
 #if NET
         private IEnumerable<DecoratorRegistration> GetDeferredDecoratorRegistrations(
             ServiceRegistration serviceRegistration)
@@ -2383,6 +2386,7 @@ namespace LightInject
 
             return registrations;
         }
+
 #endif
         private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> pushInstance)
         {
@@ -3100,11 +3104,10 @@ namespace LightInject
             {
 #if NET
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", returnType, parameterTypes , typeof(ServiceContainer).Module, true);
+                    "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, true);
 #endif
 #if NETFX_CORE || NETFX_CORE_PCL || WP_PCL || WINDOWS_PHONE || SILVERLIGHT
-                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
-                    
+                dynamicMethod = new DynamicMethod(returnType, parameterTypes);                    
 #endif
             }
         }
@@ -3143,7 +3146,7 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> using the 
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class using the 
         /// given <see cref="IEqualityComparer{T}"/>.
         /// </summary>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing keys</param>
@@ -3152,14 +3155,15 @@ namespace LightInject
         {
         }
     }
+
 #endif
-#if WP_PCL || WINDOWS_PHONE || SILVERLIGHT
+#if WP_PCL || SILVERLIGHT
     /// <summary>
-    /// An alternative implementation of the ThreadLocal class created by Ayende.
+    /// An alternative implementation of the ThreadLocal class.
     /// http://ayende.com/blog/4825/an-elegant-threadlocal-for-silverlight
     /// </summary>
     /// <typeparam name="T">Specifies the type of data stored per-thread.</typeparam>        
-    public class ThreadLocal<T>
+    internal class ThreadLocal<T>
     {
         private readonly Func<T> valueFactory;
 
@@ -3194,7 +3198,7 @@ namespace LightInject
             get
             {
                 Holder value;
-                if (State == null ||State.TryGetValue(this, out value) == false)
+                if (State == null || State.TryGetValue(this, out value) == false)
                 {
                     var val = valueFactory();
                     Value = val;
@@ -3212,16 +3216,17 @@ namespace LightInject
         }
     }
 
+#endif
+#if WP_PCL || WINDOWS_PHONE || SILVERLIGHT
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
     /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
     /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
-    public class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+    internal class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     {
         private readonly Dictionary<TKey, TValue> dictionary;
         private readonly object syncObject = new object();
-
         
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class. 
@@ -3232,7 +3237,7 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> using the 
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class using the 
         /// given <see cref="IEqualityComparer{T}"/>.
         /// </summary>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing keys</param>
@@ -3240,23 +3245,7 @@ namespace LightInject
         {
             dictionary = new Dictionary<TKey, TValue>(comparer);
         }
-
-        /// <summary>
-        /// Gets or sets the value associated with the specified key.
-        /// </summary>
-        /// <param name="key">The key of the value to get or set.</param>
-        /// <returns></returns>
-        public TValue this[TKey key]
-        {
-            set
-            {
-                lock (syncObject)
-                {
-                    dictionary[key] = value;
-                }                    
-            }                
-        }
-
+       
         /// <summary>
         /// Gets the number of key/value pairs contained in the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
         /// </summary>
@@ -3291,6 +3280,22 @@ namespace LightInject
                     return dictionary.Keys;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the value associated with the specified key.
+        /// </summary>
+        /// <param name="key">The key of the value to get or set.</param>
+        /// <returns>The value of the key/value pair at the specified index.</returns>
+        public TValue this[TKey key]
+        {
+            set
+            {
+                lock (syncObject)
+                {
+                    dictionary[key] = value;
+                }                    
+            }                
         }
 
         /// <summary>
@@ -3355,7 +3360,7 @@ namespace LightInject
         /// Attempts to remove and return the value that has the specified key from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
         /// </summary>
         /// <param name="key">The key of the element to remove and return.</param>
-        /// <param name="value"></param>
+        /// <param name="value">When this method returns, contains the object removed from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.</param>
         /// <returns>When this method returns, contains the object removed from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>, 
         /// or the default value of the <typeparamref name="TValue"/> type if key does not exist.</returns>
         public bool TryRemove(TKey key, out TValue value)
@@ -3366,11 +3371,9 @@ namespace LightInject
                 {                 
                     return true;
                 }
-                else
-                {
-                    value = default(TValue);
-                    return false;
-                }
+                
+                value = default(TValue);
+                return false;                
             }
         }
 
@@ -3386,17 +3389,16 @@ namespace LightInject
             {
                 return false;
             }
+
             lock (syncObject)
             {
                 if (dictionary.ContainsKey(key))
                 {
                     return false;
                 }
-                else
-                {
-                    dictionary.Add(key, value);
-                    return true;
-                }
+              
+                dictionary.Add(key, value);
+                return true;              
             }
         }
 
@@ -3434,7 +3436,6 @@ namespace LightInject
     }                
 
 #endif
-
 #if NETFX_CORE_PCL || WP_PCL
     /// <summary>
     /// Provides field representations of the Microsoft Intermediate Language (MSIL) instructions.
@@ -3624,7 +3625,6 @@ namespace LightInject
     }
 
 #endif
-
 #if NETFX_CORE || NETFX_CORE_PCL || WP_PCL || WINDOWS_PHONE || SILVERLIGHT
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
@@ -3676,7 +3676,7 @@ namespace LightInject
             var lambdaWithTargetParameter = Expression.Lambda(
                 delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
 
-            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
+            Expression[] arguments = new Expression[] { Expression.Constant(target) }.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
             var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
             
             var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
@@ -3696,7 +3696,7 @@ namespace LightInject
     /// <summary>
     /// A generator that transforms <see cref="OpCodes"/> into an expression tree.
     /// </summary>
-    public class ILGenerator
+    internal class ILGenerator
     {
         private readonly ParameterExpression[] parameters;
         private readonly Stack<Expression> stack = new Stack<Expression>();
@@ -3764,18 +3764,15 @@ namespace LightInject
             {
                 Expression array = stack.Pop();
                 stack.Push(Expression.ArrayLength(array));
-            }
-        
+            }        
             else if (code == OpCodes.Conv_I4)
             {
                 stack.Push(Expression.Convert(stack.Pop(), typeof(int)));
             }
-
             else if (code == OpCodes.Ldc_I4_1)
             {
                 stack.Push(Expression.Constant(1, typeof(int)));
             }
-
             else if (code == OpCodes.Sub)
             {
                 var right = stack.Pop();
@@ -3783,10 +3780,8 @@ namespace LightInject
                 stack.Push(Expression.Subtract(left, right));                
             }
             else if (code == OpCodes.Ret)
-            {
-                
+            {                
             }
-
             else
             {
                 throw new NotSupportedException(code.ToString());
@@ -3949,7 +3944,7 @@ namespace LightInject
     /// <summary>
     /// Represents a local variable within a method or constructor.
     /// </summary>
-    public class LocalBuilder
+    internal class LocalBuilder
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LocalBuilder"/> class.
@@ -3964,11 +3959,9 @@ namespace LightInject
         /// Gets the <see cref="ParameterExpression"/> that represents the variable.
         /// </summary>
         public ParameterExpression Variable { get; private set; }         
-    }
-   
-
+    } 
+  
 #endif
-
     /// <summary>
     /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
     /// </summary>
@@ -4481,6 +4474,7 @@ namespace LightInject
         /// </summary>
         public int Index { get; set; }
 #if NET
+
         /// <summary>
         /// Gets a value indicating whether this registration has a deferred implementing type.
         /// </summary>
