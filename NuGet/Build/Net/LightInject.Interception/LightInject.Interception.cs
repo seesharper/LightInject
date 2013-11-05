@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject.Interception version 1.0.0.1 
+   LightInject.Interception version 1.0.0.2 
    http://www.lightinject.net/
    http://twitter.com/bernhardrichter
 ******************************************************************************/
