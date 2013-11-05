@@ -10,6 +10,81 @@ public static class MsBuild
     }
 }
 
+public static class VersionUtils
+{
+    public static string GetVersionString(string pathToSourceFile)
+    {
+        using (var reader = new StreamReader(pathToSourceFile))
+        {
+           while(!reader.EndOfStream)
+           {
+               var line = reader.ReadLine();
+               if (line.Contains(" version "))
+               {
+                    return line.Substring(line.IndexOf(" version ") + 9).Trim();
+               }
+           }
+        }
+        throw new InvalidOperationException("version string not found");
+    }
+
+    public static void UpdateNuGetPackageSpecification(string pathToPackageSpecification, string version)
+    {
+        Console.WriteLine("[VersionUtils] Updating {0} to version {1}", pathToPackageSpecification, version);
+        var tempFile = Path.GetTempFileName();
+        using (var reader = new StreamReader(pathToPackageSpecification))
+        {
+            using (var writer = new StreamWriter(tempFile))
+            {
+                while(!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+                    if (line.Contains("<version>"))
+                    {
+                        line = string.Format("        <version>{0}</version>", version);
+                    }                    
+                    writer.WriteLine(line);
+                } 
+           }           
+        }
+
+        File.Copy(tempFile, pathToPackageSpecification, true);
+    }
+
+
+    public static void UpdateAssemblyInfo(string pathToAssemblyInfoFile, string version)
+    {
+        Console.WriteLine("[VersionUtils] Updating {0} to version {1}", pathToAssemblyInfoFile, version);
+        var tempFile = Path.GetTempFileName();
+        using (var reader = new StreamReader(pathToAssemblyInfoFile))
+        {
+            using (var writer = new StreamWriter(tempFile))
+            {
+                while(!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+                    if (line.Contains("[assembly: AssemblyVersion"))
+                    {
+                        line = string.Format("[assembly: AssemblyVersion(\"{0}\")]", version);
+                    }
+                    if (line.Contains("[assembly: AssemblyFileVersion"))
+                    {
+                        line = string.Format("[assembly: AssemblyFileVersion(\"{0}\")]", version);
+                    }
+                    if (!line.Contains("InternalsVisibleTo"))    
+                    {
+                        writer.WriteLine(line);
+                    }
+                } 
+           }           
+        }
+
+        File.Copy(tempFile, pathToAssemblyInfoFile, true);
+    }
+
+
+}
+
 
 
 public static class DirectoryUtils
@@ -350,18 +425,21 @@ public class AssemblyInfoWriter
         Exceptions.Add("InternalsVisibleTo");                        
     }
 
-    public static void Write(string inputFile, string outputFile)
+    public static void Write(string inputFile, string outputFile, string version)
      {
+         var tempFile = Path.GetTempFileName();
          using (var reader = new StreamReader(inputFile))
          {             
-             using (var writer = new StreamWriter(outputFile))
+             using (var writer = new StreamWriter(tempFile))
              {
-                 Write(reader, writer);
+                 Write(reader, writer, version);
              }
          }    
+
+
      }
 
-    public static void Write(StreamReader reader, StreamWriter writer)
+    public static void Write(StreamReader reader, StreamWriter writer, string version)
     {
          while (!reader.EndOfStream)
          {

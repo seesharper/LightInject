@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>LightInject.ServiceLocation</id>
@@ -8,20 +8,21 @@
         <description>A CommonServiceLocator adapter for the LightInject service container.</description>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator</tags>
         <releaseNotes>Available as a binary distribution. See LightInject.ServiceLocation.Source for the source distribution.</releaseNotes>
-		<dependencies> 
-            <group>
-                <dependency id="LightInject" version="3.0.0.9" />			     
-			</group>		   
+		<dependencies>             
             <group targetFramework="net40">
+                <dependency id="LightInject" version="3.0.0.9" />              
                 <dependency id="CommonServiceLocator" version="1.0" />
             </group>   
             <group targetFramework="net45">
+                <dependency id="LightInject" version="3.0.0.9" />              
                 <dependency id="CommonServiceLocator" version="1.0" />
             </group>   
             <group targetFramework="netcore45">
+                <dependency id="LightInject" version="3.0.0.9" />              
                 <dependency id="Portable.CommonServiceLocator" version="1.2.2" />
             </group>   
             <group targetFramework="wp8">
+                <dependency id="LightInject" version="3.0.0.9" />              
                 <dependency id="Portable.CommonServiceLocator" version="1.2.2" />
             </group>               
 		</dependencies>

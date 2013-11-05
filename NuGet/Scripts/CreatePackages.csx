@@ -1,10 +1,13 @@
 #load "Common.csx"
 
+Console.WriteLine("***Start creating NuGet packages***");
+
 DirectoryUtils.DeleteAllPackages("..");
 
 CreateSourcePackages();
-//CreateBinaryPackages();
+CreateBinaryPackages();
 
+Console.WriteLine("***Finished creating NuGet packages***");
 
 private void CreateSourcePackages()
 {
@@ -20,32 +23,84 @@ private void CreateSourcePackages()
 private void UpdateBinaryProjects()
 {
 	//LightInject
+	string version = VersionUtils.GetVersionString(@"..\..\LightInject\LightInject.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject\package\LightInject.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Source\package\LightInject.nuspec", version);
+
 	Publicizer.Write("NETFX_CORE_PCL", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsRuntime\LightInject\LightInject.cs");
 	Publicizer.Write("NET", @"..\..\LightInject\LightInject.cs", @"..\Build\Net\LightInject\LightInject.cs"); 
 	Publicizer.Write("WP_PCL", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsPhone\LightInject\LightInject.cs"); 
 
 	//LightInject.Annotation
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Annotation\LightInject.Annotation.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation\package\LightInject.Annotation.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation.Source\package\LightInject.Annotation.nuspec", version);
+
 	Publicizer.Write("NETFX_CORE_PCL",@"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsRuntime\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("WP_PCL", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsPhone\LightInject.Annotation\LightInject.Annotation.cs");
 
 	//LightInject.Interception
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Interception\LightInject.Interception.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Interception\Properties\AssemblyInfo.cs", version);
+	
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Interception\package\LightInject.Interception.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Interception.Source\package\LightInject.Interception.nuspec", version);
+
+
 	Publicizer.Write("NET", @"..\..\LightInject.Interception\LightInject.Interception.cs", @"..\Build\Net\LightInject.Interception\LightInject.Interception.cs");
 
 	//LightInject.Mocking
+	
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Mocking\LightInject.Mocking.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Mocking\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject.Mocking\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject.Mocking\Properties\AssemblyInfo.cs", version);
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mocking\package\LightInject.Mocking.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mocking.Source\package\LightInject.Mocking.nuspec", version);
+
 	Publicizer.Write("NETFX_CORE_PCL", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsRuntime\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\Net\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("WP_PCL", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsPhone\LightInject.Mocking\LightInject.Mocking.cs");
-
+	
+	//LightInject.Mvc
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Mvc\LightInject.Mvc.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Mvc\Properties\AssemblyInfo.cs", version);
 	Publicizer.Write("NET", @"..\..\LightInject.Mvc\LightInject.Mvc.cs", @"..\Build\Net\LightInject.Mvc\LightInject.Mvc.cs");
 
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mvc\package\LightInject.Mvc.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mvc.Source\package\LightInject.Mvc.nuspec", version);
+
 	//LightInject.ServiceLocation
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.ServiceLocation\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject.ServiceLocation\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject.ServiceLocation\Properties\AssemblyInfo.cs", version);
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.ServiceLocation\package\LightInject.ServiceLocation.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.ServiceLocation.Source\package\LightInject.ServiceLocation.nuspec", version);
+
+
 	Publicizer.Write("NETFX_CORE_PCL", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsRuntime\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\Net\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("WP_PCL", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsPhone\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 
-	//LightInject.Web
+	//LightInject.Web	
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Web\LightInject.Web.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Web\Properties\AssemblyInfo.cs", version);
 	Publicizer.Write("NET", @"..\..\LightInject.Web\LightInject.Web.cs", @"..\Build\Net\LightInject.Web\LightInject.Web.cs");
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web\package\LightInject.Web.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web.Source\package\LightInject.Web.nuspec", version);
+
 }
 
 private void BuildBinaryProjects()
@@ -66,7 +121,7 @@ private void CreateBinaryPackages()
 	CreateLightInjectMockingBinaryPackage();
 	CreateLightInjectMvcBinaryPackage();
 	CreateLightInjectWebBinaryPackage();
-	CreateLightInjectServiceLocationBinaryPackage();
+	CreateLightInjectServiceLocationBinaryPackage(); 
 }
 
 private void CreateLightInjectBinaryPackage()

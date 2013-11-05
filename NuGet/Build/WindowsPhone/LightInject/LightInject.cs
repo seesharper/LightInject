@@ -328,7 +328,6 @@ namespace LightInject
         /// </remarks>     
         void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister);
 
-
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
         /// </summary>
@@ -1063,6 +1062,7 @@ namespace LightInject
         {            
             return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
         }
+
         public static bool IsEnumerableOfT(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
@@ -1299,7 +1299,6 @@ namespace LightInject
         {
             AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
         }
-
 
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
@@ -2196,6 +2195,7 @@ namespace LightInject
 
             return registrations;
         }
+
         private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> pushInstance)
         {
             ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
@@ -2910,8 +2910,7 @@ namespace LightInject
             
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
-                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
-                    
+                dynamicMethod = new DynamicMethod(returnType, parameterTypes);                    
             }
         }
 
@@ -2934,7 +2933,7 @@ namespace LightInject
     }
     
     /// <summary>
-    /// An alternative implementation of the ThreadLocal class created by Ayende.
+    /// An alternative implementation of the ThreadLocal class.
     /// http://ayende.com/blog/4825/an-elegant-threadlocal-for-silverlight
     /// </summary>
     /// <typeparam name="T">Specifies the type of data stored per-thread.</typeparam>        
@@ -2973,7 +2972,7 @@ namespace LightInject
             get
             {
                 Holder value;
-                if (State == null ||State.TryGetValue(this, out value) == false)
+                if (State == null || State.TryGetValue(this, out value) == false)
                 {
                     var val = valueFactory();
                     Value = val;
@@ -3000,7 +2999,6 @@ namespace LightInject
     {
         private readonly Dictionary<TKey, TValue> dictionary;
         private readonly object syncObject = new object();
-
         
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class. 
@@ -3011,7 +3009,7 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> using the 
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class using the 
         /// given <see cref="IEqualityComparer{T}"/>.
         /// </summary>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing keys</param>
@@ -3019,23 +3017,7 @@ namespace LightInject
         {
             dictionary = new Dictionary<TKey, TValue>(comparer);
         }
-
-        /// <summary>
-        /// Gets or sets the value associated with the specified key.
-        /// </summary>
-        /// <param name="key">The key of the value to get or set.</param>
-        /// <returns></returns>
-        public TValue this[TKey key]
-        {
-            set
-            {
-                lock (syncObject)
-                {
-                    dictionary[key] = value;
-                }                    
-            }                
-        }
-
+       
         /// <summary>
         /// Gets the number of key/value pairs contained in the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
         /// </summary>
@@ -3070,6 +3052,22 @@ namespace LightInject
                     return dictionary.Keys;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the value associated with the specified key.
+        /// </summary>
+        /// <param name="key">The key of the value to get or set.</param>
+        /// <returns>The value of the key/value pair at the specified index.</returns>
+        public TValue this[TKey key]
+        {
+            set
+            {
+                lock (syncObject)
+                {
+                    dictionary[key] = value;
+                }                    
+            }                
         }
 
         /// <summary>
@@ -3134,7 +3132,7 @@ namespace LightInject
         /// Attempts to remove and return the value that has the specified key from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
         /// </summary>
         /// <param name="key">The key of the element to remove and return.</param>
-        /// <param name="value"></param>
+        /// <param name="value">When this method returns, contains the object removed from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.</param>
         /// <returns>When this method returns, contains the object removed from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>, 
         /// or the default value of the <typeparamref name="TValue"/> type if key does not exist.</returns>
         public bool TryRemove(TKey key, out TValue value)
@@ -3145,11 +3143,9 @@ namespace LightInject
                 {                 
                     return true;
                 }
-                else
-                {
-                    value = default(TValue);
-                    return false;
-                }
+                
+                value = default(TValue);
+                return false;                
             }
         }
 
@@ -3165,17 +3161,16 @@ namespace LightInject
             {
                 return false;
             }
+
             lock (syncObject)
             {
                 if (dictionary.ContainsKey(key))
                 {
                     return false;
                 }
-                else
-                {
-                    dictionary.Add(key, value);
-                    return true;
-                }
+              
+                dictionary.Add(key, value);
+                return true;              
             }
         }
 
@@ -3211,7 +3206,6 @@ namespace LightInject
             return GetEnumerator();
         }
     }                
-
 
     /// <summary>
     /// Provides field representations of the Microsoft Intermediate Language (MSIL) instructions.
@@ -3400,7 +3394,6 @@ namespace LightInject
         }
     }
 
-
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
     /// </summary>    
@@ -3451,7 +3444,7 @@ namespace LightInject
             var lambdaWithTargetParameter = Expression.Lambda(
                 delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
 
-            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
+            Expression[] arguments = new Expression[] { Expression.Constant(target) }.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
             var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
             
             var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
@@ -3539,18 +3532,15 @@ namespace LightInject
             {
                 Expression array = stack.Pop();
                 stack.Push(Expression.ArrayLength(array));
-            }
-        
+            }        
             else if (code == OpCodes.Conv_I4)
             {
                 stack.Push(Expression.Convert(stack.Pop(), typeof(int)));
             }
-
             else if (code == OpCodes.Ldc_I4_1)
             {
                 stack.Push(Expression.Constant(1, typeof(int)));
             }
-
             else if (code == OpCodes.Sub)
             {
                 var right = stack.Pop();
@@ -3558,10 +3548,8 @@ namespace LightInject
                 stack.Push(Expression.Subtract(left, right));                
             }
             else if (code == OpCodes.Ret)
-            {
-                
+            {                
             }
-
             else
             {
                 throw new NotSupportedException(code.ToString());
@@ -3739,10 +3727,8 @@ namespace LightInject
         /// Gets the <see cref="ParameterExpression"/> that represents the variable.
         /// </summary>
         public ParameterExpression Variable { get; private set; }         
-    }
-   
-
-
+    } 
+  
     /// <summary>
     /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
     /// </summary>

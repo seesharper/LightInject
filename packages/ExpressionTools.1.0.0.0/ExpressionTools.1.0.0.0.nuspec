@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>ExpressionTools</id>
+    <version>1.0.0.0</version>
+    <title>ExpressionTools</title>
+    <authors>Bernhard Richter</authors>
+    <owners>Bernhard Richter</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Represents a set of extension methods that adds search/replace and composition capabilities to expression trees.</description>
+    <summary>Represents a set of extension methods that adds search/replace and composition capabilities to expression trees.</summary>
+    <tags>Linq</tags>
+  </metadata>
+</package>

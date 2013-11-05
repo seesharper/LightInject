@@ -26,8 +26,8 @@
 namespace LightInject
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
@@ -328,7 +328,6 @@ namespace LightInject
         /// will be used to configure the container.
         /// </remarks>     
         void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister);
-
 
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
@@ -1064,6 +1063,7 @@ namespace LightInject
         {            
             return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
         }
+
         public static bool IsEnumerableOfT(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
@@ -1300,7 +1300,6 @@ namespace LightInject
         {
             AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
         }
-
 
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
@@ -1903,6 +1902,7 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
+
             scopeManagers.Dispose();
         }
 
@@ -2198,6 +2198,7 @@ namespace LightInject
 
             return registrations;
         }
+
         private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> pushInstance)
         {
             ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
@@ -2912,8 +2913,7 @@ namespace LightInject
             
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
-                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
-                    
+                dynamicMethod = new DynamicMethod(returnType, parameterTypes);                    
             }
         }
 
@@ -2950,7 +2950,7 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> using the 
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class using the 
         /// given <see cref="IEqualityComparer{T}"/>.
         /// </summary>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing keys</param>
@@ -3147,7 +3147,6 @@ namespace LightInject
         }
     }
 
-
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
     /// </summary>    
@@ -3198,7 +3197,7 @@ namespace LightInject
             var lambdaWithTargetParameter = Expression.Lambda(
                 delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
 
-            Expression[] arguments = new Expression[] {Expression.Constant(target)}.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
+            Expression[] arguments = new Expression[] { Expression.Constant(target) }.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
             var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
             
             var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
@@ -3286,18 +3285,15 @@ namespace LightInject
             {
                 Expression array = stack.Pop();
                 stack.Push(Expression.ArrayLength(array));
-            }
-        
+            }        
             else if (code == OpCodes.Conv_I4)
             {
                 stack.Push(Expression.Convert(stack.Pop(), typeof(int)));
             }
-
             else if (code == OpCodes.Ldc_I4_1)
             {
                 stack.Push(Expression.Constant(1, typeof(int)));
             }
-
             else if (code == OpCodes.Sub)
             {
                 var right = stack.Pop();
@@ -3305,10 +3301,8 @@ namespace LightInject
                 stack.Push(Expression.Subtract(left, right));                
             }
             else if (code == OpCodes.Ret)
-            {
-                
+            {                
             }
-
             else
             {
                 throw new NotSupportedException(code.ToString());
@@ -3486,10 +3480,8 @@ namespace LightInject
         /// Gets the <see cref="ParameterExpression"/> that represents the variable.
         /// </summary>
         public ParameterExpression Variable { get; private set; }         
-    }
-   
-
-
+    } 
+  
     /// <summary>
     /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
     /// </summary>

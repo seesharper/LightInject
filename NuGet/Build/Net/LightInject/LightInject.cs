@@ -26,8 +26,8 @@
 namespace LightInject
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -335,8 +335,8 @@ namespace LightInject
         /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void RegisterAssembly(string searchPattern);       
-
+        void RegisterAssembly(string searchPattern);    
+   
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
         /// </summary>
@@ -1071,6 +1071,7 @@ namespace LightInject
         {            
             return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
         }
+
         public static bool IsEnumerableOfT(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
@@ -1324,8 +1325,8 @@ namespace LightInject
             {
                 RegisterAssembly(assembly);
             }
-        }        
-
+        }    
+    
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
         /// </summary>
@@ -1927,6 +1928,7 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
+
             scopeManagers.Dispose();
         }
 
@@ -2223,6 +2225,7 @@ namespace LightInject
 
             return registrations;
         }
+
         private IEnumerable<DecoratorRegistration> GetDeferredDecoratorRegistrations(
             ServiceRegistration serviceRegistration)
         {
@@ -2245,6 +2248,7 @@ namespace LightInject
 
             return registrations;
         }
+
         private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IMethodSkeleton dynamicMethodSkeleton, Action<IMethodSkeleton> pushInstance)
         {
             ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
@@ -2960,7 +2964,7 @@ namespace LightInject
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
-                    "DynamicMethod", returnType, parameterTypes , typeof(ServiceContainer).Module, true);
+                    "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, true);
             }
         }
 
@@ -2997,7 +3001,7 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> using the 
+        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class using the 
         /// given <see cref="IEqualityComparer{T}"/>.
         /// </summary>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing keys</param>
@@ -3006,8 +3010,6 @@ namespace LightInject
         {
         }
     }
-
-
 
     /// <summary>
     /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
@@ -3520,6 +3522,7 @@ namespace LightInject
         /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.
         /// </summary>
         public int Index { get; set; }
+
         /// <summary>
         /// Gets a value indicating whether this registration has a deferred implementing type.
         /// </summary>
