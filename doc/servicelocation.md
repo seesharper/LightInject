@@ -4,14 +4,27 @@
 
 ## Installing ##
 
+**LightInject.ServiceLocation** provides two distribution models via NuGet
+
+### Binary ###
+
 <div class="nuget-badge" >
    <p>
          <code>PM&gt; Install-Package LightInject.ServiceLocation </code>
    </p>
 </div>
 
-This will install a single file (LightInjectServiceLocator.cs) into the current project.
+This adds a reference to the LightInject.ServiceLocation.dll in the target project.
 
+### Source ###
+
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject.ServiceLocation.Source </code>
+   </p>
+</div>
+
+This will install a single file (LightInject.ServiceLocation.cs) into the current project.
 
 ## Example ##
 

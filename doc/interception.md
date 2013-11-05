@@ -4,12 +4,27 @@
 
 ## Installing ##
 
+**LightInject.Interception** provides two distribution models via NuGet
+
+### Binary ###
+
 <div class="nuget-badge" >
    <p>
          <code>PM&gt; Install-Package LightInject.Interception </code>
    </p>
 </div>
 
+This adds a reference to the LightInject.Interception.dll in the target project.
+
+### Source ###
+
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject.Interception.Source </code>
+   </p>
+</div>
+
+This will install a single file (LightInject.Interception.cs) into the current project.
 
 ### Limitations ###
 

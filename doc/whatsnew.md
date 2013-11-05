@@ -1,3 +1,71 @@
+## LightInject 3.0.0.9 ##
+
+### Binary Distribution ###
+
+**LightInject** now offers a binary distribution in addition to the current distribution model that simply install the source files into the target project. This means that users now have the option of either using the binary (assembly) version or the source version.
+
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject</code>
+   </p>
+</div>
+
+Binary distribution is now the "default" model for **LightInject** and users that still want to use the source version needs to remove the existing **LightInject** package and install the source version instead.
+  
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject.Source</code>
+   </p>
+</div>
+
+These changes applies to all the LightInject packages such as **LightInject.Annotation**, **LightInject.Web** and so on. 
+
+### Platform support ###
+
+Added Windows Phone 8 and SilverLight 
+
+### Parameterized service resolution ###
+
+LightInject now support passing arguments when resolving services.
+
+    container.Register<int, IFoo>((arg, factory) => new Foo(arg));
+    var foo = (Foo)container.GetInstance<int, IFoo>(42);
+    Assert.AreEqual(42,foo.Value);
+
+<a href="#" onclick = "$('#gettingstarted').trigger('click');"> Learn more... </a>
+
+
+## LightInject.Mvc 1.0.0.1 ##
+
+**LightInject.Mvc** provides an integration that enables dependency injection in ASP.NET MVC applications.
+
+    protected void Application_Start()
+    {
+        var container = new ServiceContainer();
+        container.RegisterControllers();        
+        //register other services
+        
+        container.EnableMvc()              
+    }
+
+
+<a href="#" onclick = "$('#mvc').trigger('click');"> Learn more... </a>
+
+## LightInject.Web 1.0.0.2 ##
+
+Added a new extension method that more closely resembles the actual intent of **LightInject.Web**, which is to 
+enable service to be scoped per web request. 
+
+The following line of code 
+  
+    LightInjectHttpModule.SetServiceContainer(serviceContainer);
+
+can now be replaced with
+
+    container.EnabledPerWebRequestScope();
+
+<a href="#" onclick = "$('#web').trigger('click');"> Learn more... </a>  
+
 ## LightInject 3.0.0.8 ##
 
 ### Internals ###

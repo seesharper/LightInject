@@ -4,11 +4,27 @@
 
 ## Installing ##
 
+**LightInject.Mocking** provides two distribution models via NuGet
+
+### Binary ###
+
 <div class="nuget-badge" >
    <p>
          <code>PM&gt; Install-Package LightInject.Mocking </code>
    </p>
 </div>
+
+This adds a reference to the LightInject.Mocking.dll in the target project.
+
+### Source ###
+
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject.Mocking.Source </code>
+   </p>
+</div>
+
+This will install a single file (LightInject.Mocking.cs) into the current project.
 
 **Note:** *Use the [InternalVisibleTo](http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.internalsvisibletoattribute.aspx) attribute to give the test project access to the **LightInject** internal types.*
 
