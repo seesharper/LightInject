@@ -4705,23 +4705,19 @@ namespace LightInject
         /// <param name="compositionRootType">The concrete <see cref="ICompositionRoot"/> type to be instantiated and executed.</param>
         public void Execute(Type compositionRootType)
         {
-            if (executedCompositionRoots.Contains(compositionRootType))
+            if (!executedCompositionRoots.Contains(compositionRootType))
             {
-                return;
-            }
-
-            lock (syncRoot)
-            {
-                if (executedCompositionRoots.Contains(compositionRootType))
+                lock (syncRoot)
                 {
-                    return;
+                    if (!executedCompositionRoots.Contains(compositionRootType))
+                    {
+                        executedCompositionRoots.Add(compositionRootType);
+                        var compositionRoot = (ICompositionRoot)Activator.CreateInstance(compositionRootType);
+                        compositionRoot.Compose(this.serviceRegistry);
+                    }
                 }
-
-                var compositionRoot = (ICompositionRoot)Activator.CreateInstance(compositionRootType);
-                compositionRoot.Compose(this.serviceRegistry);
-                executedCompositionRoots.Add(compositionRootType);
-            }
-        }
+            }            
+        }       
     }
 
     /// <summary>

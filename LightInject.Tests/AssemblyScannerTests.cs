@@ -184,7 +184,7 @@
             serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), (s, t) => true);
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());                        
         }
-
+#if NET
         [TestMethod]
         public void Register_SearchPattern_CallsAssemblyScanner()
         {
@@ -194,7 +194,7 @@
             serviceContainer.RegisterAssembly("LightInject.SampleLibrary.dll");
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());
         }
-
+#endif
 
         [TestMethod]
         public void Register_AssemblyWithLifetimeFactory_RegistersServicesWithGivenLifeTime()

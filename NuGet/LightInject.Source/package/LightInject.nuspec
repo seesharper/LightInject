@@ -9,7 +9,7 @@
         <projectUrl>http://www.lightinject.net/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An ultra lightweight single file Inversion of Control container for the .Net framework.</description>
-        <releaseNotes>Now installs into a dedicated LightInject folder.</releaseNotes>
+        <releaseNotes>Added the RegisterFrom method that allows explicit composition root execution.</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime</tags>
     </metadata>

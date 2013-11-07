@@ -8,12 +8,12 @@
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>An extension to the LightInject service container that enables dependency injection for ASP.NET MVC applications.</description>
-        <releaseNotes>Now installs into a dedicated LightInject folder.</releaseNotes>
+        <description>An extension to the LightInject service container that enables dependency injection for ASP.NET MVC applications.</description>        
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP MVC</tags>
         <dependencies>
-	    <dependency id="LightInject.Web.Source" version="1.0.0.1" />
+	    <dependency id="LightInject.Web.Source" version="1.0.0.2" />
+        <dependency id="LightInject.Source" version="3.0.1.0" />
         </dependencies>
     </metadata>
     <files>
