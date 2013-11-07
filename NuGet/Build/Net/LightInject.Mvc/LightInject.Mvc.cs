@@ -13,29 +13,57 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject.Mvc version 1.0.0.0
+   LightInject.Mvc version 1.0.0.1
    http://seesharper.github.io/LightInject/
    http://twitter.com/bernhardrichter    
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1403:FileMayOnlyContainASingleNamespace", Justification = "Extension methods must be visible")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 
-namespace LightInject.Mvc
+namespace LightInject
 {
-    using System;    
-    using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Web.Mvc;
-    
+    using LightInject.Mvc;
+
     /// <summary>
     /// Extends the <see cref="IServiceContainer"/> interface with a method that 
     /// enables dependency injection in an ASP.NET MVC application.
     /// </summary>
     public static class MvcContainerExtensions
-    {
+    {        
+        /// <summary>
+        /// Registers all <see cref="Controller"/> implementations found in the given <paramref name="assemblies"/>.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="assemblies">A list of assemblies from which to register <see cref="Controller"/> implementations.</param>
+        public static void RegisterControllers(this IServiceRegistry serviceRegistry, params Assembly[] assemblies)
+        {                                    
+            foreach (var assembly in assemblies)
+            {
+                var controllerTypes =
+                    assembly.GetTypes().Where(t => !t.IsAbstract && typeof(IController).IsAssignableFrom(t));
+                foreach (var controllerType in controllerTypes)
+                {
+                    serviceRegistry.Register(controllerType, new PerScopeLifetime());
+                }                
+            }
+        }
+
+        /// <summary>
+        /// Registers all <see cref="Controller"/> implementations found in this assembly.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        public static void RegisterControllers(this IServiceRegistry serviceRegistry)
+        {
+            RegisterControllers(serviceRegistry, Assembly.GetCallingAssembly());            
+        }
+
         /// <summary>
         /// Enables dependency injection in an ASP.NET MVC application.
         /// </summary>
@@ -55,7 +83,8 @@ namespace LightInject.Mvc
         private static void InitializeFilterAttributeProvider(IServiceContainer serviceContainer)
         {
             RemoveExistingFilterAttributeFilterProviders();
-            FilterProviders.Providers.Add(new LightInjectFilterProvider(serviceContainer));
+            var filterProvider = new LightInjectFilterProvider(serviceContainer);
+            FilterProviders.Providers.Add(filterProvider);
         }
 
         private static void RemoveExistingFilterAttributeFilterProviders()
@@ -68,7 +97,14 @@ namespace LightInject.Mvc
             }
         }
     }
+}
 
+namespace LightInject.Mvc
+{
+    using System;    
+    using System.Collections.Generic;    
+    using System.Web.Mvc;
+    
     /// <summary>
     /// An <see cref="IDependencyResolver"/> adapter for the LightInject service container.
     /// </summary>
@@ -127,6 +163,7 @@ namespace LightInject.Mvc
         public LightInjectFilterProvider(IServiceContainer serviceContainer)
         {
             this.serviceContainer = serviceContainer;
+            serviceContainer.RegisterInstance<IFilterProvider>(this);
         }
 
         /// <summary>

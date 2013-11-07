@@ -18,11 +18,16 @@
         [TestMethod] 
         public void GetInstance_UnknownService_ExecutesCompositionRootInSourceAssembly()
         {
+            CompositionRoot.CallCount = 0;
             var container = new ServiceContainer();
 
             container.GetInstance<IFoo>();
 
             Assert.AreEqual(1, CompositionRoot.CallCount);
         }
+
+
+        
+
     }
 }

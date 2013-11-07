@@ -4,8 +4,9 @@ Console.WriteLine("***Start creating NuGet packages***");
 
 DirectoryUtils.DeleteAllPackages("..");
 
-CreateSourcePackages();
+
 CreateBinaryPackages();
+CreateSourcePackages();
 
 Console.WriteLine("***Finished creating NuGet packages***");
 

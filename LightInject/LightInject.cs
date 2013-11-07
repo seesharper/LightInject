@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ******************************************************************************
-   LightInject version 3.0.0.9 
+   LightInject version 3.0.1.0
    http://www.lightinject.net/
    http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -125,14 +125,14 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="instance">The instance returned when this service is requested.</param>
-        void Register<TService>(TService instance);
+        void RegisterInstance<TService>(TService instance);
 
         /// <summary>
         /// Registers a concrete type as a service.
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
         void Register<TService>();
-
+                
         /// <summary>
         /// Registers a concrete type as a service.
         /// </summary>
@@ -141,12 +141,25 @@ namespace LightInject
         void Register<TService>(ILifetime lifetime);
 
         /// <summary>
+        /// Registers a concrete type as a service.
+        /// </summary>
+        /// <param name="serviceType">The concrete type to register.</param>
+        void Register(Type serviceType);
+
+        /// <summary>
+        /// Registers a concrete type as a service.
+        /// </summary>
+        /// <param name="serviceType">The concrete type to register.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        void Register(Type serviceType, ILifetime lifetime);
+
+        /// <summary>
         /// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="instance">The instance returned when this service is requested.</param>
         /// <param name="serviceName">The name of the service.</param>
-        void Register<TService>(TService instance, string serviceName);
+        void RegisterInstance<TService>(TService instance, string serviceName);
 
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -336,6 +349,12 @@ namespace LightInject
         /// will be used to configure the container.
         /// </remarks>     
         void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister);
+
+        /// <summary>
+        /// Registers services from the given <typeparamref name="TCompositionRoot"/> type.
+        /// </summary>
+        /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
+        void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new();
 
 #if NET
         /// <summary>
@@ -642,7 +661,7 @@ namespace LightInject
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> for which to extract types.</param>
         /// <returns>A set of types found in the given <paramref name="assembly"/>.</returns>
-        IEnumerable<Type> Execute(Assembly assembly);
+        Type[] Execute(Assembly assembly);
     }
 
     /// <summary>
@@ -785,6 +804,25 @@ namespace LightInject
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
         void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister);
+
+        /// <summary>
+        /// Scans the target <paramref name="assembly"/> and executes composition roots found within the <see cref="Assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry);
+    }
+
+    /// <summary>
+    /// Represents a class that is responsible for instantiating and executing an <see cref="ICompositionRoot"/>.
+    /// </summary>
+    internal interface ICompositionRootExecutor
+    {
+        /// <summary>
+        /// Creates an instance of the <paramref name="compositionRootType"/> and executes the <see cref="ICompositionRoot.Compose"/> method.
+        /// </summary>
+        /// <param name="compositionRootType">The concrete <see cref="ICompositionRoot"/> type to be instantiated and executed.</param>
+        void Execute(Type compositionRootType);
     }
 
     /// <summary>
@@ -1260,13 +1298,17 @@ namespace LightInject
             new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
+        private readonly ICompositionRootExecutor compositionRootExecutor;
                 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
         public ServiceContainer()
-        {
-            AssemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor());
+        {            
+            var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
+            var compositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor());
+            compositionRootExecutor = new CompositionRootExecutor(this);
+            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, compositionRootTypeExtractor, compositionRootExecutor);
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
@@ -1275,7 +1317,7 @@ namespace LightInject
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
-
+       
         /// <summary>
         /// Gets or sets the <see cref="IPropertyDependencySelector"/> instance that 
         /// is responsible for selecting the property dependencies for a given type.
@@ -1287,7 +1329,7 @@ namespace LightInject
         /// is responsible for selecting the constructor dependencies for a given constructor.
         /// </summary>
         public IConstructorDependencySelector ConstructorDependencySelector { get; set; }
-
+       
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
@@ -1444,6 +1486,15 @@ namespace LightInject
         public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {
             AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
+        }
+
+        /// <summary>
+        /// Registers services from the given <typeparamref name="TCompositionRoot"/> type.
+        /// </summary>
+        /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
+        public void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new()
+        {
+            compositionRootExecutor.Execute(typeof(TCompositionRoot));
         }
 
 #if NET || NETFX_CORE
@@ -1610,9 +1661,9 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="instance">The instance returned when this service is requested.</param>
-        public void Register<TService>(TService instance)
+        public void RegisterInstance<TService>(TService instance)
         {
-            Register(instance, string.Empty);
+            this.RegisterInstance(instance, string.Empty);
         }
 
         /// <summary>
@@ -1622,6 +1673,25 @@ namespace LightInject
         public void Register<TService>()
         {
             Register<TService, TService>();
+        }
+
+        /// <summary>
+        /// Registers a concrete type as a service.
+        /// </summary>
+        /// <param name="serviceType">The concrete type to register.</param>
+        public void Register(Type serviceType)
+        {
+            Register(serviceType, serviceType);
+        }
+
+        /// <summary>
+        /// Registers a concrete type as a service.
+        /// </summary>
+        /// <param name="serviceType">The concrete type to register.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        public void Register(Type serviceType, ILifetime lifetime)
+        {
+            Register(serviceType, serviceType, lifetime);
         }
 
         /// <summary>
@@ -1640,7 +1710,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="instance">The instance returned when this service is requested.</param>
         /// <param name="serviceName">The name of the service.</param>
-        public void Register<TService>(TService instance, string serviceName)
+        public void RegisterInstance<TService>(TService instance, string serviceName)
         {
             RegisterValue(typeof(TService), instance, serviceName);
         }
@@ -2248,21 +2318,13 @@ namespace LightInject
 
             if (emitter == null)
             {
-                if (!HasProcessedTypesFromThisAssembly(serviceType.GetAssembly()))
-                {
-                    RegisterAssembly(serviceType.GetAssembly());
-                    emitter = GetRegisteredEmitMethod(serviceType, serviceName);
-                }
+                AssemblyScanner.Scan(serviceType.GetAssembly(), this);                
+                emitter = GetRegisteredEmitMethod(serviceType, serviceName);                
             }
         
             return CreateEmitMethodWrapper(emitter, serviceType, serviceName);
         }
-
-        private bool HasProcessedTypesFromThisAssembly(Assembly assembly)
-        {
-            return availableServices.Keys.Select(TypeHelper.GetAssembly).Any(a => Equals(a, assembly));
-        }
-
+        
         private Action<IMethodSkeleton> CreateEmitMethodWrapper(Action<IMethodSkeleton> emitter, Type serviceType, string serviceName)
         {
             if (emitter == null)
@@ -4989,6 +5051,61 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Extracts concrete <see cref="ICompositionRoot"/> implementations from an <see cref="Assembly"/>.
+    /// </summary>
+    internal class CompositionRootTypeExtractor : ITypeExtractor
+    {
+        /// <summary>
+        /// Extracts concrete <see cref="ICompositionRoot"/> implementations found in the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> for which to extract types.</param>
+        /// <returns>A set of concrete <see cref="ICompositionRoot"/> implementations found in the given <paramref name="assembly"/>.</returns>
+        public Type[] Execute(Assembly assembly)
+        {
+            CompositionRootTypeAttribute[] compositionRootAttributes =
+                assembly.GetCustomAttributes(typeof(CompositionRootTypeAttribute), false)
+                        .Cast<CompositionRootTypeAttribute>().ToArray();
+            
+            if (compositionRootAttributes.Length > 0)
+            {
+                return compositionRootAttributes.Select(a => a.CompositionRootType).ToArray();
+            }
+
+            return assembly.GetTypes().Where(t => !t.IsAbstract() && typeof(ICompositionRoot).IsAssignableFrom(t)).ToArray();
+        }
+    }
+
+    /// <summary>
+    /// A <see cref="ITypeExtractor"/> cache decorator.
+    /// </summary>
+    internal class CachedTypeExtractor : ITypeExtractor
+    {
+        private readonly ITypeExtractor typeExtractor;
+
+        private readonly ThreadSafeDictionary<Assembly, Type[]> cache =
+            new ThreadSafeDictionary<Assembly, Type[]>();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CachedTypeExtractor"/> class.
+        /// </summary>
+        /// <param name="typeExtractor">The target <see cref="ITypeExtractor"/>.</param>
+        public CachedTypeExtractor(ITypeExtractor typeExtractor)
+        {
+            this.typeExtractor = typeExtractor;
+        }
+
+        /// <summary>
+        /// Extracts types found in the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> for which to extract types.</param>
+        /// <returns>A set of types found in the given <paramref name="assembly"/>.</returns>
+        public Type[] Execute(Assembly assembly)
+        {
+            return cache.GetOrAdd(assembly, typeExtractor.Execute);
+        }
+    }
+
+    /// <summary>
     /// Extracts concrete types from an <see cref="Assembly"/>.
     /// </summary>
     internal class ConcreteTypeExtractor : ITypeExtractor
@@ -5029,6 +5146,9 @@ namespace LightInject
             InternalTypes.Add(typeof(PropertyDependencySelector));
             InternalTypes.Add(typeof(CompositionRootTypeAttribute));
             InternalTypes.Add(typeof(ConcreteTypeExtractor));
+            InternalTypes.Add(typeof(CompositionRootExecutor));
+            InternalTypes.Add(typeof(CompositionRootTypeExtractor));
+            InternalTypes.Add(typeof(CachedTypeExtractor));
 #if NETFX_CORE_PCL || WP_PCL
             InternalTypes.Add(typeof(OpCodes));
             InternalTypes.Add(typeof(DynamicMethod));
@@ -5046,13 +5166,13 @@ namespace LightInject
         /// </summary>
         /// <param name="assembly">The <see cref="Assembly"/> for which to extract types.</param>
         /// <returns>A set of concrete types found in the given <paramref name="assembly"/>.</returns>
-        public IEnumerable<Type> Execute(Assembly assembly)
+        public Type[] Execute(Assembly assembly)
         {            
             return assembly.GetTypes().Where(t => t.IsClass()
                                                && !t.IsNestedPrivate()
                                                && !t.IsAbstract() 
                                                && t.GetAssembly() != typeof(string).GetAssembly()                                          
-                                               && !IsCompilerGenerated(t)).Except(InternalTypes);
+                                               && !IsCompilerGenerated(t)).Except(InternalTypes).ToArray();
         }
 
         private static bool IsCompilerGenerated(Type type)
@@ -5062,23 +5182,72 @@ namespace LightInject
     }
 
     /// <summary>
+    /// A class that is responsible for instantiating and executing an <see cref="ICompositionRoot"/>.
+    /// </summary>
+    internal class CompositionRootExecutor : ICompositionRootExecutor
+    {
+        private readonly IServiceRegistry serviceRegistry;
+
+        private readonly IList<Type> executedCompositionRoots = new List<Type>();
+        
+        private readonly object syncRoot = new object();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CompositionRootExecutor"/> class.
+        /// </summary>
+        /// <param name="serviceRegistry">The <see cref="IServiceRegistry"/> to be configured by the <see cref="ICompositionRoot"/>.</param>
+        public CompositionRootExecutor(IServiceRegistry serviceRegistry)
+        {
+            this.serviceRegistry = serviceRegistry;
+        }
+
+        /// <summary>
+        /// Creates an instance of the <paramref name="compositionRootType"/> and executes the <see cref="ICompositionRoot.Compose"/> method.
+        /// </summary>
+        /// <param name="compositionRootType">The concrete <see cref="ICompositionRoot"/> type to be instantiated and executed.</param>
+        public void Execute(Type compositionRootType)
+        {
+            if (!executedCompositionRoots.Contains(compositionRootType))
+            {
+                lock (syncRoot)
+                {
+                    if (!executedCompositionRoots.Contains(compositionRootType))
+                    {
+                        executedCompositionRoots.Add(compositionRootType);
+                        var compositionRoot = (ICompositionRoot)Activator.CreateInstance(compositionRootType);
+                        compositionRoot.Compose(this.serviceRegistry);
+                    }
+                }
+            }            
+        }       
+    }
+
+    /// <summary>
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
     /// </summary>    
     internal class AssemblyScanner : IAssemblyScanner
     {
-        private readonly ITypeExtractor typeExtractor;        
+        private readonly ITypeExtractor concreteTypeExtractor;
+        private readonly ITypeExtractor compositionRootTypeExtractor;
+        private readonly ICompositionRootExecutor compositionRootExecutor;
         private Assembly currentAssembly;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AssemblyScanner"/> class.
         /// </summary>
-        /// <param name="typeExtractor">The <see cref="ITypeExtractor"/> that is responsible for 
-        /// extracting types from the assembly being scanned.</param>
-        public AssemblyScanner(ITypeExtractor typeExtractor)
+        /// <param name="concreteTypeExtractor">The <see cref="ITypeExtractor"/> that is responsible for 
+        /// extracting concrete types from the assembly being scanned.</param>
+        /// <param name="compositionRootTypeExtractor">The <see cref="ITypeExtractor"/> that is responsible for 
+        /// extracting <see cref="ICompositionRoot"/> implementations from the assembly being scanned.</param>
+        /// <param name="compositionRootExecutor">The <see cref="ICompositionRootExecutor"/> that is 
+        /// responsible for creating and executing an <see cref="ICompositionRoot"/>.</param>
+        public AssemblyScanner(ITypeExtractor concreteTypeExtractor, ITypeExtractor compositionRootTypeExtractor, ICompositionRootExecutor compositionRootExecutor)
         {
-            this.typeExtractor = typeExtractor;
+            this.concreteTypeExtractor = concreteTypeExtractor;
+            this.compositionRootTypeExtractor = compositionRootTypeExtractor;
+            this.compositionRootExecutor = compositionRootExecutor;
         }
-                
+
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and registers services found within the assembly.
         /// </summary>
@@ -5087,16 +5256,16 @@ namespace LightInject
         /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
         public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
-        {
-            IEnumerable<Type> concreteTypes = GetConcreteTypes(assembly).ToList();
-            var compositionRoots = concreteTypes.Where(t => typeof(ICompositionRoot).IsAssignableFrom(t)).ToList();
-            if (compositionRoots.Count > 0 && !Equals(currentAssembly, assembly))
+        {            
+            Type[] compositionRootTypes = GetCompositionRootTypes(assembly);            
+            if (compositionRootTypes.Length > 0 && !Equals(currentAssembly, assembly))
             {
-                currentAssembly = assembly;
-                ExecuteCompositionRoots(compositionRoots, serviceRegistry);
+                currentAssembly = assembly;                
+                ExecuteCompositionRoots(compositionRootTypes);
             }
             else
             {
+                Type[] concreteTypes = GetConcreteTypes(assembly);
                 foreach (Type type in concreteTypes)
                 {
                     BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
@@ -5104,11 +5273,18 @@ namespace LightInject
             }
         }
 
-        private static void ExecuteCompositionRoots(IEnumerable<Type> compositionRoots, IServiceRegistry serviceRegistry)
+        /// <summary>
+        /// Scans the target <paramref name="assembly"/> and executes composition roots found within the <see cref="Assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>        
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)
         {
-            foreach (var compositionRoot in compositionRoots)
+            Type[] compositionRootTypes = GetCompositionRootTypes(assembly);
+            if (compositionRootTypes.Length > 0 && !Equals(currentAssembly, assembly))
             {
-                ((ICompositionRoot)Activator.CreateInstance(compositionRoot)).Compose(serviceRegistry);
+                currentAssembly = assembly;
+                ExecuteCompositionRoots(compositionRootTypes);
             }
         }
 
@@ -5141,9 +5317,22 @@ namespace LightInject
             }
         }
 
-        private IEnumerable<Type> GetConcreteTypes(Assembly assembly)
+        private void ExecuteCompositionRoots(IEnumerable<Type> compositionRoots)
         {
-            return typeExtractor.Execute(assembly);            
+            foreach (var compositionRoot in compositionRoots)
+            {
+                compositionRootExecutor.Execute(compositionRoot);
+            }
+        }
+
+        private Type[] GetConcreteTypes(Assembly assembly)
+        {
+            return this.concreteTypeExtractor.Execute(assembly);            
+        }
+
+        private Type[] GetCompositionRootTypes(Assembly assembly)
+        {
+            return compositionRootTypeExtractor.Execute(assembly);
         }
 
         private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
@@ -5359,7 +5548,7 @@ namespace LightInject
         /// Removes the first occurrence of a specific object from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
         /// </summary>
         /// <returns>
-        /// true if <paramref name="item"/> was successfully removed from the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false. This method also returns false if <paramref name="item"/> is not found in the original <see cref="T:System.Collections.Generic.ICollection`1"/>.
+        /// True if <paramref name="item"/> was successfully removed from the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false. This method also returns false if <paramref name="item"/> is not found in the original <see cref="T:System.Collections.Generic.ICollection`1"/>.
         /// </returns>
         /// <param name="item">The object to remove from the <see cref="T:System.Collections.Generic.ICollection`1"/>.</param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.</exception>
         public bool Remove(T item)

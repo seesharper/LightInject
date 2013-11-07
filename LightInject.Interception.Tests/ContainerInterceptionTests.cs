@@ -39,8 +39,8 @@
             var interceptorMock = new Mock<IInterceptor>();
             var targetMock = new Mock<IMethodWithNoParameters>();
             var container = new ServiceContainer();
-            container.Register(targetMock.Object);
-            container.Register(interceptorMock.Object);
+            container.RegisterInstance(targetMock.Object);
+            container.RegisterInstance(interceptorMock.Object);
             container.Intercept(sr => sr.ServiceType == typeof(IMethodWithNoParameters), factory => factory.GetInstance<IInterceptor>());
 
             var instance = container.GetInstance<IMethodWithNoParameters>();
@@ -66,7 +66,7 @@
             var interceptorMock = new Mock<IInterceptor>();
             var targetMock = new Mock<IMethodWithNoParameters>();
             var container = new ServiceContainer();
-            container.Register(targetMock.Object);
+            container.RegisterInstance(targetMock.Object);
             container.Intercept(sr => sr.ServiceType == typeof(IMethodWithNoParameters), (factory, definition) => definition.Implement(() => interceptorMock.Object));
             var instance = container.GetInstance<IMethodWithNoParameters>();
 

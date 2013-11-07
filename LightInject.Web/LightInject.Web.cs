@@ -49,6 +49,7 @@ namespace LightInject
 
 namespace LightInject.Web
 {
+    using System;
     using System.Web;
     using Microsoft.Web.Infrastructure.DynamicModuleHelper;
 
@@ -109,11 +110,13 @@ namespace LightInject.Web
 
         private static void EndScope()
         {            
+            Console.WriteLine("EndScope");
             ((Scope)HttpContext.Current.Items["Scope"]).Dispose();            
         }
 
         private static void BeginScope()
-        {            
+        {
+            Console.WriteLine("BeginScope");
             HttpContext.Current.Items["Scope"] = serviceContainer.BeginScope();
         }         
     }   

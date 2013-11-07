@@ -190,7 +190,7 @@
         public void GetInstance_ValueTypeDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register(42);
+            container.RegisterInstance(42);
             container.Register<IFoo, FooWithValueTypeDependency>();
             var instance = (FooWithValueTypeDependency)container.GetInstance<IFoo>();
             Assert.AreEqual(42, instance.Value);
@@ -200,7 +200,7 @@
         public void GetInstance_EnumDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register(Encoding.UTF8);
+            container.RegisterInstance(Encoding.UTF8);
             container.Register<IFoo, FooWithEnumDependency>();
             var instance = (FooWithEnumDependency)container.GetInstance<IFoo>();
             Assert.AreEqual(Encoding.UTF8, instance.Value);
@@ -210,7 +210,7 @@
         public void GetInstance_ReferenceTypeDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register("SomeValue");
+            container.RegisterInstance("SomeValue");
             container.Register<IFoo, FooWithReferenceTypeDependency>();
             var instance = (FooWithReferenceTypeDependency)container.GetInstance<IFoo>();
             Assert.AreEqual("SomeValue", instance.Value);
@@ -355,7 +355,7 @@
         public void GetInstance_LambdaExpressionWithFactoryParameter_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register("SomeValue");
+            container.RegisterInstance("SomeValue");
             container.Register<IFoo>(factory => new FooWithCustomFuncDependency(() => factory.GetInstance<string>()));
             var instance = (FooWithCustomFuncDependency)container.GetInstance<IFoo>();
             Assert.IsNotNull(instance.StringFunc);
@@ -365,7 +365,7 @@
         public void GetInstance_MethodGroupWithFactoryParameter_InjectsDependency()
         {
             var container = CreateContainer();
-            container.Register("SomeValue");
+            container.RegisterInstance("SomeValue");
             container.Register<IFoo>(factory => new FooWithCustomFuncDependency(factory.GetInstance<string>));
             var instance = (FooWithCustomFuncDependency)container.GetInstance<IFoo>();
             Assert.IsNotNull(instance.StringFunc);

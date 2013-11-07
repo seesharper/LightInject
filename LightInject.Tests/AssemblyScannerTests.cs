@@ -18,7 +18,7 @@
         private Mock<IServiceContainer> GetContainerMock(Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {
             var containerMock = new Mock<IServiceContainer>();
-            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor());
+            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), new CompositionRootTypeExtractor(), new CompositionRootExecutor(containerMock.Object));
             assemblyScanner.Scan(typeof(IFoo).Assembly, containerMock.Object, lifetimeFactory, shouldRegister);
             return containerMock;
         }
@@ -62,9 +62,9 @@
 
         [TestMethod]
         public void Scan_SampleAssemblyWithCompositionRoot_CallsComposeMethodOnce()
-        {
-            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor());
+        {            
             var containerMock = new Mock<IServiceContainer>();
+            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), new CompositionRootTypeExtractor(), new CompositionRootExecutor(containerMock.Object));
             SampleCompositionRoot.CallCount = 0;
             assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock.Object, null, (s, t) => true);
             Assert.AreEqual(1, SampleCompositionRoot.CallCount);
@@ -120,28 +120,7 @@
             var result = container.AvailableServices.Where(si => si.ImplementingType.Namespace == "LightInject");
             Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject"));
         }
-
         
-        [TestMethod]
-        public void GetInstance_NoServices_CallsAssemblyScannerOnFirstRequest()
-        {
-            var scannerMock = new Mock<IAssemblyScanner>();
-            var serviceContainer = new ServiceContainer();
-            serviceContainer.AssemblyScanner = scannerMock.Object;
-            try
-            {
-                serviceContainer.GetInstance<IFoo>();
-            }
-            catch
-            {
-
-            }
-
-            finally
-            {
-                scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());
-            }
-        }
 #if NET          
         [TestMethod]
         public void Register_AssemblyFile_CallsAssemblyScanner()
@@ -166,8 +145,8 @@
         [TestMethod]
         public void Register_Assembly_RegistersConcreteTypeWithoutBaseclass()
         {
-            AssemblyScanner assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor());
             var serviceRegistryMock = new Mock<IServiceRegistry>();
+            AssemblyScanner assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), new CompositionRootTypeExtractor(), new CompositionRootExecutor(serviceRegistryMock.Object));            
             assemblyScanner.Scan(typeof(IFoo).Assembly, serviceRegistryMock.Object, () => null, (s,t) => true);
 
             serviceRegistryMock.Verify(r => r.Register(typeof(ConcreteFoo), typeof(ConcreteFoo), "ConcreteFoo", null));
@@ -176,8 +155,9 @@
         [TestMethod]
         public void Register_Assembly_RegistersConcreteTypeWithBaseclass()
         {
-            AssemblyScanner assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor());
             var serviceRegistryMock = new Mock<IServiceRegistry>();
+            AssemblyScanner assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), new CompositionRootTypeExtractor(), new CompositionRootExecutor(serviceRegistryMock.Object));
+
             assemblyScanner.Scan(typeof(IFoo).Assembly, serviceRegistryMock.Object, () => null, (s,t) => true);
 
             serviceRegistryMock.Verify(r => r.Register(typeof(Foo), typeof(ConcreteFooWithBaseClass), "ConcreteFooWithBaseClass", null));
@@ -201,9 +181,20 @@
             var scannerMock = new Mock<IAssemblyScanner>();
             var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock.Object;
-            serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), (s,t) => true);
+            serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), (s, t) => true);
+            scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());                        
+        }
+
+        [TestMethod]
+        public void Register_SearchPattern_CallsAssemblyScanner()
+        {
+            var scannerMock = new Mock<IAssemblyScanner>();
+            var serviceContainer = new ServiceContainer();
+            serviceContainer.AssemblyScanner = scannerMock.Object;
+            serviceContainer.RegisterAssembly("LightInject.SampleLibrary.dll");
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());
         }
+
 
         [TestMethod]
         public void Register_AssemblyWithLifetimeFactory_RegistersServicesWithGivenLifeTime()

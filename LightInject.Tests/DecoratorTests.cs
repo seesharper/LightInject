@@ -396,7 +396,7 @@
         public void GetInstance_ValueWithDecorator_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(new Foo());
+            container.RegisterInstance<IFoo>(new Foo());
             container.Decorate<IFoo, FooDecorator>();
 
             var instance = container.GetInstance<IFoo>();
@@ -409,7 +409,7 @@
         {
             BarDecorator.Instances = 0;
             var container = CreateContainer();
-            container.Register<IBar>(new Bar());
+            container.RegisterInstance<IBar>(new Bar());
             container.Decorate<IBar, BarDecorator>();
 
             container.GetInstance<IBar>();
@@ -423,7 +423,7 @@
         {
             BarDecorator.Instances = 0;
             var container = CreateContainer();
-            container.Register<IBar>(new Bar());
+            container.RegisterInstance<IBar>(new Bar());
             container.Decorate<IBar, BarDecorator>();
             container.Register<IFoo, FooWithDependency>();
             container.Register<IFoo, AnotherFooWithDependency>("AnotherFooWithDependency");

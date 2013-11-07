@@ -267,12 +267,6 @@ namespace LightInject.Interception
     public class DynamicMethodBuilder : IMethodBuilder
     {             
         private readonly Func<IDynamicMethodSkeleton> methodSkeletonFactory;
-#if TEST
-        public DynamicMethodBuilder(Func<IDynamicMethodSkeleton> methodSkeletonFactory)
-        {
-            this.methodSkeletonFactory = methodSkeletonFactory;
-        }
-#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicMethodBuilder"/> class.
@@ -955,12 +949,6 @@ namespace LightInject.Interception
         {
             typeBuilderFactory = new TypeBuilderFactory();
         }
-#if TEST
-        public ProxyBuilder(ITypeBuilderFactory typeBuilderFactory)
-        {
-            this.typeBuilderFactory = typeBuilderFactory;
-        }
-#endif
 
         /// <summary>
         /// Gets a proxy type based on the given <paramref name="definition"/>.

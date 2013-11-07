@@ -64,6 +64,7 @@ namespace LightInject.Tests
 
         private static IFoo GetInstanceWithinWebRequest()
         {
+            serviceContainer.EnablePerWebRequestScope();
             var mockHttpApplication = new MockHttpApplication();
             mockHttpApplication.BeginRequest();
             IFoo firstInstance = serviceContainer.GetInstance<IFoo>();

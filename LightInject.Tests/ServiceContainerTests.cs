@@ -17,8 +17,15 @@ namespace LightInject.Tests
 #if NETFX_CORE || WINDOWS_PHONE
     using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
 #else
+    using LightInject.SampleLibraryWithCompositionRoot;
+    using LightInject.SampleLibraryWithCompositionRootTypeAttribute;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+
+    using Foo = LightInject.SampleLibrary.Foo;
+    using IFoo = LightInject.SampleLibrary.IFoo;
+
 #endif
     
 
@@ -31,7 +38,7 @@ namespace LightInject.Tests
         public void GetInstance_ReferenceTypeValue_ReturnsValue()
         {
             var container = CreateContainer();
-            container.Register("SomeValue");
+            container.RegisterInstance("SomeValue");
             var value = (string)container.GetInstance(typeof(string));
             Assert.AreEqual("SomeValue", value);
         }
@@ -40,8 +47,8 @@ namespace LightInject.Tests
         public void GetInstance_ReferenceTypeValue_ReturnsLastRegisteredValue()
         {
             var container = CreateContainer();
-            container.Register("SomeValue");
-            container.Register("AnotherValue");
+            container.RegisterInstance("SomeValue");
+            container.RegisterInstance("AnotherValue");
             var value = (string)container.GetInstance(typeof(string));
             Assert.AreEqual("AnotherValue", value);
         }
@@ -50,7 +57,7 @@ namespace LightInject.Tests
         public void GetInstance_ReferenceTypeValue_ReturnSameValue()
         {
             var container = CreateContainer();
-            container.Register("SomeValue");
+            container.RegisterInstance("SomeValue");
             var value1 = (string)container.GetInstance(typeof(string));
             var value2 = (string)container.GetInstance(typeof(string));
             Assert.AreSame(value1, value2);
@@ -60,7 +67,7 @@ namespace LightInject.Tests
         public void GetInstance_ValueTypeValue_ReturnsValue()
         {
             var container = CreateContainer();
-            container.Register(42);
+            container.RegisterInstance(42);
             var value = (int)container.GetInstance(typeof(int));
             Assert.AreEqual(42, value);
         }
@@ -70,7 +77,7 @@ namespace LightInject.Tests
         public void GetInstance_NamedValue_ReturnsNamedValue()
         {
             var container = CreateContainer();
-            container.Register(42, "Answer");
+            container.RegisterInstance(42, "Answer");
             var value = (int)container.GetInstance(typeof(int), "Answer");
             Assert.AreEqual(42, value);
         }
@@ -103,6 +110,17 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<Foo>();
+
+            var instance = container.GetInstance<Foo>();
+
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+        [TestMethod]
+        public void GetInstance_ConcreteServiceUsingNonGenericMethod_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(Foo));
 
             var instance = container.GetInstance<Foo>();
 
@@ -164,7 +182,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();            
             container.Register<IFoo, Foo>();
-            container.Register<IFoo>(new AnotherFoo());
+            container.RegisterInstance<IFoo>(new AnotherFoo());
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
         }
@@ -648,8 +666,8 @@ namespace LightInject.Tests
         public void GetInstance_IEnumerableWithReferenceTypes_ReturnsAllInstances()
         {
             var container = CreateContainer();
-            container.Register("SomeValue");
-            container.Register("AnotherValue", "AnotherStringValue");
+            container.RegisterInstance("SomeValue");
+            container.RegisterInstance("AnotherValue", "AnotherStringValue");
             var services = container.GetInstance<IEnumerable<string>>();
             Assert.AreEqual(2, services.Count());
         }
@@ -658,8 +676,8 @@ namespace LightInject.Tests
         public void GetInstance_IEnumerableWithValueTypes_ReturnsAllInstances()
         {
             var container = CreateContainer();
-            container.Register(1024);
-            container.Register(2048, "AnotherInt");
+            container.RegisterInstance(1024);
+            container.RegisterInstance(2048, "AnotherInt");
             var services = container.GetInstance<IEnumerable<int>>();
             Assert.AreEqual(2, services.Count());
         }
@@ -1025,6 +1043,13 @@ namespace LightInject.Tests
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
 
+        [TestMethod]
+        public void RegisterFrom_CompositionRoot_RegistersService()
+        {
+            var container = CreateContainer();
+            container.RegisterFrom<CompositionRoot>();
+            Assert.AreEqual(1, container.AvailableServices.Count());
+        }
 
         #region Internal Classes
 

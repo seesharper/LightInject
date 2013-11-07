@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject.Mvc</id>
-        <version>1.0.0.0</version>
+        <version>1.0.0.1</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
@@ -12,7 +12,7 @@
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP MVC</tags>
         <dependencies>
-        <dependency id="LightInject" version="3.0.0.9" />
+        <dependency id="LightInject" version="3.0.1.0" />
 	    <dependency id="LightInject.Web" version="1.0.0.2" />
         </dependencies>
     </metadata>   

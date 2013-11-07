@@ -44,8 +44,9 @@
         public void GetInstance_Dependency_ReturnsInstanceWithMockDependency()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithDependency>();
             container.Register<IBar, Bar>();                        
+            container.Register<IFoo, FooWithDependency>();
+            
             container.StartMocking<IBar>(() => new BarMock());
 
             var instance = (FooWithDependency)container.GetInstance<IFoo>();
