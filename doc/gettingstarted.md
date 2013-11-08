@@ -76,7 +76,7 @@ Alternatively using the **GetAllInstances** method.
 
 Registers the value as a constant.
 
-    container.Register<string>("SomeValue");
+    container.RegisterInstance<string>("SomeValue");
     var value = container.GetInstance<string>();
     Assert.AreEqual("SomeValue, value);
 
