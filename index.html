@@ -67,6 +67,18 @@ $(document).ready(function() {
         renderMarkdown();        
     });
 
+     $("#web").click(function() {
+        var markdownElement = $("markdown");
+        markdownElement.attr("src","doc/web.md");
+        renderMarkdown();        
+    });
+
+     $("#mvc").click(function() {
+        var markdownElement = $("markdown");
+        markdownElement.attr("src","doc/mvc.md");
+        renderMarkdown();        
+    });
+
      $("#whatsnew").click(function() {
         var markdownElement = $("markdown");
         markdownElement.attr("src","doc/whatsnew.md");
@@ -103,6 +115,8 @@ $(document).ready(function() {
             <li><a id="servicelocator" href="#">Service Locator</a></li> 
             <li><a id="unittesting" href="#">Unit Testing</a></li> 
             <li><a id="interception" href="#">Interception</a></li> 
+            <li><a id="web" href="#">Interception</a></li> 
+            <li><a id="mvc" href="#">Interception</a></li> 
             <li><a id="whatsnew" href="#">What's New</a></li> 
             <li><a id="source" href="https://github.com/seesharper/LightInject">Source</a></li> 
           </ul>
