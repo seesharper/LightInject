@@ -17,7 +17,7 @@ Added the **RegisterFrom&lt;TCompositionRoot&gt;** method that enables explicit 
 
 ### Instances ###
 
-The register method that registers an object instance with the container is now call **RegisterInstance**.    
+The register method that registers an object instance with the container is now called **RegisterInstance**.    
 
 
 ## LightInject.Mvc 1.0.0.1 November 08, 2013##
