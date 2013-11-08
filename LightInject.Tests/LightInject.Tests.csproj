@@ -56,6 +56,8 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Activation" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Mvc, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
   </ItemGroup>
@@ -107,12 +109,17 @@
     <Compile Include="ServiceRegistrationTests.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="VerificationContainerFactory.cs" />
+    <Compile Include="WcfTests.cs" />
     <Compile Include="WebTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.Annotation\LightInject.Annotation.csproj">
       <Project>{209f09d0-042b-4c29-86ae-b333bd605b15}</Project>
       <Name>LightInject.Annotation</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
+      <Project>{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}</Project>
+      <Name>LightInject.Interception</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.Mocking\LightInject.Mocking.csproj">
       <Project>{3f020ff3-63fb-45f1-ad16-1116d63cc770}</Project>
@@ -137,6 +144,10 @@
     <ProjectReference Include="..\LightInject.ServiceLocation\LightInject.ServiceLocation.csproj">
       <Project>{3498fa47-4da8-4649-8adc-87bb1c6ab586}</Project>
       <Name>LightInject.ServiceLocation</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Wcf\LightInject.Wcf.csproj">
+      <Project>{682E02DA-D307-4DB3-B984-A280C9A532D9}</Project>
+      <Name>LightInject.Wcf</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.Web\LightInject.Web.csproj">
       <Project>{92e9b349-5655-4d6c-924c-707d05a5d812}</Project>
