@@ -1,4 +1,45 @@
-## LightInject 3.0.0.9 ##
+## LightInject 3.0.1.0 - November 08, 2013##
+
+### Unresolved services ###
+
+The default behavior was to scan the assembly that contains the unresolved service and register all services found in that assembly. 
+
+As this could cause services to unintentially be registered into the container, this behaviour has now been changed.
+
+The container will now look for ICompositionRoot implementations in the containing assembly. If they are found, they will be created and executed.
+
+
+### Composition Roots ###
+
+Added the **RegisterFrom&lt;TCompositionRoot&gt;** method that enables explicit execution of a composition root.
+
+	container.RegisterFrom<SampleCompositionRoot>();
+
+### Instances ###
+
+The register method that registers an object instance with the container is now call **RegisterInstance**.    
+
+
+## LightInject.Mvc 1.0.0.1 November 08, 2013##
+
+**LightInject.Mvc** provides an integration that enables dependency injection in ASP.NET MVC applications.
+
+    protected void Application_Start()
+    {
+        var container = new ServiceContainer();
+        container.RegisterControllers();        
+        //register other services
+        
+        container.EnableMvc()              
+    }
+
+
+<a href="#" onclick = "$('#mvc').trigger('click');"> Learn more... </a>
+
+
+
+
+## LightInject 3.0.0.9 - November 05, 2013##
 
 ### Binary Distribution ###
 
@@ -33,25 +74,8 @@ LightInject now support passing arguments when resolving services.
     Assert.AreEqual(42,foo.Value);
 
 <a href="#" onclick = "$('#gettingstarted').trigger('click');"> Learn more... </a>
-
-
-## LightInject.Mvc 1.0.0.1 ##
-
-**LightInject.Mvc** provides an integration that enables dependency injection in ASP.NET MVC applications.
-
-    protected void Application_Start()
-    {
-        var container = new ServiceContainer();
-        container.RegisterControllers();        
-        //register other services
-        
-        container.EnableMvc()              
-    }
-
-
-<a href="#" onclick = "$('#mvc').trigger('click');"> Learn more... </a>
-
-## LightInject.Web 1.0.0.2 ##
+  
+## LightInject.Web 1.0.0.2 November 05, 2013##
 
 Added a new extension method that more closely resembles the actual intent of **LightInject.Web**, which is to 
 enable service to be scoped per web request. 
@@ -64,7 +88,9 @@ can now be replaced with
 
     container.EnabledPerWebRequestScope();
 
-<a href="#" onclick = "$('#web').trigger('click');"> Learn more... </a>  
+<a href="#" onclick = "$('#web').trigger('click');"> Learn more... </a>
+
+
 
 ## LightInject 3.0.0.8 ##
 
