@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception.Tests", "LightInject.Interception.Tests\LightInject.Interception.Tests.csproj", "{D86591EE-BC99-455C-BF13-2FDF48B52486}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf", "LightInject.Wcf\LightInject.Wcf.csproj", "{682E02DA-D307-4DB3-B984-A280C9A532D9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,10 @@ Global
 		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|Any CPU.Build.0 = Release|Any CPU
+		{682E02DA-D307-4DB3-B984-A280C9A532D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{682E02DA-D307-4DB3-B984-A280C9A532D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{682E02DA-D307-4DB3-B984-A280C9A532D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{682E02DA-D307-4DB3-B984-A280C9A532D9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
