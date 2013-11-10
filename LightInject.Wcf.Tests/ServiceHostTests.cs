@@ -4,6 +4,7 @@
     using LightInject.Interception;
     using LightInject.Tests;
     using LightInject.Wcf.SampleServices;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

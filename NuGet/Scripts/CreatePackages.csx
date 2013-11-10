@@ -19,6 +19,7 @@ private void CreateSourcePackages()
 	CreateLightInjectWebSourcePackage();
 	CreateLightInjectMvcSourcePackage();
 	CreateLightInjectServiceLocationSourcePackage();	
+	CreateLightInjectWcfSourcePackage();
 }
 
 private void UpdateBinaryProjects()
@@ -102,6 +103,14 @@ private void UpdateBinaryProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web\package\LightInject.Web.nuspec", version);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web.Source\package\LightInject.Web.nuspec", version);
 
+	//LightInject.Wcf
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Wcf\LightInject.Wcf.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Wcf\Properties\AssemblyInfo.cs", version);
+	Publicizer.Write("NET", @"..\..\LightInject.Wcf\LightInject.Wcf.cs", @"..\Build\Net\LightInject.Wcf\LightInject.Wcf.cs");
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf\package\LightInject.Wcf.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", version);
+
 }
 
 private void BuildBinaryProjects()
@@ -123,6 +132,7 @@ private void CreateBinaryPackages()
 	CreateLightInjectMvcBinaryPackage();
 	CreateLightInjectWebBinaryPackage();
 	CreateLightInjectServiceLocationBinaryPackage(); 
+	CreateLightInjectWcfBinaryPackage();
 }
 
 private void CreateLightInjectBinaryPackage()
@@ -293,6 +303,29 @@ private void CreateLightInjectWebBinaryPackage()
 	Console.WriteLine("Finished building the LightInject.Web(Binary) NuGet package");
 }
 
+private void CreateLightInjectWcfBinaryPackage()
+{
+	Console.WriteLine("Start building the LightInject.Wcf(Binary) NuGet package");
+
+	DirectoryUtils.Delete(@"..\LightInject.Wcf\package\lib");
+	Directory.CreateDirectory(@"..\LightInject.Wcf\package\lib\net40");
+	Directory.CreateDirectory(@"..\LightInject.Wcf\package\lib\net45");
+
+	File.Copy(@"..\Build\Net\LightInject.Wcf\bin\release\LightInject.Wcf.dll", @"..\LightInject.Wcf\package\lib\net40\LightInject.Wcf.dll", true);
+	File.Copy(@"..\Build\Net\LightInject.Wcf\bin\release\LightInject.Wcf.pdb", @"..\LightInject.Wcf\package\lib\net40\LightInject.Wcf.pdb", true);
+	File.Copy(@"..\Build\Net\LightInject.Wcf\bin\release\LightInject.Wcf.xml", @"..\LightInject.Wcf\package\lib\net40\LightInject.Wcf.xml", true);
+
+	File.Copy(@"..\Build\Net\LightInject.Wcf\bin\release\LightInject.Wcf.dll", @"..\LightInject.Wcf\package\lib\net45\LightInject.Wcf.dll", true);
+	File.Copy(@"..\Build\Net\LightInject.Wcf\bin\release\LightInject.Wcf.pdb", @"..\LightInject.Wcf\package\lib\net45\LightInject.Wcf.pdb", true);
+	File.Copy(@"..\Build\Net\LightInject.Wcf\bin\release\LightInject.Wcf.xml", @"..\LightInject.Wcf\package\lib\net45\LightInject.Wcf.xml", true);
+
+	
+
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Wcf\package\LightInject.Wcf.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.Wcf(Binary) NuGet package");
+}
+
 private void CreateLightInjectServiceLocationBinaryPackage()
 {
 	Console.WriteLine("Start building the LightInject.ServiceLocation(Binary) NuGet package");
@@ -436,6 +469,24 @@ private void CreateLightInjectWebSourcePackage()
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Web.Source\package\LightInject.Web.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.Web.Source NuGet package");
+}
+
+private void CreateLightInjectWcfSourcePackage()
+{
+	Console.WriteLine("Start building the LightInject.Wcf.Source NuGet package");
+	
+	DirectoryUtils.Delete(@"..\LightInject.Wcf.Source\package\content");
+	Directory.CreateDirectory(@"..\LightInject.Wcf.Source\package\content\net40\LightInject\Wcf");
+	Directory.CreateDirectory(@"..\LightInject.Wcf.Source\package\content\net45\LightInject\Wcf");
+	
+
+	SourceWriter.Write("NET", @"..\..\LightInject.Wcf\LightInject.Wcf.cs",  @"..\LightInject.Wcf.Source\package\content\net40\LightInject\Wcf\LightInject.Wcf.cs.pp", true, true);
+	SourceWriter.Write("NET", @"..\..\LightInject.Wcf\LightInject.Wcf.cs",  @"..\LightInject.Wcf.Source\package\content\net45\LightInject\Wcf\LightInject.Wcf.cs.pp", true, true);
+	
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.Wcf.Source NuGet package");
 }
 
 
