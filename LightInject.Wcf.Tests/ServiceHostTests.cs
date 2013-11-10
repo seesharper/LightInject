@@ -1,13 +1,13 @@
-﻿using System;
-using System.ServiceModel;
-using LightInject.Interception;
-using LightInject.Wcf;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace LightInject.Tests
+﻿namespace LightInject.Wcf.Tests
 {
+    using System;
+    using LightInject.Interception;
+    using LightInject.Tests;
+    using LightInject.Wcf.SampleServices;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     [TestClass]
-    public class WcfTests
+    public class ServiceHostTests
     {
         [TestMethod]
         public void CreateServiceHost_ServiceTypeIsInterfaceWithServiceContractAttribute_ReturnsServieHostWithProxyAsServiceType()
@@ -40,20 +40,6 @@ namespace LightInject.Tests
         {
             var lightInjectServiceHostFactory = new LightInjectServiceHostFactory();
             ExceptionAssert.Throws<ArgumentException>(() => lightInjectServiceHostFactory.CreateServiceHost("unknown", new Uri[] { }));
-        }
-    }
-
-    [ServiceContract]
-    public interface IServiceWithServiceContractAttribute
-    {
-    }
-
-    public interface IServiceWithoutServiceContractAttribute
-    {
-    }
-
-    [ServiceContract]
-    public class Service
-    {
-    }
+        }      
+    }       
 }

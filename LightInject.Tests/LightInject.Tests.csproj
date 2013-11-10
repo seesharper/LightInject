@@ -109,7 +109,6 @@
     <Compile Include="ServiceRegistrationTests.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="VerificationContainerFactory.cs" />
-    <Compile Include="WcfTests.cs" />
     <Compile Include="WebTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -144,10 +143,6 @@
     <ProjectReference Include="..\LightInject.ServiceLocation\LightInject.ServiceLocation.csproj">
       <Project>{3498fa47-4da8-4649-8adc-87bb1c6ab586}</Project>
       <Name>LightInject.ServiceLocation</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\LightInject.Wcf\LightInject.Wcf.csproj">
-      <Project>{682E02DA-D307-4DB3-B984-A280C9A532D9}</Project>
-      <Name>LightInject.Wcf</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.Web\LightInject.Web.csproj">
       <Project>{92e9b349-5655-4d6c-924c-707d05a5d812}</Project>

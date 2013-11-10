@@ -37,6 +37,14 @@ namespace LightInject.Wcf
     /// </summary>
     public class LightInjectServiceHostFactory : ServiceHostFactory
     {
+        /// <summary>
+        /// Creates a <see cref="T:System.ServiceModel.ServiceHost"/> with specific base addresses and initializes it with specified data.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="T:System.ServiceModel.ServiceHost"/> with specific base addresses.
+        /// </returns>
+        /// <param name="constructorString">The initialization data passed to the <see cref="T:System.ServiceModel.ServiceHostBase"/> instance being constructed by the factory. </param>
+        /// <param name="baseAddresses">The <see cref="T:System.Array"/> of type <see cref="T:System.Uri"/> that contains the base addresses for the service hosted.</param><exception cref="T:System.ArgumentNullException"><paramref name="baseAddresses"/> is null.</exception><exception cref="T:System.InvalidOperationException">There is no hosting context provided or <paramref name="constructorString"/> is null or empty.</exception>
         public override ServiceHostBase CreateServiceHost(string constructorString, Uri[] baseAddresses)
         {
             var type = Type.GetType(constructorString);
@@ -48,6 +56,25 @@ namespace LightInject.Wcf
             return CreateServiceHost(type, baseAddresses);
         }
 
+        /// <summary>
+        /// Creates a <see cref="ServiceHost"/> with the specified <paramref name="baseAddresses"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of service to be hosted by the <see cref="ServiceHost"/>.</typeparam>
+        /// <param name="baseAddresses">The base addresses for the hosted service.</param>
+        /// <returns>A <see cref="ServiceHost"/> for the specified <typeparamref name="TService"/>.</returns>
+        public ServiceHost CreateServiceHost<TService>(params string[] baseAddresses)
+        {
+            var uriBaseAddresses = baseAddresses.Select(s => new Uri(s)).ToArray();
+            return CreateServiceHost(typeof(TService), uriBaseAddresses);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="T:System.ServiceModel.ServiceHost"/> for a specified type of service with a specific base address. 
+        /// </summary>
+        /// <returns>
+        /// A <see cref="T:System.ServiceModel.ServiceHost"/> for the type of service specified with a specific base address.
+        /// </returns>
+        /// <param name="serviceType">Specifies the type of service to host. </param><param name="baseAddresses">The <see cref="T:System.Array"/> of type <see cref="T:System.Uri"/> that contains the base addresses for the service hosted.</param>
         protected override ServiceHost CreateServiceHost(Type serviceType, Uri[] baseAddresses)
         {
             ValidateServiceType(serviceType);
@@ -66,17 +93,17 @@ namespace LightInject.Wcf
             {
                 throw new ArgumentNullException("serviceType");
             }
-
-            var attribute =
-                serviceType.GetCustomAttributes(typeof(ServiceContractAttribute), true)
-                           .Cast<ServiceContractAttribute>()
-                           .FirstOrDefault();
-
-            if (!serviceType.IsInterface || attribute == null)
+            
+            if (!IsInterfaceWithServiceContractAttribute(serviceType))
             {
                 throw new NotSupportedException(
                     "Only interfaces with [ServiceContract] attribute are supported with LightInjectServiceHostFactory.");
             }
+        }       
+ 
+        private static bool IsInterfaceWithServiceContractAttribute(Type serviceType)
+        {
+            return serviceType.IsInterface && serviceType.IsDefined(typeof(ServiceContractAttribute), true);
         }
     }
 }

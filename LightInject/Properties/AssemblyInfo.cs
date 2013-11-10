@@ -48,3 +48,5 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.Interception")]
 [assembly: InternalsVisibleTo("LightInject.Interception.Tests")]
 [assembly: InternalsVisibleTo("LightInject.Wcf")]
+[assembly: InternalsVisibleTo("LightInject.Wcf.SampleLibrary")]
+[assembly: InternalsVisibleTo("LightInject.Wcf.SampleLibrary.Implementation")]
