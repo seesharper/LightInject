@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary", "LightInject.Wcf.SampleLibrary\LightInject.Wcf.SampleLibrary.csproj", "{15B3E0D2-6217-493A-A690-158C497F5318}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleWebApplication", "LightInject.Wcf.SampleWebApplication\LightInject.Wcf.SampleWebApplication.csproj", "{37185FCC-A613-4A6C-9580-18A0A2F47B21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{15B3E0D2-6217-493A-A690-158C497F5318}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15B3E0D2-6217-493A-A690-158C497F5318}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15B3E0D2-6217-493A-A690-158C497F5318}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37185FCC-A613-4A6C-9580-18A0A2F47B21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37185FCC-A613-4A6C-9580-18A0A2F47B21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37185FCC-A613-4A6C-9580-18A0A2F47B21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37185FCC-A613-4A6C-9580-18A0A2F47B21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
