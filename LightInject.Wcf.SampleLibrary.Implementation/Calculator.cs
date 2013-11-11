@@ -1,12 +1,38 @@
 ﻿namespace LightInject.Wcf.SampleLibrary.Implementation
 {
-    using LightInject.Wcf.SampleServices;
+    using System;
 
-    public class Calculator : ICalculator
+    public class Service : IService
     {
-        public int Add(int value1, int value2)
+        public int Execute()
         {
-            return value1 + value2;
+            return 42;
+        }
+    }
+
+    public class ServiceWithSameDependencyTwice : IServiceWithSameDependencyTwice
+    {
+        public ServiceWithSameDependencyTwice(IFoo foo1, IFoo foo2)
+        {
+        }
+
+        public int Execute()
+        {
+            return 42;
+        }
+    }
+
+    public interface IFoo {}
+    
+
+    public class Foo : IFoo
+    {
+
+        public static int InitializeCount = 0;
+
+        public Foo()
+        {
+            InitializeCount++;
         }
     }
 }

@@ -80,11 +80,29 @@ namespace LightInject.Wcf
             ValidateServiceType(serviceType);
 
             var container = new ServiceContainer();
-            var proxyBuilder = new ProxyBuilder();
-            var proxyDefinition = new ProxyDefinition(serviceType, () => container.GetInstance(serviceType));
-            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            var proxyType = CreateServiceProxyType(serviceType, container);
 
             return base.CreateServiceHost(proxyType, baseAddresses);
+        }
+
+        private static Type CreateServiceProxyType(Type serviceType, IServiceContainer container)
+        {            
+            var proxyBuilder = new ProxyBuilder();
+            var proxyDefinition = CreateProxyDefinition(serviceType, container);           
+            ImplementServiceInterface(serviceType, container, proxyDefinition);
+            return proxyBuilder.GetProxyType(proxyDefinition);
+        }
+
+        private static void ImplementServiceInterface(
+            Type serviceType, IServiceContainer container, ProxyDefinition proxyDefinition)
+        {
+            proxyDefinition.Implement(() => new ServiceInterceptor(container), m => m.IsDeclaredBy(serviceType));
+        }
+
+        private static ProxyDefinition CreateProxyDefinition(Type serviceType, IServiceContainer container)
+        {
+            var proxyDefinition = new ProxyDefinition(serviceType, () => container.GetInstance(serviceType));
+            return proxyDefinition;
         }
 
         private static void ValidateServiceType(Type serviceType)
@@ -104,6 +122,38 @@ namespace LightInject.Wcf
         private static bool IsInterfaceWithServiceContractAttribute(Type serviceType)
         {
             return serviceType.IsInterface && serviceType.IsDefined(typeof(ServiceContractAttribute), true);
+        }
+    }
+
+    /// <summary>
+    /// An <see cref="IInterceptor"/> that ensures that a service operation is 
+    /// executed within a <see cref="Scope"/>.    
+    /// </summary>
+    public class ServiceInterceptor : IInterceptor
+    {
+        private readonly IServiceContainer serviceContainer;
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceInterceptor"/> class.
+        /// </summary>
+        /// <param name="serviceContainer">The <see cref="IServiceContainer"/> that is used to create the <see cref="Scope"/>.</param>
+        internal ServiceInterceptor(IServiceContainer serviceContainer)
+        {
+            this.serviceContainer = serviceContainer;
+        }
+               
+        /// <summary>
+        /// Wraps the execution of a service operation inside a <see cref="Scope"/>.
+        /// </summary>
+        /// <param name="invocationInfo">The <see cref="IInvocationInfo"/> instance that 
+        /// contains information about the current method call.</param>
+        /// <returns>The return value from the method.</returns>
+        public object Invoke(IInvocationInfo invocationInfo)
+        {
+            using (serviceContainer.BeginScope())
+            {
+                return invocationInfo.Proceed();
+            }            
         }
     }
 }

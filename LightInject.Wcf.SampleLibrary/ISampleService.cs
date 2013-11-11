@@ -1,14 +1,21 @@
-﻿namespace LightInject.Wcf.SampleServices
+﻿namespace LightInject.Wcf.SampleLibrary
 {
     using System.ServiceModel;
 
     [ServiceContract]
-    public interface ICalculator
+    public interface IService
     {
         [OperationContract]
-        int Add(int value1, int value2);
+        int Execute();
     }
 
+    [ServiceContract]
+    public interface IServiceWithSameDependencyTwice
+    {
+        [OperationContract]
+        int Execute();
+    }
+        
     [ServiceContract]
     public interface IServiceWithServiceContractAttribute
     {
@@ -19,7 +26,7 @@
     }
 
     [ServiceContract]
-    public class Service
+    public class ServiceWithoutInterface
     {
     }
 }

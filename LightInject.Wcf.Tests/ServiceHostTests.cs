@@ -3,7 +3,7 @@
     using System;
     using LightInject.Interception;
     using LightInject.Tests;
-    using LightInject.Wcf.SampleServices;
+    using LightInject.Wcf.SampleLibrary;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -24,7 +24,7 @@
         public void CreateServiceHost_ServiceTypeIsConcrete_ThrowsNotSupportedException()
         {
             var lightInjectServiceHostFactory = new LightInjectServiceHostFactory();
-            var serviceType = typeof(Service);
+            var serviceType = typeof(ServiceWithoutInterface);
             ExceptionAssert.Throws<NotSupportedException>(() => lightInjectServiceHostFactory.CreateServiceHost(serviceType.AssemblyQualifiedName, new Uri[] { }));
         }
 
