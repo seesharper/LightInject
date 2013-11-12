@@ -50,3 +50,4 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.Wcf")]
 [assembly: InternalsVisibleTo("LightInject.Wcf.SampleLibrary")]
 [assembly: InternalsVisibleTo("LightInject.Wcf.SampleLibrary.Implementation")]
+[assembly: InternalsVisibleTo("LightInject.Wcf.Client")]

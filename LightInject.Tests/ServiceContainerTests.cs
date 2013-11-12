@@ -746,7 +746,7 @@ namespace LightInject.Tests
         public void GetInstance_UsingServicePredicate_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
+            container.RegisterFallback((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(IFoo));
         }
@@ -755,7 +755,7 @@ namespace LightInject.Tests
         public void GetInstance_PerContainerLifetimeUsingServicePredicate_ReturnsSameInstance()
         {
             var container = CreateContainer();
-            container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo(), new PerContainerLifetime());
+            container.RegisterFallback((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo(), new PerContainerLifetime());
             var firstInstance = container.GetInstance<IFoo>();
             var secondInstance = container.GetInstance<IFoo>();
             Assert.AreSame(firstInstance, secondInstance);

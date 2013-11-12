@@ -245,7 +245,7 @@
         public void GetInstance_ServicePredicate_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
-            container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
+            container.RegisterFallback((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(FooDecorator));

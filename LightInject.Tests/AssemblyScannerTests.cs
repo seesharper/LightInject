@@ -121,6 +121,15 @@
             Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject"));
         }
         
+        //[TestMethod]
+        //public void GetInstance_UnknownService_CallsAssemblyScannerBeforeInvokingRules()
+        //{
+        //    var container = new ServiceContainer();
+        //    container.Register((type, s) => type == typeof(string),(sr) => sr.ServiceFactory. )
+         
+        //}
+
+
 #if NET          
         [TestMethod]
         public void Register_AssemblyFile_CallsAssemblyScanner()

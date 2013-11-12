@@ -290,7 +290,7 @@ namespace LightInject
         /// </summary>
         /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
         /// <param name="factory">Creates a service instance according to the <paramref name="predicate"/> predicate.</param>
-        void Register(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory);
+        void RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory);
 
         /// <summary>
         /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
@@ -298,7 +298,7 @@ namespace LightInject
         /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
         /// <param name="factory">Creates a service instance according to the <paramref name="predicate"/> predicate.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-        void Register(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory, ILifetime lifetime);
+        void RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory, ILifetime lifetime);
 
         /// <summary>
         /// Registers a service based on a <see cref="ServiceRegistration"/> instance.
@@ -1402,7 +1402,7 @@ namespace LightInject
         /// </summary>
         /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
         /// <param name="factory">Creates a service instance according to the <paramref name="predicate"/> predicate.</param>
-        public void Register(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
+        public void RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
         {
             factoryRules.Add(new FactoryRule { CanCreateInstance = predicate, Factory = factory });
         }
@@ -1413,7 +1413,7 @@ namespace LightInject
         /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
         /// <param name="factory">Creates a service instance according to the <paramref name="predicate"/> predicate.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-        public void Register(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory, ILifetime lifetime)
+        public void RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory, ILifetime lifetime)
         {
             factoryRules.Add(new FactoryRule { CanCreateInstance = predicate, Factory = factory, LifeTime = lifetime });
         }
