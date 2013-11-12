@@ -69,7 +69,7 @@ namespace LightInject.Web
             if (!isInitialized)
             {
                 isInitialized = true;
-                DynamicModuleUtility.RegisterModule(typeof(LightInjectHttpModule));
+                DynamicModuleUtility.RegisterModule(typeof(LightInjectHttpModule));                
             }
         }
     }
