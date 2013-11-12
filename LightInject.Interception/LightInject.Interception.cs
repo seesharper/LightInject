@@ -636,6 +636,8 @@ namespace LightInject.Interception
     {
         private readonly ICollection<InterceptorInfo> interceptors = new Collection<InterceptorInfo>();
 
+        private readonly ICollection<CustomAttributeData[]> typeAttributes = new Collection<CustomAttributeData[]>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ProxyDefinition"/> class.
         /// </summary>
@@ -681,7 +683,18 @@ namespace LightInject.Interception
         {
             get
             {
-                return interceptors.AsEnumerable();
+                return interceptors;
+            }
+        }
+
+        /// <summary>
+        /// Gets a list of the registered <see cref="CustomAttributeData"/> instances.
+        /// </summary>
+        internal IEnumerable<CustomAttributeData> TypeAttributes
+        {
+            get
+            {
+                return typeAttributes.SelectMany(t => t);
             }
         }
 
@@ -714,6 +727,18 @@ namespace LightInject.Interception
         {
             Implement(interceptorFactory, method => !method.IsDeclaredBy(typeof(object)));
 
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a custom <see cref="Attribute"/> to the proxy type.
+        /// </summary>
+        /// <param name="customAttributeData">The <see cref="CustomAttributeData"/> instance that 
+        /// represents the custom attribute to be added to the proxy type.</param>
+        /// <returns>This instance.</returns>
+        public ProxyDefinition AddCustomAttributes(CustomAttributeData[] customAttributeData)
+        {
+            typeAttributes.Add(customAttributeData);
             return this;
         }
     }
@@ -960,6 +985,7 @@ namespace LightInject.Interception
         {
             proxyDefinition = definition;
             InitializeTypeBuilder();
+            ApplyTypeAttributes();
             DefineLazyTargetField();                        
             DefineInitializerMethod();
             DefineStaticTargetFactoryField();
@@ -978,6 +1004,37 @@ namespace LightInject.Interception
             AssignInterceptorFactories(definition, proxyType);
             
             return proxyType;
+        }
+
+        private static CustomAttributeBuilder CreateCustomAttributeBuilder(CustomAttributeData customAttributeData)
+        {
+            var propertyArguments = new List<PropertyInfo>();
+            var propertyArgumentValues = new List<object>();
+            var fieldArguments = new List<FieldInfo>();
+            var fieldArgumentValues = new List<object>();
+            
+            foreach (var namedArgument in customAttributeData.NamedArguments)
+            {
+                if (namedArgument.MemberInfo.MemberType == MemberTypes.Field)
+                {
+                    fieldArguments.Add((FieldInfo)namedArgument.MemberInfo);
+                    fieldArgumentValues.Add(namedArgument.TypedValue.Value);
+                }
+
+                if (namedArgument.MemberInfo.MemberType == MemberTypes.Property)
+                {
+                    propertyArguments.Add((PropertyInfo)namedArgument.MemberInfo);
+                    propertyArgumentValues.Add(namedArgument.TypedValue.Value);
+                }                
+            }
+
+            return new CustomAttributeBuilder(
+              customAttributeData.Constructor,
+              customAttributeData.ConstructorArguments.Select(ctorArg => ctorArg.Value).ToArray(),
+              propertyArguments.ToArray(),
+              propertyArgumentValues.ToArray(),
+              fieldArguments.ToArray(),
+              fieldArgumentValues.ToArray());
         }
 
         private static void AssignInterceptorFactories(ProxyDefinition definition, Type proxyType)
@@ -1166,6 +1223,15 @@ namespace LightInject.Interception
         private static void Return(ILGenerator il)
         {
             il.Emit(OpCodes.Ret);            
+        }
+
+        private void ApplyTypeAttributes()
+        {
+            foreach (var customAttributeData in proxyDefinition.TypeAttributes)
+            {
+                CustomAttributeBuilder attributeBuilder = CreateCustomAttributeBuilder(customAttributeData);
+                typeBuilder.SetCustomAttribute(attributeBuilder);
+            }
         }
 
         private void PushTargetInstance(ILGenerator il)
@@ -1637,5 +1703,5 @@ namespace LightInject.Interception
         {
             return types.Aggregate(0, (current, type) => current ^ type.GetHashCode());
         }
-    }
+    }    
 }

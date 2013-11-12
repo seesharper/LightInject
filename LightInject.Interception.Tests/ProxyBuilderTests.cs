@@ -643,6 +643,22 @@ namespace LightInject.Interception.Tests
 
         #endregion
 
+        #region Custom Attributes
+        
+        [TestMethod]
+        public void GetProxyType_TypeAttribute_ReturnsProxyWithClassAttribute()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
+            proxyDefinition.AddCustomAttributes(typeof(ClassWithCustomAttribute).GetCustomAttributesData().ToArray());
+            var proxyBuilder = new ProxyBuilder();
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            
+            Assert.IsTrue(proxyType.IsDefined(typeof(CustomAttribute), true));
+        }
+
+        #endregion
+
+
         private T CreateProxyFromDefinition<T>(ProxyDefinition proxyDefinition)
         {                        
             Type proxyType = CreateProxyBuilder().GetProxyType(proxyDefinition);

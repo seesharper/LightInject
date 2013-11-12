@@ -316,6 +316,17 @@
         }
     }
     
+    
+    public class CustomAttribute : Attribute
+    {
+        
+    }
 
+
+    [CustomAttribute]
+    public class ClassWithCustomAttribute
+    {
+        
+    }
     
 }
