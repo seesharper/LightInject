@@ -93,7 +93,7 @@ namespace LightInject.Wcf
             ServiceHost serviceHost = base.CreateServiceHost(proxyType, baseAddresses);
             
             AddMetadataBehavior(serviceHost);
-
+            
             return serviceHost;
         }
 
@@ -112,7 +112,7 @@ namespace LightInject.Wcf
         private static Type CreateServiceProxyType(Type serviceType, IServiceContainer container)
         {            
             var proxyBuilder = new ProxyBuilder();
-            var proxyDefinition = CreateProxyDefinition(serviceType, container);           
+            var proxyDefinition = CreateProxyDefinition(serviceType, container);            
             ImplementServiceInterface(serviceType, container, proxyDefinition);
             return proxyBuilder.GetProxyType(proxyDefinition);
         }
@@ -126,6 +126,15 @@ namespace LightInject.Wcf
         private static ProxyDefinition CreateProxyDefinition(Type serviceType, IServiceContainer container)
         {
             var proxyDefinition = new ProxyDefinition(serviceType, () => container.GetInstance(serviceType));
+            if (container.CanGetInstance(serviceType, string.Empty))
+            {
+                ServiceRegistration serviceRegistration = container.AvailableServices.FirstOrDefault(sr => sr.ServiceType == serviceType);
+                if (serviceRegistration != null && serviceRegistration.ImplementingType != null)
+                {
+                    proxyDefinition.AddCustomAttributes(
+                        serviceRegistration.ImplementingType.GetCustomAttributesData().ToArray());
+                }
+            }
             return proxyDefinition;
         }
 

@@ -62,6 +62,9 @@
     <Compile Include="..\LightInject.Tests\ExceptionAssert.cs">
       <Link>ExceptionAssert.cs</Link>
     </Compile>
+    <Compile Include="..\LightInject.Tests\ParallelInvoker.cs">
+      <Link>ParallelInvoker.cs</Link>
+    </Compile>
     <Compile Include="InvocationTests.cs" />
     <Compile Include="ServiceHostTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
