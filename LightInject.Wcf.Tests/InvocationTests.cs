@@ -25,8 +25,13 @@
             {
                 var result = Invoke<IService, int>(c => c.Execute());
                 Assert.AreEqual(42, result);            
-            }
-            
+            }                        
+        }
+
+        [TestMethod]
+        public void Test()
+        {
+            ChannelFactory<IService> channelFactory = new ChannelFactory<IService>();
             
         }
 

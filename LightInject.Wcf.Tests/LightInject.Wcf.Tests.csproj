@@ -65,14 +65,21 @@
     <Compile Include="..\LightInject.Tests\ParallelInvoker.cs">
       <Link>ParallelInvoker.cs</Link>
     </Compile>
+    <Compile Include="ChannelFactoryProviderTests.cs" />
     <Compile Include="InvocationTests.cs" />
     <Compile Include="ServiceHostTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ServiceProxyTests.cs" />
+    <Compile Include="WcfClientTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
       <Project>{f1fbc75d-e613-477e-9630-8bc01aa9bff3}</Project>
       <Name>LightInject.Interception</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Wcf.Client\LightInject.Wcf.Client.csproj">
+      <Project>{C7A1E443-78F6-443E-9637-4964954B7E04}</Project>
+      <Name>LightInject.Wcf.Client</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj">
       <Project>{3013ca8c-3036-4bcb-baa7-cd8fa081f4f8}</Project>
@@ -86,6 +93,13 @@
       <Project>{682e02da-d307-4db3-b984-a280c9a532d9}</Project>
       <Name>LightInject.Wcf</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LightInject\LightInject.csproj">
+      <Project>{3D54591B-B055-4EDD-96B6-E6F184E8CA6E}</Project>
+      <Name>LightInject</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
