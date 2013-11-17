@@ -65,11 +65,14 @@
     <Compile Include="..\LightInject.Tests\ParallelInvoker.cs">
       <Link>ParallelInvoker.cs</Link>
     </Compile>
+    <Compile Include="BindingProviderTests.cs" />
     <Compile Include="ChannelFactoryProviderTests.cs" />
+    <Compile Include="ChannelProviderTests.cs" />
     <Compile Include="InvocationTests.cs" />
     <Compile Include="ServiceHostTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceProxyTests.cs" />
+    <Compile Include="TestBase.cs" />
     <Compile Include="WcfClientTests.cs" />
   </ItemGroup>
   <ItemGroup>

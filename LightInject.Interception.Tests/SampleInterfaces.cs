@@ -328,5 +328,24 @@
     {
         
     }
-    
+ 
+    public interface IClassWithTwoMethods
+    {
+        void FirstMethod();
+
+        void SecondMethod();
+    }
+
+    public class ClassWithTwoMethods : IClassWithTwoMethods
+    {
+        public void FirstMethod()
+        {
+            
+        }
+
+        public void SecondMethod()
+        {
+            
+        }
+    }
 }

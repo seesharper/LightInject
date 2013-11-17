@@ -29,13 +29,6 @@
         }
 
         [TestMethod]
-        public void Test()
-        {
-            ChannelFactory<IService> channelFactory = new ChannelFactory<IService>();
-            
-        }
-
-        [TestMethod]
         public void Invoke_ServiceWithSameDependencyTwice_CreatesScopedDependency()
         {
             Foo.InitializeCount = 0;
@@ -144,9 +137,6 @@
             var result = func(service);
             ((IClientChannel)service).Close();
             return result;            
-        }
-
-        
-
+        }      
     }
 }

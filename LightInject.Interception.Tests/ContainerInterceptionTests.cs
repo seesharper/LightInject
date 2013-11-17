@@ -1,5 +1,8 @@
 ﻿namespace LightInject.Interception.Tests
 {
+    using System.Collections;
+    using System.Collections.Generic;
+
     using LightInject.SampleLibrary;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -78,17 +81,35 @@
         [TestMethod]
         public virtual void GetInstance_InterceptorAfterDecorator_ReturnsProxy()
         {
-            var container = CreateContainer();
+            var container = CreateContainer();            
             container.Register<IFoo, Foo>();
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             container.Decorate(typeof(IFoo), typeof(AnotherFooDecorator));
-            container.Intercept(registration => true, factory => null);
+            container.Intercept(registration => registration.ServiceType == typeof(IFoo), factory => null);
 
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(IProxy));
         }
 
+        [TestMethod]
+        public void Intercept_Method_InvokesInterceptorOnlyForMatchingMethods()
+        {
+            var container = new ServiceContainer();
+            var targetMock = new Mock<IClassWithTwoMethods>();
+            container.RegisterInstance(targetMock.Object);
+            var interceptedMethods = new List<string>();
+            container.Intercept(m => m.Name == "FirstMethod",
+                info =>
+                    {
+                        interceptedMethods.Add(info.Method.Name);
+                        return null;
+                    });
+            var instance = container.GetInstance<IClassWithTwoMethods>();
+            instance.FirstMethod();
 
+            Assert.AreEqual(1, interceptedMethods.Count);
+            Assert.AreEqual(interceptedMethods[0], "FirstMethod");
+        }
     }
 }

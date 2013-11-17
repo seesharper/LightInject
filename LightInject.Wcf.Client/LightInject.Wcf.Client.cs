@@ -52,6 +52,8 @@ namespace LightInject
             serviceRegistery.Register<IServiceProxyFactory, ServiceProxyFactory>(new PerContainerLifetime());
             serviceRegistery.Register<IServiceProxyTypeFactory, ServiceProxyTypeFactory>(new PerContainerLifetime());
             serviceRegistery.Register<IServiceClient, ServiceClient>();
+
+            serviceRegistery.Decorate<IChannelFactoryProvider, ChannelFactoryProviderCacheDecorator>();
         }
 
         private static object CreateWcfProxy(ServiceRequest serviceRequest)
@@ -65,6 +67,7 @@ namespace LightInject
 namespace LightInject.Wcf.Client
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Configuration;    
     using System.Reflection;
     using System.ServiceModel;
@@ -250,6 +253,43 @@ namespace LightInject.Wcf.Client
     }
 
     /// <summary>
+    /// An <see cref="IChannelFactoryProvider"/> cache decorator that ensures that 
+    /// channel factories are cached by the service type.
+    /// </summary>
+    internal class ChannelFactoryProviderCacheDecorator : IChannelFactoryProvider
+    {
+        private readonly Lazy<IChannelFactoryProvider> channelFactoryProvider;
+        private readonly ThreadSafeDictionary<Type, IChannelFactory> cache = new ThreadSafeDictionary<Type, IChannelFactory>();
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChannelFactoryProviderCacheDecorator"/> class.
+        /// </summary>
+        /// <param name="channelFactoryProvider">The <see cref="IChannelFactoryProvider"/> that is 
+        /// responsible for providing channel factories.</param>
+        public ChannelFactoryProviderCacheDecorator(Lazy<IChannelFactoryProvider> channelFactoryProvider)
+        {
+            this.channelFactoryProvider = channelFactoryProvider;
+        }
+
+        /// <summary>
+        /// Gets a <see cref="ChannelFactory{TChannel}"/> that is used to 
+        /// create a <typeparamref name="TService"/> channel.
+        /// </summary>
+        /// <typeparam name="TService">The service type for which to get a <see cref="ChannelFactory{TChannel}"/>.</typeparam>
+        /// <returns>a <see cref="ChannelFactory{TChannel}"/> that is used to create a <typeparamref name="TService"/> channel.</returns>
+        public ChannelFactory<TService> GetChannelFactory<TService>()
+        {
+            return (ChannelFactory<TService>)cache.GetOrAdd(typeof(TService), type => CreateChannelFactory<TService>());
+        }
+
+        private IChannelFactory CreateChannelFactory<T>()
+        {
+            return channelFactoryProvider.Value.GetChannelFactory<T>();
+        }
+    }
+
+
+    /// <summary>
     /// Creates a proxy used to invoke the target service.
     /// </summary>
     internal class ServiceProxyFactory : IServiceProxyFactory
@@ -302,7 +342,7 @@ namespace LightInject.Wcf.Client
         /// <returns>A proxy type that implements the <paramref name="serviceType"/>.</returns>
         public Type GetProxyType(Type serviceType)
         {
-            var proxyDefinition = this.CreateProxyDefinition(serviceType);
+            var proxyDefinition = CreateProxyDefinition(serviceType);
 
             IProxyBuilder proxyBuilder = new ProxyBuilder();
             return proxyBuilder.GetProxyType(proxyDefinition);
@@ -312,7 +352,7 @@ namespace LightInject.Wcf.Client
         {
             var proxyDefinition = new ProxyDefinition(serviceType, () => null);
             proxyDefinition.Implement(
-                () => new ServiceInterceptor(this.serviceClient),
+                () => new ServiceInterceptor(serviceClient),
                 method => method.DeclaringType == serviceType);
             return proxyDefinition;
         }
@@ -447,13 +487,6 @@ namespace LightInject.Wcf.Client
         {
             var channelFactory = channelFactoryProvider.GetChannelFactory<TService>();
             return channelFactory.CreateChannel();
-        }
-
-        public object GetChannel(Type serviceType)
-        {
-            MethodInfo openGenericGetChannelMethod = typeof(ChannelProvider).GetMethod("GetChannel", Type.EmptyTypes);
-            MethodInfo closedGenericGetChannelMethod = openGenericGetChannelMethod.MakeGenericMethod(serviceType);
-            return closedGenericGetChannelMethod.Invoke(this, new object[] { });
-        }
+        }       
     }    
 }

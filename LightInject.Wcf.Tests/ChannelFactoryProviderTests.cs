@@ -8,31 +8,40 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
    
     [TestClass]
-    public class ChannelFactoryProviderTests
+    public class ChannelFactoryProviderTests : TestBase
     {
-        private static readonly IServiceContainer ServiceContainer = new ServiceContainer();
+        private IServiceContainer serviceContainer;
 
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        [TestInitialize]
+        public void TestInitialize()
         {
-            ServiceContainer.EnableWcf();
+            serviceContainer = new ServiceContainer();
+            serviceContainer.EnableWcf();
         }
 
         [TestMethod]
-        public void GetChannelFactory_Interface_ReturnsChannelFactory()
+        public void GetInstance_ChannelFactoryProviderRequestedTwice_ReturnsSameInstance()
         {
-            var provider = ServiceContainer.GetInstance<IChannelFactoryProvider>();
+            var firstProvider = serviceContainer.GetInstance<IChannelFactoryProvider>();
+            var secondProvider = serviceContainer.GetInstance<IChannelFactoryProvider>();
+            Assert.AreSame(firstProvider, secondProvider);
+        }
+
+        [TestMethod]
+        public void GetChannelFactory_Service_ReturnsChannelFactory()
+        {
+            var provider = serviceContainer.GetInstance<IChannelFactoryProvider>();
             ChannelFactory<IService> channelFactory = provider.GetChannelFactory<IService>();                     
             Assert.IsNotNull(channelFactory);
         }
-
+        
         [TestMethod]
-        public void GetChannelFactory_Interface_ReturnsChannelFactoryAsSingleton()
+        public void GetChannelFactory_Twice_ReturnsSameChannelFactory()
         {
-            var provider = ServiceContainer.GetInstance<IChannelFactoryProvider>();
+            var provider = serviceContainer.GetInstance<IChannelFactoryProvider>();
             ChannelFactory<IService> firstFactory = provider.GetChannelFactory<IService>();
             ChannelFactory<IService> secondFactory = provider.GetChannelFactory<IService>();
             Assert.AreSame(firstFactory, secondFactory);
-        }
+        }           
     }
 }
