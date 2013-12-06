@@ -27,8 +27,10 @@
 namespace LightInject.Wcf
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.ServiceModel;
     using System.ServiceModel.Activation;
     using System.ServiceModel.Description;
@@ -88,27 +90,40 @@ namespace LightInject.Wcf
             ValidateServiceType(serviceType);
 
             var container = new ServiceContainer();
+            container.RegisterAssembly("LightInject.Wcf.Configuration.dll");
+            container.Register<IServiceBehavior>(factory => new ServiceMetadataBehavior() {HttpGetEnabled = true});
             var proxyType = CreateServiceProxyType(serviceType, container);
-
-            ServiceHost serviceHost = base.CreateServiceHost(proxyType, baseAddresses);
             
-            AddMetadataBehavior(serviceHost);
-            
+            ServiceHost serviceHost = base.CreateServiceHost(proxyType, baseAddresses);            
+            serviceHost.AddDefaultEndpoints();
+            ApplyServiceBehaviors(container, serviceHost);
+            ApplyEndpointBehaviors(container, serviceHost);
+                        
             return serviceHost;
         }
 
-        private static void AddMetadataBehavior(ServiceHost serviceHost)
-        {            
-            var metadataBehavior = serviceHost.Description.Behaviors.Find<ServiceMetadataBehavior>();
-            if (metadataBehavior != null)
+        private void ApplyEndpointBehaviors(ServiceContainer container, ServiceHost serviceHost)
+        {
+            IEnumerable<IEndpointBehavior> endpointBehaviors = container.GetAllInstances<IEndpointBehavior>().ToArray();
+            foreach (var endpoint in serviceHost.Description.Endpoints)
             {
-                return;
+                foreach (var endpointBehavior in endpointBehaviors)
+                {
+                    endpoint.Behaviors.Add(endpointBehavior);
+                }
             }
-
-            metadataBehavior = new ServiceMetadataBehavior { HttpGetEnabled = true };
-            serviceHost.Description.Behaviors.Add(metadataBehavior);
         }
 
+        private void ApplyServiceBehaviors(ServiceContainer container, ServiceHost serviceHost)
+        {
+            var serviceBehaviors = container.GetAllInstances<IServiceBehavior>();
+            var description = serviceHost.Description;
+            foreach (var serviceBehavior in serviceBehaviors)
+            {
+                description.Behaviors.Add(serviceBehavior);
+            }            
+        }
+ 
         private static Type CreateServiceProxyType(Type serviceType, IServiceContainer container)
         {            
             var proxyBuilder = new ProxyBuilder();

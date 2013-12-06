@@ -2,6 +2,7 @@
 {
     using System.ServiceModel;
     using System.ServiceModel.Channels;
+    using System.ServiceModel.Description;
 
     using LightInject.Wcf.Client;
     using LightInject.Wcf.SampleLibrary;
@@ -17,7 +18,7 @@
         public void TestInitialize()
         {
             serviceContainer = new ServiceContainer();
-            serviceContainer.EnableWcf();
+            serviceContainer.EnableWcf(new UriProvider("http://localhost:6000/"));
         }
 
         [TestMethod]
@@ -55,7 +56,9 @@
         {
             using (StartService<IService>())
             {
+                serviceContainer.Register<IEndpointBehavior, SampleEndPointBehavior>();
                 var provider = serviceContainer.GetInstance<IChannelProvider>();
+                
                 IService channel = provider.GetChannel<IService>();
                 
                 var result = channel.Execute();

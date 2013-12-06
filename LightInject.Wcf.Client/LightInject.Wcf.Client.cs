@@ -27,6 +27,7 @@
 
 namespace LightInject
 {
+    using System;    
     using System.ServiceModel;
     using LightInject.Wcf.Client;
 
@@ -35,24 +36,27 @@ namespace LightInject
     /// to resolved as WCF service proxies.
     /// </summary>
     internal static class WcfContainerExtensions
-    {
+    {        
         /// <summary>
-        /// Enables services to be resolved as WCF service proxies.
+        /// Enables services to be resolved a WCF service proxies.
         /// </summary>
         /// <param name="serviceRegistery">The target <see cref="IServiceRegistry"/>.</param>
-        internal static void EnableWcf(this IServiceRegistry serviceRegistery)
+        /// <param name="uriProvider">The <see cref="IUriProvider"/> that is responsible 
+        /// for providing an <see cref="Uri"/> that represents the service endpoint address.</param>
+        internal static void EnableWcf(this IServiceRegistry serviceRegistery, IUriProvider uriProvider)
         {
             serviceRegistery.RegisterFallback(
                 (serviceType, serviceName) => serviceType.IsDefined(typeof(ServiceContractAttribute), true),
                 CreateWcfProxy);
             serviceRegistery.Register<IBindingProvider, BindingProvider>(new PerContainerLifetime());
-            serviceRegistery.Register<IUriProvider, UriProvider>(new PerContainerLifetime());
+            serviceRegistery.RegisterInstance(uriProvider);
             serviceRegistery.Register<IChannelProvider, ChannelProvider>(new PerContainerLifetime());
             serviceRegistery.Register<IChannelFactoryProvider, ChannelFactoryProvider>(new PerContainerLifetime());
+#if NET
             serviceRegistery.Register<IServiceProxyFactory, ServiceProxyFactory>(new PerContainerLifetime());
             serviceRegistery.Register<IServiceProxyTypeFactory, ServiceProxyTypeFactory>(new PerContainerLifetime());
+#endif
             serviceRegistery.Register<IServiceClient, ServiceClient>();
-
             serviceRegistery.Decorate<IChannelFactoryProvider, ChannelFactoryProviderCacheDecorator>();
         }
 
@@ -67,12 +71,13 @@ namespace LightInject
 namespace LightInject.Wcf.Client
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Configuration;    
-    using System.Reflection;
+    using System.Collections.Generic;    
     using System.ServiceModel;
     using System.ServiceModel.Channels;
+    using System.ServiceModel.Description;    
+#if NET 
     using LightInject.Interception;
+#endif
 
     /// <summary>
     /// Represents a class that is capable of providing a
@@ -174,6 +179,7 @@ namespace LightInject.Wcf.Client
         TResult Invoke<TService, TResult>(Func<TService, TResult> function);
     }
 
+#if NET    
     /// <summary>
     /// An <see cref="IInterceptor"/> that intercepts method calls made to 
     /// a service interface and forwards the method call to an <see cref="IServiceClient"/>.
@@ -211,12 +217,12 @@ namespace LightInject.Wcf.Client
                 invocationInfo.Method.DeclaringType,
                 invocationInfo.Method.ReturnType);
 
-            var result = closedGenericMethod.Invoke(this.serviceClient, new object[] { del });
+            var result = closedGenericMethod.Invoke(serviceClient, new object[] { del });
 
             return result;
         }
     }
-        
+#endif        
     /// <summary>
     /// Provides a <see cref="ChannelFactory{TChannel}"/>.
     /// </summary>
@@ -225,6 +231,8 @@ namespace LightInject.Wcf.Client
         private readonly IBindingProvider bindingProvider;
         private readonly IUriProvider uriProvider;
 
+        private readonly IEnumerable<IEndpointBehavior> endpointBehaviors;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ChannelFactoryProvider"/> class.
         /// </summary>
@@ -232,10 +240,12 @@ namespace LightInject.Wcf.Client
         /// for providing a <see cref="Binding"/> to the <see cref="ChannelFactory{TChannel}"/>.</param>
         /// <param name="uriProvider">The <see cref="IUriProvider"/> that is responsible for 
         /// providing an <see cref="Uri"/> that represents the service endpoint address.</param>
-        public ChannelFactoryProvider(IBindingProvider bindingProvider, IUriProvider uriProvider)
+        /// <param name="endpointBehaviors">A list of <see cref="IEndpointBehavior"/> instances.</param>
+        public ChannelFactoryProvider(IBindingProvider bindingProvider, IUriProvider uriProvider, IEnumerable<IEndpointBehavior> endpointBehaviors)
         {
             this.bindingProvider = bindingProvider;
             this.uriProvider = uriProvider;
+            this.endpointBehaviors = endpointBehaviors;
         }
 
         /// <summary>
@@ -244,11 +254,17 @@ namespace LightInject.Wcf.Client
         /// </summary>
         /// <typeparam name="TService">The service type for which to get a <see cref="ChannelFactory{TChannel}"/>.</typeparam>
         /// <returns>a <see cref="ChannelFactory{TChannel}"/> that is used to create a <typeparamref name="TService"/> channel.</returns>
-        public ChannelFactory<TService> GetChannelFactory<TService>()
+        public virtual ChannelFactory<TService> GetChannelFactory<TService>()
         {
             var binding = bindingProvider.GetBinding(typeof(TService));
             var uri = uriProvider.GetUri(typeof(TService));
-            return new ChannelFactory<TService>(binding, new EndpointAddress(uri));
+            var channelFactory = new ChannelFactory<TService>(binding, new EndpointAddress(uri));
+            foreach (var endpointBehavior in endpointBehaviors)
+            {                                
+                channelFactory.Endpoint.EndpointBehaviors.Add(endpointBehavior);
+            }
+
+            return channelFactory;
         }
     }
 
@@ -287,8 +303,7 @@ namespace LightInject.Wcf.Client
             return channelFactoryProvider.Value.GetChannelFactory<T>();
         }
     }
-
-
+#if NET
     /// <summary>
     /// Creates a proxy used to invoke the target service.
     /// </summary>
@@ -357,7 +372,7 @@ namespace LightInject.Wcf.Client
             return proxyDefinition;
         }
     }
-
+#endif
     /// <summary>
     /// A class that is capable of invoking a service method
     /// </summary>
@@ -385,18 +400,37 @@ namespace LightInject.Wcf.Client
         public TResult Invoke<TService, TResult>(Func<TService, TResult> function)
         {
             var channel = channelProvider.GetChannel<TService>();            
-            TResult result = function(channel);
-            ((IClientChannel)channel).Close();
-            return result;
+            try
+            {
+                TResult result = function(channel);
+                ((IClientChannel)channel).Close();
+                return result;
+            }
+            catch 
+            {
+                ((IClientChannel)channel).Abort();
+                throw;
+            }            
         }
     }
-
+   
     /// <summary>
     /// Provides a valid <see cref="Uri"/>
     /// that represents the endpoint address for a given service type.
     /// </summary>
     internal class UriProvider : IUriProvider
     {
+        private readonly string baseAddress;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UriProvider"/> class.
+        /// </summary>
+        /// <param name="baseAddress">The base address from which the service url is constructed.</param>
+        public UriProvider(string baseAddress)
+        {
+            this.baseAddress = baseAddress;
+        }
+
         /// <summary>
         /// Gets an <see cref="Uri"/> that represents 
         /// the endpoint address for the <param name="serviceType"/>.        
@@ -404,8 +438,7 @@ namespace LightInject.Wcf.Client
         /// <param name="serviceType">The service type for which to return an <see cref="Uri"/></param>
         /// <returns><see cref="Uri"/></returns>
         public virtual Uri GetUri(Type serviceType)
-        {
-            var baseAddress = ConfigurationManager.AppSettings.Get("BaseAddress");
+        {            
             var url = baseAddress + serviceType.FullName + ".svc";
             return new Uri(url);
         }
@@ -441,6 +474,7 @@ namespace LightInject.Wcf.Client
             Binding binding;
             switch (uri.Scheme)
             {
+#if NET
                 case "net.tcp":
                     binding = new NetTcpBinding(SecurityMode.None);
                     break;
@@ -453,6 +487,17 @@ namespace LightInject.Wcf.Client
                 case "net.pipe":
                     binding = new NetNamedPipeBinding();
                     break;
+#endif
+#if WP_PCL || NETFX_CORE_PCL || WINDOWS_PHONE || NETFX_CORE
+                case "net.tcp":
+                    binding = new NetTcpBinding(SecurityMode.None);
+                    break;
+                case "http":
+                case "https":
+                    binding = new BasicHttpBinding();
+                    break;
+
+#endif
                 default:
                     throw new InvalidOperationException(string.Format("Unable to resolve binding for Uri: {0}", uri));
             }

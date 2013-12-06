@@ -105,7 +105,7 @@
             var instance = (FooWithOneParameter)fooFactory(1);
             Assert.AreEqual(1, instance.Arg1);
         }
-
+        
         [TestMethod]
         public void Invoke_TwoParameters_FactoryCreatesInstanceAndPassesValuesToConstructor()
         {
@@ -261,5 +261,13 @@
             var instance2 = (AnotherFooWithValueTypeDependency)container.GetInstance(typeof(IFoo), "AnotherFoo", new object[] { 42 });
             Assert.AreEqual(42, instance.Value);
         }
+
+        //[TestMethod]
+        //public void GetInstance_WithTooFewArguments_ThrowsMeaningfulException()
+        //{
+        //    var container = CreateContainer();
+        //    container.Register<int, int, IFoo>((factory, arg1, arg2) => new FooWithTwoParameters(arg1, arg2), "SomeFoo");
+        //    ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo), new object[] { 42 }));
+        //}
     }
 }

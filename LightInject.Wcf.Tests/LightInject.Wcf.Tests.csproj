@@ -69,6 +69,7 @@
     <Compile Include="ChannelFactoryProviderTests.cs" />
     <Compile Include="ChannelProviderTests.cs" />
     <Compile Include="InvocationTests.cs" />
+    <Compile Include="SampleEndPointBehavior.cs" />
     <Compile Include="ServiceHostTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceProxyTests.cs" />

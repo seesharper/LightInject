@@ -682,4 +682,9 @@ namespace LightInject.SampleLibrary
             
         }
     }
+
+    public class FooWithGenericConstraint<T> : IFoo<T> where T:IBar
+    {
+        
+    }
 }

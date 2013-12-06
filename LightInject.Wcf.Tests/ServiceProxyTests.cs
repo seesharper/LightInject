@@ -20,7 +20,7 @@ namespace LightInject.Wcf.Tests
         public void TestInitialize()
         {
             serviceContainer = new ServiceContainer();
-            serviceContainer.EnableWcf();
+            serviceContainer.EnableWcf(new UriProvider("http://localhost:6000/"));
         }
                 
         [TestMethod]

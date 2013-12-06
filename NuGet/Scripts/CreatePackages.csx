@@ -111,6 +111,16 @@ private void UpdateBinaryProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf\package\LightInject.Wcf.nuspec", version);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", version);
 
+	//LightInject.Wcf.Client
+	/*version = VersionUtils.GetVersionString(@"..\..\LightInject.Wcf.Client\LightInject.Wcf.Client.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Wcf.Client\Properties\AssemblyInfo.cs", version);
+
+	Publicizer.Write("NETFX_CORE_PCL",@"..\..\LightInject.Wcf.Client\LightInject.Wcf.Client.cs", @"..\Build\WindowsRuntime\LightInject.Wcf.Client\LightInject.Wcf.Client.cs");
+	Publicizer.Write("NET", @"..\..\LightInject.Wcf.Client\LightInject.Wcf.Client.cs", @"..\Build\Net\LightInject.Wcf.Client\LightInject.Wcf.Client.cs");
+	Publicizer.Write("WP_PCL", @"..\..\LightInject.Wcf.Client\LightInject.Wcf.Client.cs", @"..\Build\WindowsPhone\LightInject.Wcf.Client\LightInject.Wcf.Client.cs");
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf.Client\package\LightInject.Wcf.Client.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf..ClientSource\package\LightInject.Wcf.Client.nuspec", version); */
 }
 
 private void BuildBinaryProjects()

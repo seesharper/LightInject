@@ -116,10 +116,6 @@
       <Project>{209f09d0-042b-4c29-86ae-b333bd605b15}</Project>
       <Name>LightInject.Annotation</Name>
     </ProjectReference>
-    <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
-      <Project>{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}</Project>
-      <Name>LightInject.Interception</Name>
-    </ProjectReference>
     <ProjectReference Include="..\LightInject.Mocking\LightInject.Mocking.csproj">
       <Project>{3f020ff3-63fb-45f1-ad16-1116d63cc770}</Project>
       <Name>LightInject.Mocking</Name>

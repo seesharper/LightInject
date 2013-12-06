@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9D3C97D2-A1C7-487E-85B1-FCBD93057BA4}"
 	ProjectSection(SolutionItems) = preProject
 		LightInject.vsmdi = LightInject.vsmdi
@@ -13,11 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "LightInject\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibrary", "LightInject.SampleLibrary\LightInject.SampleLibrary.csproj", "{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Tests", "LightInject.Tests\LightInject.Tests.csproj", "{195CC92D-3792-4326-938C-E51AC26A8973}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRoot", "LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj", "{65FF0CEB-76B4-44FD-898A-00C32C21738C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Silverlight", "LightInject.Silverlight\LightInject.Silverlight.csproj", "{AADCCAC5-52D2-4219-9F8B-20337836A2C3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Mocking", "LightInject.Mocking\LightInject.Mocking.csproj", "{3F020FF3-63FB-45F1-AD16-1116D63CC770}"
 EndProject
@@ -27,20 +25,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Annotation", "L
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Web", "LightInject.Web\LightInject.Web.csproj", "{92E9B349-5655-4D6C-924C-707D05A5D812}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Mvc", "LightInject.Mvc\LightInject.Mvc.csproj", "{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.WinRT.Tests", "LightInject.WinRT.Tests\LightInject.WinRT.Tests.csproj", "{147C98AE-BB6A-4D43-920E-C8BC94C9C84F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRootTypeAttribute", "LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj", "{75EA6152-B0C9-40C1-AF22-10DBCA192239}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.Client", "LightInject.Wcf.Client\LightInject.Wcf.Client.csproj", "{C7A1E443-78F6-443E-9637-4964954B7E04}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception", "LightInject.Interception\LightInject.Interception.csproj", "{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception.Tests", "LightInject.Interception.Tests\LightInject.Interception.Tests.csproj", "{D86591EE-BC99-455C-BF13-2FDF48B52486}"
-EndProject
 Global
-	GlobalSection(TestCaseManagementSettings) = postSolution
-		CategoryFile = LightInject.vsmdi
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|ARM = Debug|ARM
@@ -72,16 +65,6 @@ Global
 		{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}.Release|ARM.ActiveCfg = Release|Any CPU
 		{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}.Release|x64.ActiveCfg = Release|Any CPU
 		{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}.Release|x86.ActiveCfg = Release|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Release|Any CPU.Build.0 = Release|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Release|ARM.ActiveCfg = Release|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Release|x64.ActiveCfg = Release|Any CPU
-		{195CC92D-3792-4326-938C-E51AC26A8973}.Release|x86.ActiveCfg = Release|Any CPU
 		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Debug|ARM.ActiveCfg = Debug|Any CPU
@@ -92,16 +75,6 @@ Global
 		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Release|ARM.ActiveCfg = Release|Any CPU
 		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Release|x64.ActiveCfg = Release|Any CPU
 		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Release|x86.ActiveCfg = Release|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Release|ARM.ActiveCfg = Release|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Release|x64.ActiveCfg = Release|Any CPU
-		{AADCCAC5-52D2-4219-9F8B-20337836A2C3}.Release|x86.ActiveCfg = Release|Any CPU
 		{3F020FF3-63FB-45F1-AD16-1116D63CC770}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3F020FF3-63FB-45F1-AD16-1116D63CC770}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3F020FF3-63FB-45F1-AD16-1116D63CC770}.Debug|ARM.ActiveCfg = Debug|Any CPU
@@ -142,16 +115,6 @@ Global
 		{92E9B349-5655-4D6C-924C-707D05A5D812}.Release|ARM.ActiveCfg = Release|Any CPU
 		{92E9B349-5655-4D6C-924C-707D05A5D812}.Release|x64.ActiveCfg = Release|Any CPU
 		{92E9B349-5655-4D6C-924C-707D05A5D812}.Release|x86.ActiveCfg = Release|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Release|ARM.ActiveCfg = Release|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Release|x64.ActiveCfg = Release|Any CPU
-		{2BBFA6DE-D28E-4040-9C1C-FF05D330A063}.Release|x86.ActiveCfg = Release|Any CPU
 		{147C98AE-BB6A-4D43-920E-C8BC94C9C84F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{147C98AE-BB6A-4D43-920E-C8BC94C9C84F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{147C98AE-BB6A-4D43-920E-C8BC94C9C84F}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
@@ -186,6 +149,16 @@ Global
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Release|ARM.ActiveCfg = Release|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Release|x64.ActiveCfg = Release|Any CPU
 		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Release|x86.ActiveCfg = Release|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Release|ARM.ActiveCfg = Release|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Release|x64.ActiveCfg = Release|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Release|x86.ActiveCfg = Release|Any CPU
 		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Debug|ARM.ActiveCfg = Debug|Any CPU
@@ -196,18 +169,11 @@ Global
 		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Release|ARM.ActiveCfg = Release|Any CPU
 		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Release|x64.ActiveCfg = Release|Any CPU
 		{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}.Release|x86.ActiveCfg = Release|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|ARM.ActiveCfg = Release|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|x64.ActiveCfg = Release|Any CPU
-		{D86591EE-BC99-455C-BF13-2FDF48B52486}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = LightInject.vsmdi
 	EndGlobalSection
 EndGlobal

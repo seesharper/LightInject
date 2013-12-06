@@ -116,5 +116,16 @@
         {
             Assert.IsTrue(new LazyReadOnlyCollection<string>(null, 0).IsReadOnly);
         }
+
+        [TestMethod]
+        public void ToArray_TwoElements_ReturnsArray()
+        {
+            var lazy = new Lazy<IEnumerable<string>>(() => new[] { "SomeValue", "AnotherValue" });
+            var collection = new LazyReadOnlyCollection<string>(lazy, 2);
+
+            var array = collection.ToArray();
+
+            Assert.AreEqual(2, array.Length);
+        }
     }
 }

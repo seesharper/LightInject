@@ -1,10 +1,10 @@
 ﻿namespace LightInject.Wcf.Tests
 {
+    
     using System.ServiceModel;
-   
+    using System.ServiceModel.Description;    
     using LightInject.Wcf.Client;
     using LightInject.Wcf.SampleLibrary;
-
     using Microsoft.VisualStudio.TestTools.UnitTesting;
    
     [TestClass]
@@ -16,7 +16,7 @@
         public void TestInitialize()
         {
             serviceContainer = new ServiceContainer();
-            serviceContainer.EnableWcf();
+            serviceContainer.EnableWcf(new UriProvider("http://localhost:6000/"));
         }
 
         [TestMethod]
@@ -42,6 +42,15 @@
             ChannelFactory<IService> firstFactory = provider.GetChannelFactory<IService>();
             ChannelFactory<IService> secondFactory = provider.GetChannelFactory<IService>();
             Assert.AreSame(firstFactory, secondFactory);
-        }           
+        }
+
+        [TestMethod]
+        public void GetChannehlFactory_RegisteredEndPointBehavior_AppliesEndPointBehavior()
+        {
+            serviceContainer.Register<IEndpointBehavior, SampleEndPointBehavior>();
+            var provider = serviceContainer.GetInstance<IChannelFactoryProvider>();
+            ChannelFactory<IService> channelFactory = provider.GetChannelFactory<IService>();                     
+            Assert.IsTrue(channelFactory.Endpoint.Behaviors.Contains(typeof(SampleEndPointBehavior)));
+        }
     }
 }

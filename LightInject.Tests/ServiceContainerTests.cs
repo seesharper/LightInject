@@ -424,6 +424,75 @@ namespace LightInject.Tests
 
         }
 
+        #region Array
+        
+        [TestMethod]
+        public void GetInstance_Array_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<IFoo[]>();
+            Assert.AreEqual(2, services.Length);
+        }
+
+        #endregion
+
+        #region List
+
+        [TestMethod]
+        public void GetInstance_List_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<IList<IFoo>>();
+            Assert.AreEqual(2, services.Count);
+        }
+
+        #endregion
+
+        #region Collection
+
+        [TestMethod]
+        public void GetInstance_Collection_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<ICollection<IFoo>>();
+            Assert.AreEqual(2, services.Count);
+        }
+
+        #endregion
+
+
+        #region ReadOnly Collection
+
+        [TestMethod]
+        public void GetInstance_ReadOnlyCollection_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<IReadOnlyCollection<IFoo>>();
+            Assert.AreEqual(2, services.Count);
+        }
+
+        [TestMethod]
+        public void GetInstance_GenericFooWithReadOnlyCollection_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+            container.Register<IFoo<IReadOnlyCollection<IBar>>, FooWithGenericDependency<IReadOnlyCollection<IBar>>>();
+
+            var instance = (FooWithGenericDependency<IReadOnlyCollection<IBar>>)container.GetInstance<IFoo<IReadOnlyCollection<IBar>>>();
+
+            Assert.AreEqual(1, instance.Dependency.Count);
+        }
+
+
+        #endregion
 
         #region Func Services
 
@@ -1044,13 +1113,47 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
+        public void GetInstance_ServiceWithGenericConstraint_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>));
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)), ErrorMessages.UnknownGenericDependency);
+        }
+
+        [TestMethod]
+        public void GetAllInstances_ServiceWithGenericConstraint_ReturnsOnlyMatchingInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>));
+            container.Register(typeof(IFoo<>), typeof(Foo<>), "AnotherFoo");
+
+            var instances = container.GetAllInstances<IFoo<int>>();
+            
+            Assert.AreEqual(1, instances.Count());
+        }
+
+        [TestMethod]
+        public void GetAllInstances_ServiceWithGenericConstraint_ReturnsAllMatchingInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>));
+            container.Register(typeof(IFoo<>), typeof(Foo<>), "AnotherFoo");
+
+            var instances = container.GetAllInstances<IFoo<IBar>>();
+
+            Assert.AreEqual(2, instances.Count());
+        }
+
+
+#if NET
+        [TestMethod]
         public void RegisterFrom_CompositionRoot_RegistersService()
         {
             var container = CreateContainer();
             container.RegisterFrom<CompositionRoot>();
             Assert.AreEqual(1, container.AvailableServices.Count());
         }
-
+#endif
         #region Internal Classes
 
         [TestMethod]
