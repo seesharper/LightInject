@@ -527,6 +527,23 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; private set; }
     }
 
+    public class FooWithMultipleParameterizedConstructors
+    {
+        public string StringValue { get; set; }
+        public int IntValue { get; set; }
+
+        public FooWithMultipleParameterizedConstructors(int intValue)
+        {
+            IntValue = intValue;
+        }
+
+        public FooWithMultipleParameterizedConstructors(string stringValue)
+        {
+            StringValue = stringValue;
+        }
+    }
+
+
     public class FooWithProperyDependency : IFoo
     {
         public IBar Bar { get; set; }

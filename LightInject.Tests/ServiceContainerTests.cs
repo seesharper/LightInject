@@ -494,6 +494,21 @@ namespace LightInject.Tests
 
         #endregion
 
+        #region ReadOnly List
+
+        [TestMethod]
+        public void GetInstance_ReadOnlyList_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<IReadOnlyList<IFoo>>();
+            Assert.AreEqual(2, services.Count);
+        }
+
+
+        #endregion
+
         #region Func Services
 
         [TestMethod]

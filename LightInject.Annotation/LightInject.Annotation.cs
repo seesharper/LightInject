@@ -91,6 +91,7 @@ namespace LightInject
         public static void EnableAnnotatedConstructorInjection(this ServiceContainer serviceContainer)
         {
             serviceContainer.ConstructorDependencySelector = new AnnotatedConstructorDependencySelector();
+            serviceContainer.ConstructorSelector = new AnnotatedConstructorSelector(serviceContainer.CanGetInstance);
         }
     }
 }
@@ -175,6 +176,23 @@ namespace LightInject.Annotation
             }
 
             return constructorDependencies;
+        }
+    }
+
+    internal class AnnotatedConstructorSelector : MostResolvableConstructorSelector
+    {
+        public AnnotatedConstructorSelector(Func<Type, string, bool> canGetInstance)
+            : base(canGetInstance)
+        {
+        }
+
+        protected override string GetServiceName(ParameterInfo parameterInfo)
+        {
+            var injectAttribute =
+                      (InjectAttribute)
+                      parameterInfo.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault();
+            
+            return injectAttribute != null ? injectAttribute.ServiceName : base.GetServiceName(parameterInfo);
         }
     }
 }

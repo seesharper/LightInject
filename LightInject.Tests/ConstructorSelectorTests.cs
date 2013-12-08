@@ -32,7 +32,7 @@ namespace LightInject.Tests
 
             Assert.AreEqual(1, constructorInfo.GetParameters().Count());
         }
-
+        
         [TestMethod]
         public void Execute_PrivateConstructor_IsNotReturned()
         {
@@ -40,6 +40,13 @@ namespace LightInject.Tests
 
             ExceptionAssert.Throws<InvalidOperationException>(() => selector.Execute(typeof(FooWithPrivateConstructor)));
         }
-        
+
+        [TestMethod]
+        public void Execute_MultipleParameterizedConstructors_MostResolvableConstructorIsReturned()
+        {
+            
+        }
+
+
     }
 }

@@ -1219,6 +1219,11 @@ namespace LightInject
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>);
         }
+
+        public static bool IsReadOnlyListOfT(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
+        }
         public static bool IsLazy(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(Lazy<>);
@@ -2259,9 +2264,14 @@ namespace LightInject
             return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
         }
 
+        //private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
+        //{
+        //    return new TypeConstructionInfoBuilder(new ConstructorSelector(), ConstructorDependencySelector, PropertyDependencySelector);
+        //}
+
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
-            return new TypeConstructionInfoBuilder(new ConstructorSelector(), ConstructorDependencySelector, PropertyDependencySelector);
+            return new TypeConstructionInfoBuilder(new MostResolvableConstructorSelector((t, s) => CanGetInstance(t, s)), ConstructorDependencySelector, PropertyDependencySelector);
         }
 
         private Func<object[], object> GetDefaultDelegate(Type serviceType, bool throwError)
@@ -2701,7 +2711,7 @@ namespace LightInject
             {
                 emitter = CreateArrayServiceEmitter(serviceType);
             }
-            else if (serviceType.IsReadOnlyCollectionOfT())
+            else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
                 emitter = CreateReadOnlyCollectionServiceEmitter(serviceType);
             }            
@@ -3824,6 +3834,54 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
+    /// </summary>
+    public class MostResolvableConstructorSelector : IConstructorSelector
+    {
+        private readonly Func<Type, string, bool> canGetInstance;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MostResolvableConstructorSelector"/> class.
+        /// </summary>
+        /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
+        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance)
+        {
+            this.canGetInstance = canGetInstance;
+        }
+
+        /// <summary>
+        /// Selects the constructor to be used when creating a new instance of the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="implementingType">The <see cref="Type"/> for which to return a <see cref="ConstructionInfo"/>.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance that represents the constructor to be used
+        /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
+        public ConstructorInfo Execute(Type implementingType)
+        {
+            ConstructorInfo[] constructorCandidates = implementingType.GetConstructors();
+            if (constructorCandidates.Length == 0)
+            {
+                throw new InvalidOperationException("Missing public constructor for Type: " + implementingType.FullName);
+            }
+
+            foreach (var constructorCandidate in constructorCandidates.OrderByDescending(c => c.GetParameters().Count()))
+            {
+                ParameterInfo[] parameters = constructorCandidate.GetParameters();
+                if (CanCreateParameterDependencies(parameters))
+                {
+                    return constructorCandidate;
+                }
+            }
+
+            throw new InvalidOperationException("No resolvable constructor found for Type: " + implementingType.FullName);
+        }
+
+        private bool CanCreateParameterDependencies(IEnumerable<ParameterInfo> parameters)
+        {
+            return parameters.All(parameterInfo => canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, parameterInfo.Name));
+        }
+    }
+
+    /// <summary>
     /// Selects the constructor dependencies for a given <see cref="ConstructorInfo"/>.
     /// </summary>
     public class ConstructorDependencySelector : IConstructorDependencySelector
@@ -4897,6 +4955,7 @@ namespace LightInject
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(ConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructorSelector));
+            InternalTypes.Add(typeof(MostResolvableConstructorSelector));
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerRequestLifeTime));

@@ -10,7 +10,7 @@
         internal override IServiceContainer CreateContainer()
         {
             var container = (ServiceContainer)VerificationContainerFactory.CreateContainerForAssemblyVerification();
-            container.ConstructorDependencySelector = new AnnotatedConstructorDependencySelector();
+            container.EnableAnnotatedConstructorInjection();
             return container;
         }
     }

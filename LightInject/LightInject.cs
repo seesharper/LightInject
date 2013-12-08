@@ -34,19 +34,19 @@
 namespace LightInject
 {
     using System;
-    using System.Collections;
-    using System.Collections.ObjectModel;
-#if NET || NETFX_CORE || NETFX_CORE_PCL
+    using System.Collections;    
+#if NET || NET45 || NETFX_CORE || NETFX_CORE_PCL
     using System.Collections.Concurrent;
 #endif
+    using System.Collections.ObjectModel;
     using System.Collections.Generic;
-#if NET    
+#if NET || NET45    
     using System.IO;
 #endif
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-#if NET || NETFX_CORE || WINDOWS_PHONE || SILVERLIGHT
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE || SILVERLIGHT
     using System.Reflection.Emit;
 #endif
     using System.Runtime.CompilerServices;
@@ -380,7 +380,7 @@ namespace LightInject
         /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
         void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new();
 
-#if NET
+#if NET || NET45
         /// <summary>
         /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -920,7 +920,6 @@ namespace LightInject
             GetInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
             GetNamedInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
             
-
             EnumerableTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
             
             GetInstanceWithParametersMethods =
@@ -1218,7 +1217,7 @@ namespace LightInject
         
 
 #endif
-#if NET 
+#if NET || NET45 
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetGenericArguments();
@@ -1314,6 +1313,11 @@ namespace LightInject
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>);
         }
+
+        public static bool IsReadOnlyListOfT(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
+        }
 #endif
         public static bool IsLazy(this Type serviceType)
         {
@@ -1394,9 +1398,10 @@ namespace LightInject
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, compositionRootTypeExtractor, compositionRootExecutor);
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
+            ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
-#if NET      
+#if NET || NET45      
             AssemblyLoader = new AssemblyLoader();            
 #endif            
         }
@@ -1412,12 +1417,18 @@ namespace LightInject
         /// is responsible for selecting the constructor dependencies for a given constructor.
         /// </summary>
         public IConstructorDependencySelector ConstructorDependencySelector { get; set; }
-       
+
+        /// <summary>
+        /// Gets or sets the <see cref="IConstructorSelector"/> instance that is responsible 
+        /// for selecting the constructor to be used when creating new service instances.
+        /// </summary>
+        public IConstructorSelector ConstructorSelector { get; set; }
+
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET || NETFX_CORE
+#if NET || NET45 || NETFX_CORE 
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning. 
@@ -1580,7 +1591,7 @@ namespace LightInject
             compositionRootExecutor.Execute(typeof(TCompositionRoot));
         }
 
-#if NET || NETFX_CORE
+#if NET || NET45 || NETFX_CORE
         /// <summary>
         /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -2235,7 +2246,7 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
-#if NET || NETFX_CORE || NETFX_CORE_PCL
+#if NET || NET45 || NETFX_CORE || NETFX_CORE_PCL
 
             scopeManagers.Dispose();
 #endif
@@ -2380,10 +2391,10 @@ namespace LightInject
         {
             return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
         }
-
+        
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
-            return new TypeConstructionInfoBuilder(new ConstructorSelector(), ConstructorDependencySelector, PropertyDependencySelector);
+            return new TypeConstructionInfoBuilder(ConstructorSelector, ConstructorDependencySelector, PropertyDependencySelector);
         }
 
         private Func<object[], object> GetDefaultDelegate(Type serviceType, bool throwError)
@@ -2437,7 +2448,16 @@ namespace LightInject
                 AssemblyScanner.Scan(serviceType.GetAssembly(), this);                
                 emitter = GetRegisteredEmitMethod(serviceType, serviceName);                
             }
-        
+
+            if (emitter == null)
+            {
+                var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
+                if (rule != null)
+                {
+                    emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
+                }
+            }
+
             return CreateEmitMethodWrapper(emitter, serviceType, serviceName);
         }
         
@@ -2518,7 +2538,7 @@ namespace LightInject
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();            
             
             registeredDecorators.AddRange(GetOpenGenericDecoratorRegistrations(serviceRegistration));            
-#if NET
+#if NET || NET45
             registeredDecorators.AddRange(GetDeferredDecoratorRegistrations(serviceRegistration));                      
 #endif            
             return registeredDecorators.OrderBy(d => d.Index).ToArray();
@@ -2541,17 +2561,17 @@ namespace LightInject
             return registrations;
         }
 
-#if NET
+#if NET || NET45
         private IEnumerable<DecoratorRegistration> GetDeferredDecoratorRegistrations(
             ServiceRegistration serviceRegistration)
         {
             var registrations = new List<DecoratorRegistration>();
             
             var deferredDecorators =
-                decorators.Items.Where(ds => ds.CanDecorate(serviceRegistration) && ds.HasDeferredImplementingType);
+                decorators.Items.Where(ds => ds.CanDecorate(serviceRegistration) && ds.HasDeferredImplementingType);            
             foreach (var deferredDecorator in deferredDecorators)
             {
-                var decoratorRegistration = new DecoratorRegistration()
+                var decoratorRegistration = new DecoratorRegistration
                 {
                     ServiceType = serviceRegistration.ServiceType,
                     ImplementingType =
@@ -2773,28 +2793,7 @@ namespace LightInject
 
             return emitter;
         }
-
-        private Action<IMethodSkeleton> GetEmitMethodForConstructorDependency(Dependency dependency)
-        {
-            if (dependency.FactoryExpression != null)
-            {
-                return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
-            }
-
-            Action<IMethodSkeleton> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
-            if (emitter == null)
-            {
-                emitter = GetEmitMethod(dependency.ServiceType, dependency.Name);
-                if (emitter == null && dependency.IsRequired)
-                {
-                    throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
-                }
-            }
-
-            return emitter;
-        }
-
-
+  
         private void EmitDependencyUsingFactoryExpression(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
         {
             var generator = dynamicMethodSkeleton.GetILGenerator();
@@ -2825,13 +2824,8 @@ namespace LightInject
         private Action<IMethodSkeleton> ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
         {
             Action<IMethodSkeleton> emitter = null;
-
-            var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
-            if (rule != null)
-            {
-                emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
-            }
-            else if (serviceType.IsLazy())
+           
+            if (serviceType.IsLazy())
             {
                 emitter = CreateServiceEmitterBasedOnLazyServiceRequest(serviceType, t => ReflectionHelper.CreateGetInstanceDelegate(t, this));
             }
@@ -2852,7 +2846,7 @@ namespace LightInject
                 emitter = CreateArrayServiceEmitter(serviceType);
             }
 #if NET45 || NETFX_CORE || NETFX_CORE_PCL || WINDOWS_PHONE || WP_PCL
-            else if (serviceType.IsReadOnlyCollectionOfT())
+            else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
                 emitter = CreateReadOnlyCollectionServiceEmitter(serviceType);
             }            
@@ -3366,7 +3360,7 @@ namespace LightInject
             
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
-#if NET
+#if NET || NET45
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, true);
 #endif
@@ -3394,7 +3388,7 @@ namespace LightInject
         }
     }
     
-#if NET || NETFX_CORE || NETFX_CORE_PCL
+#if NET || NET45 || NETFX_CORE || NETFX_CORE_PCL
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
@@ -4267,6 +4261,69 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
+    /// </summary>
+    internal class MostResolvableConstructorSelector : IConstructorSelector
+    {
+        private readonly Func<Type, string, bool> canGetInstance;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MostResolvableConstructorSelector"/> class.
+        /// </summary>
+        /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
+        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance)
+        {
+            this.canGetInstance = canGetInstance;
+        }
+
+        /// <summary>
+        /// Selects the constructor to be used when creating a new instance of the <paramref name="implementingType"/>.
+        /// </summary>
+        /// <param name="implementingType">The <see cref="Type"/> for which to return a <see cref="ConstructionInfo"/>.</param>
+        /// <returns>A <see cref="ConstructionInfo"/> instance that represents the constructor to be used
+        /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
+        public ConstructorInfo Execute(Type implementingType)
+        {
+            ConstructorInfo[] constructorCandidates = implementingType.GetConstructors();
+            if (constructorCandidates.Length == 0)
+            {
+                throw new InvalidOperationException("Missing public constructor for Type: " + implementingType.FullName);
+            }
+
+            if (constructorCandidates.Length == 1)
+            {
+                return constructorCandidates[0];
+            }
+
+            foreach (var constructorCandidate in constructorCandidates.OrderByDescending(c => c.GetParameters().Count()))
+            {
+                ParameterInfo[] parameters = constructorCandidate.GetParameters();
+                if (CanCreateParameterDependencies(parameters))
+                {
+                    return constructorCandidate;
+                }
+            }
+
+            throw new InvalidOperationException("No resolvable constructor found for Type: " + implementingType.FullName);
+        }
+
+        protected virtual string GetServiceName(ParameterInfo parameterInfo)
+        {
+            return parameterInfo.Name;
+        }
+
+        private bool CanCreateParameterDependencies(IEnumerable<ParameterInfo> parameters)
+        {
+            return parameters.All(CanCreateParameterDependency);
+        }
+
+        private bool CanCreateParameterDependency(ParameterInfo parameterInfo)
+        {
+            return canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo));
+        }       
+    }
+
+    /// <summary>
     /// Selects the constructor dependencies for a given <see cref="ConstructorInfo"/>.
     /// </summary>
     internal class ConstructorDependencySelector : IConstructorDependencySelector
@@ -4754,7 +4811,7 @@ namespace LightInject
         /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.
         /// </summary>
         public int Index { get; set; }
-#if NET
+#if NET || NET45
 
         /// <summary>
         /// Gets a value indicating whether this registration has a deferred implementing type.
@@ -4984,7 +5041,7 @@ namespace LightInject
     internal class PerContainerLifetime : ILifetime, IDisposable
     {
         private readonly object syncRoot = new object();
-        private object singleton;
+        private volatile object singleton;
 
         /// <summary>
         /// Returns a service instance according to the specific lifetime characteristics.
@@ -5349,13 +5406,14 @@ namespace LightInject
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
             InternalTypes.Add(typeof(LazyReadOnlyCollection<>));
-#if NET
+#if NET || NET45
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(ConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructorSelector));
+            InternalTypes.Add(typeof(MostResolvableConstructorSelector));
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerRequestLifeTime));
@@ -5615,7 +5673,7 @@ namespace LightInject
             return propertyInfo.GetSetMethod() == null || propertyInfo.GetSetMethod().IsStatic || propertyInfo.GetSetMethod().IsPrivate;
         }
     }
-#if NET
+#if NET || NET45
 
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
