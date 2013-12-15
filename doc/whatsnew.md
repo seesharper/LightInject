@@ -1,5 +1,6 @@
-## LightInject 3.0.1.0 - November 08, 2013##
+## LightInject 3.0.1.0##
 
+(November 08, 2013)
 ### Unresolved services ###
 
 The default behavior was to scan the assembly that contains the unresolved service and register all services found in that assembly. 
@@ -20,7 +21,8 @@ Added the **RegisterFrom&lt;TCompositionRoot&gt;** method that enables explicit 
 The register method that registers an object instance with the container is now called **RegisterInstance**.    
 
 
-## LightInject.Mvc 1.0.0.1 November 08, 2013##
+## LightInject.Mvc 1.0.0.1 ##
+(November 08, 2013)
 
 **LightInject.Mvc** provides an integration that enables dependency injection in ASP.NET MVC applications.
 
@@ -39,7 +41,8 @@ The register method that registers an object instance with the container is now 
 
 
 
-## LightInject 3.0.0.9 - November 05, 2013##
+## LightInject 3.0.0.9##
+(November 05, 2013)
 
 ### Binary Distribution ###
 
@@ -75,7 +78,8 @@ LightInject now support passing arguments when resolving services.
 
 <a href="#" onclick = "$('#gettingstarted').trigger('click');"> Learn more... </a>
   
-## LightInject.Web 1.0.0.2 November 05, 2013##
+## LightInject.Web 1.0.0.2 ##
+(November 05, 2013)
 
 Added a new extension method that more closely resembles the actual intent of **LightInject.Web**, which is to 
 enable service to be scoped per web request. 
