@@ -55,7 +55,7 @@ If only one named registration exists, **LightInject** is capable of resolving t
 
 ### IEnumerable&lt;T&gt; ###
 
-When we register multiple services with the same service type, LightInject is capable of resolving these services as an  [IEnumerable&lt;T&gt;](http://msdn.microsoft.com/en-us/library/9eekhta0.aspx).
+When we register multiple services with the same service type, **LightInject** is capable of resolving these services as an  [IEnumerable&lt;T&gt;](http://msdn.microsoft.com/en-us/library/9eekhta0.aspx).
 
     public class Foo : IFoo {}
     public class AnotherFoo : IFoo {}
@@ -71,6 +71,14 @@ Alternatively using the **GetAllInstances** method.
 
     var instances = container.GetAllInstances<IFoo>();
     Assert.AreEqual(2, instances.Count());
+
+In addition, **LightInject** supports the following [IEnumerable&lt;T&gt;](http://msdn.microsoft.com/en-us/library/9eekhta0.aspx) sub-types. 
+
+* Array
+* ICollection&lt;T&gt;
+* IList&lt;T&gt;
+* IReadOnlyCollection&lt;T&gt; (Net 4.5 and Windows Runtime);
+* IReadOnlyList&lt;T&gt; (Net 4.5 and Windows Runtime)
 
 ### Values ###
 
