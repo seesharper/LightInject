@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.1
+    LightInject version 3.0.1.3
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -38,8 +38,10 @@ namespace LightInject
 #if NET || NET45 || NETFX_CORE || NETFX_CORE_PCL
     using System.Collections.Concurrent;
 #endif
-    using System.Collections.ObjectModel;
     using System.Collections.Generic;
+#if NET45 || NETFX_CORE || NETFX_CORE_PCL || WINDOWS_PHONE || WP_PCL
+    using System.Collections.ObjectModel;
+#endif    
 #if NET || NET45    
     using System.IO;
 #endif
@@ -857,7 +859,7 @@ namespace LightInject
         /// <summary>
         /// Gets the <see cref="ILGenerator"/> for the this dynamic method.
         /// </summary>
-        /// <returns>The <see cref="ILGenerator"/> for the this dynamic method.</returns>
+        /// <returns>The <see cref="ILGenerator"/> for the this dynamic method.</returns>        
         ILGenerator GetILGenerator();
 
         /// <summary>
@@ -1066,25 +1068,6 @@ namespace LightInject
         }
     }
 
-    //internal static class ArgumentLoader
-    //{
-    //    public static object Load(object[] arguments, int index, ParameterInfo parameterInfo)
-    //    {
-    //        if (index > arguments.Length - 1)
-    //        {
-    //            throw new InvalidOperationException("Index out of range");
-    //        }
-
-    //        object value = arguments[index];
-    //        if (!parameterInfo.ParameterType.IsInstanceOfType(value))
-    //        {
-    //            throw new InvalidOperationException("Argument has the wrong type");
-    //        }
-
-    //        return value;
-    //    }
-    //}
-
     internal static class TypeHelper
     {
 #if NETFX_CORE || WINDOWS_PHONE || NETFX_CORE_PCL || WP_PCL     
@@ -1212,10 +1195,13 @@ namespace LightInject
         {
             return
                 GetConstructors(type).FirstOrDefault(c => c.GetParameters().Select(p => p.ParameterType).SequenceEqual(types));
+        }        
+#endif
+#if NET
+        public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
+        {
+            return Delegate.CreateDelegate(delegateType, target, methodInfo);
         }
-
-        
-
 #endif
 #if NET || NET45 
         public static Type[] GetGenericTypeArguments(this Type type)
@@ -1228,11 +1214,6 @@ namespace LightInject
             return type.GetGenericArguments();            
         }
         
-        public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
-        {
-            return Delegate.CreateDelegate(delegateType, target, methodInfo);
-        }
-
         public static bool IsClass(this Type type)
         {
             return type.IsClass;
@@ -1309,6 +1290,7 @@ namespace LightInject
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(ICollection<>);
         }
 #if NET45 || NETFX_CORE || NETFX_CORE_PCL || WINDOWS_PHONE || WP_PCL
+        
         public static bool IsReadOnlyCollectionOfT(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>);
@@ -1319,6 +1301,7 @@ namespace LightInject
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
         }
 #endif
+        
         public static bool IsLazy(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(Lazy<>);
@@ -1373,7 +1356,7 @@ namespace LightInject
         private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();        
         private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
         private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
-        private readonly DelegateRegistry<Type> propertyInjectionDelegates = new DelegateRegistry<Type>();
+        private readonly KeyValueStorage<Type, Func<object[], object, object>> propertyInjectionDelegates = new KeyValueStorage<Type, Func<object[], object, object>>();
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
         private readonly Stack<Action<IMethodSkeleton>> dependencyStack = new Stack<Action<IMethodSkeleton>>();
@@ -1473,9 +1456,9 @@ namespace LightInject
         /// <param name="instance">The target instance for which to inject its property dependencies.</param>
         /// <returns>The <paramref name="instance"/> with its property dependencies injected.</returns>
         public object InjectProperties(object instance)
-        {
+        {            
             var type = instance.GetType();
-            return propertyInjectionDelegates.GetOrAdd(type, t => CreatePropertyInjectionDelegate(type))(new[] { instance });
+            return propertyInjectionDelegates.GetOrAdd(type, t => CreatePropertyInjectionDelegate(type))(constants.Items, instance);
         }
 
         /// <summary>
@@ -2336,16 +2319,19 @@ namespace LightInject
 
             var constantIndex = constants.Add(factoryDelegate);
             EmitLoadConstant(dynamicMethodSkeleton, constantIndex, ReflectionHelper.GetFuncType(enumerableType));
-            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Newobj, lazyConstructor);
-            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Ldc_I4, serviceEmitters.Count);
-            dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Newobj, lazyCollectionConstructor);
+            var generator = dynamicMethodSkeleton.GetILGenerator();
+            generator.Emit(OpCodes.Newobj, lazyConstructor);
+            generator.Emit(OpCodes.Ldc_I4, serviceEmitters.Count);
+            generator.Emit(OpCodes.Newobj, lazyCollectionConstructor);
         }
 
-        private Func<object[], object> CreatePropertyInjectionDelegate(Type concreteType)
+        private Func<object[], object, object> CreatePropertyInjectionDelegate(Type concreteType)
         {
-            IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
+            IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
             ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
-            EmitLoadConstant(methodSkeleton, 0, concreteType);
+            var generator = methodSkeleton.GetILGenerator();
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Castclass, concreteType);
             try
             {
                 EmitPropertyDependencies(constructionInfo, methodSkeleton);
@@ -2356,7 +2342,7 @@ namespace LightInject
                 throw;
             }
 
-            return (Func<object[], object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object>));                        
+            return (Func<object[], object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object, object>));                        
         }
 
         private ConstructionInfo GetContructionInfoForConcreteType(Type concreteType)
@@ -2997,7 +2983,8 @@ namespace LightInject
                 ms.GetILGenerator().Emit(OpCodes.Call, closedGenericToListMethod);
             };
         }
-
+#if NET45 || NETFX_CORE || NETFX_CORE_PCL || WINDOWS_PHONE || WP_PCL
+        
         private Action<IMethodSkeleton> CreateReadOnlyCollectionServiceEmitter(Type serviceType)
         {
             Type elementType = TypeHelper.GetElementType(serviceType);
@@ -3012,7 +2999,8 @@ namespace LightInject
                 ms.GetILGenerator().Emit(OpCodes.Newobj, constructorInfo);
             };
         }
-
+#endif
+        
         private void EnsureEmitMethodsForOpenGenericTypesAreCreated(Type actualServiceType)
         {
             var openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
@@ -4238,30 +4226,7 @@ namespace LightInject
   
 #endif
     /// <summary>
-    /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
-    /// </summary>
-    internal class ConstructorSelector : IConstructorSelector
-    {
-        /// <summary>
-        /// Selects the constructor to be used when creating a new instance of the <paramref name="implementingType"/>.
-        /// </summary>
-        /// <param name="implementingType">The <see cref="Type"/> for which to return a <see cref="ConstructionInfo"/>.</param>
-        /// <returns>A <see cref="ConstructionInfo"/> instance that represents the constructor to be used
-        /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
-        public ConstructorInfo Execute(Type implementingType)
-        {
-            ConstructorInfo constructorInfo = implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
-            if (constructorInfo == null)
-            {
-                throw new InvalidOperationException("Missing public constructor for Type: " + implementingType.FullName);
-            }
-
-            return constructorInfo;
-        }
-    }
-
-    /// <summary>
-    /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
+    /// Selects the <see cref="ConstructionInfo"/> from a given type that represents the most resolvable constructor.
     /// </summary>
     internal class MostResolvableConstructorSelector : IConstructorSelector
     {
@@ -4307,9 +4272,14 @@ namespace LightInject
             throw new InvalidOperationException("No resolvable constructor found for Type: " + implementingType.FullName);
         }
 
-        protected virtual string GetServiceName(ParameterInfo parameterInfo)
+        /// <summary>
+        /// Gets the service name based on the given <paramref name="parameter"/>.
+        /// </summary>
+        /// <param name="parameter">The <see cref="ParameterInfo"/> for which to get the service name.</param>
+        /// <returns>The name of the service for the given <paramref name="parameter"/>.</returns>
+        protected virtual string GetServiceName(ParameterInfo parameter)
         {
-            return parameterInfo.Name;
+            return parameter.Name;
         }
 
         private bool CanCreateParameterDependencies(IEnumerable<ParameterInfo> parameters)
@@ -5411,8 +5381,7 @@ namespace LightInject
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
-            InternalTypes.Add(typeof(ConstructionInfoBuilder));
-            InternalTypes.Add(typeof(ConstructorSelector));
+            InternalTypes.Add(typeof(ConstructionInfoBuilder));            
             InternalTypes.Add(typeof(MostResolvableConstructorSelector));
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerContainerLifetime));

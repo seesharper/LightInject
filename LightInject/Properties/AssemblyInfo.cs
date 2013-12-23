@@ -52,3 +52,4 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.Wcf.SampleLibrary.Implementation")]
 [assembly: InternalsVisibleTo("LightInject.Wcf.Client")]
 [assembly: InternalsVisibleTo("LightInject.Wcf.Tests")]
+[assembly: InternalsVisibleTo("LightInject.WebApi")]
