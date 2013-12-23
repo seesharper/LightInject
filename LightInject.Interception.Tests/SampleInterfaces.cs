@@ -322,13 +322,52 @@
         
     }
 
-
     [CustomAttribute]
     public class ClassWithCustomAttribute
     {
+
+    }
+
+    public class CustomAttributeWithNamedArgument : Attribute
+    {
+        public int Value { get; set; }
+    }
+
+    public class CustomAttributeWithPublicField : Attribute
+    {
+        public int Value;
+    }
+
+    public class CustomAttributeWithConstructorArgument : Attribute
+    {
+        public int Value { get; private set; }
+
+        public CustomAttributeWithConstructorArgument(int value)
+        {
+            Value = value;
+        }
+    }
+
+    [CustomAttributeWithNamedArgument(Value = 42)]
+    public class ClassWithCustomAttributeWithNamedArgument
+    {
         
     }
+
+    [CustomAttributeWithPublicField(Value = 42)]
+    public class ClassWithCustomAttributeWithPublicField
+    {
+
+    }
+
+    [CustomAttributeWithConstructorArgument(42)]
+    public class ClassWithCustomAttributeWithConstructorArgument
+    {
+
+    }
  
+
+
     public interface IClassWithTwoMethods
     {
         void FirstMethod();

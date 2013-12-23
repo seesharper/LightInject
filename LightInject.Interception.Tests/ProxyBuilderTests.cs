@@ -656,6 +656,42 @@ namespace LightInject.Interception.Tests
             Assert.IsTrue(proxyType.IsDefined(typeof(CustomAttribute), true));
         }
 
+        [TestMethod]
+        public void GetProxyType_TypeAttributeWithNamedArgument_ReturnsProxyWithClassAttribute()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
+            proxyDefinition.AddCustomAttributes(typeof(ClassWithCustomAttributeWithNamedArgument).GetCustomAttributesData().ToArray());
+            var proxyBuilder = new ProxyBuilder();
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+
+            var attribute = proxyType.GetCustomAttribute<CustomAttributeWithNamedArgument>();
+            Assert.AreEqual(42, attribute.Value);
+        }
+
+        [TestMethod]
+        public void GetProxyType_TypeAttributeWithPublicField_ReturnsProxyWithClassAttribute()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
+            proxyDefinition.AddCustomAttributes(typeof(ClassWithCustomAttributeWithPublicField).GetCustomAttributesData().ToArray());
+            var proxyBuilder = new ProxyBuilder();
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+
+            var attribute = proxyType.GetCustomAttribute<CustomAttributeWithPublicField>();
+            Assert.AreEqual(42, attribute.Value);
+        }
+
+        [TestMethod]
+        public void GetProxyType_TypeAttributeWithConstructorArgument_ReturnsProxyWithClassAttribute()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(IMethodWithNoParameters));
+            proxyDefinition.AddCustomAttributes(typeof(ClassWithCustomAttributeWithConstructorArgument).GetCustomAttributesData().ToArray());
+            var proxyBuilder = new ProxyBuilder();
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+
+            var attribute = proxyType.GetCustomAttribute<CustomAttributeWithConstructorArgument>();
+            Assert.AreEqual(42, attribute.Value);
+        }
+
         #endregion
 
 
