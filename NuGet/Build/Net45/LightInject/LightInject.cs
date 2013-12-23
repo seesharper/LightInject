@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.1
+    LightInject version 3.0.1.2
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -34,10 +34,10 @@
 namespace LightInject
 {
     using System;
-    using System.Collections;
-    using System.Collections.ObjectModel;
+    using System.Collections;    
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
@@ -849,7 +849,7 @@ namespace LightInject
         /// <summary>
         /// Gets the <see cref="ILGenerator"/> for the this dynamic method.
         /// </summary>
-        /// <returns>The <see cref="ILGenerator"/> for the this dynamic method.</returns>
+        /// <returns>The <see cref="ILGenerator"/> for the this dynamic method.</returns>        
         ILGenerator GetILGenerator();
 
         /// <summary>
@@ -912,7 +912,6 @@ namespace LightInject
             GetInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
             GetNamedInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
             
-
             EnumerableTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
             
             GetInstanceWithParametersMethods =
@@ -1059,25 +1058,6 @@ namespace LightInject
         }
     }
 
-    //public static class ArgumentLoader
-    //{
-    //    public static object Load(object[] arguments, int index, ParameterInfo parameterInfo)
-    //    {
-    //        if (index > arguments.Length - 1)
-    //        {
-    //            throw new InvalidOperationException("Index out of range");
-    //        }
-
-    //        object value = arguments[index];
-    //        if (!parameterInfo.ParameterType.IsInstanceOfType(value))
-    //        {
-    //            throw new InvalidOperationException("Argument has the wrong type");
-    //        }
-
-    //        return value;
-    //    }
-    //}
-
     internal static class TypeHelper
     {
         public static Type[] GetGenericTypeArguments(this Type type)
@@ -1090,11 +1070,6 @@ namespace LightInject
             return type.GetGenericArguments();            
         }
         
-        public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
-        {
-            return Delegate.CreateDelegate(delegateType, target, methodInfo);
-        }
-
         public static bool IsClass(this Type type)
         {
             return type.IsClass;
@@ -1169,6 +1144,7 @@ namespace LightInject
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(ICollection<>);
         }
+        
         public static bool IsReadOnlyCollectionOfT(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>);
@@ -1178,6 +1154,7 @@ namespace LightInject
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
         }
+        
         public static bool IsLazy(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(Lazy<>);
@@ -1257,6 +1234,7 @@ namespace LightInject
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, compositionRootTypeExtractor, compositionRootExecutor);
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
+            ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             AssemblyLoader = new AssemblyLoader();            
@@ -1273,7 +1251,13 @@ namespace LightInject
         /// is responsible for selecting the constructor dependencies for a given constructor.
         /// </summary>
         public IConstructorDependencySelector ConstructorDependencySelector { get; set; }
-       
+
+        /// <summary>
+        /// Gets or sets the <see cref="IConstructorSelector"/> instance that is responsible 
+        /// for selecting the constructor to be used when creating new service instances.
+        /// </summary>
+        public IConstructorSelector ConstructorSelector { get; set; }
+
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
@@ -2235,15 +2219,10 @@ namespace LightInject
         {
             return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
         }
-
-        //private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
-        //{
-        //    return new TypeConstructionInfoBuilder(new ConstructorSelector(), ConstructorDependencySelector, PropertyDependencySelector);
-        //}
-
+        
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
-            return new TypeConstructionInfoBuilder(new MostResolvableConstructorSelector((t, s) => CanGetInstance(t, s)), ConstructorDependencySelector, PropertyDependencySelector);
+            return new TypeConstructionInfoBuilder(ConstructorSelector, ConstructorDependencySelector, PropertyDependencySelector);
         }
 
         private Func<object[], object> GetDefaultDelegate(Type serviceType, bool throwError)
@@ -2297,7 +2276,16 @@ namespace LightInject
                 AssemblyScanner.Scan(serviceType.GetAssembly(), this);                
                 emitter = GetRegisteredEmitMethod(serviceType, serviceName);                
             }
-        
+
+            if (emitter == null)
+            {
+                var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
+                if (rule != null)
+                {
+                    emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
+                }
+            }
+
             return CreateEmitMethodWrapper(emitter, serviceType, serviceName);
         }
         
@@ -2405,10 +2393,10 @@ namespace LightInject
             var registrations = new List<DecoratorRegistration>();
             
             var deferredDecorators =
-                decorators.Items.Where(ds => ds.CanDecorate(serviceRegistration) && ds.HasDeferredImplementingType);
+                decorators.Items.Where(ds => ds.CanDecorate(serviceRegistration) && ds.HasDeferredImplementingType);            
             foreach (var deferredDecorator in deferredDecorators)
             {
-                var decoratorRegistration = new DecoratorRegistration()
+                var decoratorRegistration = new DecoratorRegistration
                 {
                     ServiceType = serviceRegistration.ServiceType,
                     ImplementingType =
@@ -2629,28 +2617,7 @@ namespace LightInject
 
             return emitter;
         }
-
-        private Action<IMethodSkeleton> GetEmitMethodForConstructorDependency(Dependency dependency)
-        {
-            if (dependency.FactoryExpression != null)
-            {
-                return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
-            }
-
-            Action<IMethodSkeleton> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
-            if (emitter == null)
-            {
-                emitter = GetEmitMethod(dependency.ServiceType, dependency.Name);
-                if (emitter == null && dependency.IsRequired)
-                {
-                    throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
-                }
-            }
-
-            return emitter;
-        }
-
-
+  
         private void EmitDependencyUsingFactoryExpression(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
         {
             var generator = dynamicMethodSkeleton.GetILGenerator();
@@ -2681,13 +2648,8 @@ namespace LightInject
         private Action<IMethodSkeleton> ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
         {
             Action<IMethodSkeleton> emitter = null;
-
-            var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
-            if (rule != null)
-            {
-                emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
-            }
-            else if (serviceType.IsLazy())
+           
+            if (serviceType.IsLazy())
             {
                 emitter = CreateServiceEmitterBasedOnLazyServiceRequest(serviceType, t => ReflectionHelper.CreateGetInstanceDelegate(t, this));
             }
@@ -2857,7 +2819,7 @@ namespace LightInject
                 ms.GetILGenerator().Emit(OpCodes.Call, closedGenericToListMethod);
             };
         }
-
+        
         private Action<IMethodSkeleton> CreateReadOnlyCollectionServiceEmitter(Type serviceType)
         {
             Type elementType = TypeHelper.GetElementType(serviceType);
@@ -2872,7 +2834,7 @@ namespace LightInject
                 ms.GetILGenerator().Emit(OpCodes.Newobj, constructorInfo);
             };
         }
-
+        
         private void EnsureEmitMethodsForOpenGenericTypesAreCreated(Type actualServiceType)
         {
             var openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
@@ -3269,30 +3231,7 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
-    /// </summary>
-    public class ConstructorSelector : IConstructorSelector
-    {
-        /// <summary>
-        /// Selects the constructor to be used when creating a new instance of the <paramref name="implementingType"/>.
-        /// </summary>
-        /// <param name="implementingType">The <see cref="Type"/> for which to return a <see cref="ConstructionInfo"/>.</param>
-        /// <returns>A <see cref="ConstructionInfo"/> instance that represents the constructor to be used
-        /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
-        public ConstructorInfo Execute(Type implementingType)
-        {
-            ConstructorInfo constructorInfo = implementingType.GetConstructors().OrderBy(c => c.GetParameters().Count()).LastOrDefault();
-            if (constructorInfo == null)
-            {
-                throw new InvalidOperationException("Missing public constructor for Type: " + implementingType.FullName);
-            }
-
-            return constructorInfo;
-        }
-    }
-
-    /// <summary>
-    /// Selects the <see cref="ConstructionInfo"/> from a given type that has the highest number of parameters.
+    /// Selects the <see cref="ConstructionInfo"/> from a given type that represents the most resolvable constructor.
     /// </summary>
     public class MostResolvableConstructorSelector : IConstructorSelector
     {
@@ -3321,6 +3260,11 @@ namespace LightInject
                 throw new InvalidOperationException("Missing public constructor for Type: " + implementingType.FullName);
             }
 
+            if (constructorCandidates.Length == 1)
+            {
+                return constructorCandidates[0];
+            }
+
             foreach (var constructorCandidate in constructorCandidates.OrderByDescending(c => c.GetParameters().Count()))
             {
                 ParameterInfo[] parameters = constructorCandidate.GetParameters();
@@ -3333,10 +3277,25 @@ namespace LightInject
             throw new InvalidOperationException("No resolvable constructor found for Type: " + implementingType.FullName);
         }
 
+        /// <summary>
+        /// Gets the service name based on the given <paramref name="parameter"/>.
+        /// </summary>
+        /// <param name="parameter">The <see cref="ParameterInfo"/> for which to get the service name.</param>
+        /// <returns>The name of the service for the given <paramref name="parameter"/>.</returns>
+        protected virtual string GetServiceName(ParameterInfo parameter)
+        {
+            return parameter.Name;
+        }
+
         private bool CanCreateParameterDependencies(IEnumerable<ParameterInfo> parameters)
         {
-            return parameters.All(parameterInfo => canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, parameterInfo.Name));
+            return parameters.All(CanCreateParameterDependency);
         }
+
+        private bool CanCreateParameterDependency(ParameterInfo parameterInfo)
+        {
+            return canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo));
+        }       
     }
 
     /// <summary>
@@ -4055,7 +4014,7 @@ namespace LightInject
     public class PerContainerLifetime : ILifetime, IDisposable
     {
         private readonly object syncRoot = new object();
-        private object singleton;
+        private volatile object singleton;
 
         /// <summary>
         /// Returns a service instance according to the specific lifetime characteristics.
@@ -4423,8 +4382,7 @@ namespace LightInject
             InternalTypes.Add(typeof(AssemblyLoader));
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
-            InternalTypes.Add(typeof(ConstructionInfoBuilder));
-            InternalTypes.Add(typeof(ConstructorSelector));
+            InternalTypes.Add(typeof(ConstructionInfoBuilder));            
             InternalTypes.Add(typeof(MostResolvableConstructorSelector));
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerContainerLifetime));

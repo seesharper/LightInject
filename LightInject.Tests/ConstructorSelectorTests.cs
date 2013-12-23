@@ -13,40 +13,53 @@ namespace LightInject.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 #endif
     [TestClass]
-    public class ConstructorSelectorTests
+    public class ConstructorSelectorTests : TestBase
     {
         [TestMethod]
         public void Execute_StaticConstructor_IsNotReturned()
         {
-            var selector = new ConstructorSelector();
-           
+            var container = CreateContainer();
+            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);           
             ExceptionAssert.Throws<InvalidOperationException>(() => selector.Execute(typeof(FooWithStaticConstructor)));
         }
 
         [TestMethod]
-        public void Execute_MultipleConstructors_ConstructorWithMostParametersIsReturned()
+        public void Execute_MultipleConstructors_ReturnsMostResolvableConstructor()
         {
-            var selector = new ConstructorSelector();
-
-            var constructorInfo = selector.Execute(typeof(FooWithMultipleConstructors));
-
-            Assert.AreEqual(1, constructorInfo.GetParameters().Count());
+            var container = CreateContainer();
+            container.RegisterInstance("SomeValue");
+            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);           
+            var constructorInfo = selector.Execute(typeof(FooWithMultipleParameterizedConstructors));                        
+            Assert.AreEqual(typeof(string), constructorInfo.GetParameters()[0].ParameterType);
         }
-        
+
+        [TestMethod]
+        public void Execute_MultipleConstructors_ThrowsException()
+        {
+            var container = CreateContainer();            
+            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
+
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => selector.Execute(typeof(FooWithMultipleParameterizedConstructors)),e => e.Message.StartsWith("No resolvable"));                        
+        }
+
+        [TestMethod]
+        public void Execute_MultipleConstructors_UsesParameterNameAsServiceName()
+        {
+            var container = CreateContainer();
+            container.RegisterInstance(42, "SomeValue");
+            container.RegisterInstance(84, "IntValue");
+            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
+            var constructorInfo = selector.Execute(typeof(FooWithMultipleParameterizedConstructors));
+            Assert.AreEqual(typeof(int), constructorInfo.GetParameters()[0].ParameterType);
+        }
+
         [TestMethod]
         public void Execute_PrivateConstructor_IsNotReturned()
         {
-            var selector = new ConstructorSelector();
-
+            var container = CreateContainer();
+            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
             ExceptionAssert.Throws<InvalidOperationException>(() => selector.Execute(typeof(FooWithPrivateConstructor)));
-        }
-
-        [TestMethod]
-        public void Execute_MultipleParameterizedConstructors_MostResolvableConstructorIsReturned()
-        {
-            
-        }
-
-
+        }      
     }
 }

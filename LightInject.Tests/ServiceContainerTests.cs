@@ -466,7 +466,7 @@ namespace LightInject.Tests
 
         #endregion
 
-
+#if NET45 || NETFX_CORE
         #region ReadOnly Collection
 
         [TestMethod]
@@ -508,7 +508,7 @@ namespace LightInject.Tests
 
 
         #endregion
-
+#endif
         #region Func Services
 
         [TestMethod]
@@ -1159,8 +1159,6 @@ namespace LightInject.Tests
             Assert.AreEqual(2, instances.Count());
         }
 
-
-#if NET
         [TestMethod]
         public void RegisterFrom_CompositionRoot_RegistersService()
         {
@@ -1168,7 +1166,7 @@ namespace LightInject.Tests
             container.RegisterFrom<CompositionRoot>();
             Assert.AreEqual(1, container.AvailableServices.Count());
         }
-#endif
+
         #region Internal Classes
 
         [TestMethod]

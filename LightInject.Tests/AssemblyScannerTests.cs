@@ -143,7 +143,7 @@
         }
 
 
-#if NET          
+#if NET || NET45         
         [TestMethod]
         public void Register_AssemblyFile_CallsAssemblyScanner()
         {
@@ -206,7 +206,7 @@
             serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), (s, t) => true);
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());                        
         }
-#if NET
+#if NET || NET45
         [TestMethod]
         public void Register_SearchPattern_CallsAssemblyScanner()
         {
