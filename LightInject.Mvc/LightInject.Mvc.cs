@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Mvc version 1.0.0.2
+    LightInject.Mvc version 1.0.0.3
     http://seesharper.github.io/LightInject/
     http://twitter.com/bernhardrichter    
 ******************************************************************************/
@@ -110,7 +110,8 @@ namespace LightInject
 namespace LightInject.Mvc
 {
     using System;    
-    using System.Collections.Generic;    
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Web.Mvc;
     
     /// <summary>
@@ -184,12 +185,13 @@ namespace LightInject.Mvc
         /// <param name="actionDescriptor">The action descriptor.</param>
         public override IEnumerable<Filter> GetFilters(ControllerContext controllerContext, ActionDescriptor actionDescriptor)
         {
-            var filters = base.GetFilters(controllerContext, actionDescriptor);
+            var filters = base.GetFilters(controllerContext, actionDescriptor).ToArray();
             foreach (var filter in filters)
             {
-                serviceContainer.InjectProperties(filter.Instance);
-                yield return filter;
-            }                       
+                serviceContainer.InjectProperties(filter.Instance);                
+            }
+
+            return filters;
         }                
     }
 }
