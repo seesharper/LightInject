@@ -21,8 +21,8 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Annotation version 1.0.0.2
-    http://seesharper.github.io/LightInject/
+    LightInject.Annotation version 1.0.0.3
+    http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -179,20 +179,33 @@ namespace LightInject.Annotation
         }
     }
 
+    /// <summary>
+    /// A <see cref="IConstructorSelector"/> implementation that uses information 
+    /// from the <see cref="InjectAttribute"/> to determine if a given service can be resolved.
+    /// </summary>
     internal class AnnotatedConstructorSelector : MostResolvableConstructorSelector
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AnnotatedConstructorSelector"/> class.
+        /// </summary>
+        /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
         public AnnotatedConstructorSelector(Func<Type, string, bool> canGetInstance)
             : base(canGetInstance)
         {
         }
 
-        protected override string GetServiceName(ParameterInfo parameterInfo)
+        /// <summary>
+        /// Gets the service name based on the given <paramref name="parameter"/>.
+        /// </summary>
+        /// <param name="parameter">The <see cref="ParameterInfo"/> for which to get the service name.</param>
+        /// <returns>The name of the service for the given <paramref name="parameter"/>.</returns>
+        protected override string GetServiceName(ParameterInfo parameter)
         {
             var injectAttribute =
                       (InjectAttribute)
-                      parameterInfo.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault();
+                      parameter.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault();
             
-            return injectAttribute != null ? injectAttribute.ServiceName : base.GetServiceName(parameterInfo);
+            return injectAttribute != null ? injectAttribute.ServiceName : base.GetServiceName(parameter);
         }
     }
 }
