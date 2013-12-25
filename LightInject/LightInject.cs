@@ -121,6 +121,30 @@ namespace LightInject
         void Register<TService, TImplementation>(string serviceName, ILifetime lifetime) where TImplementation : TService;
 
         /// <summary>
+        /// Registers the <typeparamref name="TService"/> to use the factory to get instance of <typeparamref name="TTarget"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TTarget">The target type.</typeparam>
+        void RegisterTo<TService, TTarget>() where TTarget : TService;
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> to use the factory to get instance of <typeparamref name="TTarget"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TTarget">The target type.</typeparam>
+        /// <param name="targetServiceName">The name of the service to be used for resolving.</param>
+        void RegisterTo<TService, TTarget>(string targetServiceName) where TTarget : TService;
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> to use the factory to get instance of <typeparamref name="TTarget"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TTarget">The target type.</typeparam>
+        /// <param name="targetServiceName">The name of the service to be used for resolving.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        void RegisterTo<TService, TTarget>(string targetServiceName, string serviceName) where TTarget : TService;
+
+        /// <summary>
         /// Registers the <typeparamref name="TService"/> with the given <paramref name="instance"/>. 
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
@@ -1431,7 +1455,7 @@ namespace LightInject
                 s => AddServiceRegistration(sr),
                 (k, existing) => UpdateServiceRegistration(existing, sr));            
         }
-      
+
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
@@ -1857,6 +1881,39 @@ namespace LightInject
         public void Register(Type serviceType, Type implementingType)
         {
             RegisterService(serviceType, implementingType, null, string.Empty);
+        }
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> to use the factory to get instance of <typeparamref name="TTarget"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TTarget">The target type.</typeparam>
+        public void RegisterTo<TService, TTarget>() where TTarget : TService
+        {
+            Register<TService>(factory => factory.GetInstance<TTarget>());
+        }
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> to use the factory to get instance of <typeparamref name="TTarget"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TTarget">The target type.</typeparam>
+        /// <param name="targetServiceName">The name of the service to be used for resolving.</param>
+        public void RegisterTo<TService, TTarget>(string targetServiceName) where TTarget : TService
+        {
+            Register<TService>(factory => factory.GetInstance<TTarget>(targetServiceName));
+        }
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> to use the factory to get instance of <typeparamref name="TTarget"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <typeparam name="TTarget">The target type.</typeparam>
+        /// <param name="targetServiceName">The name of the service to be used for resolving.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        public void RegisterTo<TService, TTarget>(string targetServiceName, string serviceName) where TTarget : TService
+        {
+            Register<TService>(factory => factory.GetInstance<TTarget>(targetServiceName), serviceName);
         }
 
         /// <summary>

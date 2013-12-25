@@ -25,8 +25,18 @@ namespace LightInject.SampleLibrary
     public class Foo : IFoo
     {
         public static int Instances { get; set; }
-        
+
         public Foo()
+        {
+            Instances++;
+        }
+    }
+
+    public class FooBar : IFoo, IBar
+    {
+        public static int Instances { get; set; }
+
+        public FooBar()
         {
             Instances++;
         }
