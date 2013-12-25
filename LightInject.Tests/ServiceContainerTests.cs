@@ -424,6 +424,23 @@ namespace LightInject.Tests
 
         }
 
+        [TestMethod]
+        public void GetInstance_RegisteredTo_PerScopeService_ReturnsSingleInstance()
+        {
+            var container = CreateContainer();
+            container.Register<FooBar>(new PerScopeLifetime());
+            container.RegisterTo<IFoo, FooBar>();
+            container.RegisterTo<IBar, FooBar>();
+            using (container.BeginScope())
+            {
+                var instanceFooBar = container.GetInstance<FooBar>();
+                var instance1 = container.GetInstance<IFoo>();
+                var instance2 = container.GetInstance<IBar>();
+
+                Assert.AreSame(instanceFooBar, instance2);
+                Assert.AreSame(instance1, instance2);
+            }
+        }
 
         #region Func Services
 
