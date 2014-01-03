@@ -47,7 +47,7 @@ All services that implements IDisposable,  must be registered with the **PerScop
 
     container.Register<IFoo, Foo>(new PerScopeLifetime());
 
-Controllers are also disposable services and **LightInject** provides the **RegisterControllers** method that registers all controllers from a given assembly with the **PerScopeLifetime**. 
+Controllers are also disposable services and **LightInject** provides the **RegisterControllers** method that registers all controllers from a given assembly with the **PerRequestLifetime**. 
 
     container.RegisterControllers(typeof(MyMvcApplication).Assembly);
 

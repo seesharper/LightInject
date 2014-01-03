@@ -33,8 +33,8 @@ Given that we have a registration for the **IBar** dependency, it will be inject
 
    	container.Register<IFoo, FooWithAnnotatedProperyDependency>();
    	container.Register<IBar, Bar>();
-	var instance = (FooWithAnnotatedProperyDependency)container.GetInstance<IFoo>();
-	Assert.IsNotNull(instance.Bar);
+    var instance = (FooWithAnnotatedProperyDependency)container.GetInstance<IFoo>();
+    Assert.IsNotNull(instance.Bar);
 
 If we have multiple registrations of the same interface, we can also use the **InjectAttribute** to specify the service to be injected. 
 

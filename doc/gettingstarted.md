@@ -380,9 +380,16 @@ If an unregistered service is requested, **LightInject** will scan the assembly 
 
 ### CompositionRootAttribute ###
 
-When an assembly is being scanned, **LightInject** will look for implementations of the **ICompositionRoot** interface. For large assemblies that contains many type, this might be an expensive operation. The CompositionRootAttribute is an assembly level attribute that simply helps **LightInject** to locate the compostion root.
+When an assembly is being scanned, **LightInject** will look for implementations of the **ICompositionRoot** interface. For large assemblies that contains many type, this might be an expensive operation. The **CompositionRootAttribute** is an assembly level attribute that simply helps **LightInject** to locate the compostion root.
 
     [assembly: CompositionRootType(typeof(SampleCompositionRoot))]
+
+
+### RegisterFrom ###
+
+Allows explicit execution of a composition root.
+
+	container.RegisterFrom<SampleCompositionRoot>();
 
 
 ## Generics ##
@@ -395,6 +402,11 @@ The container creates the closed generic type based on the service request.
     container.Register(typeof(IFoo<>), typeof(Foo<>));
     var instance = container.GetInstance(typeof(IFoo<int>));
     Assert.IsInstanceOfType(instance, typeof(Foo<int>));
+
+### Constraints ###
+
+**LightInject** enforces generic constrains  
+
 
 ## Lazy&lt;T&gt; ##
 

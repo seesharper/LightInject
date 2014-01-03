@@ -148,6 +148,13 @@ If we choose to use a method selector, these methods will also be intercepted if
 
     proxyDefinition.Implement(m => m.IsDeclaredBy<object>() , () => new SampleInterceptor());
 
+We can also use a method selector with the **Intercept** method that allows easy interception of any method without implementing an **IInterceptor**.
+
+	container.Intercept(m => m.Name == "SomeMethodName", invocationInfo => invocationInfo.Proceed());
+
+ 
+
+
 ### Extension Methods ###
 
 LightInject provides a set of extension method that simplifies method selector predicates.
@@ -208,6 +215,7 @@ The **Intercept** method has an overload that lets us specify a set of interface
     {
         proxyDefinition.Implement(() => new BarInterceptor(), m => m.IsDeclaredBy<IBar>());        
     } 
+
 
 When implementing additional interfaces we must make sure that all methods are intercepted by either one or a combined set of interceptors. This is because we are now dealing with methods that does not exist in the target type and we must do all implementation through interceptors.  
 
