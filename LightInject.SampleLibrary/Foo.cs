@@ -532,7 +532,7 @@ namespace LightInject.SampleLibrary
         public string StringValue { get; set; }
         public int IntValue { get; set; }
 
-        public FooWithMultipleParameterizedConstructors(int intValue)
+        public FooWithMultipleParameterizedConstructors([Inject("SomeValue")]int intValue)
         {
             IntValue = intValue;
         }
@@ -543,7 +543,7 @@ namespace LightInject.SampleLibrary
         }
     }
 
-
+   
     public class FooWithProperyDependency : IFoo
     {
         public IBar Bar { get; set; }

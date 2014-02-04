@@ -1,4 +1,4 @@
-/*****************************************************************************   
+/*********************************************************************************   
     The MIT License (MIT)
 
     Copyright (c) 2013 bernhard.richter@gmail.com
@@ -30,16 +30,17 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
 
 namespace LightInject
 {
     using System;
     using System.Collections;    
-#if NET || NET45 || NETFX_CORE || NETFX_CORE_PCL
+#if NET || NET45 || NETFX_CORE
     using System.Collections.Concurrent;
 #endif
     using System.Collections.Generic;
-#if NET45 || NETFX_CORE || NETFX_CORE_PCL || WINDOWS_PHONE || WP_PCL
+#if NET45 || NETFX_CORE || WINDOWS_PHONE
     using System.Collections.ObjectModel;
 #endif    
 #if NET || NET45    
@@ -48,9 +49,7 @@ namespace LightInject
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE || SILVERLIGHT
     using System.Reflection.Emit;
-#endif
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.RegularExpressions;
@@ -879,6 +878,86 @@ namespace LightInject
         Delegate CreateDelegate(Type delegateType, object target);
     }
 
+    /// <summary>
+    /// Extends the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
+    /// </summary>
+    internal static class ImmutableHashTreeExtensions
+    {
+        /// <summary>
+        /// Searches for a <typeparamref name="TValue"/> using the given <paramref name="key"/>.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="tree">The target <see cref="ImmutableHashTree{TKey,TValue}"/>.</param>
+        /// <param name="key">The key of the <see cref="ImmutableHashTree{TKey,TValue}"/> to get.</param>
+        /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
+        public static TValue Search<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key)
+        {
+            int hashCode = key.GetHashCode();
+
+            while (tree.Height != 0 && tree.HashCode != hashCode)
+            {
+                tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
+            }
+
+            if (tree.Duplicates.Items.Length <= 0)
+            {
+                return tree.Value;
+            }
+
+            foreach (var keyValue in tree.Duplicates.Items)
+            {
+                if (keyValue.Key.Equals(key))
+                {
+                    return keyValue.Value;
+                }
+            }
+
+            return tree.Value;
+        }
+
+        /// <summary>
+        /// Adds a new element to the <see cref="ImmutableHashTree{TKey,TValue}"/>. 
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="tree">The target <see cref="ImmutableHashTree{TKey,TValue}"/>.</param>
+        /// <param name="key">The key to be associated with the value.</param>
+        /// <param name="value">The value to be added to the tree.</param>
+        /// <returns>A new <see cref="ImmutableHashTree{TKey,TValue}"/> that contains the new key/value pair.</returns>
+        internal static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
+        {
+            if (tree.IsEmpty)
+            {
+                return new ImmutableHashTree<TKey, TValue>(key, value, tree, tree);
+            }
+
+            int hashCode = key.GetHashCode();
+
+            if (hashCode > tree.HashCode)
+            {
+                return AddToRightBranch(tree, key, value);
+            }
+
+            if (hashCode < tree.HashCode)
+            {
+                return AddToLeftBranch(tree, key, value);
+            }
+
+            return new ImmutableHashTree<TKey, TValue>(key, value, tree);
+        }
+
+        private static ImmutableHashTree<TKey, TValue> AddToLeftBranch<TKey, TValue>(ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
+        {
+            return new ImmutableHashTree<TKey, TValue>(tree.Key, tree.Value, tree.Left.Add(key, value), tree.Right);
+        }
+
+        private static ImmutableHashTree<TKey, TValue> AddToRightBranch<TKey, TValue>(ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
+        {
+            return new ImmutableHashTree<TKey, TValue>(tree.Key, tree.Value, tree.Left, tree.Right.Add(key, value));
+        }
+    }
+
     internal static class ReflectionHelper
     {
         private static readonly Lazy<MethodInfo> LifetimeGetInstanceMethodInfo;
@@ -889,8 +968,7 @@ namespace LightInject
         private static readonly Lazy<MethodInfo> GetCurrentScopeManagerMethodInfo;
         private static readonly Lazy<ThreadSafeDictionary<Type, Type>> LazyTypes;
         private static readonly Lazy<ThreadSafeDictionary<Type, Type>> FuncTypes;        
-        private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyConstructors;
-        private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyCollectionConstructors;        
+        private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyConstructors;        
         private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceMethods;
         private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetNamedInstanceMethods;
 
@@ -918,7 +996,6 @@ namespace LightInject
             LazyTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
             FuncTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());            
             LazyConstructors = new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
-            LazyCollectionConstructors = new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
             GetInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
             GetNamedInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
             
@@ -990,12 +1067,7 @@ namespace LightInject
         {
             return LazyConstructors.Value.GetOrAdd(type, ResolveLazyConstructor);
         }
-
-        public static ConstructorInfo GetLazyCollectionConstructor(Type elementType)
-        {
-            return LazyCollectionConstructors.Value.GetOrAdd(elementType, ResolveLazyCollectionConstructor);
-        }
-
+       
         public static MethodInfo GetGetInstanceMethod(Type type)
         {
             return GetInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetInstanceMethod);
@@ -1044,14 +1116,7 @@ namespace LightInject
         {
             return GetLazyType(type).GetConstructor(new[] { GetFuncType(type) });
         }
-
-        private static ConstructorInfo ResolveLazyCollectionConstructor(Type elementType)
-        {
-            Type lazyType = GetLazyType(GetEnumerableType(elementType));
-            var collectionType = typeof(LazyReadOnlyCollection<>).MakeGenericType(elementType);
-            return collectionType.GetConstructor(new[] { lazyType, typeof(int) });
-        }
-
+        
         private static Type CreateFuncType(Type type)
         {
             return typeof(Func<>).MakeGenericType(type);
@@ -1070,7 +1135,7 @@ namespace LightInject
 
     internal static class TypeHelper
     {
-#if NETFX_CORE || WINDOWS_PHONE || NETFX_CORE_PCL || WP_PCL     
+#if NETFX_CORE || WINDOWS_PHONE 
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetTypeInfo().GenericTypeArguments;
@@ -1289,7 +1354,7 @@ namespace LightInject
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(ICollection<>);
         }
-#if NET45 || NETFX_CORE || NETFX_CORE_PCL || WINDOWS_PHONE || WP_PCL
+#if NET45 || NETFX_CORE || WINDOWS_PHONE
         
         public static bool IsReadOnlyCollectionOfT(this Type serviceType)
         {
@@ -1353,14 +1418,14 @@ namespace LightInject
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
-        private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();        
-        private readonly DelegateRegistry<Type> delegates = new DelegateRegistry<Type>();
-        private readonly DelegateRegistry<Tuple<Type, string>> namedDelegates = new DelegateRegistry<Tuple<Type, string>>();
-        private readonly KeyValueStorage<Type, Func<object[], object, object>> propertyInjectionDelegates = new KeyValueStorage<Type, Func<object[], object, object>>();
+        private readonly ServiceRegistry<Action<IMethodSkeleton>> emitters = new ServiceRegistry<Action<IMethodSkeleton>>();
+        private readonly object lockObject = new object();
+
         private readonly Storage<object> constants = new Storage<object>();
+        
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
         private readonly Stack<Action<IMethodSkeleton>> dependencyStack = new Stack<Action<IMethodSkeleton>>();
-        
+
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
 
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
@@ -1369,7 +1434,16 @@ namespace LightInject
 
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
         private readonly ICompositionRootExecutor compositionRootExecutor;
-                
+
+        private ImmutableHashTree<Type, Func<object[], object>> delegates =
+            ImmutableHashTree<Type, Func<object[], object>>.Empty;        
+        
+        private ImmutableHashTree<Tuple<Type, string>, Func<object[], object>> namedDelegates =
+            ImmutableHashTree<Tuple<Type, string>, Func<object[], object>>.Empty;
+
+        private ImmutableHashTree<Type, Func<object[], object, object>> propertyInjectionDelegates =
+            ImmutableHashTree<Type, Func<object[], object, object>>.Empty;
+                        
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
@@ -1458,7 +1532,16 @@ namespace LightInject
         public object InjectProperties(object instance)
         {            
             var type = instance.GetType();
-            return propertyInjectionDelegates.GetOrAdd(type, t => CreatePropertyInjectionDelegate(type))(constants.Items, instance);
+
+            var del = propertyInjectionDelegates.Search(type);
+
+            if (del == null)
+            {
+                del = CreatePropertyInjectionDelegate(type);
+                propertyInjectionDelegates = propertyInjectionDelegates.Add(type, del);
+            }
+
+            return del(constants.Items, instance);            
         }
 
         /// <summary>
@@ -1964,7 +2047,13 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
         {
-            return GetDefaultDelegate(serviceType, true)(constants.Items);
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
+            }
+
+            return instanceDelegate(constants.Items);            
         }
 
         /// <summary>
@@ -1975,8 +2064,13 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, object[] arguments)
         {
-            var del = GetDefaultDelegate(serviceType, true);
-             
+            Func<object[], object> del = delegates.Search(serviceType);
+            if (del == null)
+            {
+                del = CreateDelegate(serviceType, string.Empty, true);
+                delegates = delegates.Add(serviceType, del);
+            }
+                                               
             object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
 
             return del(constantsWithArguments);
@@ -1991,11 +2085,16 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName, object[] arguments)
         {
-            var del = GetNamedDelegate(serviceType, serviceName, true);
-
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: true);
+            }
+            
             object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
 
-            return del(constantsWithArguments);
+            return instanceDelegate(constantsWithArguments);                                    
         }
 
         /// <summary>
@@ -2150,7 +2249,13 @@ namespace LightInject
         /// <returns>The requested service instance if available, otherwise null.</returns>
         public object TryGetInstance(Type serviceType)
         {
-            return GetDefaultDelegate(serviceType, false)(constants.Items);
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: false);
+            }
+
+            return instanceDelegate(constants.Items); 
         }
 
         /// <summary>
@@ -2161,7 +2266,14 @@ namespace LightInject
         /// <returns>The requested service instance if available, otherwise null.</returns>
         public object TryGetInstance(Type serviceType, string serviceName)
         {
-            return GetNamedDelegate(serviceType, serviceName, false)(constants.Items);
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: false);
+            }
+
+            return instanceDelegate(constants.Items);       
         }
 
         /// <summary>
@@ -2193,7 +2305,14 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName)
         {
-            return GetNamedDelegate(serviceType, serviceName, true)(constants.Items);
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: true);
+            }
+
+            return instanceDelegate(constants.Items);              
         }
 
         /// <summary>
@@ -2229,10 +2348,8 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
-#if NET || NET45 || NETFX_CORE || NETFX_CORE_PCL
 
             scopeManagers.Dispose();
-#endif
         }
 
         private static void EmitLoadConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
@@ -2311,38 +2428,30 @@ namespace LightInject
 
         private void EmitEnumerable(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
         {
-            Type enumerableType = ReflectionHelper.GetEnumerableType(elementType);
-            var factoryDelegate = CreateTypedInstanceDelegate(skeleton => EmitNewArray(serviceEmitters, elementType, skeleton), enumerableType);
-
-            ConstructorInfo lazyConstructor = ReflectionHelper.GetLazyConstructor(enumerableType);
-            ConstructorInfo lazyCollectionConstructor = ReflectionHelper.GetLazyCollectionConstructor(elementType);
-
-            var constantIndex = constants.Add(factoryDelegate);
-            EmitLoadConstant(dynamicMethodSkeleton, constantIndex, ReflectionHelper.GetFuncType(enumerableType));
-            var generator = dynamicMethodSkeleton.GetILGenerator();
-            generator.Emit(OpCodes.Newobj, lazyConstructor);
-            generator.Emit(OpCodes.Ldc_I4, serviceEmitters.Count);
-            generator.Emit(OpCodes.Newobj, lazyCollectionConstructor);
+            EmitNewArray(serviceEmitters, elementType, dynamicMethodSkeleton);                       
         }
 
         private Func<object[], object, object> CreatePropertyInjectionDelegate(Type concreteType)
         {
-            IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
-            ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
-            var generator = methodSkeleton.GetILGenerator();
-            generator.Emit(OpCodes.Ldarg_1);
-            generator.Emit(OpCodes.Castclass, concreteType);
-            try
+            lock (lockObject)
             {
-                EmitPropertyDependencies(constructionInfo, methodSkeleton);
-            }
-            catch (Exception)
-            {
-                dependencyStack.Clear();
-                throw;
-            }
+                IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
+                ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
+                var generator = methodSkeleton.GetILGenerator();
+                generator.Emit(OpCodes.Ldarg_1);
+                generator.Emit(OpCodes.Castclass, concreteType);
+                try
+                {
+                    EmitPropertyDependencies(constructionInfo, methodSkeleton);
+                }
+                catch (Exception)
+                {
+                    dependencyStack.Clear();
+                    throw;
+                }
 
-            return (Func<object[], object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object, object>));                        
+                return (Func<object[], object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object, object>));                                        
+            }            
         }
 
         private ConstructionInfo GetContructionInfoForConcreteType(Type concreteType)
@@ -2381,31 +2490,6 @@ namespace LightInject
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
             return new TypeConstructionInfoBuilder(ConstructorSelector, ConstructorDependencySelector, PropertyDependencySelector);
-        }
-
-        private Func<object[], object> GetDefaultDelegate(Type serviceType, bool throwError)
-        {
-            Func<object[], object> del;
-
-            if (!delegates.TryGetValue(serviceType, out del))
-            {
-                del = delegates.GetOrAdd(serviceType, t => CreateDelegate(t, string.Empty, throwError));
-            }
-
-            return del;
-        }
-
-        private Func<object[], object> GetNamedDelegate(Type serviceType, string serviceName, bool throwError)
-        {
-            Func<object[], object> del;
-
-            if (!namedDelegates.TryGetValue(Tuple.Create(serviceType, serviceName), out del))
-            {
-                del = namedDelegates.GetOrAdd(
-                    Tuple.Create(serviceType, serviceName), t => CreateDelegate(t.Item1, serviceName, throwError));
-            }
-
-            return del;
         }
 
         private Func<object[], object> CreateDynamicMethodDelegate(Action<IMethodSkeleton> serviceEmitter, Type serviceType)
@@ -2831,7 +2915,7 @@ namespace LightInject
             {
                 emitter = CreateArrayServiceEmitter(serviceType);
             }
-#if NET45 || NETFX_CORE || NETFX_CORE_PCL || WINDOWS_PHONE || WP_PCL
+#if NET45 || NETFX_CORE || WINDOWS_PHONE 
             else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
                 emitter = CreateReadOnlyCollectionServiceEmitter(serviceType);
@@ -2983,7 +3067,7 @@ namespace LightInject
                 ms.GetILGenerator().Emit(OpCodes.Call, closedGenericToListMethod);
             };
         }
-#if NET45 || NETFX_CORE || NETFX_CORE_PCL || WINDOWS_PHONE || WP_PCL
+#if NET45 || NETFX_CORE || WINDOWS_PHONE
         
         private Action<IMethodSkeleton> CreateReadOnlyCollectionServiceEmitter(Type serviceType)
         {
@@ -3164,35 +3248,65 @@ namespace LightInject
             return constants.Add(lifetime);
         }
 
-        private Func<object[], object> CreateDelegate(Type serviceType, string serviceName, bool throwError)
+        private Func<object[], object> CreateDefaultDelegate(Type serviceType, bool throwError)
         {
-            var serviceEmitter = GetEmitMethod(serviceType, serviceName);
-            if (serviceEmitter == null && throwError)
+            var instanceDelegate = CreateDelegate(serviceType, string.Empty, throwError);
+            if (instanceDelegate == null)
             {
-                throw new InvalidOperationException(string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
+                return c => null;
             }
 
-            if (serviceEmitter != null)
-            {
-                try
-                {                   
-                    return CreateDynamicMethodDelegate(serviceEmitter, serviceType);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    dependencyStack.Clear();
-                    throw new InvalidOperationException(
-                        string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName), ex);
-                }
-            }   
+            Interlocked.Exchange(ref delegates, delegates.Add(serviceType, instanceDelegate));
+            return instanceDelegate;
+        }
 
-            return c => null;
+        private Func<object[], object> CreateNamedDelegate(Tuple<Type, string> key, bool throwError)
+        {
+            var instanceDelegate = CreateDelegate(key.Item1, key.Item2, throwError);
+            if (instanceDelegate == null)
+            {
+                return c => null;
+            }
+
+            Interlocked.Exchange(ref namedDelegates, namedDelegates.Add(key, instanceDelegate));
+            return instanceDelegate;
+        }
+
+        private Func<object[], object> CreateDelegate(Type serviceType, string serviceName, bool throwError)
+        {            
+            lock (lockObject)
+            {
+                var serviceEmitter = GetEmitMethod(serviceType, serviceName);
+                if (serviceEmitter == null && throwError)
+                {
+                    throw new InvalidOperationException(
+                        string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
+                }
+
+                if (serviceEmitter != null)
+                {
+                    try
+                    {
+                        return CreateDynamicMethodDelegate(serviceEmitter, serviceType);                        
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        dependencyStack.Clear();
+                        throw new InvalidOperationException(
+                            string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName),
+                            ex);
+                    }
+                }
+
+                return null;
+            }
         }
     
         private void Invalidate()
         {
-            delegates.Clear();
-            namedDelegates.Clear();
+            Interlocked.Exchange(ref delegates, ImmutableHashTree<Type, Func<object[], object>>.Empty);
+            Interlocked.Exchange(ref namedDelegates, ImmutableHashTree<Tuple<Type, string>, Func<object[], object>>.Empty);
+            Interlocked.Exchange(ref propertyInjectionDelegates, ImmutableHashTree<Type, Func<object[], object, object>>.Empty);
             constants.Clear();
             constructionInfoProvider.Value.Invalidate();
         }
@@ -3211,21 +3325,14 @@ namespace LightInject
         }
 
         private class Storage<T>
-        {
-            private readonly object lockObject = new object();
-            private T[] items = new T[0];
+        {            
+            public T[] Items = new T[0];
 
-            public T[] Items
-            {
-                get
-                {
-                    return items;
-                }
-            }
+            private readonly object lockObject = new object();
 
             public int Add(T value)
             {
-                int index = Array.IndexOf(items, value);
+                int index = Array.IndexOf(Items, value);
                 if (index == -1)
                 {
                     return TryAddValue(value);
@@ -3238,7 +3345,7 @@ namespace LightInject
             {
                 lock (lockObject)
                 {
-                    items = new T[0];
+                    Items = new T[0];
                 }
             }
 
@@ -3246,7 +3353,7 @@ namespace LightInject
             {
                 lock (lockObject)
                 {
-                    int index = Array.IndexOf(items, value);
+                    int index = Array.IndexOf(Items, value);
                     if (index == -1)
                     {
                         index = AddValue(value);
@@ -3258,65 +3365,18 @@ namespace LightInject
 
             private int AddValue(T value)
             {
-                int index = items.Length;
+                int index = Items.Length;
                 T[] snapshot = CreateSnapshot();
                 snapshot[index] = value;
-                items = snapshot;
+                Items = snapshot;
                 return index;
             }
 
             private T[] CreateSnapshot()
             {
-                var snapshot = new T[items.Length + 1];
-                Array.Copy(items, snapshot, items.Length);
+                var snapshot = new T[Items.Length + 1];
+                Array.Copy(Items, snapshot, Items.Length);
                 return snapshot;
-            }
-        }
-
-        private class KeyValueStorage<TKey, TValue>
-        {
-            private readonly object lockObject = new object();
-            private Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
-
-            public bool TryGetValue(TKey key, out TValue value)
-            {
-                return dictionary.TryGetValue(key, out value);
-            }
-
-            public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
-            {
-                TValue value;
-                if (!dictionary.TryGetValue(key, out value))
-                {
-                    lock (lockObject)
-                    {
-                        value = TryAddValue(key, valueFactory);
-                    }
-                }
-
-                return value;
-            }
-
-            public void Clear()
-            {
-                lock (lockObject)
-                {
-                    dictionary.Clear();
-                }
-            }
-
-            private TValue TryAddValue(TKey key, Func<TKey, TValue> valueFactory)
-            {
-                TValue value;
-                if (!dictionary.TryGetValue(key, out value))
-                {
-                    var snapshot = new Dictionary<TKey, TValue>(dictionary);
-                    value = valueFactory(key);
-                    snapshot.Add(key, value);
-                    dictionary = snapshot;
-                }
-
-                return value;
             }
         }
 
@@ -3352,7 +3412,7 @@ namespace LightInject
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, true);
 #endif
-#if NETFX_CORE || NETFX_CORE_PCL || WP_PCL || WINDOWS_PHONE || SILVERLIGHT
+#if NETFX_CORE || WINDOWS_PHONE 
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);                    
 #endif
             }
@@ -3361,11 +3421,7 @@ namespace LightInject
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
         {
         }
-
-        private class DelegateRegistry<TKey> : KeyValueStorage<TKey, Func<object[], object>>
-        {
-        }
-
+        
         private class FactoryRule
         {
             public Func<Type, string, bool> CanCreateInstance { get; set; }
@@ -3376,7 +3432,7 @@ namespace LightInject
         }
     }
     
-#if NET || NET45 || NETFX_CORE || NETFX_CORE_PCL
+#if NET || NET45 || NETFX_CORE
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
@@ -3403,67 +3459,8 @@ namespace LightInject
     }
 
 #endif
-#if WP_PCL || SILVERLIGHT
-    /// <summary>
-    /// An alternative implementation of the ThreadLocal class.
-    /// http://ayende.com/blog/4825/an-elegant-threadlocal-for-silverlight
-    /// </summary>
-    /// <typeparam name="T">Specifies the type of data stored per-thread.</typeparam>        
-    internal class ThreadLocal<T>
-    {
-        private readonly Func<T> valueFactory;
 
-        /// <summary>
-        /// A "holder" class that holds the per-thread value.
-        /// </summary>
-        public class Holder
-        {
-            /// <summary>
-            /// Gets or sets the value represented by this instance.
-            /// </summary>
-            public T Val;
-        }
-
-        [ThreadStatic]
-        private static ConditionalWeakTable<object, Holder> State;
-   
-        /// <summary>
-        /// Initializes the <see cref="ThreadLocal{T}"/> instance with the specified valueFactory function.
-        /// </summary>
-        /// <param name="valueFactory"></param>
-        public ThreadLocal(Func<T> valueFactory)
-        {
-            this.valueFactory = valueFactory;
-        }
-
-        /// <summary>
-        /// Gets or sets the value of this instance for the current thread.
-        /// </summary>
-        public T Value
-        {
-            get
-            {
-                Holder value;
-                if (State == null || State.TryGetValue(this, out value) == false)
-                {
-                    var val = valueFactory();
-                    Value = val;
-                    return val;
-                }
-                return value.Val;
-            }
-            set
-            {
-                if (State == null)
-                    State = new ConditionalWeakTable<object, Holder>();
-                var holder = State.GetOrCreateValue(this);
-                holder.Val = value;
-            }
-        }
-    }
-
-#endif
-#if WP_PCL || WINDOWS_PHONE || SILVERLIGHT
+#if WINDOWS_PHONE
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
@@ -3682,202 +3679,8 @@ namespace LightInject
     }                
 
 #endif
-#if NETFX_CORE_PCL || WP_PCL
-    /// <summary>
-    /// Provides field representations of the Microsoft Intermediate Language (MSIL) instructions.
-    /// </summary>
-    public class OpCodes
-    {
-        /// <summary>
-        /// Loads the argument at index 0 onto the evaluation stack.
-        /// </summary>
-        public static readonly OpCode Ldarg_0;
-        
-        /// <summary>
-        /// Pushes a supplied value of type int32 onto the evaluation stack as an int32.
-        /// </summary>
-        public static readonly OpCode Ldc_I4;
-        
-        /// <summary>
-        /// Loads the element containing an object reference at a specified array index onto the top of the evaluation stack as type O (object reference).
-        /// </summary>
-        public static readonly OpCode Ldelem_Ref;
-        
-        /// <summary>
-        /// Attempts to cast an object passed by reference to the specified class.
-        /// </summary>
-        public static readonly OpCode Castclass;
 
-        /// <summary>
-        /// Pushes an object reference to a new zero-based, one-dimensional array whose elements are of a specific type onto the evaluation stack.
-        /// </summary>
-        public static readonly OpCode Newarr;
-        
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at a specified index.
-        /// </summary>
-        public static readonly OpCode Stloc;
-
-        /// <summary>
-        /// Loads the local variable at a specific index onto the evaluation stack.
-        /// </summary>        
-        public static readonly OpCode Ldloc;
-        
-        /// <summary>
-        /// Creates a new object or a new instance of a value type, pushing an object reference (type O) onto the evaluation stack.
-        /// </summary>
-        public static readonly OpCode Newobj;
-        
-        /// <summary>
-        /// Converts the boxed representation of a type specified in the instruction to its unboxed form.
-        /// </summary>
-        public static readonly OpCode Unbox_Any;
-
-        /// <summary>
-        /// Replaces the array element at a given index with the value on the evaluation stack, whose type is specified in the instruction.
-        /// </summary>
-        public static readonly OpCode Stelem;
-        
-        /// <summary>
-        /// Converts a value type to an object reference (type O).
-        /// </summary>
-        public static readonly OpCode Box;
-
-        /// <summary>
-        /// Calls a late-bound method on an object, pushing the return value onto the evaluation stack.
-        /// </summary>
-        public static readonly OpCode Callvirt;
-
-        /// <summary>
-        /// Calls the method indicated by the passed method descriptor.
-        /// </summary>
-        public static readonly OpCode Call;
-
-        /// <summary>
-        /// Pushes the number of elements of a zero-based, one-dimensional array onto the evaluation stack.
-        /// </summary>
-        public static readonly OpCode Ldlen;
-
-        /// <summary>
-        /// Converts the value on top of the evaluation stack to int32.
-        /// </summary>
-        public static readonly OpCode Conv_I4;
-
-        /// <summary>
-        /// Subtracts one value from another and pushes the result onto the evaluation stack.
-        /// </summary>
-        public static readonly OpCode Sub;
-
-        /// <summary>
-        /// Pushes the integer value of 1 onto the evaluation stack as an int32.
-        /// </summary>
-        public static readonly OpCode Ldc_I4_1;
-
-        /// <summary>
-        /// Pushes a new object reference to a string literal stored in the metadata.
-        /// </summary>
-        public static readonly OpCode Ldstr;
-
-        /// <summary>
-        /// Loads an argument (referenced by a specified index value) onto the stack.
-        /// </summary>
-        public static readonly OpCode Ldarg;
-
-        /// <summary>
-        /// Returns from the current method, pushing a return value (if present) from the callee's evaluation stack onto the caller's evaluation stack.
-        /// </summary>
-        public static readonly OpCode Ret;
-
-        static OpCodes()
-        {
-            Ldarg_0 = new OpCode(1);
-            Ldc_I4 = new OpCode(2);
-            Ldelem_Ref = new OpCode(3);
-            Castclass = new OpCode(4);
-            Newarr = new OpCode(5);
-            Stloc = new OpCode(6);
-            Ldloc = new OpCode(7);
-            Newobj = new OpCode(8);
-            Unbox_Any = new OpCode(9);
-            Stelem = new OpCode(10);
-            Box = new OpCode(11);
-            Callvirt = new OpCode(12);
-            Call = new OpCode(13);
-            Ldlen = new OpCode(14);
-            Conv_I4 = new OpCode(15);
-            Sub = new OpCode(16);
-            Ldc_I4_1 = new OpCode(17);
-            Ldstr = new OpCode(18);
-            Ldarg = new OpCode(19);
-            Ret = new OpCode(20);
-        }
-    }
-
-    /// <summary>
-    /// Describes a Microsoft intermediate language (MSIL) instruction.
-    /// </summary>
-    public struct OpCode
-    {
-        
-        /// <summary>
-        /// Initializes a new instance of the <see cref="OpCode"/> struct.
-        /// </summary>
-        /// <param name="value">The value that identifies this <see cref="OpCode"/>.</param>
-        public OpCode(short value)
-            : this()
-        {
-            Value = value;
-        }
-
-        /// <summary>
-        /// Gets a <see cref="short"/> value that identifies this <see cref="OpCode"/>.
-        /// </summary>
-        public short Value { get; private set; }
-
-        /// <summary>
-        /// Determines whether the specified object is equal to the current object.
-        /// </summary>
-        /// <param name="obj">The object to compare with the current object.</param>
-        /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
-        public override bool Equals(object obj)
-        {
-            return ((OpCode)obj).Value == Value;
-        }
-
-        /// <summary>
-        /// Serves as the default hash function.
-        /// </summary>
-        /// <returns>A hash code for the current object.</returns>
-        public override int GetHashCode()
-        {
-            return Value.GetHashCode();
-        }
-
-        /// <summary>
-        /// Overloads the equals operator.
-        /// </summary>
-        /// <param name="a">The left-hand <see cref="OpCode"/>.</param>
-        /// <param name="b">The right-hand <see cref="OpCode"/>.</param>
-        /// <returns>true if <paramref name="a"/> is equal to <paramref name="b"/>; otherwise, false.</returns>
-        public static bool operator ==(OpCode a, OpCode b)
-        {
-            return a.Equals(b);
-        }
-
-        /// <summary>
-        /// Overloads the not equals operator.
-        /// </summary>
-        /// <param name="a">The left-hand <see cref="OpCode"/>.</param>
-        /// <param name="b">The right-hand <see cref="OpCode"/>.</param>
-        /// <returns>true if <paramref name="a"/> is not equal to <paramref name="b"/>; otherwise, false.</returns>
-        public static bool operator !=(OpCode a, OpCode b)
-        {
-            return !(a == b);
-        }
-    }
-
-#endif
-#if NETFX_CORE || NETFX_CORE_PCL || WP_PCL || WINDOWS_PHONE || SILVERLIGHT
+#if NETFX_CORE || WINDOWS_PHONE || SILVERLIGHT
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
     /// </summary>    
@@ -4005,6 +3808,10 @@ namespace LightInject
             if (code == OpCodes.Ldarg_0)
             {
                 stack.Push(parameters[0]);
+            }
+            if (code == OpCodes.Ldarg_1)
+            {
+                stack.Push(parameters[1]);
             }
             else if (code == OpCodes.Ldelem_Ref)
             {
@@ -5375,14 +5182,13 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-            InternalTypes.Add(typeof(LazyReadOnlyCollection<>));
 #if NET || NET45
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(ConstructionInfoBuilder));            
-            InternalTypes.Add(typeof(MostResolvableConstructorSelector));
+            InternalTypes.Add(typeof(MostResolvableConstructorSelector));            
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerRequestLifeTime));
@@ -5395,13 +5201,16 @@ namespace LightInject
             InternalTypes.Add(typeof(CompositionRootExecutor));
             InternalTypes.Add(typeof(CompositionRootTypeExtractor));
             InternalTypes.Add(typeof(CachedTypeExtractor));
-#if NETFX_CORE_PCL || WP_PCL
-            InternalTypes.Add(typeof(OpCodes));
+            InternalTypes.Add(typeof(ImmutableList<>));
+            InternalTypes.Add(typeof(KeyValue<,>));
+            InternalTypes.Add(typeof(ImmutableHashTree<,>));
+#if NETFX_CORE || WINDOWS_PHONE
+            
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
 #endif
-#if WP_PCL
+#if SILVERLIGHT
             InternalTypes.Add(typeof(ThreadLocal<>));
             InternalTypes.Add(typeof(ThreadLocal<>.Holder));
 #endif
@@ -5678,128 +5487,239 @@ namespace LightInject
         }
     }
 #endif
+  
+    /// <summary>
+    /// Defines an immutable representation of a key and a value.  
+    /// </summary>
+    /// <typeparam name="TKey">The type of the key.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
+    internal sealed class KeyValue<TKey, TValue>
+    {
+        /// <summary>
+        /// The key of this <see cref="KeyValue{TKey,TValue}"/> instance.
+        /// </summary>
+        public readonly TKey Key;
+
+        /// <summary>
+        /// The key of this <see cref="KeyValue{TKey,TValue}"/> instance.
+        /// </summary>
+        public readonly TValue Value;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="KeyValue{TKey,TValue}"/> class.
+        /// </summary>
+        /// <param name="key">The key of this <see cref="KeyValue{TKey,TValue}"/> instance.</param>
+        /// <param name="value">The value of this <see cref="KeyValue{TKey,TValue}"/> instance.</param>
+        public KeyValue(TKey key, TValue value)
+        {
+            Key = key;
+            Value = value;
+        }
+    }
 
     /// <summary>
-    /// Represents a read-only collection that is initialized with a lazy <see cref="IEnumerable{T}"/>.
+    /// Represents a simple "add only" immutable list.
     /// </summary>
-    /// <typeparam name="T">The type of values in the collection.</typeparam>
-    internal class LazyReadOnlyCollection<T> : ICollection<T>
+    /// <typeparam name="T">The type of items contained in the list.</typeparam>
+    internal sealed class ImmutableList<T>
     {
-        private readonly Lazy<IEnumerable<T>> lazyEnumerable;
-        private readonly int count;
+        /// <summary>
+        /// Represents an empty <see cref="ImmutableList{T}"/>.
+        /// </summary>
+        public static readonly ImmutableList<T> Empty = new ImmutableList<T>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LazyReadOnlyCollection{T}"/> class.
+        /// An array that contains the items in the <see cref="ImmutableList{T}"/>.
         /// </summary>
-        /// <param name="lazyEnumerable">A lazy <see cref="IEnumerable{T}"/> that represents the elements in the collection.</param>
-        /// <param name="count">The number of elements in the <paramref name="lazyEnumerable"/>.</param>
-        public LazyReadOnlyCollection(Lazy<IEnumerable<T>> lazyEnumerable, int count)
+        public readonly T[] Items;
+
+        /// <summary>
+        /// The number of items in the <see cref="ImmutableList{T}"/>.
+        /// </summary>
+        public readonly int Count;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableList{T}"/> class.
+        /// </summary>
+        /// <param name="previousList">The list from which the previous items are copied.</param>
+        /// <param name="value">The value to be added to the list.</param>
+        public ImmutableList(ImmutableList<T> previousList, T value)
         {
-            this.lazyEnumerable = lazyEnumerable;
-            this.count = count;
+            Items = new T[previousList.Items.Length + 1];
+            Array.Copy(previousList.Items, Items, previousList.Items.Length);
+            Items[Items.Length - 1] = value;
+            Count = Items.Length;
+        }
+
+        private ImmutableList()
+        {
+            Items = new T[0];
         }
 
         /// <summary>
-        /// Gets the number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
+        /// Creates a new <see cref="ImmutableList{T}"/> that contains the new <paramref name="value"/>.
         /// </summary>
-        /// <returns>
-        /// The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-        /// </returns>
-        public int Count
+        /// <param name="value">The value to be added to the new list.</param>
+        /// <returns>A new <see cref="ImmutableList{T}"/> that contains the new <paramref name="value"/>.</returns>
+        public ImmutableList<T> Add(T value)
         {
-            get
+            return new ImmutableList<T>(this, value);
+        }
+    }
+
+    /// <summary>
+    /// A balanced binary search tree implemented as an AVL tree.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the key.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
+    internal sealed class ImmutableHashTree<TKey, TValue>
+    {
+        /// <summary>
+        /// An empty <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public static readonly ImmutableHashTree<TKey, TValue> Empty = new ImmutableHashTree<TKey, TValue>();
+
+        /// <summary>
+        /// The key of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly TKey Key;
+
+        /// <summary>
+        /// The value of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly TValue Value;
+
+        /// <summary>
+        /// The list of <see cref="KeyValue{TKey,TValue}"/> instances where the 
+        /// <see cref="KeyValue{TKey,TValue}.Key"/> has the same hash code as this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly ImmutableList<KeyValue<TKey, TValue>> Duplicates;
+
+        /// <summary>
+        /// The hash code retrieved from the <see cref="Key"/>.
+        /// </summary>
+        public readonly int HashCode;
+
+        /// <summary>
+        /// The left node of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly ImmutableHashTree<TKey, TValue> Left;
+
+        /// <summary>
+        /// The right node of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly ImmutableHashTree<TKey, TValue> Right;
+
+        /// <summary>
+        /// The height of this node.
+        /// </summary>
+        /// <remarks>
+        /// An empty node has a height of 0 and a node without children has a height of 1.
+        /// </remarks>
+        public readonly int Height;
+
+        /// <summary>
+        /// Indicates that this <see cref="ImmutableHashTree{TKey,TValue}"/> is empty.
+        /// </summary>
+        public readonly bool IsEmpty;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableHashTree{TKey,TValue}"/> class
+        /// and adds a new entry in the <see cref="Duplicates"/> list.
+        /// </summary>
+        /// <param name="key">The key for this node.</param>
+        /// <param name="value">The value for this node.</param>
+        /// <param name="hashTree">The <see cref="ImmutableHashTree{TKey,TValue}"/> that contains existing duplicates.</param>
+        public ImmutableHashTree(TKey key, TValue value, ImmutableHashTree<TKey, TValue> hashTree)
+        {
+            Duplicates = hashTree.Duplicates.Add(new KeyValue<TKey, TValue>(key, value));
+            HashCode = key.GetHashCode();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
+        /// </summary>
+        /// <param name="key">The key for this node.</param>
+        /// <param name="value">The value for this node.</param>
+        /// <param name="left">The left node.</param>
+        /// <param name="right">The right node.</param>
+        public ImmutableHashTree(TKey key, TValue value, ImmutableHashTree<TKey, TValue> left, ImmutableHashTree<TKey, TValue> right)
+        {
+            var balance = left.Height - right.Height;
+
+            if (balance == -2)
             {
-                return count;
-            }
-        }
+                if (right.IsLeftHeavy())
+                {
+                    right = RotateRight(right);
+                }
 
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.
-        /// </summary>
-        /// <returns>
-        /// true if the <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only; otherwise, false.
-        /// </returns>
-        public bool IsReadOnly
-        {
-            get
+                // Rotate left
+                Key = right.Key;
+                Value = right.Value;
+                Left = new ImmutableHashTree<TKey, TValue>(key, value, left, right.Left);
+                Right = right.Right;
+            }
+            else if (balance == 2)
             {
-                return true;
+                if (left.IsRightHeavy())
+                {
+                    left = RotateLeft(left);
+                }
+
+                // Rotate right                    
+                Key = left.Key;
+                Value = left.Value;
+                Right = new ImmutableHashTree<TKey, TValue>(key, value, left.Right, right);
+                Left = left.Left;
             }
+            else
+            {
+                Key = key;
+                Value = value;
+                Left = left;
+                Right = right;
+            }
+
+            Height = 1 + Math.Max(Left.Height, Right.Height);
+
+            Duplicates = ImmutableList<KeyValue<TKey, TValue>>.Empty;
+
+            HashCode = key.GetHashCode();
         }
 
-        /// <summary>
-        /// Returns an enumerator that iterates through the collection.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
-        /// </returns>
-        /// <filterpriority>1</filterpriority>
-        public IEnumerator<T> GetEnumerator()
+        private ImmutableHashTree()
         {
-            return lazyEnumerable.Value.GetEnumerator();
+            IsEmpty = true;
+            Duplicates = ImmutableList<KeyValue<TKey, TValue>>.Empty;
         }
 
-        /// <summary>
-        /// Returns an enumerator that iterates through a collection.
-        /// </summary>
-        /// <returns>
-        /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
-        /// </returns>
-        /// <filterpriority>2</filterpriority>
-        IEnumerator IEnumerable.GetEnumerator()
+        private static ImmutableHashTree<TKey, TValue> RotateLeft(ImmutableHashTree<TKey, TValue> left)
         {
-            return GetEnumerator();
+            return new ImmutableHashTree<TKey, TValue>(
+                left.Right.Key,
+                left.Right.Value,
+                new ImmutableHashTree<TKey, TValue>(left.Key, left.Value, left.Right.Left, left.Left),
+                left.Right.Right);
         }
 
-        /// <summary>
-        /// Adds an item to the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-        /// </summary>
-        /// <param name="item">The object to add to the <see cref="T:System.Collections.Generic.ICollection`1"/>.</param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.</exception>
-        public void Add(T item)
+        private static ImmutableHashTree<TKey, TValue> RotateRight(ImmutableHashTree<TKey, TValue> right)
         {
-            throw new NotSupportedException();
+            return new ImmutableHashTree<TKey, TValue>(
+                right.Left.Key,
+                right.Left.Value,
+                right.Left.Left,
+                new ImmutableHashTree<TKey, TValue>(right.Key, right.Value, right.Left.Right, right.Right));
         }
 
-        /// <summary>
-        /// Removes all items from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-        /// </summary>
-        /// <exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only. </exception>
-        public void Clear()
+        private bool IsLeftHeavy()
         {
-            throw new NotSupportedException();
+            return Left.Height > Right.Height;
         }
 
-        /// <summary>
-        /// Determines whether the <see cref="T:System.Collections.Generic.ICollection`1"/> contains a specific value.
-        /// </summary>
-        /// <returns>
-        /// True if <paramref name="item"/> is found in the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false.
-        /// </returns>
-        /// <param name="item">The object to locate in the <see cref="T:System.Collections.Generic.ICollection`1"/>.</param>
-        public bool Contains(T item)
+        private bool IsRightHeavy()
         {
-            return lazyEnumerable.Value.Contains(item);
+            return Right.Height > Left.Height;
         }
-
-        /// <summary>
-        /// Copies the elements of the <see cref="T:System.Collections.Generic.ICollection`1"/> to an <see cref="T:System.Array"/>, starting at a particular <see cref="T:System.Array"/> index.
-        /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array"/> that is the destination of the elements copied from <see cref="T:System.Collections.Generic.ICollection`1"/>. The <see cref="T:System.Array"/> must have zero-based indexing.</param><param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param><exception cref="T:System.ArgumentNullException"><paramref name="array"/> is null.</exception><exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex"/> is less than 0.</exception><exception cref="T:System.ArgumentException">The number of elements in the source <see cref="T:System.Collections.Generic.ICollection`1"/> is greater than the available space from <paramref name="arrayIndex"/> to the end of the destination <paramref name="array"/>.</exception>
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            lazyEnumerable.Value.ToArray().CopyTo(array, arrayIndex);
-        }
-
-        /// <summary>
-        /// Removes the first occurrence of a specific object from the <see cref="T:System.Collections.Generic.ICollection`1"/>.
-        /// </summary>
-        /// <returns>
-        /// True if <paramref name="item"/> was successfully removed from the <see cref="T:System.Collections.Generic.ICollection`1"/>; otherwise, false. This method also returns false if <paramref name="item"/> is not found in the original <see cref="T:System.Collections.Generic.ICollection`1"/>.
-        /// </returns>
-        /// <param name="item">The object to remove from the <see cref="T:System.Collections.Generic.ICollection`1"/>.</param><exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only.</exception>
-        public bool Remove(T item)
-        {
-            throw new NotSupportedException();
-        }        
-    }    
+    }
 }
