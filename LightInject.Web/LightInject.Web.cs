@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Web version 1.0.0.2
+    LightInject.Web version 1.0.0.3
     http://seesharper.github.io/LightInject/
     http://twitter.com/bernhardrichter    
 ******************************************************************************/
@@ -48,16 +48,15 @@ namespace LightInject
         /// disposed when the web request ends.
         /// </summary>
         /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
-        public static void EnablePerWebRequestScope(this IServiceContainer serviceContainer)
+        public static void EnablePerWebRequestScope(this ServiceContainer serviceContainer)
         {            
-            LightInjectHttpModule.SetServiceContainer(serviceContainer);
+            serviceContainer.ScopeManagerProvider = new PerWebRequestScopeManagerProvider();
         }      
     }
 }
 
 namespace LightInject.Web
-{
-    using System;
+{    
     using System.Web;
     using Microsoft.Web.Infrastructure.DynamicModuleHelper;
 
@@ -87,17 +86,15 @@ namespace LightInject.Web
     /// with the <see cref="PerScopeLifetime"/> lifetime is scoped per web request.
     /// </summary>
     public class LightInjectHttpModule : IHttpModule
-    {
-        private static IServiceContainer serviceContainer;
-              
+    {                      
         /// <summary>
         /// Initializes a module and prepares it to handle requests.
         /// </summary>
         /// <param name="context">An <see cref="HttpApplication"/> that provides access to the methods, properties, and events common to all application objects within an ASP.NET application </param>
         public void Init(HttpApplication context)
         {
-            context.BeginRequest += (s, a) => BeginScope();
-            context.EndRequest += (s, a) => EndScope();   
+            context.BeginRequest += (s, a) => BeginRequest();
+            context.EndRequest += (s, a) => EndRequest();               
         }
 
         /// <summary>
@@ -106,26 +103,30 @@ namespace LightInject.Web
         public void Dispose()
         {            
         }
-
-        /// <summary>
-        /// Sets the <see cref="IServiceContainer"/> instance to be used by this <see cref="LightInjectHttpModule"/>.
-        /// </summary>
-        /// <param name="container">The container to be used by this <see cref="LightInjectHttpModule"/>.</param>
-        internal static void SetServiceContainer(IServiceContainer container)
+       
+        private static void EndRequest()
         {
-            serviceContainer = container;
+            var scopeManager = (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+            scopeManager.CurrentScope.Dispose();            
         }
 
-        private static void EndScope()
-        {            
-            Console.WriteLine("EndScope");
-            ((Scope)HttpContext.Current.Items["Scope"]).Dispose();            
-        }
-
-        private static void BeginScope()
+        private static void BeginRequest()
         {
-            Console.WriteLine("BeginScope");
-            HttpContext.Current.Items["Scope"] = serviceContainer.BeginScope();
+            var scopeManager = new ScopeManager();
+            scopeManager.BeginScope();
+            HttpContext.Current.Items["ScopeManager"] = scopeManager;
         }         
-    }   
+    }
+
+    /// <summary>
+    /// An <see cref="IScopeManagerProvider"/> that provides the <see cref="ScopeManager"/>
+    /// used by the current <see cref="HttpRequest"/>.
+    /// </summary>
+    internal class PerWebRequestScopeManagerProvider : IScopeManagerProvider
+    {
+        public ScopeManager GetScopeManager()
+        {
+            return (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+        }
+    }
 }
