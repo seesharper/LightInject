@@ -34,8 +34,7 @@
 
 namespace LightInject
 {
-    using System;
-    using System.Collections;    
+    using System;    
 #if NET || NET45 || NETFX_CORE
     using System.Collections.Concurrent;
 #endif
@@ -879,6 +878,18 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a class that is capable of providing the current <see cref="ScopeManager"/>.
+    /// </summary>
+    internal interface IScopeManagerProvider
+    {
+        /// <summary>
+        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// </summary>
+        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
+        ScopeManager GetScopeManager();
+    }
+
+    /// <summary>
     /// Extends the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
     /// </summary>
     internal static class ImmutableHashTreeExtensions
@@ -900,20 +911,23 @@ namespace LightInject
                 tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
             }
 
-            if (tree.Duplicates.Items.Length <= 0)
+            if (!tree.IsEmpty && (ReferenceEquals(tree.Key, key) || Equals(tree.Key, key)))
             {
                 return tree.Value;
             }
 
-            foreach (var keyValue in tree.Duplicates.Items)
+            if (tree.Duplicates.Items.Length > 0)
             {
-                if (keyValue.Key.Equals(key))
+                foreach (var keyValue in tree.Duplicates.Items)
                 {
-                    return keyValue.Value;
+                    if (ReferenceEquals(keyValue.Key, key) || Equals(keyValue.Key, key))
+                    {
+                        return keyValue.Value;
+                    }
                 }
             }
-
-            return tree.Value;
+            
+            return default(TValue);
         }
 
         /// <summary>
@@ -991,8 +1005,9 @@ namespace LightInject
                 () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => m.GetParameters().Any()));
             GetCurrentScopeMethodInfo = new Lazy<MethodInfo>(
                 () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
-            GetCurrentScopeManagerMethodInfo = new Lazy<MethodInfo>(
-                () => typeof(ThreadLocal<ScopeManager>).GetProperty("Value").GetGetMethod());
+            GetCurrentScopeManagerMethodInfo =
+                new Lazy<MethodInfo>(
+                    () => typeof(IScopeManagerProvider).GetMethod("GetScopeManager"));
             LazyTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
             FuncTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());            
             LazyConstructors = new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
@@ -1429,8 +1444,6 @@ namespace LightInject
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
 
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
-        private readonly ThreadLocal<ScopeManager> scopeManagers =
-            new ThreadLocal<ScopeManager>(() => new ScopeManager());
 
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
         private readonly ICompositionRootExecutor compositionRootExecutor;
@@ -1458,11 +1471,18 @@ namespace LightInject
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
+            ScopeManagerProvider = new PerThreadScopeManagerProvider();
 #if NET || NET45      
             AssemblyLoader = new AssemblyLoader();            
 #endif            
         }
-        
+
+        /// <summary>
+        /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible 
+        /// for providing the <see cref="ScopeManager"/> used to manage scopes.
+        /// </summary>
+        public IScopeManagerProvider ScopeManagerProvider { get; set; }
+
         /// <summary>
         /// Gets or sets the <see cref="IPropertyDependencySelector"/> instance that 
         /// is responsible for selecting the property dependencies for a given type.
@@ -1521,7 +1541,7 @@ namespace LightInject
         /// <returns><see cref="Scope"/></returns>
         public Scope BeginScope()
         {
-            return scopeManagers.Value.BeginScope();
+            return ScopeManagerProvider.GetScopeManager().BeginScope();
         }
 
         /// <summary>
@@ -2347,9 +2367,7 @@ namespace LightInject
             foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
             {
                 disposableLifetimeInstance.Dispose();
-            }
-
-            scopeManagers.Dispose();
+            }            
         }
 
         private static void EmitLoadConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
@@ -3221,21 +3239,21 @@ namespace LightInject
                 ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
                 int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter, serviceRegistration.ServiceType);
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
-                int scopeManagerIndex = CreateScopeManagerIndex();
+                int scopeManagerProviderIndex = CreateScopeManagerProviderIndex();
                 var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
                 EmitLoadConstant(dynamicMethodSkeleton, lifetimeIndex, typeof(ILifetime));
                 EmitLoadConstant(dynamicMethodSkeleton, instanceDelegateIndex, typeof(Func<object>));
-                EmitLoadConstant(dynamicMethodSkeleton, scopeManagerIndex, typeof(ThreadLocal<ScopeManager>));
+                EmitLoadConstant(dynamicMethodSkeleton, scopeManagerProviderIndex, typeof(IScopeManagerProvider));
                 generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
                 generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
                 generator.Emit(OpCodes.Callvirt, getInstanceMethod);
                 generator.Emit(serviceRegistration.ServiceType.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
             }
         }
-
-        private int CreateScopeManagerIndex()
+       
+        private int CreateScopeManagerProviderIndex()
         {
-            return constants.Add(scopeManagers);
+            return constants.Add(ScopeManagerProvider);
         }
 
         private int CreateInstanceDelegateIndex(Action<IMethodSkeleton> instanceEmitter, Type serviceType)
@@ -3429,9 +3447,23 @@ namespace LightInject
             public Func<ServiceRequest, object> Factory { get; set; }
 
             public ILifetime LifeTime { get; set; }
+        }               
+    }
+
+    /// <summary>
+    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> per thread.
+    /// </summary>
+    internal class PerThreadScopeManagerProvider : IScopeManagerProvider
+    {
+        private readonly ThreadLocal<ScopeManager> scopeManagers =
+            new ThreadLocal<ScopeManager>(() => new ScopeManager());
+        
+        public ScopeManager GetScopeManager()
+        {
+            return scopeManagers.Value;
         }
     }
-    
+
 #if NET || NET45 || NETFX_CORE
     /// <summary>
     /// A thread safe dictionary.
@@ -5204,6 +5236,8 @@ namespace LightInject
             InternalTypes.Add(typeof(ImmutableList<>));
             InternalTypes.Add(typeof(KeyValue<,>));
             InternalTypes.Add(typeof(ImmutableHashTree<,>));
+            InternalTypes.Add(typeof(PerThreadScopeManagerProvider));
+            
 #if NETFX_CORE || WINDOWS_PHONE
             
             InternalTypes.Add(typeof(DynamicMethod));
@@ -5633,7 +5667,12 @@ namespace LightInject
         public ImmutableHashTree(TKey key, TValue value, ImmutableHashTree<TKey, TValue> hashTree)
         {
             Duplicates = hashTree.Duplicates.Add(new KeyValue<TKey, TValue>(key, value));
-            HashCode = key.GetHashCode();
+            Key = hashTree.Key;
+            Value = hashTree.Value;
+            Height = hashTree.Height;
+            HashCode = hashTree.HashCode;
+            Left = hashTree.Left;
+            Right = hashTree.Right;
         }
 
         /// <summary>
