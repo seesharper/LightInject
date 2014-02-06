@@ -78,7 +78,7 @@ namespace LightInject
         /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
         public static void EnableMvc(this IServiceContainer serviceContainer)
         {
-            serviceContainer.EnablePerWebRequestScope();
+            ((ServiceContainer)serviceContainer).EnablePerWebRequestScope();
             SetDependencyResolver(serviceContainer);
             InitializeFilterAttributeProvider(serviceContainer);
         }
