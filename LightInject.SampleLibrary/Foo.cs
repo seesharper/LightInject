@@ -4,6 +4,8 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
+    using System.Runtime.Remoting.Messaging;
+
     using LightInject.Annotation;
 
     public class FooWithCompilerGeneratedType : IFoo
@@ -704,4 +706,25 @@ namespace LightInject.SampleLibrary
     {
         
     }
+
+    public class FooWithSameHashCode
+    {
+        public FooWithSameHashCode(int id)
+        {
+            Id = id;
+        }
+
+        public int Id { get; private set; }
+
+        public override bool Equals(object obj)
+        {
+            return ((FooWithSameHashCode)obj).Id == Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return 42;
+        }
+    }
+
 }
