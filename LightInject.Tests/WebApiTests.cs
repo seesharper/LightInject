@@ -99,8 +99,9 @@
             var configuration = new HttpConfiguration() { IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always };
             container.EnableWebApi(configuration);
             container.RegisterApiControllers();
-            configuration.Routes.MapHttpRoute("Default", "{controller}/{id}");
-            var server = new HttpServer(configuration);
+
+            configuration.Routes.MapHttpRoute("Default", "{controller}/{id}");            
+            var server = new HttpServer(configuration);            
             return server;
         }       
     }

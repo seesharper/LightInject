@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq.Expressions;
+    using System.Reflection;
     using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
     using System.Text;
@@ -15,10 +16,19 @@
     [TestClass]
     public class PerformanceTests
     {
-        private const int Iterations = 2000000;
+        private const int Iterations = 5000000;
         private Func<object[], object> dynamicMethodDelegate;
+
+        public delegate object TestDelegate(object[] contants);
+
+        private TestDelegate myDelegate;
+
+        private IFactory factory;
+
+        private IFactory typedFactory = new TypedFactory();
+
         private Func<object> expressionDelegate; 
-        private IServiceContainer container;
+        private ServiceContainer container;
         private ConcurrentDictionary<Type,Func<List<object>,object>> concurrentDictionary = new ConcurrentDictionary<Type, Func<List<object>, object>>();
         private ConcurrentDictionary<Type, Lazy<Func<List<object>, object>>> lazyConcurrentDictionary = new ConcurrentDictionary<Type, Lazy<Func<List<object>, object>>>();
         private Dictionary<Type,Func<List<object>,object>> regularDictionary = new Dictionary<Type, Func<List<object>, object>>();
@@ -28,11 +38,18 @@
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void NewOperatorVersusServiceContainer()
         {
-            //this.MeasureMethod(() => this.RunNewOperator());
+            this.MeasureMethod(() => this.RunDynamicMethodDelegate());                        
+            this.MeasureMethod(() => this.RunNewOperator());
+            this.MeasureMethod(() => this.RunFactory());
+            this.MeasureMethod(() => this.RunTypedFactory());
+            this.MeasureMethod(() => this.RunStaticDelegate());
+
+
+            //this.MeasureMethod(() => this.RunDynamicMethodDelegateWithDelegate());
             this.MeasureMethod(() => this.RunServiceContainer());
-            this.MeasureMethod(() => this.RunDynamicMethodDelegate());
-            this.MeasureMethod(() => this.TypeGetHashCode());
-            this.MeasureMethod(() => this.RuntimehelperGetHashCode());
+            //this.MeasureMethod(() => this.RunDynamicMethodDelegate());
+            //this.MeasureMethod(() => this.TypeGetHashCode());
+            //this.MeasureMethod(() => this.RuntimehelperGetHashCode());
             //this.MeasureMethod(() => this.RunExpressionDelegate());
             //this.MeasureMethod(() => this.RunRegularTryGetValue());
             //this.MeasureMethod(() => this.RunConcurrentTryGetValue());
@@ -45,7 +62,8 @@
         {            
             for (int i = 0; i < Iterations; i++)
             {
-                var foo = container.GetInstance<IFoo>();                
+                //var foo = container.GetInstance<IFoo>();                
+                var foo = container.GetInstance(typeof(IFoo));                
             }
         }
 
@@ -54,11 +72,37 @@
         {            
             for (int i = 0; i < Iterations; i++)
             {
-                var foo = (IFoo)(object)new Foo();
-                if (foo == null)
-                    Console.WriteLine();
+                var foo = new Foo();               
             }            
         }
+
+        private void RunStaticDelegate()
+        {
+            var arr = constants.ToArray();
+            for (int i = 0; i < Iterations; i++)
+            {
+                var foo = myDelegate(arr);
+            }
+        }
+
+
+        private void RunFactory()
+        {
+            var arr = constants.ToArray();
+            for (int i = 0; i < Iterations; i++)
+            {
+                var foo = (IFoo)factory.GetInstance(arr);
+            }
+        }
+
+        private void RunTypedFactory()
+        {
+            for (int i = 0; i < Iterations; i++)
+            {
+                var foo = (IFoo)typedFactory.GetInstance(new object[] { });
+            }
+        }
+
         
         private void RunDynamicMethodDelegate()
         {
@@ -68,6 +112,17 @@
                 var instance = (IFoo)dynamicMethodDelegate(arr);
             }            
         }
+
+
+        private void RunDynamicMethodDelegateWithDelegate()
+        {
+            var arr = constants.ToArray();
+            for (int i = 0; i < Iterations; i++)
+            {
+                var instance = (IFoo)myDelegate(arr);
+            }
+        }
+
 
         private void RunExpressionDelegate()
         {
@@ -163,9 +218,23 @@
             this.CreateDynamicMethod();
             this.CreateExpressionDelegate();
             this.CreateSimpleDynamicMethodMethod();
+            this.CreateDynamicMethodWithDelegate();
+            this.CreateFactory();
+            this.CreateStaticFactory();
         }
 
         private void CreateDynamicMethod()
+        {
+            var dynamicMethod = new DynamicMethod(
+                    "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, true);
+            var constructorInfo = typeof(Foo).GetConstructor(Type.EmptyTypes);
+            var generator = dynamicMethod.GetILGenerator();
+            generator.Emit(OpCodes.Newobj, constructorInfo);
+            generator.Emit(OpCodes.Ret);
+            dynamicMethodDelegate = (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));          
+        }
+
+        private void CreateDynamicMethodWithDelegate()
         {
             var dynamicMethod = new DynamicMethod(
                     "DynamicMethod", typeof(object), new[] { typeof(object[]) }, typeof(ServiceContainer).Module, false);
@@ -173,17 +242,9 @@
             var generator = dynamicMethod.GetILGenerator();
             generator.Emit(OpCodes.Newobj, constructorInfo);
             generator.Emit(OpCodes.Ret);
-            dynamicMethodDelegate = (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
-            //concurrentDictionary.TryAdd(typeof(IFoo), dynamicMethodDelegate);
-            //concurrentDictionary.TryAdd(typeof(IBar), dynamicMethodDelegate);
-            //regularDictionary.Add(typeof(IFoo), dynamicMethodDelegate);
-            //regularDictionary.Add(typeof(IBar), dynamicMethodDelegate);
-            //lazyConcurrentDictionary.TryAdd(typeof(IFoo), new Lazy<Func<List<object>, object>>(() => dynamicMethodDelegate));
-            //lazyConcurrentDictionary.TryAdd(typeof(IBar), new Lazy<Func<List<object>, object>>(() => dynamicMethodDelegate));
-            //delegateRegistry.TryAdd(typeof(IBar), new Lazy<Func<List<object>, object>>(() => dynamicMethodDelegate));
-            //delegateRegistry.TryAdd(typeof(IFoo), new Lazy<Func<List<object>, object>>(() => dynamicMethodDelegate));
+            myDelegate = (TestDelegate)dynamicMethod.CreateDelegate(typeof(TestDelegate));
         }
-        
+
         private void CreateSimpleDynamicMethodMethod()
         {
             var dynamicMethod = new DynamicMethod("DynamicMethod", typeof(Foo), Type.EmptyTypes);
@@ -203,6 +264,69 @@
             var lambda = Expression.Lambda<Func<Foo>>(newExpression);
             expressionDelegate = lambda.Compile();
             var type = expressionDelegate.GetType();
+        }
+
+        private void CreateFactory()
+        {
+            ModuleBuilder moduleBuilder = DefineDynamicModuleBuilder();
+
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("MyClass", TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed, typeof(Object));
+
+            typeBuilder.AddInterfaceImplementation(typeof(IFactory));
+
+            {
+                ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(
+                    MethodAttributes.Public,
+                    CallingConventions.HasThis,
+                    Type.EmptyTypes);
+                var constructorGenerator = constructorBuilder.GetILGenerator();
+                constructorGenerator.Emit(OpCodes.Ldarg_0);
+                ConstructorInfo objectConstructor = typeof(object).GetConstructor(new Type[] { });
+                constructorGenerator.Emit(OpCodes.Call, objectConstructor);
+                constructorGenerator.Emit(OpCodes.Ret);
+
+                MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+                    "GetInstance",
+                    MethodAttributes.Virtual | MethodAttributes.Public,
+                    typeof(object),
+                    new Type[] { typeof(object[]) });
+
+                var generator = methodBuilder.GetILGenerator();
+                generator.Emit(OpCodes.Newobj, typeof(Foo).GetConstructor(Type.EmptyTypes));                
+                generator.Emit(OpCodes.Ret);
+
+                Type type = typeBuilder.CreateType();
+                factory = (IFactory)Activator.CreateInstance(type);
+            }
+        }
+
+        private void CreateStaticFactory()
+        {
+            ModuleBuilder moduleBuilder = DefineDynamicModuleBuilder();
+
+            var typeBuilder = moduleBuilder.DefineType("Factory", TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Abstract);
+            
+            var methodBuilder = typeBuilder.DefineMethod("GetService", MethodAttributes.Public | MethodAttributes.Static,
+                typeof(object), new[] { typeof(object[])});
+
+            var generator = methodBuilder.GetILGenerator();
+            generator.Emit(OpCodes.Newobj, typeof(Foo).GetConstructor(Type.EmptyTypes));
+            generator.Emit(OpCodes.Ret);
+
+            var dynamicType = typeBuilder.CreateType();
+
+            myDelegate = (TestDelegate)Delegate.CreateDelegate(typeof(TestDelegate), dynamicType.GetMethod("GetService"));
+        }
+
+
+
+        private static ModuleBuilder DefineDynamicModuleBuilder()
+        {
+            var assemblyName = new AssemblyName("LightInject.DynamicAssembly");
+            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName,
+                AssemblyBuilderAccess.RunAndCollect);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
+            return moduleBuilder;
         }
 
         private static void CollectMemory()
@@ -233,5 +357,19 @@
 
     class DelegateRegistry<TKey> : ThreadSafeDictionary<TKey, Lazy<Func<List<object>, object>>>
     {
+    }
+
+    public interface IFactory
+    {
+        object GetInstance(object[] arguments);
+    }
+
+
+    public class TypedFactory : IFactory
+    {
+        public object GetInstance(object[] arguments)
+        {
+            return new Foo();
+        }
     }
 }

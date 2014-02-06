@@ -1050,6 +1050,35 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
+        public void TryGetInstance_UnknownService_IsAvailableAfterRegistration()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+
+            container.TryGetInstance<IFoo>();
+            container.Register<IFoo, Foo>();
+
+            var instance = container.TryGetInstance<IFoo>();
+
+            Assert.IsNotNull(instance);
+        }
+
+        [TestMethod]
+        public void TryGetInstance_UnknownNamedService_IsAvailableAfterRegistration()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+
+            container.TryGetInstance<IFoo>("Foo");
+            container.Register<IFoo, Foo>("Foo");
+
+            var instance = container.TryGetInstance<IFoo>("Foo");
+
+            Assert.IsNotNull(instance);
+        }
+
+
+        [TestMethod]
         public void TryGetInstance_UnknownNamedService_ReturnsNull()
         {
             var container = CreateContainer();
