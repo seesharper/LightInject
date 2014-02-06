@@ -1,9 +1,11 @@
 ﻿namespace LightInject.Tests
 {
+    using LightInject.SampleLibrary;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class ImmutableImmutableHashTreeTests
+    public class ImmutableHashTreeTests
     {
         [TestMethod]
         public void Add_LeftRotation_ReturnsBalancedImmutableHashTree()
@@ -64,10 +66,65 @@
         }
 
         [TestMethod]
-        public void Add_DuplicateKey()
+        public void Search_TwoObjectsWithSameHashCodeUsingEquals_CanGetFirstObject()
         {
-            var root = ImmutableHashTree<int, int>.Empty;
-            var node = root.Add(10, 10).Add(10, 10);
+            var root = ImmutableHashTree<FooWithSameHashCode, int>.Empty;
+            var node = root.Add(new FooWithSameHashCode(1), 10).Add(new FooWithSameHashCode(2), 20);
+
+            var result = node.Search(new FooWithSameHashCode(1));
+
+            Assert.AreEqual(10, result);
+        }
+
+        [TestMethod]
+        public void Search_TwoObjectsWithSameHashCodeUsingReferenceEquals_CanGetFirstObject()
+        {
+            var root = ImmutableHashTree<FooWithSameHashCode, int>.Empty;
+            var firstKey = new FooWithSameHashCode(1);
+            var secondKey = new FooWithSameHashCode(2);
+            var node = root.Add(firstKey, 10).Add(secondKey, 20);
+
+            var result = node.Search(firstKey);
+
+            Assert.AreEqual(10, result);
+        }
+
+        [TestMethod]
+        public void Search_TwoObjectsWithSameHashCodeUsingEquals_CanGetLastObject()
+        {
+            var root = ImmutableHashTree<FooWithSameHashCode, int>.Empty;
+            var node = root.Add(new FooWithSameHashCode(1), 10).Add(new FooWithSameHashCode(2), 20);
+
+            var result = node.Search(new FooWithSameHashCode(2));
+
+            Assert.AreEqual(20, result);
+        }
+
+        [TestMethod]
+        public void Search_TwoObjectsWithSameHashCodeUsingReferenceEquals_CanGetLastObject()
+        {
+            var root = ImmutableHashTree<FooWithSameHashCode, int>.Empty;
+            var firstKey = new FooWithSameHashCode(1);
+            var secondKey = new FooWithSameHashCode(2);
+            var thirdKey = new FooWithSameHashCode(3);
+            
+            var node = root.Add(firstKey, 10).Add(secondKey, 20).Add(thirdKey, 30);
+
+            var result = node.Search(thirdKey);
+
+            Assert.AreEqual(30, result);
+        }
+
+
+        [TestMethod]
+        public void Search_UnknownKeyWithSameHashcodeAsExisting_ReturnsDefaultValue()
+        {
+            var root = ImmutableHashTree<FooWithSameHashCode, int>.Empty;
+            var node = root.Add(new FooWithSameHashCode(1), 10).Add(new FooWithSameHashCode(2), 20 );
+
+            var result = node.Search(new FooWithSameHashCode(30));
+
+            Assert.AreEqual(0, result);
         }
 
 
