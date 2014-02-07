@@ -124,6 +124,10 @@ namespace LightInject.Web
     /// </summary>
     internal class PerWebRequestScopeManagerProvider : IScopeManagerProvider
     {
+        /// <summary>
+        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// </summary>
+        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
         public ScopeManager GetScopeManager()
         {
             return (ScopeManager)HttpContext.Current.Items["ScopeManager"];
