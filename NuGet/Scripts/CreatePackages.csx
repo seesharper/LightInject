@@ -20,6 +20,7 @@ private void CreateSourcePackages()
 	CreateLightInjectMvcSourcePackage();
 	CreateLightInjectServiceLocationSourcePackage();	
 	CreateLightInjectWcfSourcePackage();
+	CreateLightInjectWebApiSourcePackage();
 }
 
 private void UpdateBinaryProjects()
@@ -33,10 +34,10 @@ private void UpdateBinaryProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject\package\LightInject.nuspec", version);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Source\package\LightInject.nuspec", version);
 
-	Publicizer.Write("NETFX_CORE_PCL", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsRuntime\LightInject\LightInject.cs");
+	Publicizer.Write("NETFX_CORE", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsRuntime\LightInject\LightInject.cs");
 	Publicizer.Write("NET", @"..\..\LightInject\LightInject.cs", @"..\Build\Net\LightInject\LightInject.cs"); 
 	Publicizer.Write("NET45", @"..\..\LightInject\LightInject.cs", @"..\Build\Net45\LightInject\LightInject.cs"); 
-	Publicizer.Write("WP_PCL", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsPhone\LightInject\LightInject.cs"); 
+	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsPhone\LightInject\LightInject.cs"); 
 
 	//LightInject.Annotation
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Annotation\LightInject.Annotation.cs");		
@@ -48,10 +49,10 @@ private void UpdateBinaryProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation\package\LightInject.Annotation.nuspec", version);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation.Source\package\LightInject.Annotation.nuspec", version);
 
-	Publicizer.Write("NETFX_CORE_PCL",@"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsRuntime\LightInject.Annotation\LightInject.Annotation.cs");
+	Publicizer.Write("NETFX_CORE",@"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsRuntime\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net45\LightInject.Annotation\LightInject.Annotation.cs");
-	Publicizer.Write("WP_PCL", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsPhone\LightInject.Annotation\LightInject.Annotation.cs");
+	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsPhone\LightInject.Annotation\LightInject.Annotation.cs");
 
 	//LightInject.Interception
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Interception\LightInject.Interception.cs");		
@@ -75,10 +76,10 @@ private void UpdateBinaryProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mocking\package\LightInject.Mocking.nuspec", version);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mocking.Source\package\LightInject.Mocking.nuspec", version);
 
-	Publicizer.Write("NETFX_CORE_PCL", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsRuntime\LightInject.Mocking\LightInject.Mocking.cs");
+	Publicizer.Write("NETFX_CORE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsRuntime\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\Net\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\Net45\LightInject.Mocking\LightInject.Mocking.cs");
-	Publicizer.Write("WP_PCL", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsPhone\LightInject.Mocking\LightInject.Mocking.cs");
+	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsPhone\LightInject.Mocking\LightInject.Mocking.cs");
 	
 	//LightInject.Mvc
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Mvc\LightInject.Mvc.cs");		
@@ -101,10 +102,10 @@ private void UpdateBinaryProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.ServiceLocation\package\LightInject.ServiceLocation.nuspec", version);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.ServiceLocation.Source\package\LightInject.ServiceLocation.nuspec", version);
 
-	Publicizer.Write("NETFX_CORE_PCL", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsRuntime\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
+	Publicizer.Write("NETFX_CORE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsRuntime\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\Net\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\Net45\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
-	Publicizer.Write("WP_PCL", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsPhone\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
+	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsPhone\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 
 	//LightInject.Web	
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Web\LightInject.Web.cs");		
@@ -138,7 +139,19 @@ private void UpdateBinaryProjects()
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf.Client\package\LightInject.Wcf.Client.nuspec", version);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf..ClientSource\package\LightInject.Wcf.Client.nuspec", version); */
+
+	//LightInject.WebApi
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.WebApi\LightInject.WebApi.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
+	
+	Publicizer.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net\LightInject.WebApi\LightInject.WebApi.cs");
+	Publicizer.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net45\LightInject.WebApi\LightInject.WebApi.cs");
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", version);
 }
+
 
 private void BuildBinaryProjects()
 {
@@ -161,6 +174,7 @@ private void CreateBinaryPackages()
 	CreateLightInjectWebBinaryPackage();
 	CreateLightInjectServiceLocationBinaryPackage(); 
 	CreateLightInjectWcfBinaryPackage();
+	CreateLightInjectWebApiBinaryPackage();
 }
 
 private void CreateLightInjectBinaryPackage()
@@ -346,12 +360,31 @@ private void CreateLightInjectWcfBinaryPackage()
 	File.Copy(@"..\Build\Net45\LightInject.Wcf\bin\release\LightInject.Wcf.dll", @"..\LightInject.Wcf\package\lib\net45\LightInject.Wcf.dll", true);
 	File.Copy(@"..\Build\Net45\LightInject.Wcf\bin\release\LightInject.Wcf.pdb", @"..\LightInject.Wcf\package\lib\net45\LightInject.Wcf.pdb", true);
 	File.Copy(@"..\Build\Net45\LightInject.Wcf\bin\release\LightInject.Wcf.xml", @"..\LightInject.Wcf\package\lib\net45\LightInject.Wcf.xml", true);
-
 	
-
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Wcf\package\LightInject.Wcf.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.Wcf(Binary) NuGet package");
+}
+
+private void CreateLightInjectWebApiBinaryPackage()
+{
+	Console.WriteLine("Start building the LightInject.WebApi(Binary) NuGet package");
+
+	DirectoryUtils.Delete(@"..\LightInject.WebApi\package\lib");
+	Directory.CreateDirectory(@"..\LightInject.WebApi\package\lib\net40");
+	Directory.CreateDirectory(@"..\LightInject.WebApi\package\lib\net45");
+
+	File.Copy(@"..\Build\Net\LightInject.WebApi\bin\release\LightInject.WebApi.dll", @"..\LightInject.WebApi\package\lib\net40\LightInject.WebApi.dll", true);
+	File.Copy(@"..\Build\Net\LightInject.WebApi\bin\release\LightInject.WebApi.pdb", @"..\LightInject.WebApi\package\lib\net40\LightInject.WebApi.pdb", true);
+	File.Copy(@"..\Build\Net\LightInject.WebApi\bin\release\LightInject.WebApi.xml", @"..\LightInject.WebApi\package\lib\net40\LightInject.WebApi.xml", true);
+
+	File.Copy(@"..\Build\Net45\LightInject.WebApi\bin\release\LightInject.WebApi.dll", @"..\LightInject.WebApi\package\lib\net45\LightInject.WebApi.dll", true);
+	File.Copy(@"..\Build\Net45\LightInject.WebApi\bin\release\LightInject.WebApi.pdb", @"..\LightInject.WebApi\package\lib\net45\LightInject.WebApi.pdb", true);
+	File.Copy(@"..\Build\Net45\LightInject.WebApi\bin\release\LightInject.WebApi.xml", @"..\LightInject.WebApi\package\lib\net45\LightInject.WebApi.xml", true);
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.WebApi(Binary) NuGet package");
 }
 
 private void CreateLightInjectServiceLocationBinaryPackage()
@@ -515,6 +548,24 @@ private void CreateLightInjectWcfSourcePackage()
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.Wcf.Source NuGet package");
+}
+
+private void CreateLightInjectWebApiSourcePackage()
+{
+	Console.WriteLine("Start building the LightInject.WebApi.Source NuGet package");
+	
+	DirectoryUtils.Delete(@"..\LightInject.WebApi.Source\package\content");
+	Directory.CreateDirectory(@"..\LightInject.WebApi.Source\package\content\net40\LightInject\WebApi");
+	Directory.CreateDirectory(@"..\LightInject.WebApi.Source\package\content\net45\LightInject\WebApi");
+	
+
+	SourceWriter.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs",  @"..\LightInject.WebApi.Source\package\content\net40\LightInject\WebApi\LightInject.WebApi.cs.pp", true, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs",  @"..\LightInject.WebApi.Source\package\content\net45\LightInject\WebApi\LightInject.WebApi.cs.pp", true, true);
+	
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.WebApi.Source NuGet package");
 }
 
 

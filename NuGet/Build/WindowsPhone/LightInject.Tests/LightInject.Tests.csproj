@@ -112,9 +112,6 @@
     <Compile Include="..\..\..\..\LightInject.Tests\LazyCompositionRootTests.cs">
       <Link>LazyCompositionRootTests.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\..\LightInject.Tests\LazyReadOnlyCollectionTests.cs">
-      <Link>LazyReadOnlyCollectionTests.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\MockingTests.cs">
       <Link>MockingTests.cs</Link>
     </Compile>
