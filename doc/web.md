@@ -30,13 +30,6 @@ The following example shows how to enable **LightInject** in the **Application_S
 
 	protected void Application_Start()
     {
-		var serviceContainer = new ServiceContainer();            
-		serviceContainer.Register<IFoo, Foo>(new PerScopeLifetime()); 
-		LightInjectHttpModule.SetServiceContainer(serviceContainer);		
-	}
-
-	protected void Application_Start()
-    {
 		var container = new ServiceContainer();
         container.EnablePerWebRequestScope();                   
 		container.Register<IFoo, Foo>(new PerScopeLifetime()); 		
