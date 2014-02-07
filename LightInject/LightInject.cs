@@ -35,6 +35,9 @@
 namespace LightInject
 {
     using System;    
+#if WINDOWS_PHONE
+    using System.Collections;
+#endif
 #if NET || NET45 || NETFX_CORE
     using System.Collections.Concurrent;
 #endif
@@ -44,7 +47,7 @@ namespace LightInject
 #endif    
 #if NET || NET45    
     using System.IO;
-#endif
+#endif    
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -1150,7 +1153,7 @@ namespace LightInject
 
     internal static class TypeHelper
     {
-#if NETFX_CORE || WINDOWS_PHONE 
+#if NETFX_CORE || WINDOWS_PHONE      
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetTypeInfo().GenericTypeArguments;
@@ -1277,13 +1280,14 @@ namespace LightInject
                 GetConstructors(type).FirstOrDefault(c => c.GetParameters().Select(p => p.ParameterType).SequenceEqual(types));
         }        
 #endif
-#if NET
+#if NET        
         public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
         {
             return Delegate.CreateDelegate(delegateType, target, methodInfo);
         }
+
 #endif
-#if NET || NET45 
+#if NET || NET45         
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetGenericArguments();
@@ -3457,7 +3461,11 @@ namespace LightInject
     {
         private readonly ThreadLocal<ScopeManager> scopeManagers =
             new ThreadLocal<ScopeManager>(() => new ScopeManager());
-        
+
+        /// <summary>
+        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// </summary>
+        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
         public ScopeManager GetScopeManager()
         {
             return scopeManagers.Value;
@@ -3489,9 +3497,7 @@ namespace LightInject
         {
         }
     }
-
 #endif
-
 #if WINDOWS_PHONE
     /// <summary>
     /// A thread safe dictionary.
@@ -3841,7 +3847,7 @@ namespace LightInject
             {
                 stack.Push(parameters[0]);
             }
-            if (code == OpCodes.Ldarg_1)
+            else if (code == OpCodes.Ldarg_1)      
             {
                 stack.Push(parameters[1]);
             }
@@ -5236,10 +5242,8 @@ namespace LightInject
             InternalTypes.Add(typeof(ImmutableList<>));
             InternalTypes.Add(typeof(KeyValue<,>));
             InternalTypes.Add(typeof(ImmutableHashTree<,>));
-            InternalTypes.Add(typeof(PerThreadScopeManagerProvider));
-            
-#if NETFX_CORE || WINDOWS_PHONE
-            
+            InternalTypes.Add(typeof(PerThreadScopeManagerProvider));            
+#if NETFX_CORE || WINDOWS_PHONE            
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
