@@ -51,7 +51,7 @@ function renderMarkdown2(showTableofContents){
     renderElement2(e, true);
 
   }
-  else
+  else  
   {
     $("#contentWithoutToc").show();
     $("#contentWithToc").hide();

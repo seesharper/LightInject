@@ -1,6 +1,6 @@
 # Web API #
 
-**LightInject.WebApi** provides an integration that enables dependency injection in ASP.NET Web API applications.
+**LightInject.WebApi** provides an integration that enables dependency injection in Web API applications.
 
 ## Installing ##
 
@@ -33,9 +33,12 @@ This will install a single file, **LightInject.WebApi.cs** in the target project
         var container = new ServiceContainer();
         container.RegisterApiControllers();        
         //register other services
-        
-        container.EnableWebApi()              
+        container.EnablePerWebRequestScope();
+        container.EnableWebApi(GlobalConfiguration.Configuration)              
     }
+
+>**Note:** EnablePerWebRequestScope is only required for hosting within ASP.Net 
+
 
 ## FilterAttribute ##
 

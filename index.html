@@ -74,13 +74,16 @@ $(document).ready(function() {
             </div>
             <div class="navbar-collapse collapse">
               <ul class="nav navbar-nav">
-                <li class="active"><a href="#">Getting Started</a></li>
-                <li><a href="#annotation">Annotation</a></li>
-                <li><a href="#servicelocation">Service Locator</a></li>
-                <li><a href="#unittesting">Mocking</a></li>
-                <li><a href="#interception">Interception</a></li>
-                <li><a href="#license">License</a></li>
-                <li><a href="#whatsnew">What's new</a></li>                
+                <li class="active"><a href="#">Getting Started</a></li>                                
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Extensions <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                    <li><a href="#annotation">Annotation</a></li>
+                    <li><a href="#servicelocation">Service Locator</a></li>
+                    <li><a href="#unittesting">Mocking</a></li>
+                    <li><a href="#interception">Interception</a></li>
+                  </ul>
+                </li>             
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">Integration <b class="caret"></b></a>
                   <ul class="dropdown-menu">
@@ -88,6 +91,8 @@ $(document).ready(function() {
                     <li><a href="#mvc">MVC</a></li>                    
                   </ul>
                 </li>
+                <li><a href="#license">License</a></li>
+                <li><a href="#whatsnew">What's new</a></li>   
               </ul>
             </div>
           </div>
