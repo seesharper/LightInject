@@ -1,3 +1,26 @@
+## LightInject.WebApi 1.0.0.1 ##
+(February 07, 2014)
+
+Adds support for dependency injection in a Web API application.
+
+[Learn more](index.html#webapi)
+
+## LightInject 3.0.1.3 ##
+(February 07, 2014)
+
+Performance improvements by replacing the dictionary used for service lookup with a balanced binary tree.
+
+Fixes [https://github.com/seesharper/LightInject/issues/57](https://github.com/seesharper/LightInject/issues/57)
+
+Fixes [https://github.com/seesharper/LightInject/issues/49](https://github.com/seesharper/LightInject/issues/49)
+
+## LightInject.Web 1.0.0.3##
+(February 07, 2014)
+
+Fixes [https://github.com/seesharper/LightInject/issues/57](https://github.com/seesharper/LightInject/issues/57)
+
+Fixes [https://github.com/seesharper/LightInject/issues/49](https://github.com/seesharper/LightInject/issues/49)
+
 ## LightInject 3.0.1.0##
 
 (November 08, 2013)
