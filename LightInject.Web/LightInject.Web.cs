@@ -1,21 +1,29 @@
 ﻿/*****************************************************************************   
-   Copyright 2013 bernhard.richter@gmail.com
+    The MIT License (MIT)
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+    Copyright (c) 2013 bernhard.richter@gmail.com
 
-       http://www.apache.org/licenses/LICENSE-2.0
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 ******************************************************************************
-   LightInject.Web version 1.0.0.2
-   http://seesharper.github.io/LightInject/
-   http://twitter.com/bernhardrichter    
+    LightInject.Web version 1.0.0.3
+    http://seesharper.github.io/LightInject/
+    http://twitter.com/bernhardrichter    
 ******************************************************************************/
 [assembly: System.Web.PreApplicationStartMethod(typeof(LightInject.Web.LightInjectHttpModuleInitializer), "Initialize")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
@@ -40,16 +48,15 @@ namespace LightInject
         /// disposed when the web request ends.
         /// </summary>
         /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
-        public static void EnablePerWebRequestScope(this IServiceContainer serviceContainer)
+        public static void EnablePerWebRequestScope(this ServiceContainer serviceContainer)
         {            
-            LightInjectHttpModule.SetServiceContainer(serviceContainer);
+            serviceContainer.ScopeManagerProvider = new PerWebRequestScopeManagerProvider();
         }      
     }
 }
 
 namespace LightInject.Web
-{
-    using System;
+{    
     using System.Web;
     using Microsoft.Web.Infrastructure.DynamicModuleHelper;
 
@@ -69,7 +76,7 @@ namespace LightInject.Web
             if (!isInitialized)
             {
                 isInitialized = true;
-                DynamicModuleUtility.RegisterModule(typeof(LightInjectHttpModule));
+                DynamicModuleUtility.RegisterModule(typeof(LightInjectHttpModule));                
             }
         }
     }
@@ -79,9 +86,7 @@ namespace LightInject.Web
     /// with the <see cref="PerScopeLifetime"/> lifetime is scoped per web request.
     /// </summary>
     public class LightInjectHttpModule : IHttpModule
-    {
-        private static IServiceContainer serviceContainer;
-              
+    {                      
         /// <summary>
         /// Initializes a module and prepares it to handle requests.
         /// </summary>
@@ -101,26 +106,34 @@ namespace LightInject.Web
         public void Dispose()
         {            
         }
-
-        /// <summary>
-        /// Sets the <see cref="IServiceContainer"/> instance to be used by this <see cref="LightInjectHttpModule"/>.
-        /// </summary>
-        /// <param name="container">The container to be used by this <see cref="LightInjectHttpModule"/>.</param>
-        internal static void SetServiceContainer(IServiceContainer container)
+       
+        private static void EndRequest()
         {
-            serviceContainer = container;
+            var scopeManager = (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+            scopeManager.CurrentScope.Dispose();            
         }
 
-        private static void EndScope()
-        {            
-            Console.WriteLine("EndScope");
-            ((Scope)HttpContext.Current.Items["Scope"]).Dispose();            
-        }
-
-        private static void BeginScope()
+        private static void BeginRequest()
         {
-            Console.WriteLine("BeginScope");
-            HttpContext.Current.Items["Scope"] = serviceContainer.BeginScope();
+            var scopeManager = new ScopeManager();
+            scopeManager.BeginScope();
+            HttpContext.Current.Items["ScopeManager"] = scopeManager;
         }         
-    }   
+    }
+
+    /// <summary>
+    /// An <see cref="IScopeManagerProvider"/> that provides the <see cref="ScopeManager"/>
+    /// used by the current <see cref="HttpRequest"/>.
+    /// </summary>
+    internal class PerWebRequestScopeManagerProvider : IScopeManagerProvider
+    {
+        /// <summary>
+        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// </summary>
+        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
+        public ScopeManager GetScopeManager()
+        {
+            return (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+        }
+    }
 }

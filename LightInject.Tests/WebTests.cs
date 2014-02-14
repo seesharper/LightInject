@@ -16,13 +16,13 @@ namespace LightInject.Tests
     [TestClass]
     public class WebTests
     {
-        private static IServiceContainer serviceContainer;
+        private static ServiceContainer serviceContainer;
 
         static WebTests()
         {
             serviceContainer = new ServiceContainer();
             serviceContainer.Register<IFoo, Foo>(new PerScopeLifetime());
-            LightInjectHttpModule.SetServiceContainer(serviceContainer);
+            serviceContainer.EnablePerWebRequestScope();
         }
                 
         [TestMethod]

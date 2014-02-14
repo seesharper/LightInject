@@ -378,6 +378,7 @@ public class Publicizer
         Includes.Add("internal struct OpCode");
         Includes.Add("internal static class");
         Includes.Add("internal class");
+        Includes.Add("internal sealed class");
         Includes.Add("internal interface");
         Includes.Add("internal abstract class");
         Includes.Add("internal LightInjectServiceLocator");

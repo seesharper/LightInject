@@ -1,21 +1,29 @@
 ﻿/*****************************************************************************   
-   Copyright 2013 bernhard.richter@gmail.com
+    The MIT License (MIT)
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+    Copyright (c) 2013 bernhard.richter@gmail.com
 
-       http://www.apache.org/licenses/LICENSE-2.0
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 ******************************************************************************
-   LightInject.Annotation version 1.0.0.2
-   http://seesharper.github.io/LightInject/
-   http://twitter.com/bernhardrichter
+    LightInject.Annotation version 1.0.0.3
+    http://www.lightinject.net/
+    http://twitter.com/bernhardrichter
 ******************************************************************************/
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
@@ -83,6 +91,7 @@ namespace LightInject
         public static void EnableAnnotatedConstructorInjection(this ServiceContainer serviceContainer)
         {
             serviceContainer.ConstructorDependencySelector = new AnnotatedConstructorDependencySelector();
+            serviceContainer.ConstructorSelector = new AnnotatedConstructorSelector(serviceContainer.CanGetInstance);
         }
     }
 }
@@ -167,6 +176,36 @@ namespace LightInject.Annotation
             }
 
             return constructorDependencies;
+        }
+    }
+
+    /// <summary>
+    /// A <see cref="IConstructorSelector"/> implementation that uses information 
+    /// from the <see cref="InjectAttribute"/> to determine if a given service can be resolved.
+    /// </summary>
+    internal class AnnotatedConstructorSelector : MostResolvableConstructorSelector
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AnnotatedConstructorSelector"/> class.
+        /// </summary>
+        /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
+        public AnnotatedConstructorSelector(Func<Type, string, bool> canGetInstance)
+            : base(canGetInstance)
+        {
+        }
+
+        /// <summary>
+        /// Gets the service name based on the given <paramref name="parameter"/>.
+        /// </summary>
+        /// <param name="parameter">The <see cref="ParameterInfo"/> for which to get the service name.</param>
+        /// <returns>The name of the service for the given <paramref name="parameter"/>.</returns>
+        protected override string GetServiceName(ParameterInfo parameter)
+        {
+            var injectAttribute =
+                      (InjectAttribute)
+                      parameter.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault();
+            
+            return injectAttribute != null ? injectAttribute.ServiceName : base.GetServiceName(parameter);
         }
     }
 }

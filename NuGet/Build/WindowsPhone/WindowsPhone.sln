@@ -1,6 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B5928BB5-CE11-42E7-AE69-9B207FF92820}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "LightInject\LightInject.csproj", "{99C436A4-0665-4478-923F-CC111DB75E83}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Annotation", "LightInject.Annotation\LightInject.Annotation.csproj", "{5071525B-32AF-4739-B7F0-BFBC27A182C3}"
@@ -16,13 +25,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRoot", "..\..\..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj", "{65FF0CEB-76B4-44FD-898A-00C32C21738C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRootTypeAttribute", "..\..\..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj", "{75EA6152-B0C9-40C1-AF22-10DBCA192239}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B5928BB5-CE11-42E7-AE69-9B207FF92820}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

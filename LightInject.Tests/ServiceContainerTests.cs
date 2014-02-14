@@ -424,7 +424,91 @@ namespace LightInject.Tests
 
         }
 
+        #region Array
+        
+        [TestMethod]
+        public void GetInstance_Array_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<IFoo[]>();
+            Assert.AreEqual(2, services.Length);
+        }
 
+        #endregion
+
+        #region List
+
+        [TestMethod]
+        public void GetInstance_List_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<IList<IFoo>>();
+            Assert.AreEqual(2, services.Count);
+        }
+
+        #endregion
+
+        #region Collection
+
+        [TestMethod]
+        public void GetInstance_Collection_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<ICollection<IFoo>>();
+            Assert.AreEqual(2, services.Count);
+        }
+
+        #endregion
+
+#if NET45 || NETFX_CORE
+        #region ReadOnly Collection
+
+        [TestMethod]
+        public void GetInstance_ReadOnlyCollection_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<IReadOnlyCollection<IFoo>>();
+            Assert.AreEqual(2, services.Count);
+        }
+
+        [TestMethod]
+        public void GetInstance_GenericFooWithReadOnlyCollection_InjectsDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+            container.Register<IFoo<IReadOnlyCollection<IBar>>, FooWithGenericDependency<IReadOnlyCollection<IBar>>>();
+
+            var instance = (FooWithGenericDependency<IReadOnlyCollection<IBar>>)container.GetInstance<IFoo<IReadOnlyCollection<IBar>>>();
+
+            Assert.AreEqual(1, instance.Dependency.Count);
+        }
+
+
+        #endregion
+
+        #region ReadOnly List
+
+        [TestMethod]
+        public void GetInstance_ReadOnlyList_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo));
+            container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
+            var services = container.GetInstance<IReadOnlyList<IFoo>>();
+            Assert.AreEqual(2, services.Count);
+        }
+
+
+        #endregion
+#endif
         #region Func Services
 
         [TestMethod]
@@ -746,7 +830,7 @@ namespace LightInject.Tests
         public void GetInstance_UsingServicePredicate_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
+            container.RegisterFallback((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
             var instance = container.GetInstance<IFoo>();
             Assert.IsInstanceOfType(instance, typeof(IFoo));
         }
@@ -755,7 +839,7 @@ namespace LightInject.Tests
         public void GetInstance_PerContainerLifetimeUsingServicePredicate_ReturnsSameInstance()
         {
             var container = CreateContainer();
-            container.Register((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo(), new PerContainerLifetime());
+            container.RegisterFallback((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo(), new PerContainerLifetime());
             var firstInstance = container.GetInstance<IFoo>();
             var secondInstance = container.GetInstance<IFoo>();
             Assert.AreSame(firstInstance, secondInstance);
@@ -966,6 +1050,35 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
+        public void TryGetInstance_UnknownService_IsAvailableAfterRegistration()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+
+            container.TryGetInstance<IFoo>();
+            container.Register<IFoo, Foo>();
+
+            var instance = container.TryGetInstance<IFoo>();
+
+            Assert.IsNotNull(instance);
+        }
+
+        [TestMethod]
+        public void TryGetInstance_UnknownNamedService_IsAvailableAfterRegistration()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+
+            container.TryGetInstance<IFoo>("Foo");
+            container.Register<IFoo, Foo>("Foo");
+
+            var instance = container.TryGetInstance<IFoo>("Foo");
+
+            Assert.IsNotNull(instance);
+        }
+
+
+        [TestMethod]
         public void TryGetInstance_UnknownNamedService_ReturnsNull()
         {
             var container = CreateContainer();
@@ -1041,6 +1154,38 @@ namespace LightInject.Tests
             var instance = factory.CreateFoo();
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+        [TestMethod]
+        public void GetInstance_ServiceWithGenericConstraint_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>));
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)), ErrorMessages.UnknownGenericDependency);
+        }
+
+        [TestMethod]
+        public void GetAllInstances_ServiceWithGenericConstraint_ReturnsOnlyMatchingInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>));
+            container.Register(typeof(IFoo<>), typeof(Foo<>), "AnotherFoo");
+
+            var instances = container.GetAllInstances<IFoo<int>>();
+            
+            Assert.AreEqual(1, instances.Count());
+        }
+
+        [TestMethod]
+        public void GetAllInstances_ServiceWithGenericConstraint_ReturnsAllMatchingInstances()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>));
+            container.Register(typeof(IFoo<>), typeof(Foo<>), "AnotherFoo");
+
+            var instances = container.GetAllInstances<IFoo<IBar>>();
+
+            Assert.AreEqual(2, instances.Count());
         }
 
         [TestMethod]

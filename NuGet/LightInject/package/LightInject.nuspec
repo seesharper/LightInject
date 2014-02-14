@@ -2,14 +2,14 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject</id>
-        <version>3.0.1.0</version>
+        <version>3.0.1.3</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>http://www.lightinject.net/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An ultra lightweight Inversion of Control container for the .Net framework. See LightInject.Source for the source distribution.</description>
-        <releaseNotes>Added the RegisterFrom method that allows explicit composition root execution.</releaseNotes>
+        <releaseNotes>Performance improvements</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime</tags>
     </metadata>   

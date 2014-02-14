@@ -1,6 +1,7 @@
 ﻿namespace LightInject.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -121,7 +122,28 @@
             Assert.IsFalse(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject"));
         }
         
-#if NET          
+        [TestMethod]
+        public void GetInstance_UnknownService_CallsAssemblyScannerBeforeInvokingRules()
+        {
+            List<string> sequence = new List<string>();
+            var scannerMock = new Mock<IAssemblyScanner>();
+            scannerMock.Setup(m => m.Scan(It.IsAny<Assembly>(), It.IsAny<IServiceRegistry>())).Callback(() => sequence.Add("Scan"));
+            var container = new ServiceContainer();
+            container.AssemblyScanner = scannerMock.Object;            
+            container.RegisterFallback((type, s) => type.Name == "IFoo",
+                request =>
+                    {
+                        sequence.Add("Fallback");
+                        return new SampleLibraryWithCompositionRootTypeAttribute.Foo();
+                    });
+            container.GetInstance<SampleLibraryWithCompositionRootTypeAttribute.IFoo>();
+
+            Assert.AreEqual("Scan", sequence[0]);
+            Assert.AreEqual("Fallback", sequence[1]);
+        }
+
+
+#if NET || NET45         
         [TestMethod]
         public void Register_AssemblyFile_CallsAssemblyScanner()
         {
@@ -184,7 +206,7 @@
             serviceContainer.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), (s, t) => true);
             scannerMock.Verify(a => a.Scan(typeof(IFoo).Assembly, It.IsAny<IServiceRegistry>(), It.IsAny<Func<ILifetime>>(), It.IsAny<Func<Type, Type, bool>>()), Times.Once());                        
         }
-#if NET
+#if NET || NET45
         [TestMethod]
         public void Register_SearchPattern_CallsAssemblyScanner()
         {

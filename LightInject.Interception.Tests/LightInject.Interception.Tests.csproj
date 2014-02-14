@@ -85,7 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
-      <Project>{F1FBC75D-E613-477E-9630-8BC01AA9BFF3}</Project>
+      <Project>{f1fbc75d-e613-477e-9630-8bc01aa9bff3}</Project>
       <Name>LightInject.Interception</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">

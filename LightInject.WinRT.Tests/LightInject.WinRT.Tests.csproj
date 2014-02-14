@@ -160,6 +160,9 @@
     <Compile Include="..\LightInject.Tests\TestBase.cs">
       <Link>TestBase.cs</Link>
     </Compile>
+    <Compile Include="..\LightInject.Wcf.Client\LightInject.Wcf.Client.cs">
+      <Link>LightInject.Wcf.Client.cs</Link>
+    </Compile>
     <Compile Include="..\LightInject\LightInject.cs">
       <Link>LightInject.cs</Link>
     </Compile>

@@ -4,6 +4,8 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
+    using System.Runtime.Remoting.Messaging;
+
     using LightInject.Annotation;
 
     public class FooWithCompilerGeneratedType : IFoo
@@ -527,6 +529,23 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; private set; }
     }
 
+    public class FooWithMultipleParameterizedConstructors
+    {
+        public string StringValue { get; set; }
+        public int IntValue { get; set; }
+
+        public FooWithMultipleParameterizedConstructors([Inject("SomeValue")]int intValue)
+        {
+            IntValue = intValue;
+        }
+
+        public FooWithMultipleParameterizedConstructors(string stringValue)
+        {
+            StringValue = stringValue;
+        }
+    }
+
+   
     public class FooWithProperyDependency : IFoo
     {
         public IBar Bar { get; set; }
@@ -682,4 +701,30 @@ namespace LightInject.SampleLibrary
             
         }
     }
+
+    public class FooWithGenericConstraint<T> : IFoo<T> where T:IBar
+    {
+        
+    }
+
+    public class FooWithSameHashCode
+    {
+        public FooWithSameHashCode(int id)
+        {
+            Id = id;
+        }
+
+        public int Id { get; private set; }
+
+        public override bool Equals(object obj)
+        {
+            return ((FooWithSameHashCode)obj).Id == Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return 42;
+        }
+    }
+
 }

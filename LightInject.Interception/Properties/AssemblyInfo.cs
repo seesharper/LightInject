@@ -36,3 +36,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 [assembly: InternalsVisibleTo("LightInject.Interception.Tests")]
 [assembly: InternalsVisibleTo("LightInject.Wcf")]
+[assembly: InternalsVisibleTo("LightInject.Wcf.Client")]
+[assembly: InternalsVisibleTo("LightInject.Wcf.Tests")]

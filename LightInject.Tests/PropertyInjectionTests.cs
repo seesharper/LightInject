@@ -243,6 +243,18 @@
         }
 
         [TestMethod]
+        public void InjectProperties_UnknownClassWithPropertyDependencyRegisteredAsInstance_InjectsPropertyDependencies()
+        {
+            var container = CreateContainer();
+            container.RegisterInstance<IBar>(new Bar());
+            var fooWithProperyDependency = new FooWithProperyDependency();
+
+            var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+
+            Assert.IsInstanceOfType(result.Bar, typeof(Bar));
+        }
+       
+        [TestMethod]
         public void InjectProperties_FuncFactory_InjectsPropertyDependencies()
         {
             var container = CreateContainer();
