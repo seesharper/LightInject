@@ -2604,21 +2604,17 @@ namespace LightInject
             return new TypeConstructionInfoBuilder(ConstructorSelector, ConstructorDependencySelector, PropertyDependencySelector);
         }
 
-        private Func<object[], object> CreateDynamicMethodDelegate(Action<IMethodSkeleton> serviceEmitter, Type serviceType)
+        private Func<object[], object> CreateDynamicMethodDelegate(Action<IMethodSkeleton> serviceEmitter)
         {
             var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
             serviceEmitter(methodSkeleton);
+            IEmitter emitter = methodSkeleton.GetEmitter();
 
-            if (methodSkeleton.GetEmitter().StackType.IsValueType())
+            if (emitter.StackType.IsValueType())
             {
-                methodSkeleton.GetEmitter().Emit(OpCodes.Box, methodSkeleton.GetEmitter().StackType);
+                emitter.Emit(OpCodes.Box, emitter.StackType);
             }
-            
-            //if (serviceType.IsValueType())
-            //{
-            //    methodSkeleton.GetEmitter().Emit(OpCodes.Box, serviceType);
-            //}
-
+                       
             return (Func<object[], object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object>));                                    
         }
 
@@ -2629,24 +2625,24 @@ namespace LightInject
        
         private Action<IMethodSkeleton> GetEmitMethod(Type serviceType, string serviceName)
         {           
-            Action<IMethodSkeleton> emitter = GetRegisteredEmitMethod(serviceType, serviceName);
+            Action<IMethodSkeleton> emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);
 
-            if (emitter == null)
+            if (emitMethod == null)
             {
                 AssemblyScanner.Scan(serviceType.GetAssembly(), this);                
-                emitter = GetRegisteredEmitMethod(serviceType, serviceName);                
+                emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);                
             }
 
-            if (emitter == null)
+            if (emitMethod == null)
             {
                 var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
                 if (rule != null)
                 {
-                    emitter = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
+                    emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
                 }
             }
 
-            return CreateEmitMethodWrapper(emitter, serviceType, serviceName);
+            return CreateEmitMethodWrapper(emitMethod, serviceType, serviceName);
         }
         
         private Action<IMethodSkeleton> CreateEmitMethodWrapper(Action<IMethodSkeleton> emitter, Type serviceType, string serviceName)
@@ -2924,7 +2920,7 @@ namespace LightInject
         {                        
             var openGenericMethod = GetType().GetPrivateMethod("CreateGenericDynamicMethodDelegate");
             var closedGenericMethod = openGenericMethod.MakeGenericMethod(serviceType);
-            var del = WrapAsFuncDelegate(CreateDynamicMethodDelegate(serviceEmitter, serviceType));
+            var del = WrapAsFuncDelegate(CreateDynamicMethodDelegate(serviceEmitter));
             return (Delegate)closedGenericMethod.Invoke(this, new object[] { del });
         }
 
@@ -2966,6 +2962,7 @@ namespace LightInject
                 {
                     UnboxOrCast(dynamicMethodSkeleton, propertyDependency.ServiceType);
                 }
+
                 emitter.Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
             }
         }
@@ -3337,7 +3334,7 @@ namespace LightInject
             {
                 var del =
                     WrapAsFuncDelegate(
-                        CreateDynamicMethodDelegate(instanceEmitter, serviceRegistration.ServiceType));
+                        CreateDynamicMethodDelegate(instanceEmitter));
                 var instance = serviceRegistration.Lifetime.GetInstance(del, null);
                 var instanceIndex = constants.Add(instance);
                 PushConstant(dynamicMethodSkeleton, instanceIndex);
@@ -3345,7 +3342,7 @@ namespace LightInject
             else
             {
                 IEmitter emitter = dynamicMethodSkeleton.GetEmitter();
-                int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter, serviceRegistration.ServiceType);
+                int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter);
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
                 int scopeManagerProviderIndex = CreateScopeManagerProviderIndex();
                 var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
@@ -3354,8 +3351,7 @@ namespace LightInject
                 PushConstant(dynamicMethodSkeleton, scopeManagerProviderIndex, typeof(IScopeManagerProvider));
                 emitter.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
                 emitter.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
-                emitter.Emit(OpCodes.Callvirt, getInstanceMethod);
-                //emitter.Emit(serviceRegistration.ServiceType.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
+                emitter.Emit(OpCodes.Callvirt, getInstanceMethod);                
             }
         }
        
@@ -3364,9 +3360,9 @@ namespace LightInject
             return constants.Add(ScopeManagerProvider);
         }
 
-        private int CreateInstanceDelegateIndex(Action<IMethodSkeleton> instanceEmitter, Type serviceType)
+        private int CreateInstanceDelegateIndex(Action<IMethodSkeleton> emitMethod)
         {
-            return constants.Add(WrapAsFuncDelegate(CreateDynamicMethodDelegate(instanceEmitter, serviceType)));
+            return constants.Add(WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod)));
         }                
 
         private int CreateLifetimeIndex(ILifetime lifetime)
@@ -3413,7 +3409,7 @@ namespace LightInject
                 {
                     try
                     {
-                        return CreateDynamicMethodDelegate(serviceEmitter, typeof(object));                        
+                        return CreateDynamicMethodDelegate(serviceEmitter);                        
                     }
                     catch (InvalidOperationException ex)
                     {
@@ -3505,12 +3501,6 @@ namespace LightInject
                 return snapshot;
             }
         }
-
- 
-
-
-
-       
         
         private class DynamicMethodSkeleton : IMethodSkeleton
         {            
@@ -6048,6 +6038,7 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
+
             methodBody.Add(new Instruction<Type>(code, type));
             generator.Emit(code, type);
         }
@@ -6061,6 +6052,7 @@ namespace LightInject
                 {
                     stack.Pop();
                 }
+
                 stack.Push(constructor.DeclaringType);
             }
             else
@@ -6133,6 +6125,7 @@ namespace LightInject
             {
                 sb.AppendLine(instruction.ToString());
             }
+
             return sb.ToString();
         }
 #endif
