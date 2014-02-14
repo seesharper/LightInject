@@ -853,15 +853,83 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents an abstraction of the <see cref="ILGenerator"/> class that provides information 
+    /// about the <see cref="Type"/> currently on the stack.
+    /// </summary>
+    internal interface IEmitter
+    {
+        /// <summary>
+        /// Gets the <see cref="Type"/> currently on the stack.
+        /// </summary>
+        Type StackType { get; }
+        
+        /// <summary>
+        /// Puts the specified instruction onto the stream of instructions.
+        /// </summary>
+        /// <param name="code">The Microsoft Intermediate Language (MSIL) instruction to be put onto the stream.</param>
+        void Emit(OpCode code);
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        void Emit(OpCode code, int arg);
+
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="arg">The String to be emitted.</param>
+        void Emit(OpCode code, string arg);
+
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given type.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="type">A <see cref="Type"/> representing the type metadata token.</param>
+        void Emit(OpCode code, Type type);
+        
+        /// <summary>
+        /// Puts the specified instruction and metadata token for the specified constructor onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="constructor">A <see cref="ConstructorInfo"/> representing a constructor.</param>
+        void Emit(OpCode code, ConstructorInfo constructor);
+
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the index of the given local variable.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="localBuilder">A local variable.</param>
+        void Emit(OpCode code, LocalBuilder localBuilder);
+        
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given method.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="methodInfo">A <see cref="MethodInfo"/> representing a method.</param>
+        void Emit(OpCode code, MethodInfo methodInfo);
+
+        /// <summary>
+        /// Declares a local variable of the specified type.
+        /// </summary>
+        /// <param name="type">A <see cref="Type"/> object that represents the type of the local variable.</param>
+        /// <returns>The declared local variable.</returns>
+        LocalBuilder DeclareLocal(Type type);        
+    }
+
+
+    /// <summary>
     /// Represents a dynamic method skeleton for emitting the code needed to resolve a service instance.
     /// </summary>
     internal interface IMethodSkeleton
     {
         /// <summary>
-        /// Gets the <see cref="ILGenerator"/> for the this dynamic method.
+        /// Gets the <see cref="IEmitter"/> for the this dynamic method.
         /// </summary>
-        /// <returns>The <see cref="ILGenerator"/> for the this dynamic method.</returns>        
-        ILGenerator GetILGenerator();
+        /// <returns>The <see cref="IEmitter"/> for the this dynamic method.</returns>        
+        IEmitter GetEmitter();
 
         /// <summary>
         /// Completes the dynamic method and creates a delegate that can be used to execute it.
@@ -2374,33 +2442,55 @@ namespace LightInject
             }            
         }
 
-        private static void EmitLoadConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
+        private static void PushConstant(IMethodSkeleton dynamicMethodSkeleton, int index, Type type)
         {
-            var generator = dynamicMethodSkeleton.GetILGenerator();
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldc_I4, index);
-            generator.Emit(OpCodes.Ldelem_Ref);
-            generator.Emit(type.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
+            var emitter = dynamicMethodSkeleton.GetEmitter();
+            emitter.Emit(OpCodes.Ldarg_0);
+            emitter.Emit(OpCodes.Ldc_I4, index);
+            emitter.Emit(OpCodes.Ldelem_Ref);
+            UnboxOrCast(dynamicMethodSkeleton, type);
         }
 
-        private static void EmitNewArray(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
+        private static void UnboxOrCast(IMethodSkeleton dynamicMethodSkeleton, Type type)
         {
-            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
-            LocalBuilder array = generator.DeclareLocal(elementType.MakeArrayType());
-            generator.Emit(OpCodes.Ldc_I4, serviceEmitters.Count);
-            generator.Emit(OpCodes.Newarr, elementType);
-            generator.Emit(OpCodes.Stloc, array);
-
-            for (int index = 0; index < serviceEmitters.Count; index++)
+            var emitter = dynamicMethodSkeleton.GetEmitter();
+            if (emitter.StackType != type)
             {
-                generator.Emit(OpCodes.Ldloc, array);
-                generator.Emit(OpCodes.Ldc_I4, index);
-                var serviceEmitter = serviceEmitters[index];
+                emitter.Emit(type.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
+            }
+        }
+
+        private static void PushConstant(IMethodSkeleton dynamicMethodSkeleton, int index)
+        {
+            var generator = dynamicMethodSkeleton.GetEmitter();
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldc_I4, index);
+            generator.Emit(OpCodes.Ldelem_Ref);            
+        }
+
+        private static void EmitNewArray(IList<Action<IMethodSkeleton>> emitMethods, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
+        {
+            IEmitter emitter = dynamicMethodSkeleton.GetEmitter();
+            LocalBuilder array = emitter.DeclareLocal(elementType.MakeArrayType());
+            emitter.Emit(OpCodes.Ldc_I4, emitMethods.Count);
+            emitter.Emit(OpCodes.Newarr, elementType);
+            emitter.Emit(OpCodes.Stloc, array);
+
+            for (int index = 0; index < emitMethods.Count; index++)
+            {
+                emitter.Emit(OpCodes.Ldloc, array);
+                emitter.Emit(OpCodes.Ldc_I4, index);
+                var serviceEmitter = emitMethods[index];
                 serviceEmitter(dynamicMethodSkeleton);
-                generator.Emit(OpCodes.Stelem, elementType);
+                if (dynamicMethodSkeleton.GetEmitter().StackType != elementType)
+                {
+                    UnboxOrCast(dynamicMethodSkeleton, elementType);
+                }
+
+                emitter.Emit(OpCodes.Stelem, elementType);
             }
 
-            generator.Emit(OpCodes.Ldloc, array);
+            emitter.Emit(OpCodes.Ldloc, array);
         }
         
         private static ILifetime CloneLifeTime(ILifetime lifetime)
@@ -2459,9 +2549,9 @@ namespace LightInject
             {
                 IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
                 ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
-                var generator = methodSkeleton.GetILGenerator();
-                generator.Emit(OpCodes.Ldarg_1);
-                generator.Emit(OpCodes.Castclass, concreteType);
+                var emitter = methodSkeleton.GetEmitter();
+                emitter.Emit(OpCodes.Ldarg_1);
+                emitter.Emit(OpCodes.Castclass, concreteType);
                 try
                 {
                     EmitPropertyDependencies(constructionInfo, methodSkeleton);
@@ -2518,10 +2608,16 @@ namespace LightInject
         {
             var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
             serviceEmitter(methodSkeleton);
-            if (serviceType.IsValueType())
+
+            if (methodSkeleton.GetEmitter().StackType.IsValueType())
             {
-                methodSkeleton.GetILGenerator().Emit(OpCodes.Box, serviceType);
+                methodSkeleton.GetEmitter().Emit(OpCodes.Box, methodSkeleton.GetEmitter().StackType);
             }
+            
+            //if (serviceType.IsValueType())
+            //{
+            //    methodSkeleton.GetEmitter().Emit(OpCodes.Box, serviceType);
+            //}
 
             return (Func<object[], object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object>));                                    
         }
@@ -2704,12 +2800,12 @@ namespace LightInject
             var factoryDelegateIndex = constants.Add(factoryDelegate);
             var serviceFactoryIndex = constants.Add(this);
             Type funcType = factoryDelegate.GetType();
-            EmitLoadConstant(dynamicMethodSkeleton, factoryDelegateIndex, funcType);
-            EmitLoadConstant(dynamicMethodSkeleton, serviceFactoryIndex, typeof(IServiceFactory));
+            PushConstant(dynamicMethodSkeleton, factoryDelegateIndex, funcType);
+            PushConstant(dynamicMethodSkeleton, serviceFactoryIndex, typeof(IServiceFactory));
             pushInstance(dynamicMethodSkeleton);
-            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
+            IEmitter emitter = dynamicMethodSkeleton.GetEmitter();
             MethodInfo invokeMethod = funcType.GetMethod("Invoke");
-            generator.Emit(OpCodes.Callvirt, invokeMethod);
+            emitter.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
         private void DoEmitNewInstance(ServiceRegistration serviceRegistration, IMethodSkeleton dynamicMethodSkeleton)
@@ -2718,7 +2814,7 @@ namespace LightInject
             {
                 int index = constants.Add(serviceRegistration.Value);
                 Type serviceType = serviceRegistration.ServiceType;
-                EmitLoadConstant(dynamicMethodSkeleton, index, serviceType);                
+                PushConstant(dynamicMethodSkeleton, index, serviceType);                
             }
             else
             {
@@ -2754,9 +2850,9 @@ namespace LightInject
 
         private void EmitNewInstanceUsingImplementingType(IMethodSkeleton dynamicMethodSkeleton, ConstructionInfo constructionInfo, Action<IMethodSkeleton> decoratorTargetEmitter)
         {
-            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
+            IEmitter emitter = dynamicMethodSkeleton.GetEmitter();
             EmitConstructorDependencies(constructionInfo, dynamicMethodSkeleton, decoratorTargetEmitter);
-            generator.Emit(OpCodes.Newobj, constructionInfo.Constructor);
+            emitter.Emit(OpCodes.Newobj, constructionInfo.Constructor);
             EmitPropertyDependencies(constructionInfo, dynamicMethodSkeleton);
         }
 
@@ -2765,38 +2861,38 @@ namespace LightInject
             var factoryDelegateIndex = constants.Add(factoryDelegate);
             var serviceFactoryIndex = constants.Add(this);
             Type funcType = factoryDelegate.GetType();
-            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
-            EmitLoadConstant(dynamicMethodSkeleton, factoryDelegateIndex, funcType);            
-            EmitLoadConstant(dynamicMethodSkeleton, serviceFactoryIndex, typeof(IServiceFactory));            
+            IEmitter emitter = dynamicMethodSkeleton.GetEmitter();
+            PushConstant(dynamicMethodSkeleton, factoryDelegateIndex, funcType);            
+            PushConstant(dynamicMethodSkeleton, serviceFactoryIndex, typeof(IServiceFactory));            
             if (factoryDelegate.GetMethodInfo().GetParameters().Length > 2)
             {
                 var parameters = factoryDelegate.GetMethodInfo().GetParameters().Skip(2).ToArray();
-                PushArguments(generator, parameters);                
+                PushArguments(emitter, parameters);                
             }
                                    
             MethodInfo invokeMethod = funcType.GetMethod("Invoke");            
-            generator.Emit(OpCodes.Callvirt, invokeMethod);
+            emitter.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
-        private void PushArguments(ILGenerator generator, ParameterInfo[] parameters)
+        private void PushArguments(IEmitter emitter, ParameterInfo[] parameters)
         {
-            var argumentArray = generator.DeclareLocal(typeof(object[]));
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldlen);
-            generator.Emit(OpCodes.Conv_I4);
-            generator.Emit(OpCodes.Ldc_I4_1);
-            generator.Emit(OpCodes.Sub);
-            generator.Emit(OpCodes.Ldelem_Ref);
-            generator.Emit(OpCodes.Castclass, typeof(object[]));
-            generator.Emit(OpCodes.Stloc, argumentArray);
+            var argumentArray = emitter.DeclareLocal(typeof(object[]));
+            emitter.Emit(OpCodes.Ldarg_0);
+            emitter.Emit(OpCodes.Ldarg_0);
+            emitter.Emit(OpCodes.Ldlen);
+            emitter.Emit(OpCodes.Conv_I4);
+            emitter.Emit(OpCodes.Ldc_I4_1);
+            emitter.Emit(OpCodes.Sub);
+            emitter.Emit(OpCodes.Ldelem_Ref);
+            emitter.Emit(OpCodes.Castclass, typeof(object[]));
+            emitter.Emit(OpCodes.Stloc, argumentArray);
 
             for (int i = 0; i < parameters.Length; i++)
             {
-                generator.Emit(OpCodes.Ldloc, argumentArray);
-                generator.Emit(OpCodes.Ldc_I4, i);
-                generator.Emit(OpCodes.Ldelem_Ref);
-                generator.Emit(                
+                emitter.Emit(OpCodes.Ldloc, argumentArray);
+                emitter.Emit(OpCodes.Ldc_I4, i);
+                emitter.Emit(OpCodes.Ldelem_Ref);
+                emitter.Emit(                
                     parameters[i].ParameterType.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass,
                     parameters[i].ParameterType);
             }
@@ -2841,11 +2937,15 @@ namespace LightInject
         
         private void EmitConstructorDependency(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
         {
-            var emitter = GetEmitMethodForDependency(dependency);
+            var emitMethod = GetEmitMethodForDependency(dependency);
 
             try
             {
-                emitter(dynamicMethodSkeleton);
+                emitMethod(dynamicMethodSkeleton);
+                if (dynamicMethodSkeleton.GetEmitter().StackType != dependency.ServiceType)
+                {
+                    UnboxOrCast(dynamicMethodSkeleton, dependency.ServiceType);
+                }
             }
             catch (InvalidOperationException ex)
             {
@@ -2855,14 +2955,18 @@ namespace LightInject
 
         private void EmitPropertyDependency(IMethodSkeleton dynamicMethodSkeleton, PropertyDependency propertyDependency, LocalBuilder instance)
         {
-            var emitter = GetEmitMethodForDependency(propertyDependency);
-            var generator = dynamicMethodSkeleton.GetILGenerator();
-
-            if (emitter != null)
+            var propertyDependencyEmitMethod = GetEmitMethodForDependency(propertyDependency);
+            
+            if (propertyDependencyEmitMethod != null)
             {
-                generator.Emit(OpCodes.Ldloc, instance);
-                emitter(dynamicMethodSkeleton);
-                dynamicMethodSkeleton.GetILGenerator().Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
+                var emitter = dynamicMethodSkeleton.GetEmitter();
+                emitter.Emit(OpCodes.Ldloc, instance);
+                propertyDependencyEmitMethod(dynamicMethodSkeleton);
+                if (dynamicMethodSkeleton.GetEmitter().StackType != propertyDependency.ServiceType)
+                {
+                    UnboxOrCast(dynamicMethodSkeleton, propertyDependency.ServiceType);
+                }
+                emitter.Emit(OpCodes.Callvirt, propertyDependency.Property.GetSetMethod());
             }
         }
 
@@ -2888,11 +2992,11 @@ namespace LightInject
   
         private void EmitDependencyUsingFactoryExpression(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
         {
-            var generator = dynamicMethodSkeleton.GetILGenerator();
+            var emitter = dynamicMethodSkeleton.GetEmitter();
             var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
             MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-            EmitLoadConstant(dynamicMethodSkeleton, constants.Add(lambda), lambda.GetType());
-            generator.Emit(OpCodes.Callvirt, methodInfo);
+            PushConstant(dynamicMethodSkeleton, constants.Add(lambda), lambda.GetType());
+            emitter.Emit(OpCodes.Callvirt, methodInfo);
         }
 
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IMethodSkeleton dynamicMethodSkeleton)
@@ -2902,15 +3006,15 @@ namespace LightInject
                 return;
             }
 
-            ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
-            LocalBuilder instance = generator.DeclareLocal(constructionInfo.ImplementingType);
-            generator.Emit(OpCodes.Stloc, instance);
+            IEmitter emitter = dynamicMethodSkeleton.GetEmitter();
+            LocalBuilder instance = emitter.DeclareLocal(constructionInfo.ImplementingType);
+            emitter.Emit(OpCodes.Stloc, instance);
             foreach (var propertyDependency in constructionInfo.PropertyDependencies)
             {
                 EmitPropertyDependency(dynamicMethodSkeleton, propertyDependency, instance);
             }
 
-            generator.Emit(OpCodes.Ldloc, instance);
+            emitter.Emit(OpCodes.Ldloc, instance);
         }
 
         private Action<IMethodSkeleton> ResolveUnknownServiceEmitter(Type serviceType, string serviceName)
@@ -2973,14 +3077,14 @@ namespace LightInject
             Type[] methodParameterTypes = new[] { typeof(IServiceFactory) }.Concat(parameterTypes).ToArray();
             
             var methodSkeleton = methodSkeletonFactory(returnType, methodParameterTypes);
-            var generator = methodSkeleton.GetILGenerator();
+            var emitter = methodSkeleton.GetEmitter();
 
             MethodInfo getInstanceMethod;
 
-            generator.Emit(OpCodes.Ldarg_0);
+            emitter.Emit(OpCodes.Ldarg_0);
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                generator.Emit(OpCodes.Ldarg, i + 1);
+                emitter.Emit(OpCodes.Ldarg, i + 1);
             }
             
             if (string.IsNullOrEmpty(serviceName))
@@ -2990,14 +3094,14 @@ namespace LightInject
             else
             {
                 getInstanceMethod = ReflectionHelper.GetNamedGetInstanceWithParametersMethod(serviceType);
-                generator.Emit(OpCodes.Ldstr, serviceName);
+                emitter.Emit(OpCodes.Ldstr, serviceName);
             }
 
-            generator.Emit(OpCodes.Callvirt, getInstanceMethod);
+            emitter.Emit(OpCodes.Callvirt, getInstanceMethod);
 
             var getInstanceDelegate = methodSkeleton.CreateDelegate(serviceType, this);            
             var constantIndex = constants.Add(getInstanceDelegate);
-            return ms => EmitLoadConstant(ms, constantIndex, serviceType);
+            return ms => PushConstant(ms, constantIndex, serviceType);
         }
 
         private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFuncServiceRequest(Type serviceType, string serviceName)
@@ -3005,9 +3109,9 @@ namespace LightInject
             var returnType = serviceType.GetGenericTypeArguments().Single();
             var methodSkeleton = methodSkeletonFactory(returnType, new[] { typeof(IServiceFactory) });
             
-            var generator = methodSkeleton.GetILGenerator();
+            var emitter = methodSkeleton.GetEmitter();
             MethodInfo getInstanceMethod;
-            generator.Emit(OpCodes.Ldarg_0);            
+            emitter.Emit(OpCodes.Ldarg_0);            
             if (string.IsNullOrEmpty(serviceName))
             {
                 getInstanceMethod = ReflectionHelper.GetGetInstanceMethod(returnType);
@@ -3015,14 +3119,14 @@ namespace LightInject
             else
             {
                 getInstanceMethod = ReflectionHelper.GetGetNamedInstanceMethod(returnType);
-                generator.Emit(OpCodes.Ldstr, serviceName);
+                emitter.Emit(OpCodes.Ldstr, serviceName);
             }
 
-            generator.Emit(OpCodes.Callvirt, getInstanceMethod);
+            emitter.Emit(OpCodes.Callvirt, getInstanceMethod);
             
             var getInstanceDelegate = methodSkeleton.CreateDelegate(serviceType, this);            
             var constantIndex = constants.Add(getInstanceDelegate);
-            return ms => EmitLoadConstant(ms, constantIndex, serviceType);
+            return ms => PushConstant(ms, constantIndex, serviceType);
         }
 
         private Action<IMethodSkeleton> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
@@ -3073,7 +3177,7 @@ namespace LightInject
             return ms =>
                 {
                     enumerableEmitter(ms);
-                    ms.GetILGenerator().Emit(OpCodes.Call, closedGenericToArrayMethod);
+                    ms.GetEmitter().Emit(OpCodes.Call, closedGenericToArrayMethod);
                 };
         }
 
@@ -3086,7 +3190,7 @@ namespace LightInject
             return ms =>
             {
                 enumerableEmitter(ms);
-                ms.GetILGenerator().Emit(OpCodes.Call, closedGenericToListMethod);
+                ms.GetEmitter().Emit(OpCodes.Call, closedGenericToListMethod);
             };
         }
 #if NET45 || NETFX_CORE || WINDOWS_PHONE
@@ -3102,7 +3206,7 @@ namespace LightInject
             return ms =>
             {
                 listEmitter(ms);
-                ms.GetILGenerator().Emit(OpCodes.Newobj, constructorInfo);
+                ms.GetEmitter().Emit(OpCodes.Newobj, constructorInfo);
             };
         }
 #endif
@@ -3127,8 +3231,8 @@ namespace LightInject
 
             return ms =>
                 {
-                    EmitLoadConstant(ms, constantIndex, funcType);
-                    ms.GetILGenerator().Emit(OpCodes.Newobj, lazyConstructor);
+                    PushConstant(ms, constantIndex, funcType);
+                    ms.GetEmitter().Emit(OpCodes.Newobj, lazyConstructor);
                 };
         }
              
@@ -3236,22 +3340,22 @@ namespace LightInject
                         CreateDynamicMethodDelegate(instanceEmitter, serviceRegistration.ServiceType));
                 var instance = serviceRegistration.Lifetime.GetInstance(del, null);
                 var instanceIndex = constants.Add(instance);
-                EmitLoadConstant(dynamicMethodSkeleton, instanceIndex, serviceRegistration.ServiceType);
+                PushConstant(dynamicMethodSkeleton, instanceIndex);
             }
             else
             {
-                ILGenerator generator = dynamicMethodSkeleton.GetILGenerator();
+                IEmitter emitter = dynamicMethodSkeleton.GetEmitter();
                 int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter, serviceRegistration.ServiceType);
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
                 int scopeManagerProviderIndex = CreateScopeManagerProviderIndex();
                 var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
-                EmitLoadConstant(dynamicMethodSkeleton, lifetimeIndex, typeof(ILifetime));
-                EmitLoadConstant(dynamicMethodSkeleton, instanceDelegateIndex, typeof(Func<object>));
-                EmitLoadConstant(dynamicMethodSkeleton, scopeManagerProviderIndex, typeof(IScopeManagerProvider));
-                generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
-                generator.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
-                generator.Emit(OpCodes.Callvirt, getInstanceMethod);
-                generator.Emit(serviceRegistration.ServiceType.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
+                PushConstant(dynamicMethodSkeleton, lifetimeIndex, typeof(ILifetime));
+                PushConstant(dynamicMethodSkeleton, instanceDelegateIndex, typeof(Func<object>));
+                PushConstant(dynamicMethodSkeleton, scopeManagerProviderIndex, typeof(IScopeManagerProvider));
+                emitter.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
+                emitter.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
+                emitter.Emit(OpCodes.Callvirt, getInstanceMethod);
+                //emitter.Emit(serviceRegistration.ServiceType.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, serviceRegistration.ServiceType);
             }
         }
        
@@ -3309,7 +3413,7 @@ namespace LightInject
                 {
                     try
                     {
-                        return CreateDynamicMethodDelegate(serviceEmitter, serviceType);                        
+                        return CreateDynamicMethodDelegate(serviceEmitter, typeof(object));                        
                     }
                     catch (InvalidOperationException ex)
                     {
@@ -3402,8 +3506,16 @@ namespace LightInject
             }
         }
 
+ 
+
+
+
+       
+        
         private class DynamicMethodSkeleton : IMethodSkeleton
         {            
+            private IEmitter emitter;
+
             private DynamicMethod dynamicMethod;
 
             public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
@@ -3411,14 +3523,14 @@ namespace LightInject
                 CreateDynamicMethod(returnType, parameterTypes);
             }
 
-            public ILGenerator GetILGenerator()
+            public IEmitter GetEmitter()
             {
-                return dynamicMethod.GetILGenerator();
+                return emitter;
             }
 
             public Delegate CreateDelegate(Type delegateType)
-            {                                                         
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
+            {
+                emitter.Emit(OpCodes.Ret);                
                 return dynamicMethod.CreateDelegate(delegateType);
             }
 
@@ -3437,6 +3549,7 @@ namespace LightInject
 #if NETFX_CORE || WINDOWS_PHONE 
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);                    
 #endif
+                emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
         }
 
@@ -5764,5 +5877,265 @@ namespace LightInject
         {
             return Right.Height > Left.Height;
         }
+    }
+
+    internal class Instruction
+    {
+        public Instruction(OpCode code)
+        {
+            Code = code;
+        }
+
+        public OpCode Code { get; private set; }
+
+        public override string ToString()
+        {
+            return Code.ToString();
+        }
+    }
+
+    internal class Instruction<T> : Instruction
+    {
+        public Instruction(OpCode code, T argument)
+            : base(code)
+        {
+            Argument = argument;
+        }
+
+        public T Argument { get; private set; }
+
+        public override string ToString()
+        {
+            return Code + " " + Argument;
+        }
+    }
+
+    internal class Emitter : IEmitter
+    {
+        private readonly ILGenerator generator;
+
+        private readonly Type[] parameterTypes;
+
+        private readonly Stack<Type> stack = new Stack<Type>();
+
+        private readonly List<Instruction> methodBody = new List<Instruction>();
+
+        public Emitter(ILGenerator generator, Type[] parameterTypes)
+        {
+            this.generator = generator;
+            this.parameterTypes = parameterTypes;
+        }
+
+        public Type StackType
+        {
+            get
+            {
+                return stack.Count == 0 ? null : stack.Peek();
+            }
+        }
+
+        public void Emit(OpCode code)
+        {
+            if (code == OpCodes.Ldarg_0)
+            {
+                stack.Push(parameterTypes[0]);
+            }
+            else if (code == OpCodes.Ldarg_1)
+            {
+                stack.Push(parameterTypes[1]);
+            }
+            else if (code == OpCodes.Ldelem_Ref)
+            {
+                stack.Pop();                
+                Type arrayType = stack.Pop();
+                stack.Push(arrayType.GetElementType());
+            }
+            else if (code == OpCodes.Ldlen)
+            {
+                stack.Pop();
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Conv_I4)
+            {
+                stack.Pop();
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ldc_I4_1)
+            {
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Sub)
+            {
+                stack.Pop();
+                stack.Pop();
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ret)
+            {
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            generator.Emit(code);
+            methodBody.Add(new Instruction(code));
+        }
+
+        public void Emit(OpCode code, int arg)
+        {
+            if (code == OpCodes.Ldc_I4)
+            {
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ldarg)
+            {
+                stack.Push(parameterTypes[arg]);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            methodBody.Add(new Instruction<int>(code, arg));
+            generator.Emit(code, arg);
+        }
+
+        public void Emit(OpCode code, string arg)
+        {
+            if (code == OpCodes.Ldstr)
+            {
+                stack.Push(typeof(string));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            methodBody.Add(new Instruction<string>(code, arg));
+            generator.Emit(code, arg);
+        }
+
+        public void Emit(OpCode code, Type type)
+        {
+            if (code == OpCodes.Newarr)
+            {
+                stack.Pop();
+                stack.Push(type.MakeArrayType());                
+            }
+            else if (code == OpCodes.Stelem)
+            {
+                var value = stack.Pop();
+                var index = stack.Pop();
+                var array = stack.Pop();                
+            }
+            else if (code == OpCodes.Castclass)
+            {
+                stack.Pop();
+                stack.Push(type);                
+            }
+            else if (code == OpCodes.Box)
+            {
+                stack.Pop();
+                stack.Push(typeof(object));                
+            }
+            else if (code == OpCodes.Unbox_Any)
+            {
+                stack.Pop();
+                stack.Push(type);                
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+            methodBody.Add(new Instruction<Type>(code, type));
+            generator.Emit(code, type);
+        }
+
+        public void Emit(OpCode code, ConstructorInfo constructor)
+        {
+            if (code == OpCodes.Newobj)
+            {
+                var parameterCount = constructor.GetParameters().Length;
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    stack.Pop();
+                }
+                stack.Push(constructor.DeclaringType);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            methodBody.Add(new Instruction<ConstructorInfo>(code, constructor));
+            generator.Emit(code, constructor);
+        }
+
+        public void Emit(OpCode code, LocalBuilder localBuilder)
+        {
+            if (code == OpCodes.Stloc)
+            {
+                stack.Pop();
+            }
+            else if (code == OpCodes.Ldloc)
+            {
+                stack.Push(localBuilder.LocalType);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            methodBody.Add(new Instruction<LocalBuilder>(code, localBuilder));
+            generator.Emit(code, localBuilder);
+        }
+
+        public void Emit(OpCode code, MethodInfo methodInfo)
+        {
+            if (code == OpCodes.Callvirt || code == OpCodes.Call)
+            {
+                var parameterCount = methodInfo.GetParameters().Length;
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    stack.Pop();
+                }
+
+                if (!methodInfo.IsStatic)
+                {
+                    stack.Pop();
+                }
+
+                if (methodInfo.ReturnType != typeof(void))
+                {
+                    stack.Push(methodInfo.ReturnType);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            methodBody.Add(new Instruction<MethodInfo>(code, methodInfo));
+            generator.Emit(code, methodInfo);
+        }
+
+        public LocalBuilder DeclareLocal(Type type)
+        {
+            return generator.DeclareLocal(type);
+        }
+
+#if DEBUG
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            foreach (var instruction in methodBody)
+            {
+                sb.AppendLine(instruction.ToString());
+            }
+            return sb.ToString();
+        }
+#endif
+
     }
 }

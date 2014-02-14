@@ -16,6 +16,7 @@
         private AssemblyBuilder assemblyBuilder;
         private TypeBuilder typeBuilder;
         private MethodBuilder methodBuilder;
+        private IEmitter emitter;
 
         public MethodBuilderMethodSkeleton(Type returnType, Type[] parameterTypes, string outputPath)
         {
@@ -30,6 +31,11 @@
         public ILGenerator GetILGenerator()
         {
             return methodBuilder.GetILGenerator();
+        }
+
+        IEmitter IMethodSkeleton.GetEmitter()
+        {
+            return emitter;
         }
 
         public Delegate CreateDelegate(Type delegateType)
@@ -78,7 +84,7 @@
             methodBuilder = typeBuilder.DefineMethod(
                 "DynamicMethod", MethodAttributes.Public | MethodAttributes.Static, returnType, parameterTypes);
             methodBuilder.InitLocals = true;
-
+            emitter = new Emitter(methodBuilder.GetILGenerator(), parameterTypes);
         }
     }
 }
