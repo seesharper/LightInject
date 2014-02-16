@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.3
+    LightInject version 3.0.1.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2331,14 +2331,16 @@ namespace LightInject
 
         private static bool PassesGenericConstraints(Type implementingType, Type[] closedGenericArguments)
         {
-            Type[] openGenericArguments = implementingType.GetGenericTypeParameters();
-            return openGenericArguments.Select(openGenericArgument => openGenericArgument.GetGenericParameterConstraints())
-                .Where(
-                    (genericParameterConstraints, index) =>
-                    genericParameterConstraints.Any(
-                        genericParameterConstraint =>
-                        !genericParameterConstraint.IsAssignableFrom(closedGenericArguments[index])))
-                .Any();
+            try
+            {
+                implementingType.MakeGenericType(closedGenericArguments);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return true;                                    
         }
 
         private void EmitEnumerable(IList<Action<IMethodSkeleton>> serviceEmitters, Type elementType, IMethodSkeleton dynamicMethodSkeleton)
@@ -3024,7 +3026,7 @@ namespace LightInject
             
             Type[] closedGenericArguments = closedGenericServiceType.GetGenericTypeArguments();
 
-            if (PassesGenericConstraints(openGenericServiceRegistration.ImplementingType, closedGenericArguments))
+            if (!PassesGenericConstraints(openGenericServiceRegistration.ImplementingType, closedGenericArguments))
             {
                 return null;
             }
