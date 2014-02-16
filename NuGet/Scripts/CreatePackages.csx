@@ -20,7 +20,7 @@ private void CreateSourcePackages()
 	CreateLightInjectMvcSourcePackage();
 	CreateLightInjectServiceLocationSourcePackage();	
 	CreateLightInjectWcfSourcePackage();
-	CreateLightInjectWebApiSourcePackage();
+	//CreateLightInjectWebApiSourcePackage();
 }
 
 private void UpdateBinaryProjects()
@@ -141,15 +141,15 @@ private void UpdateBinaryProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf..ClientSource\package\LightInject.Wcf.Client.nuspec", version); */
 
 	//LightInject.WebApi
-	version = VersionUtils.GetVersionString(@"..\..\LightInject.WebApi\LightInject.WebApi.cs");		
-	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
-	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
+	//version = VersionUtils.GetVersionString(@"..\..\LightInject.WebApi\LightInject.WebApi.cs");		
+	//VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
+	//VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
 	
-	Publicizer.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net\LightInject.WebApi\LightInject.WebApi.cs");
-	Publicizer.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net45\LightInject.WebApi\LightInject.WebApi.cs");
+	//Publicizer.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net\LightInject.WebApi\LightInject.WebApi.cs");
+	//Publicizer.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net45\LightInject.WebApi\LightInject.WebApi.cs");
 
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", version);
+	//VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", version);
+	//VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", version);
 }
 
 
@@ -174,7 +174,7 @@ private void CreateBinaryPackages()
 	CreateLightInjectWebBinaryPackage();
 	CreateLightInjectServiceLocationBinaryPackage(); 
 	CreateLightInjectWcfBinaryPackage();
-	CreateLightInjectWebApiBinaryPackage();
+	//CreateLightInjectWebApiBinaryPackage();
 }
 
 private void CreateLightInjectBinaryPackage()

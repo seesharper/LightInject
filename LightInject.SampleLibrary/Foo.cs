@@ -707,6 +707,16 @@ namespace LightInject.SampleLibrary
         
     }
 
+    public interface IFooWithGenericInterfaceConstraint<T,I> where T: IBar<I>
+    {
+        
+    }
+
+    public class FooWithGenericInterfaceConstraint<T,I> : IFooWithGenericInterfaceConstraint<T, I>
+        where T : IBar<I>
+    {
+    }
+
     public class FooWithSameHashCode
     {
         public FooWithSameHashCode(int id)

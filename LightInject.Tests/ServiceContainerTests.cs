@@ -1165,6 +1165,19 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
+        public void GetInstance_ServiceWithGenericInterfaceConstraint_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register(
+                typeof(IFooWithGenericInterfaceConstraint<,>),
+                typeof(FooWithGenericInterfaceConstraint<,>));
+            container.Register(typeof(IBar<>), typeof(Bar<>));
+
+            container.GetInstance<IFooWithGenericInterfaceConstraint<IBar<string>, string>>();
+
+        }
+
+        [TestMethod]
         public void GetAllInstances_ServiceWithGenericConstraint_ReturnsOnlyMatchingInstances()
         {
             var container = CreateContainer();
