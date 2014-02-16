@@ -1,3 +1,9 @@
+## LightInject 3.0.1.4 ##
+(February 16, 2014)
+
+Fixed a bug that caused resolving open generic types to fail when the [Curiously recurring template pattern](http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) was implemented.	 
+
+
 ## LightInject.WebApi 1.0.0.1 ##
 (February 07, 2014)
 
