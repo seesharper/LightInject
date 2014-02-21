@@ -2848,7 +2848,7 @@ namespace LightInject
         
         private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
-            var emitDelegate = ResolveEmitDelegate(serviceRegistration);
+            var emitDelegate = ResolveEmitMethod(serviceRegistration);
             GetEmitMethods(serviceRegistration.ServiceType).TryAdd(serviceRegistration.ServiceName, emitDelegate);                
             return serviceRegistration;
         }
@@ -2861,7 +2861,7 @@ namespace LightInject
             }
 
             Invalidate();
-            Action<IEmitter> emitMethod = ResolveEmitDelegate(newRegistration);            
+            Action<IEmitter> emitMethod = ResolveEmitMethod(newRegistration);            
             
             var serviceEmitters = GetEmitMethods(newRegistration.ServiceType);
             serviceEmitters[newRegistration.ServiceName] = emitMethod;                                               
@@ -3447,7 +3447,7 @@ namespace LightInject
             Register(serviceRegistration);         
         }
         
-        private Action<IEmitter> ResolveEmitDelegate(ServiceRegistration serviceRegistration)
+        private Action<IEmitter> ResolveEmitMethod(ServiceRegistration serviceRegistration)
         {                    
             if (serviceRegistration.Lifetime == null)
             {
