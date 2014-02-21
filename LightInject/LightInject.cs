@@ -2838,11 +2838,11 @@ namespace LightInject
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
-        private void UpdateServiceEmitter(Type serviceType, string serviceName, Action<IEmitter> emitter)
+        private void UpdateEmitMethod(Type serviceType, string serviceName, Action<IEmitter> emitMethod)
         {
-            if (emitter != null)
+            if (emitMethod != null)
             {
-                GetEmitMethods(serviceType).AddOrUpdate(serviceName, s => emitter, (s, m) => emitter);
+                GetEmitMethods(serviceType).AddOrUpdate(serviceName, s => emitMethod, (s, m) => emitMethod);
             }
         }
         
@@ -3190,7 +3190,7 @@ namespace LightInject
                 emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
             }
 
-            UpdateServiceEmitter(serviceType, serviceName, emitter);
+            UpdateEmitMethod(serviceType, serviceName, emitter);
 
             return emitter;
         }
