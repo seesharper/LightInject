@@ -2353,16 +2353,15 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, object[] arguments)
         {
-            Func<object[], object> del = delegates.Search(serviceType);
-            if (del == null)
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
             {
-                del = CreateDelegate(serviceType, string.Empty, true);
-                delegates = delegates.Add(serviceType, del);
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
             }
-                                               
+
             object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
 
-            return del(constantsWithArguments);
+            return instanceDelegate(constantsWithArguments);                         
         }
 
         /// <summary>
