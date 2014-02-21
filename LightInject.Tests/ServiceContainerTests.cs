@@ -710,6 +710,39 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
+        public void GetInstance_FuncFactoryWithArrayDependency_ReturnsInstanceWithDependencies()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+            container.Register<IBar, AnotherBar>("AnotherBar");
+            container.Register<IFoo>(factory => new FooWithArrayDependency(container.GetAllInstances<IBar>().ToArray()));
+            var instance = (FooWithArrayDependency)container.GetInstance<IFoo>();
+            Assert.AreEqual(2, instance.Bars.Count());
+        }
+
+        [TestMethod]
+        public void GetInstance_FuncFactoryWithArrayInitializer_ReturnsInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+           
+            container.Register<IFoo>(factory => new FooWithArrayDependency(new[] { factory.GetInstance<IBar>() }));
+            var instance = (FooWithArrayDependency)container.GetInstance<IFoo>();
+            Assert.AreEqual(1, instance.Bars.Count());
+        }
+
+        [TestMethod]
+        public void GetInstance_FuncFactoryWithParamsArrayInitializer_ReturnsInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+
+            container.Register<IFoo>(factory => new FooWithParamsArrayDependency(new[] { factory.GetInstance<IBar>() }));
+            var instance = (FooWithParamsArrayDependency)container.GetInstance<IFoo>();
+            Assert.AreEqual(1, instance.Bars.Count());
+        }
+
+        [TestMethod]
         public void GetInstance_SingletonFuncFactoryWithMethodCall_ReturnsSingleInstance()
         {
             var container = CreateContainer();

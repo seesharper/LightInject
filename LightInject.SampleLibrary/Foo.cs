@@ -415,6 +415,26 @@ namespace LightInject.SampleLibrary
         public IEnumerable<IBar> Bars { get; private set; }
     }
 
+    public class FooWithArrayDependency : IFoo
+    {
+        public FooWithArrayDependency(IBar[] bars)
+        {
+            Bars = bars;
+        }
+
+        public IEnumerable<IBar> Bars { get; private set; }
+    }
+
+    public class FooWithParamsArrayDependency : IFoo
+    {
+        public FooWithParamsArrayDependency(IBar[] bars)
+        {
+            Bars = bars;
+        }
+
+        public IEnumerable<IBar> Bars { get; private set; }
+    }
+
     public class FooWithEnumerablePropertyDependency : IFoo
     {
         public FooWithEnumerablePropertyDependency()
