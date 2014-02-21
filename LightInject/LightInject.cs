@@ -2934,7 +2934,7 @@ namespace LightInject
         }
 
 #endif
-        private void DoEmitDecoratorInstance(DecoratorRegistration decoratorRegistration, IEmitter emitter, Action<IEmitter> pushInstance)
+        private void EmitNewDecoratorInstance(DecoratorRegistration decoratorRegistration, IEmitter emitter, Action<IEmitter> pushInstance)
         {
             ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
             var constructorDependency = GetConstructorDependencyThatRepresentsDecoratorTarget(
@@ -3001,7 +3001,7 @@ namespace LightInject
                 
                 Action<IEmitter> currentDecoratorTargetEmitter = decoratorTargetEmitMethod;
                 DecoratorRegistration currentDecorator = decorator;                
-                decoratorTargetEmitMethod = e => DoEmitDecoratorInstance(currentDecorator, e, currentDecoratorTargetEmitter);
+                decoratorTargetEmitMethod = e => EmitNewDecoratorInstance(currentDecorator, e, currentDecoratorTargetEmitter);
             }
 
             decoratorTargetEmitMethod(emitter);            
@@ -3457,29 +3457,28 @@ namespace LightInject
             return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstanceWithDecorators(serviceRegistration, ms), methodSkeleton);
         }
         
-        private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> instanceEmitter, IEmitter emitter)
+        private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)
         {
             if (serviceRegistration.Lifetime is PerContainerLifetime)
             {
-                var del =
-                    WrapAsFuncDelegate(
-                        CreateDynamicMethodDelegate(instanceEmitter));
-                var instance = serviceRegistration.Lifetime.GetInstance(del, null);
+                Func<object> instanceDelegate =
+                    WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod));                        
+                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);
                 var instanceIndex = constants.Add(instance);
                 emitter.PushConstant(instanceIndex);                
             }
             else
             {
-                int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter);
+                int instanceDelegateIndex = CreateInstanceDelegateIndex(emitMethod);
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
                 int scopeManagerProviderIndex = CreateScopeManagerProviderIndex();
                 var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
                 emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
                 emitter.PushConstant(instanceDelegateIndex, typeof(Func<object>));
-                emitter.PushConstant(scopeManagerProviderIndex, typeof(IScopeManagerProvider));                
-                emitter.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeManagerMethod);
-                emitter.Emit(OpCodes.Callvirt, ReflectionHelper.GetCurrentScopeMethod);
-                emitter.Emit(OpCodes.Callvirt, getInstanceMethod);                
+                emitter.PushConstant(scopeManagerProviderIndex, typeof(IScopeManagerProvider));
+                emitter.Call(ReflectionHelper.GetCurrentScopeManagerMethod);
+                emitter.Call(ReflectionHelper.GetCurrentScopeMethod);
+                emitter.Call(getInstanceMethod);
             }
         }
        
