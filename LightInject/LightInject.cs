@@ -37,9 +37,7 @@ namespace LightInject
     using System;    
 #if WINDOWS_PHONE
     using System.Collections;
-#endif
-    using System.Collections;
-    using System.Runtime.Remoting;
+#endif    
 #if NET || NET45 || NETFX_CORE
     using System.Collections.Concurrent;
 #endif
@@ -886,6 +884,20 @@ namespace LightInject
         void Emit(OpCode code, string arg);
 
         /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        void Emit(OpCode code, sbyte arg);
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        void Emit(OpCode code, byte arg);
+
+        /// <summary>
         /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given type.
         /// </summary>
         /// <param name="code">The MSIL instruction to be put onto the stream.</param>
@@ -920,7 +932,6 @@ namespace LightInject
         /// <returns>The declared local variable.</returns>
         LocalBuilder DeclareLocal(Type type);        
     }
-
 
     /// <summary>
     /// Represents a dynamic method skeleton for emitting the code needed to resolve a service instance.
@@ -1512,10 +1523,20 @@ namespace LightInject
 
         public static void PushConstant(this IEmitter emitter, int index, Type type)
         {
-            emitter.Emit(OpCodes.Ldarg_0);
-            emitter.Emit(OpCodes.Ldc_I4, index);
-            emitter.Emit(OpCodes.Ldelem_Ref);
+            emitter.PushConstant(index);           
             emitter.UnboxOrCast(type);
+        }
+
+        public static void PushConstant(this IEmitter emitter, int index)
+        {
+            emitter.PushArgument(0);
+            emitter.Push(index);
+            emitter.PushArrayElement();
+        }
+
+        public static void PushArrayElement(this IEmitter emitter)
+        {
+            emitter.Emit(OpCodes.Ldelem_Ref);
         }
 
         public static void PushArguments(this IEmitter emitter, ParameterInfo[] parameters)
@@ -1541,14 +1562,7 @@ namespace LightInject
                     parameters[i].ParameterType);
             }
         }
-
-        public static void PushConstant(this IEmitter emitter, int index)
-        {
-            emitter.Emit(OpCodes.Ldarg_0);
-            emitter.Emit(OpCodes.Ldc_I4, index);
-            emitter.Emit(OpCodes.Ldelem_Ref);
-        }
-
+       
         public static void Call(this IEmitter emitter, MethodInfo methodInfo)
         {
             emitter.Emit(OpCodes.Callvirt, methodInfo);
@@ -1559,24 +1573,64 @@ namespace LightInject
             emitter.Emit(OpCodes.Newobj, constructorInfo);
         }
 
-        public static void PushVariable(this IEmitter emitter, LocalBuilder localBuilder)
+        public static void Push(this IEmitter emitter, LocalBuilder localBuilder)
         {
-            // This might be faster if using Ldloc_0, Ldloc_1
-            emitter.Emit(OpCodes.Ldloc, localBuilder);
-        }
+            int index = localBuilder.LocalIndex;
+            switch (index)
+            {
+                case 0:
+                    emitter.Emit(OpCodes.Ldloc_0);
+                    return;
+                case 1:
+                    emitter.Emit(OpCodes.Ldloc_1);
+                    return;
+                case 2:
+                    emitter.Emit(OpCodes.Ldloc_2);
+                    return;
+                case 3:
+                    emitter.Emit(OpCodes.Ldloc_3);
+                    return;
+            }
 
-        public static void PushFirstArgument(this IEmitter emitter)
-        {
-            emitter.Emit(OpCodes.Ldarg_0);
+            if (index <= 255)
+            {
+                emitter.Emit(OpCodes.Ldloc_S, (byte)index);
+            }
+            else
+            {
+                emitter.Emit(OpCodes.Ldloc, index);
+            }                
         }
-
+        
         public static void PushArgument(this IEmitter emitter, int index)
         {
-            // Same as PushVariable
-            emitter.Emit(OpCodes.Ldarg, index);
+            switch (index)
+            {
+                case 0:
+                    emitter.Emit(OpCodes.Ldarg_0);
+                    return;
+                case 1:
+                    emitter.Emit(OpCodes.Ldarg_1);
+                    return;
+                case 2:
+                    emitter.Emit(OpCodes.Ldarg_2);
+                    return;
+                case 3:
+                    emitter.Emit(OpCodes.Ldarg_3);
+                    return;                
+            }
+
+            if (index <= 255)
+            {
+                emitter.Emit(OpCodes.Ldarg_S, (byte)index);
+            }
+            else
+            {
+                emitter.Emit(OpCodes.Ldarg, index);
+            }           
         }
 
-        public static void StoreVariable(this IEmitter emitter, LocalBuilder localBuilder)
+        public static void Store(this IEmitter emitter, LocalBuilder localBuilder)
         {
             // Same as PushVariable
             emitter.Emit(OpCodes.Stloc, localBuilder);
@@ -1587,12 +1641,59 @@ namespace LightInject
             emitter.Emit(OpCodes.Ldstr, value);
         }
 
+        public static void PushNewArray(this IEmitter emitter, Type elementType)
+        {
+            emitter.Emit(OpCodes.Newarr, elementType);
+        }
+
+        public static void Push(this IEmitter emitter, int value)
+        {
+            switch (value)
+            {                
+                case 0:
+                    emitter.Emit(OpCodes.Ldc_I4_0);
+                    return;
+                case 1:
+                    emitter.Emit(OpCodes.Ldc_I4_1);
+                    return;
+                case 2:
+                    emitter.Emit(OpCodes.Ldc_I4_2);
+                    return;
+                case 3:
+                    emitter.Emit(OpCodes.Ldc_I4_3);
+                    return;
+                case 4:
+                    emitter.Emit(OpCodes.Ldc_I4_4);
+                    return;
+                case 5:
+                    emitter.Emit(OpCodes.Ldc_I4_5);
+                    return;
+                case 6:
+                    emitter.Emit(OpCodes.Ldc_I4_6);
+                    return;
+                case 7:
+                    emitter.Emit(OpCodes.Ldc_I4_7);
+                    return;
+                case 8:
+                    emitter.Emit(OpCodes.Ldc_I4_8);
+                    return;
+            }
+
+            if (value > -129 && value < 128)
+            {
+                emitter.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
+            }
+            else
+            {
+                emitter.Emit(OpCodes.Ldc_I4, value);
+            }
+        }
+
         public static void Cast(this IEmitter emitter, Type type)
         {
             emitter.Emit(OpCodes.Castclass, type);
         }
     }
-
 
     /// <summary>
     /// An ultra lightweight service container.
@@ -2541,25 +2642,20 @@ namespace LightInject
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
         {
             LocalBuilder array = emitter.DeclareLocal(elementType.MakeArrayType());
-            emitter.Emit(OpCodes.Ldc_I4, emitMethods.Count);
-            emitter.Emit(OpCodes.Newarr, elementType);
-            emitter.Emit(OpCodes.Stloc, array);
+            emitter.Push(emitMethods.Count);            
+            emitter.PushNewArray(elementType);
+            emitter.Store(array);            
 
             for (int index = 0; index < emitMethods.Count; index++)
-        {
-                emitter.Emit(OpCodes.Ldloc, array);
-                emitter.Emit(OpCodes.Ldc_I4, index);
-                var serviceEmitter = emitMethods[index];
-                serviceEmitter(emitter);
-                if (emitter.StackType != elementType)
-            {
-                    emitter.UnboxOrCast(elementType);                    
+            {                
+                emitter.Push(array);
+                emitter.Push(index);
+                emitMethods[index](emitter);                
+                emitter.UnboxOrCast(elementType);                                    
+                emitter.Emit(OpCodes.Stelem, elementType);
             }
 
-                emitter.Emit(OpCodes.Stelem, elementType);
-        }
-        
-            emitter.Emit(OpCodes.Ldloc, array);
+            emitter.Push(array);
         }
         
         private static ILifetime CloneLifeTime(ILifetime lifetime)
@@ -2738,7 +2834,7 @@ namespace LightInject
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
             Action<IEmitter> emitMethod;
-            var registrations = GetServiceEmitters(serviceType);
+            var registrations = GetEmitMethods(serviceType);
             registrations.TryGetValue(serviceName, out emitMethod);
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
@@ -2747,14 +2843,14 @@ namespace LightInject
         {
             if (emitter != null)
             {
-                GetServiceEmitters(serviceType).AddOrUpdate(serviceName, s => emitter, (s, m) => emitter);
+                GetEmitMethods(serviceType).AddOrUpdate(serviceName, s => emitter, (s, m) => emitter);
             }
         }
         
         private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
             var emitDelegate = ResolveEmitDelegate(serviceRegistration);
-            GetServiceEmitters(serviceRegistration.ServiceType).TryAdd(serviceRegistration.ServiceName, emitDelegate);                
+            GetEmitMethods(serviceRegistration.ServiceType).TryAdd(serviceRegistration.ServiceName, emitDelegate);                
             return serviceRegistration;
         }
 
@@ -2768,7 +2864,7 @@ namespace LightInject
             Invalidate();
             Action<IEmitter> emitMethod = ResolveEmitDelegate(newRegistration);            
             
-            var serviceEmitters = GetServiceEmitters(newRegistration.ServiceType);
+            var serviceEmitters = GetEmitMethods(newRegistration.ServiceType);
             serviceEmitters[newRegistration.ServiceName] = emitMethod;                                               
             return newRegistration;
         }
@@ -2997,7 +3093,7 @@ namespace LightInject
                 return;
             }
 
-            emitter.PushVariable(instanceVariable);
+            emitter.Push(instanceVariable);
             propertyDependencyEmitMethod(emitter);                
             emitter.UnboxOrCast(propertyDependency.ServiceType);
             emitter.Call(propertyDependency.Property.GetSetMethod());
@@ -3039,13 +3135,13 @@ namespace LightInject
             }
 
             LocalBuilder instanceVariable = emitter.DeclareLocal(constructionInfo.ImplementingType);
-            emitter.StoreVariable(instanceVariable);            
+            emitter.Store(instanceVariable);            
             foreach (var propertyDependency in constructionInfo.PropertyDependencies)
             {
                 EmitPropertyDependency(emitter, propertyDependency, instanceVariable);
             }
 
-            emitter.PushVariable(instanceVariable);            
+            emitter.Push(instanceVariable);            
         }
 
         private Action<IEmitter> CreateEmitMethodForUnknownService(Type serviceType, string serviceName)
@@ -3112,7 +3208,7 @@ namespace LightInject
 
             MethodInfo getInstanceMethod;
 
-            emitter.PushFirstArgument();
+            emitter.PushArgument(0);
             for (int i = 0; i < parameterTypes.Length; i++)
             {
                 emitter.PushArgument(i + 1);
@@ -3141,7 +3237,7 @@ namespace LightInject
             
             var emitter = methodSkeleton.GetEmitter();
             MethodInfo getInstanceMethod;
-            emitter.PushFirstArgument();
+            emitter.PushArgument(0);
             if (string.IsNullOrEmpty(serviceName))
             {
                 getInstanceMethod = ReflectionHelper.GetGetInstanceMethod(returnType);
@@ -3188,14 +3284,14 @@ namespace LightInject
                 EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
             }
 
-            IList<Action<IEmitter>> serviceEmitters = GetServiceEmitters(actualServiceType).Values.ToList();
+            IList<Action<IEmitter>> emitMethods = GetEmitMethods(actualServiceType).Values.ToList();
 
-            if (dependencyStack.Count > 0 && serviceEmitters.Contains(dependencyStack.Peek()))
+            if (dependencyStack.Count > 0 && emitMethods.Contains(dependencyStack.Peek()))
             {
-                serviceEmitters.Remove(dependencyStack.Peek());
+                emitMethods.Remove(dependencyStack.Peek());
             }
 
-            return e => EmitEnumerable(serviceEmitters, actualServiceType, e);
+            return e => EmitEnumerable(emitMethods, actualServiceType, e);
         }
 
         private Action<IEmitter> CreateEmitMethodForArrayServiceRequest(Type serviceType)
@@ -3323,12 +3419,12 @@ namespace LightInject
       
         private Action<IEmitter> CreateServiceEmitterBasedOnSingleNamedInstance(Type serviceType)
         {
-            return GetEmitMethod(serviceType, GetServiceEmitters(serviceType).First().Key);
+            return GetEmitMethod(serviceType, GetEmitMethods(serviceType).First().Key);
         }
 
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
-            return string.IsNullOrEmpty(serviceName) && GetServiceEmitters(serviceType).Count == 1;
+            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1;
         }
         
         private ConstructionInfo GetConstructionInfo(Registration registration)
@@ -3336,7 +3432,7 @@ namespace LightInject
             return constructionInfoProvider.Value.GetConstructionInfo(registration);
         }
 
-        private ThreadSafeDictionary<string, Action<IEmitter>> GetServiceEmitters(Type serviceType)
+        private ThreadSafeDictionary<string, Action<IEmitter>> GetEmitMethods(Type serviceType)
         {
             return emitters.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, Action<IEmitter>>(StringComparer.CurrentCultureIgnoreCase));
         }
@@ -5959,6 +6055,8 @@ namespace LightInject
 
         private readonly List<Instruction> methodBody = new List<Instruction>();
 
+        private readonly List<LocalBuilder> variables = new List<LocalBuilder>();
+
         public Emitter(ILGenerator generator, Type[] parameterTypes)
         {
             this.generator = generator;
@@ -5978,10 +6076,34 @@ namespace LightInject
             if (code == OpCodes.Ldarg_0)
             {
                 stack.Push(parameterTypes[0]);
-            }
+            }            
             else if (code == OpCodes.Ldarg_1)
             {
                 stack.Push(parameterTypes[1]);
+            }
+            else if (code == OpCodes.Ldarg_2)
+            {
+                stack.Push(parameterTypes[2]);
+            }
+            else if (code == OpCodes.Ldarg_3)
+            {
+                stack.Push(parameterTypes[3]);
+            }
+            else if (code == OpCodes.Ldloc_0)
+            {
+                stack.Push(variables[0].LocalType);
+            }
+            else if (code == OpCodes.Ldloc_1)
+            {
+                stack.Push(variables[1].LocalType);
+            }
+            else if (code == OpCodes.Ldloc_2)
+            {
+                stack.Push(variables[2].LocalType);
+            }
+            else if (code == OpCodes.Ldloc_3)
+            {
+                stack.Push(variables[3].LocalType);
             }
             else if (code == OpCodes.Ldelem_Ref)
             {
@@ -5999,10 +6121,42 @@ namespace LightInject
                 stack.Pop();
                 stack.Push(typeof(int));
             }
+            else if (code == OpCodes.Ldc_I4_0)
+            {
+                stack.Push(typeof(int));
+            }
             else if (code == OpCodes.Ldc_I4_1)
             {
                 stack.Push(typeof(int));
             }
+            else if (code == OpCodes.Ldc_I4_2)
+            {
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ldc_I4_3)
+            {
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ldc_I4_4)
+            {
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ldc_I4_5)
+            {
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ldc_I4_6)
+            {
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ldc_I4_7)
+            {
+                stack.Push(typeof(int));
+            }
+            else if (code == OpCodes.Ldc_I4_8)
+            {
+                stack.Push(typeof(int));
+            }            
             else if (code == OpCodes.Sub)
             {
                 stack.Pop();
@@ -6018,14 +6172,14 @@ namespace LightInject
             }
 
             generator.Emit(code);
-            methodBody.Add(new Instruction(code));
+            methodBody.Add(new Instruction(code));            
         }
 
         public void Emit(OpCode code, int arg)
         {
             if (code == OpCodes.Ldc_I4)
             {
-                stack.Push(typeof(int));
+                stack.Push(typeof(int));                
             }
             else if (code == OpCodes.Ldarg)
             {
@@ -6055,6 +6209,32 @@ namespace LightInject
             generator.Emit(code, arg);
         }
 
+        public void Emit(OpCode code, sbyte arg)
+        {            
+            stack.Push(typeof(sbyte));
+            methodBody.Add(new Instruction<sbyte>(code, arg));
+            generator.Emit(code, arg);
+        }
+
+        public void Emit(OpCode code, byte arg)
+        {
+            if (code == OpCodes.Ldloc_S)
+            {
+                stack.Push(variables[arg].LocalType);
+            }
+            else if (code == OpCodes.Ldarg_S)
+            {
+                stack.Push(parameterTypes[arg]);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }           
+
+            methodBody.Add(new Instruction<byte>(code, arg));
+            generator.Emit(code, arg);
+        }
+
         public void Emit(OpCode code, Type type)
         {
             if (code == OpCodes.Newarr)
@@ -6064,9 +6244,9 @@ namespace LightInject
             }
             else if (code == OpCodes.Stelem)
             {
-                var value = stack.Pop();
-                var index = stack.Pop();
-                var array = stack.Pop();                
+                stack.Pop();
+                stack.Pop();
+                stack.Pop();                
             }
             else if (code == OpCodes.Castclass)
             {
@@ -6163,7 +6343,9 @@ namespace LightInject
 
         public LocalBuilder DeclareLocal(Type type)
         {
-            return generator.DeclareLocal(type);
+            var localBuilder = generator.DeclareLocal(type);
+            variables.Add(localBuilder);
+            return localBuilder;
         }
 
 #if DEBUG
@@ -6178,11 +6360,5 @@ namespace LightInject
             return sb.ToString();
         }
 #endif
-
     }
-
-    
-
-    
-    
 }
