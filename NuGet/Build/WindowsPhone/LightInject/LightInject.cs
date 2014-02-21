@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.4
+    LightInject version 3.0.1.5
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2738,7 +2738,7 @@ namespace LightInject
   
         private void EmitDependencyUsingFactoryExpression(IMethodSkeleton dynamicMethodSkeleton, Dependency dependency)
         {
-            var generator = dynamicMethodSkeleton.GetILGenerator();
+            var generator = dynamicMethodSkeleton.GetILGenerator();            
             var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
             MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
             EmitLoadConstant(dynamicMethodSkeleton, constants.Add(lambda), lambda.GetType());
@@ -4358,6 +4358,19 @@ namespace LightInject
             }
 
             return base.VisitUnary(node);
+        }
+
+        /// <summary>
+        /// Visits the children of the <see cref="T:System.Linq.Expressions.NewArrayExpression"/>.
+        /// </summary>
+        /// <returns>
+        /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
+        /// </returns>
+        /// <param name="node">The expression to visit.</param>
+        protected override Expression VisitNewArray(NewArrayExpression node)
+        {
+            canParse = false;
+            return base.VisitNewArray(node);
         }
     }
 
