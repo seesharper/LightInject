@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.4
+    LightInject version 3.0.1.5
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2537,28 +2537,28 @@ namespace LightInject
                 disposableLifetimeInstance.Dispose();
             }            
         }
-                    
+
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
-        {            
+        {
             LocalBuilder array = emitter.DeclareLocal(elementType.MakeArrayType());
             emitter.Emit(OpCodes.Ldc_I4, emitMethods.Count);
             emitter.Emit(OpCodes.Newarr, elementType);
             emitter.Emit(OpCodes.Stloc, array);
 
             for (int index = 0; index < emitMethods.Count; index++)
-            {
+        {
                 emitter.Emit(OpCodes.Ldloc, array);
                 emitter.Emit(OpCodes.Ldc_I4, index);
                 var serviceEmitter = emitMethods[index];
                 serviceEmitter(emitter);
                 if (emitter.StackType != elementType)
-                {
+            {
                     emitter.UnboxOrCast(elementType);                    
-                }
-
-                emitter.Emit(OpCodes.Stelem, elementType);
             }
 
+                emitter.Emit(OpCodes.Stelem, elementType);
+        }
+        
             emitter.Emit(OpCodes.Ldloc, array);
         }
         
@@ -2605,7 +2605,7 @@ namespace LightInject
             catch (Exception)
             {
                 return null;
-            }                                       
+            }
         }
 
         private void EmitEnumerable(IList<Action<IEmitter>> serviceEmitters, Type elementType, IEmitter emitter)
@@ -2676,14 +2676,14 @@ namespace LightInject
 
         private Func<object[], object> CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
         {
-            var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });            
+            var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
             IEmitter emitter = methodSkeleton.GetEmitter();
             serviceEmitter(emitter);
             if (emitter.StackType.IsValueType())
             {
                 emitter.Emit(OpCodes.Box, emitter.StackType);
             }
-                       
+
             return (Func<object[], object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object>));                                    
         }
 
@@ -2905,7 +2905,7 @@ namespace LightInject
                 }
                 
                 Action<IEmitter> currentDecoratorTargetEmitter = decoratorTargetEmitMethod;
-                DecoratorRegistration currentDecorator = decorator;
+                DecoratorRegistration currentDecorator = decorator;                
                 decoratorTargetEmitMethod = e => DoEmitDecoratorInstance(currentDecorator, e, currentDecoratorTargetEmitter);
             }
 
@@ -2935,9 +2935,9 @@ namespace LightInject
             MethodInfo invokeMethod = funcType.GetMethod("Invoke");            
             emitter.Call(invokeMethod);
         }
-        
+
         private void EmitConstructorDependencies(ConstructionInfo constructionInfo, IEmitter emitter, Action<IEmitter> decoratorTargetEmitter)
-        {            
+        {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
             {
                 if (!dependency.IsDecoratorTarget)
@@ -3024,7 +3024,7 @@ namespace LightInject
         }
   
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
-        {            
+        {
             var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
             MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
             emitter.PushConstant(constants.Add(lambda), lambda.GetType());            
@@ -3037,7 +3037,7 @@ namespace LightInject
             {
                 return;
             }
-            
+
             LocalBuilder instanceVariable = emitter.DeclareLocal(constructionInfo.ImplementingType);
             emitter.StoreVariable(instanceVariable);            
             foreach (var propertyDependency in constructionInfo.PropertyDependencies)
@@ -3111,7 +3111,7 @@ namespace LightInject
             var emitter = methodSkeleton.GetEmitter();
 
             MethodInfo getInstanceMethod;
-            
+
             emitter.PushFirstArgument();
             for (int i = 0; i < parameterTypes.Length; i++)
             {
@@ -3140,7 +3140,7 @@ namespace LightInject
             var methodSkeleton = methodSkeletonFactory(returnType, new[] { typeof(IServiceFactory) });
             
             var emitter = methodSkeleton.GetEmitter();
-            MethodInfo getInstanceMethod;            
+            MethodInfo getInstanceMethod;
             emitter.PushFirstArgument();
             if (string.IsNullOrEmpty(serviceName))
             {
@@ -3153,7 +3153,7 @@ namespace LightInject
             }
 
             emitter.Call(getInstanceMethod);
-                        
+            
             var getInstanceDelegate = methodSkeleton.CreateDelegate(serviceType, this);            
             var constantIndex = constants.Add(getInstanceDelegate);
             return e => e.PushConstant(constantIndex, serviceType);
@@ -3293,10 +3293,10 @@ namespace LightInject
             if (openGenericServiceRegistration == null)
             {
                 return null;
-            }            
+            }
             
             Type[] closedGenericArguments = closedGenericServiceType.GetGenericTypeArguments();
-                             
+
             Type closedGenericImplementingType = TryMakeGenericType(
                 openGenericServiceRegistration.ImplementingType,
                 closedGenericArguments);
@@ -3374,7 +3374,7 @@ namespace LightInject
                 emitter.PushConstant(instanceIndex);                
             }
             else
-            {                
+            {
                 int instanceDelegateIndex = CreateInstanceDelegateIndex(instanceEmitter);
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
                 int scopeManagerProviderIndex = CreateScopeManagerProviderIndex();
@@ -3534,7 +3534,7 @@ namespace LightInject
                 return snapshot;
             }
         }
-        
+
         private class DynamicMethodSkeleton : IMethodSkeleton
         {            
             private IEmitter emitter;
@@ -3552,7 +3552,7 @@ namespace LightInject
             }
 
             public Delegate CreateDelegate(Type delegateType)
-            {
+            {                                                         
                 emitter.Emit(OpCodes.Ret);                
                 return dynamicMethod.CreateDelegate(delegateType);
             }
@@ -4685,6 +4685,19 @@ namespace LightInject
 
             return base.VisitUnary(node);
         }
+
+        /// <summary>
+        /// Visits the children of the <see cref="T:System.Linq.Expressions.NewArrayExpression"/>.
+        /// </summary>
+        /// <returns>
+        /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
+        /// </returns>
+        /// <param name="node">The expression to visit.</param>
+        protected override Expression VisitNewArray(NewArrayExpression node)
+        {
+            canParse = false;
+            return base.VisitNewArray(node);
+        }
     }
 
     /// <summary>
@@ -5378,7 +5391,7 @@ namespace LightInject
             InternalTypes.Add(typeof(ImmutableList<>));
             InternalTypes.Add(typeof(KeyValue<,>));
             InternalTypes.Add(typeof(ImmutableHashTree<,>));
-            InternalTypes.Add(typeof(PerThreadScopeManagerProvider));
+            InternalTypes.Add(typeof(PerThreadScopeManagerProvider));            
             InternalTypes.Add(typeof(Emitter));
             InternalTypes.Add(typeof(Instruction));
             InternalTypes.Add(typeof(Instruction<>)); 
