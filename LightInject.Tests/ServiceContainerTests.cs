@@ -251,7 +251,7 @@ namespace LightInject.Tests
             var instance = container.GetInstance(typeof(IFoo<int>));
             Assert.IsInstanceOfType(instance, typeof(Foo<int>));
         }
-
+       
         [TestMethod]
         public void GetInstance_OpenGenericType_ReturnsInstanceOfLastRegisteredType()
         {

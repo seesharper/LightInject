@@ -436,6 +436,10 @@ namespace LightInject.SampleLibrary
         public IFoo Foo { get; set; }
     }
 
+    public interface IFoo<T1, T2> { }
+
+    public class FooWithPartiallyClosedGenericInterface<T> : IFoo<T, string> { }
+
     public interface IFoo<T> { }
 
     public class Foo<T> : IFoo<T> { }
