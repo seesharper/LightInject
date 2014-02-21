@@ -2868,16 +2868,16 @@ namespace LightInject
             return newRegistration;
         }
 
-        private void EmitNewInstance(ServiceRegistration serviceRegistration, IEmitter emitter)
+        private void EmitNewInstanceWithDecorators(ServiceRegistration serviceRegistration, IEmitter emitter)
         {
             var serviceDecorators = GetDecorators(serviceRegistration);
             if (serviceDecorators.Length > 0)
             {
-                EmitDecorators(serviceRegistration, serviceDecorators, emitter, dm => DoEmitNewInstance(serviceRegistration, dm));
+                EmitDecorators(serviceRegistration, serviceDecorators, emitter, dm => EmitNewInstance(serviceRegistration, dm));
             }
             else
             {
-                DoEmitNewInstance(serviceRegistration, emitter);
+                EmitNewInstance(serviceRegistration, emitter);
             }
         }
 
@@ -2967,7 +2967,7 @@ namespace LightInject
             emitter.Emit(OpCodes.Callvirt, invokeMethod);
         }
 
-        private void DoEmitNewInstance(ServiceRegistration serviceRegistration, IEmitter emitter)
+        private void EmitNewInstance(ServiceRegistration serviceRegistration, IEmitter emitter)
         {
             if (serviceRegistration.Value != null)
             {
@@ -3269,10 +3269,10 @@ namespace LightInject
 
             if (rule.LifeTime != null)
             {
-                return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstance(serviceRegistration, ms), methodSkeleton);
+                return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstanceWithDecorators(serviceRegistration, ms), methodSkeleton);
             }
 
-            return methodSkeleton => EmitNewInstance(serviceRegistration, methodSkeleton);
+            return methodSkeleton => EmitNewInstanceWithDecorators(serviceRegistration, methodSkeleton);
         }
 
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)
@@ -3451,10 +3451,10 @@ namespace LightInject
         {                    
             if (serviceRegistration.Lifetime == null)
             {
-                return methodSkeleton => EmitNewInstance(serviceRegistration, methodSkeleton);
+                return methodSkeleton => EmitNewInstanceWithDecorators(serviceRegistration, methodSkeleton);
             }
 
-            return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstance(serviceRegistration, ms), methodSkeleton);
+            return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstanceWithDecorators(serviceRegistration, ms), methodSkeleton);
         }
         
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> instanceEmitter, IEmitter emitter)
