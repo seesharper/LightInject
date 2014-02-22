@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.5
+    LightInject version 3.0.1.6
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -941,7 +941,7 @@ namespace LightInject
         /// <summary>
         /// Gets the <see cref="IEmitter"/> for the this dynamic method.
         /// </summary>
-        /// <returns>The <see cref="IEmitter"/> for the this dynamic method.</returns>        
+        /// <returns>The <see cref="IEmitter"/> for this dynamic method.</returns>        
         IEmitter GetEmitter();
 
         /// <summary>
@@ -1511,8 +1511,18 @@ namespace LightInject
         }
     }
 
+    /// <summary>
+    /// Extends the <see cref="IEmitter"/> interface with a set of methods 
+    /// that optimizes and simplifies emitting MSIL instructions.
+    /// </summary>
     internal static class EmitterExtensions
     {
+        /// <summary>
+        /// Performs a cast or unbox operation if the current <see cref="IEmitter.StackType"/> is 
+        /// different from the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="type">The requested stack type.</param>
         public static void UnboxOrCast(this IEmitter emitter, Type type)
         {
             if (emitter.StackType != type)
@@ -1521,12 +1531,23 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Pushes a constant value onto the evaluation stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="index">The index of the constant value to be pushed onto the stack.</param>
+        /// <param name="type">The requested stack type.</param>
         public static void PushConstant(this IEmitter emitter, int index, Type type)
         {
             emitter.PushConstant(index);           
             emitter.UnboxOrCast(type);
         }
 
+        /// <summary>
+        /// Pushes a constant value onto the evaluation stack as a object reference.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="index">The index of the constant value to be pushed onto the stack.</param>
         public static void PushConstant(this IEmitter emitter, int index)
         {
             emitter.PushArgument(0);
@@ -1534,11 +1555,23 @@ namespace LightInject
             emitter.PushArrayElement();
         }
 
+        /// <summary>
+        /// Pushes the element containing an object reference at a specified index onto the stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
         public static void PushArrayElement(this IEmitter emitter)
         {
             emitter.Emit(OpCodes.Ldelem_Ref);
         }
 
+        /// <summary>
+        /// Pushes the arguments associated with a service request onto the stack.
+        /// The arguments are found as an array in the last element of the constants array
+        /// that is passed into the dynamic method.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="parameters">A list of <see cref="ParameterInfo"/> instances that 
+        /// represent the arguments to be pushed onto the stack.</param>
         public static void PushArguments(this IEmitter emitter, ParameterInfo[] parameters)
         {
             var argumentArray = emitter.DeclareLocal(typeof(object[]));
@@ -1563,16 +1596,31 @@ namespace LightInject
             }
         }
        
+        /// <summary>
+        /// Calls a late-bound method on an object, pushing the return value onto the stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="methodInfo">The <see cref="MethodInfo"/> that represents the method to be called.</param>
         public static void Call(this IEmitter emitter, MethodInfo methodInfo)
         {
             emitter.Emit(OpCodes.Callvirt, methodInfo);
         }
 
+        /// <summary>
+        /// Pushes a new instance onto the stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="constructorInfo">The <see cref="ConstructionInfo"/> that represent the object to be created.</param>
         public static void New(this IEmitter emitter, ConstructorInfo constructorInfo)
         {
             emitter.Emit(OpCodes.Newobj, constructorInfo);
         }
 
+        /// <summary>
+        /// Pushes the given <paramref name="localBuilder"/> onto the stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="localBuilder">The <see cref="LocalBuilder"/> to be pushed onto the stack.</param>
         public static void Push(this IEmitter emitter, LocalBuilder localBuilder)
         {
             int index = localBuilder.LocalIndex;
@@ -1602,6 +1650,11 @@ namespace LightInject
             }                
         }
         
+        /// <summary>
+        /// Pushes an argument with the given <paramref name="index"/> onto the stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="index">The index of the argument to be pushed onto the stack.</param>
         public static void PushArgument(this IEmitter emitter, int index)
         {
             switch (index)
@@ -1630,22 +1683,65 @@ namespace LightInject
             }           
         }
 
+        /// <summary>
+        /// Stores the value currently on top of the stack in the given <paramref name="localBuilder"/>.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="localBuilder">The <see cref="LocalBuilder"/> for which the value is to be stored.</param>
         public static void Store(this IEmitter emitter, LocalBuilder localBuilder)
         {
-            // Same as PushVariable
-            emitter.Emit(OpCodes.Stloc, localBuilder);
+            int index = localBuilder.LocalIndex;
+            switch (index)
+            {
+                case 0:
+                    emitter.Emit(OpCodes.Stloc_0);
+                    return;
+                case 1:
+                    emitter.Emit(OpCodes.Stloc_1);
+                    return;
+                case 2:
+                    emitter.Emit(OpCodes.Stloc_2);
+                    return;
+                case 3:
+                    emitter.Emit(OpCodes.Stloc_3);
+                    return;
+            }
+
+            if (index <= 255)
+            {
+                emitter.Emit(OpCodes.Stloc_S, (byte)index);
+            }
+            else
+            {
+                emitter.Emit(OpCodes.Stloc, index);
+            }                                                    
         }
 
+        /// <summary>
+        /// Pushes a string value onto the stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="value">The <see cref="string"/> value to be pushed onto the stack.</param>
         public static void Push(this IEmitter emitter, string value)
         {
             emitter.Emit(OpCodes.Ldstr, value);
         }
 
+        /// <summary>
+        /// Pushes a new array of the given <paramref name="elementType"/> onto the stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="elementType">The element <see cref="Type"/> of the new array.</param>
         public static void PushNewArray(this IEmitter emitter, Type elementType)
         {
             emitter.Emit(OpCodes.Newarr, elementType);
         }
 
+        /// <summary>
+        /// Pushes an <see cref="int"/> value onto the stack.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="value">The <see cref="int"/> value to be pushed onto the stack.</param>
         public static void Push(this IEmitter emitter, int value)
         {
             switch (value)
@@ -1689,9 +1785,23 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Performs a cast of the value currently on top of the stack to the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        /// <param name="type">The <see cref="Type"/> for which the value will be casted into.</param>
         public static void Cast(this IEmitter emitter, Type type)
         {
             emitter.Emit(OpCodes.Castclass, type);
+        }
+
+        /// <summary>
+        /// Returns from the current method.
+        /// </summary>
+        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
+        public static void Return(this IEmitter emitter)
+        {
+            emitter.Emit(OpCodes.Ret);
         }
     }
 
@@ -3647,13 +3757,13 @@ namespace LightInject
 
             public Delegate CreateDelegate(Type delegateType)
             {                                                         
-                emitter.Emit(OpCodes.Ret);                
+                emitter.Return();             
                 return dynamicMethod.CreateDelegate(delegateType);
             }
 
             public Delegate CreateDelegate(Type delegateType, object target)
             {
-                dynamicMethod.GetILGenerator().Emit(OpCodes.Ret);
+                emitter.Return();                
                 return dynamicMethod.CreateDelegate(delegateType, target);
             }
             
@@ -4291,12 +4401,23 @@ namespace LightInject
         public LocalBuilder(Type type)
         {
             Variable = Expression.Parameter(type);
+            LocalType = type;
         }
 
         /// <summary>
         /// Gets the <see cref="ParameterExpression"/> that represents the variable.
         /// </summary>
         public ParameterExpression Variable { get; private set; }         
+        
+        /// <summary>
+        /// Gets the type of the local variable.
+        /// </summary>
+        public Type LocalType { get; private set; }
+    
+        /// <summary>
+        /// Gets the zero-based index of the local variable within the method body
+        /// </summary>
+        public int LocalIndex { get; private set; }
     } 
   
 #endif
@@ -5487,8 +5608,6 @@ namespace LightInject
             InternalTypes.Add(typeof(ImmutableHashTree<,>));
             InternalTypes.Add(typeof(PerThreadScopeManagerProvider));            
             InternalTypes.Add(typeof(Emitter));
-            InternalTypes.Add(typeof(Instruction));
-            InternalTypes.Add(typeof(Instruction<>)); 
 #if NETFX_CORE || WINDOWS_PHONE            
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
@@ -6012,37 +6131,10 @@ namespace LightInject
         }
     }
 
-    internal class Instruction
-    {
-        public Instruction(OpCode code)
-        {
-            Code = code;
-        }
-
-        public OpCode Code { get; private set; }
-
-        public override string ToString()
-        {
-            return Code.ToString();
-        }
-    }
-
-    internal class Instruction<T> : Instruction
-    {
-        public Instruction(OpCode code, T argument)
-            : base(code)
-        {
-            Argument = argument;
-        }
-
-        public T Argument { get; private set; }
-
-        public override string ToString()
-        {
-            return Code + " " + Argument;
-        }
-    }
-
+    /// <summary>
+    /// An abstraction of the <see cref="ILGenerator"/> class that provides information 
+    /// about the <see cref="Type"/> currently on the stack.
+    /// </summary>
     internal class Emitter : IEmitter
     {
         private readonly ILGenerator generator;
@@ -6051,16 +6143,22 @@ namespace LightInject
 
         private readonly Stack<Type> stack = new Stack<Type>();
 
-        private readonly List<Instruction> methodBody = new List<Instruction>();
-
         private readonly List<LocalBuilder> variables = new List<LocalBuilder>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Emitter"/> class.
+        /// </summary>
+        /// <param name="generator">The <see cref="ILGenerator"/> used to emit MSIL instructions.</param>
+        /// <param name="parameterTypes">The list of parameter types used by the current dynamic method.</param>
         public Emitter(ILGenerator generator, Type[] parameterTypes)
         {
             this.generator = generator;
             this.parameterTypes = parameterTypes;
         }
 
+        /// <summary>
+        /// Gets the <see cref="Type"/> currently on the stack.
+        /// </summary>
         public Type StackType
         {
             get
@@ -6069,6 +6167,10 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the stream of instructions.
+        /// </summary>
+        /// <param name="code">The Microsoft Intermediate Language (MSIL) instruction to be put onto the stream.</param>
         public void Emit(OpCode code)
         {
             if (code == OpCodes.Ldarg_0)
@@ -6102,6 +6204,22 @@ namespace LightInject
             else if (code == OpCodes.Ldloc_3)
             {
                 stack.Push(variables[3].LocalType);
+            }
+            else if (code == OpCodes.Stloc_0)
+            {
+                stack.Pop();
+            }
+            else if (code == OpCodes.Stloc_1)
+            {
+                stack.Pop();
+            }
+            else if (code == OpCodes.Stloc_2)
+            {
+                stack.Pop();
+            }
+            else if (code == OpCodes.Stloc_3)
+            {
+                stack.Pop();
             }
             else if (code == OpCodes.Ldelem_Ref)
             {
@@ -6169,10 +6287,14 @@ namespace LightInject
                 throw new NotSupportedException(code.ToString());
             }
 
-            generator.Emit(code);
-            methodBody.Add(new Instruction(code));            
+            generator.Emit(code);            
         }
 
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         public void Emit(OpCode code, int arg)
         {
             if (code == OpCodes.Ldc_I4)
@@ -6187,11 +6309,15 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
-
-            methodBody.Add(new Instruction<int>(code, arg));
+            
             generator.Emit(code, arg);
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="arg">The String to be emitted.</param>
         public void Emit(OpCode code, string arg)
         {
             if (code == OpCodes.Ldstr)
@@ -6202,18 +6328,26 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
-
-            methodBody.Add(new Instruction<string>(code, arg));
+            
             generator.Emit(code, arg);
         }
 
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         public void Emit(OpCode code, sbyte arg)
         {            
-            stack.Push(typeof(sbyte));
-            methodBody.Add(new Instruction<sbyte>(code, arg));
+            stack.Push(typeof(sbyte));            
             generator.Emit(code, arg);
         }
 
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         public void Emit(OpCode code, byte arg)
         {
             if (code == OpCodes.Ldloc_S)
@@ -6228,11 +6362,15 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }           
-
-            methodBody.Add(new Instruction<byte>(code, arg));
+            
             generator.Emit(code, arg);
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given type.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="type">A <see cref="Type"/> representing the type metadata token.</param>
         public void Emit(OpCode code, Type type)
         {
             if (code == OpCodes.Newarr)
@@ -6265,11 +6403,15 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
-
-            methodBody.Add(new Instruction<Type>(code, type));
+            
             generator.Emit(code, type);
         }
 
+        /// <summary>
+        /// Puts the specified instruction and metadata token for the specified constructor onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="constructor">A <see cref="ConstructorInfo"/> representing a constructor.</param>
         public void Emit(OpCode code, ConstructorInfo constructor)
         {
             if (code == OpCodes.Newobj)
@@ -6286,11 +6428,15 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
-
-            methodBody.Add(new Instruction<ConstructorInfo>(code, constructor));
+            
             generator.Emit(code, constructor);
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the index of the given local variable.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="localBuilder">A local variable.</param>
         public void Emit(OpCode code, LocalBuilder localBuilder)
         {
             if (code == OpCodes.Stloc)
@@ -6305,11 +6451,15 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
-
-            methodBody.Add(new Instruction<LocalBuilder>(code, localBuilder));
+            
             generator.Emit(code, localBuilder);
         }
 
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given method.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="methodInfo">A <see cref="MethodInfo"/> representing a method.</param>
         public void Emit(OpCode code, MethodInfo methodInfo)
         {
             if (code == OpCodes.Callvirt || code == OpCodes.Call)
@@ -6334,29 +6484,20 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
-
-            methodBody.Add(new Instruction<MethodInfo>(code, methodInfo));
+            
             generator.Emit(code, methodInfo);
         }
 
+        /// <summary>
+        /// Declares a local variable of the specified type.
+        /// </summary>
+        /// <param name="type">A <see cref="Type"/> object that represents the type of the local variable.</param>
+        /// <returns>The declared local variable.</returns>
         public LocalBuilder DeclareLocal(Type type)
         {
             var localBuilder = generator.DeclareLocal(type);
             variables.Add(localBuilder);
             return localBuilder;
         }
-
-#if DEBUG
-        public override string ToString()
-        {
-            var sb = new StringBuilder();
-            foreach (var instruction in methodBody)
-            {
-                sb.AppendLine(instruction.ToString());
-            }
-
-            return sb.ToString();
-        }
-#endif
     }
 }
