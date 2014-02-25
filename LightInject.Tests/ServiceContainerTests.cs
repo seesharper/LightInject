@@ -14,6 +14,7 @@ namespace LightInject.Tests
 
     using LightInject;
     using LightInject.SampleLibrary;
+    
 #if NETFX_CORE || WINDOWS_PHONE
     using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
 #else
@@ -1234,6 +1235,7 @@ namespace LightInject.Tests
             Assert.AreEqual(2, instances.Count());
         }
 
+#if NET || NET45
         [TestMethod]
         public void RegisterFrom_CompositionRoot_RegistersService()
         {
@@ -1241,7 +1243,7 @@ namespace LightInject.Tests
             container.RegisterFrom<CompositionRoot>();
             Assert.AreEqual(1, container.AvailableServices.Count());
         }
-
+#endif
         #region Internal Classes
 
         [TestMethod]

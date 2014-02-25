@@ -97,6 +97,7 @@
     <Compile Include="DecoratorTests.cs" />
     <Compile Include="DecoratorVerificationTests.cs" />
     <Compile Include="DisposableTests.cs" />
+    <Compile Include="EmitterTests.cs" />
     <Compile Include="ErrorMessages.cs" />
     <Compile Include="ExceptionAssert.cs" />
     <Compile Include="FunctionFactoryTests.cs" />

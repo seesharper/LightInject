@@ -9,9 +9,6 @@
     public class MethodBuilderMethodSkeleton : IMethodSkeleton
     {
         private readonly string outputPath;
-
-        
-
         private readonly string fileName;
         private AssemblyBuilder assemblyBuilder;
         private TypeBuilder typeBuilder;
@@ -39,8 +36,7 @@
         }
 
         public Delegate CreateDelegate(Type delegateType)
-        {            
-            methodBuilder.GetILGenerator().Emit(OpCodes.Ret);
+        {                       
             var dynamicType = typeBuilder.CreateType();
             assemblyBuilder.Save(fileName);
             Console.WriteLine("Saving file " + fileName);
@@ -50,8 +46,7 @@
         }
 
         public Delegate CreateDelegate(Type delegateType, object target)
-        {
-            methodBuilder.GetILGenerator().Emit(OpCodes.Ret);
+        {            
             var dynamicType = typeBuilder.CreateType();
             assemblyBuilder.Save(fileName);
             Console.WriteLine("Saving file " + fileName);

@@ -4,9 +4,7 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
-    using System.Runtime.Remoting.Messaging;
-
-    using LightInject.Annotation;
+    
 
     public class FooWithCompilerGeneratedType : IFoo
     {      
