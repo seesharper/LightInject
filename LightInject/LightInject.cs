@@ -1377,12 +1377,7 @@ namespace LightInject
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetGenericArguments();
-        }
-
-        public static Type[] GetGenericTypeParameters(this Type type)
-        {
-            return type.GetGenericArguments();            
-        }
+        }        
         
         public static bool IsClass(this Type type)
         {

@@ -493,6 +493,170 @@
             emitter.Emit(OpCodes.Xor);
         }
 
+        [TestMethod]
+        public void Push_Zero_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+            
+            emitter.Push(0);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_One_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(1);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_Two_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(2);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_Three_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(3);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_Four_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(4);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_Five_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(5);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_Six_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(6);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_Seven_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(7);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_Eight_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(8);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_Nine_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(9);
+
+            Assert.AreEqual(typeof(sbyte), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_SignedByteMaxValue_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(sbyte.MaxValue);
+
+            Assert.AreEqual(typeof(sbyte), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_SignedByteMaxValuePlusOne_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(sbyte.MaxValue + 1);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_SignedByteMinValue_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(sbyte.MinValue);
+
+            Assert.AreEqual(typeof(sbyte), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void Push_SignedByteMinValueMinusOne_ReturnsCorrectStackType()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+
+            emitter.Push(sbyte.MinValue - 1);
+
+            Assert.AreEqual(typeof(int), emitter.StackType);
+        }
+
+        [TestMethod]
+        public void StackType_EmptyMethod_IsNull()
+        {
+            var emitter = new Emitter(null, Type.EmptyTypes);
+            
+            Assert.IsNull(emitter.StackType);
+        }
+
+        [TestMethod]
+        public void ToString_Instruction_ReturnsCodeAsString()
+        {
+            var instruction = new Instruction(OpCodes.Stloc, null);
+            
+            Assert.AreEqual("stloc", instruction.ToString());
+        }
+
+        [TestMethod]
+        public void ToString_InstructionOfT_ReturnsCodeAndArgumentAsString()
+        {
+            var instruction = new Instruction<int>(OpCodes.Ldarg, 1, null);
+
+            Assert.AreEqual("ldarg 1", instruction.ToString());
+        }
+
         private ILGenerator CreateDummyGenerator()
         {
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();

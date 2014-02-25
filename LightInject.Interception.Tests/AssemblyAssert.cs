@@ -42,8 +42,9 @@
 
         private static string GetPathToPEVerify()
         {
-            var peverifyPath = Path.Combine(
-                ToolLocationHelper.GetPathToDotNetFrameworkSdk(TargetDotNetFrameworkVersion.VersionLatest,VisualStudioVersion.VersionLatest), @"bin\NETFX 4.0 Tools\peverify.exe");
+            var peverifyPath = @"C:\Program Files (x86)\Microsoft SDKs\Windows\v8.0A\bin\NETFX 4.0 Tools\x64\peverify.exe";
+            //var peverifyPath = Path.Combine(
+            //    ToolLocationHelper.GetPathToDotNetFrameworkSdk(TargetDotNetFrameworkVersion.VersionLatest,VisualStudioVersion.VersionLatest), @"bin\NETFX 4.0 Tools\peverify.exe");
             return peverifyPath;
         }
     }
