@@ -136,6 +136,9 @@
     <Compile Include="..\LightInject.Tests\DecoratorTests.cs">
       <Link>DecoratorTests.cs</Link>
     </Compile>
+    <Compile Include="..\LightInject.Tests\EmitterTests.cs">
+      <Link>EmitterTests.cs</Link>
+    </Compile>
     <Compile Include="..\LightInject.Tests\ErrorMessages.cs">
       <Link>ErrorMessages.cs</Link>
     </Compile>

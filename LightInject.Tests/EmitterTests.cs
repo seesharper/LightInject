@@ -4,7 +4,11 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
+#if NETFX_CORE || WINDOWS_PHONE
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#else
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+#endif
 
     [TestClass]
     public class EmitterTests
@@ -12,7 +16,7 @@
         [TestMethod]
         public void Push_Zero_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             emitter.Push(0);
             emitter.Return();
             Assert.AreEqual(OpCodes.Ldc_I4_0, emitter.Instructions[0].Code);
@@ -21,7 +25,7 @@
         [TestMethod]
         public void Push_One_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(1);
             emitter.Return();
@@ -32,7 +36,7 @@
         [TestMethod]
         public void Push_Two_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(2);
             emitter.Return();
@@ -43,7 +47,7 @@
         [TestMethod]
         public void Push_Three_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(3);
             emitter.Return();
@@ -54,7 +58,7 @@
         [TestMethod]
         public void Push_Four_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(4);
             emitter.Return();
@@ -65,7 +69,7 @@
         [TestMethod]
         public void Push_Five_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(5);
             emitter.Return();
@@ -76,7 +80,7 @@
         [TestMethod]
         public void Push_Six_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(6);
             emitter.Return();
@@ -87,7 +91,7 @@
         [TestMethod]
         public void Push_Seven_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(7);
             emitter.Return();
@@ -98,7 +102,7 @@
         [TestMethod]
         public void Push_Eigth_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(8);
             emitter.Return();
@@ -109,7 +113,7 @@
         [TestMethod]
         public void Push_Nine_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(9);
             emitter.Return();
@@ -120,7 +124,7 @@
         [TestMethod]
         public void Push_SignedByteMaxValue_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(sbyte.MaxValue);
             emitter.Return();
@@ -131,7 +135,7 @@
         [TestMethod]
         public void Push_SignedByteMinValue_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(sbyte.MinValue);
             emitter.Return();
@@ -142,7 +146,7 @@
         [TestMethod]
         public void Push_SignedByteMaxValuePlusOne_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(sbyte.MaxValue + 1);
             emitter.Return();
@@ -153,7 +157,7 @@
         [TestMethod]
         public void Push_SignedByteMinValueMinusOne_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
 
             emitter.Push(sbyte.MinValue - 1);
             emitter.Return();
@@ -165,7 +169,7 @@
         public void PushArgument_Zero_EmitsMostEffectiveInstruction()
         {
             const int ArgumentNumber = 0;
-            var emitter = new Emitter(CreateDummyGenerator(), CreateArgumentArray(ArgumentNumber));
+            var emitter = CreateEmitter(ArgumentNumber);
 
             emitter.PushArgument(ArgumentNumber);
             emitter.Return();
@@ -176,10 +180,10 @@
         [TestMethod]
         public void PushArgument_One_EmitsMostEffectiveInstruction()
         {
-            const int ArgumentNumber = 1;
-            var emitter = new Emitter(CreateDummyGenerator(), CreateArgumentArray(ArgumentNumber));
+            const int ArgumentCount = 1;
+            var emitter = CreateEmitter(ArgumentCount);
 
-            emitter.PushArgument(ArgumentNumber);
+            emitter.PushArgument(ArgumentCount);
             emitter.Return();
 
             Assert.AreEqual(OpCodes.Ldarg_1, emitter.Instructions[0].Code);
@@ -188,10 +192,10 @@
         [TestMethod]
         public void PushArgument_Two_EmitsMostEffectiveInstruction()
         {
-            const int ArgumentNumber = 2;
-            var emitter = new Emitter(CreateDummyGenerator(), CreateArgumentArray(ArgumentNumber));
+            const int ArgumentCount = 2;
+            var emitter = CreateEmitter(ArgumentCount);
 
-            emitter.PushArgument(ArgumentNumber);
+            emitter.PushArgument(ArgumentCount);
             emitter.Return();
 
             Assert.AreEqual(OpCodes.Ldarg_2, emitter.Instructions[0].Code);
@@ -200,22 +204,36 @@
         [TestMethod]
         public void PushArgument_Three_EmitsMostEffectiveInstruction()
         {
-            const int ArgumentNumber = 3;
-            var emitter = new Emitter(CreateDummyGenerator(), CreateArgumentArray(ArgumentNumber));
+            const int ArgumentCount = 3;
+            var emitter = CreateEmitter(ArgumentCount);
 
-            emitter.PushArgument(ArgumentNumber);
+            emitter.PushArgument(ArgumentCount);
             emitter.Return();
 
             Assert.AreEqual(OpCodes.Ldarg_3, emitter.Instructions[0].Code);
         }
 
+        private Emitter CreateEmitter(int ArgumentNumber)
+        {
+            Type[] arguments = CreateArgumentArray(ArgumentNumber);
+            var emitter = new Emitter(CreateDummyGenerator(arguments), arguments);
+            return emitter;
+        }
+
+        private Emitter CreateEmitter()
+        {
+            Type[] arguments = CreateArgumentArray(0);
+            var emitter = new Emitter(CreateDummyGenerator(arguments), arguments);
+            return emitter;
+        }
+
         [TestMethod]
         public void PushArgument_Four_EmitsMostEffectiveInstruction()
         {
-            const int ArgumentNumber = 4;
-            var emitter = new Emitter(CreateDummyGenerator(), CreateArgumentArray(ArgumentNumber));
+            const int ArgumentCount = 4;
+            var emitter = CreateEmitter(ArgumentCount);
 
-            emitter.PushArgument(ArgumentNumber);
+            emitter.PushArgument(ArgumentCount);
             emitter.Return();
 
             Assert.AreEqual(OpCodes.Ldarg_S, emitter.Instructions[0].Code);
@@ -224,10 +242,10 @@
         [TestMethod]
         public void PushArgument_ByteMaxValue_EmitsMostEffectiveInstruction()
         {
-            const int ArgumentNumber = byte.MaxValue;
-            var emitter = new Emitter(CreateDummyGenerator(), CreateArgumentArray(ArgumentNumber));
+            const int ArgumentCount = byte.MaxValue;
+            var emitter = CreateEmitter(ArgumentCount);
 
-            emitter.PushArgument(ArgumentNumber);
+            emitter.PushArgument(ArgumentCount);
             emitter.Return();
 
             Assert.AreEqual(OpCodes.Ldarg_S, emitter.Instructions[0].Code);
@@ -236,10 +254,10 @@
         [TestMethod]
         public void PushArgument_ByteMaxValuePlusOne_EmitsMostEffectiveInstruction()
         {
-            const int ArgumentNumber = byte.MaxValue + 1;
-            var emitter = new Emitter(CreateDummyGenerator(), CreateArgumentArray(ArgumentNumber));
+            const int ArgumentCount = byte.MaxValue + 1;
+            var emitter = CreateEmitter(ArgumentCount);
 
-            emitter.PushArgument(ArgumentNumber);
+            emitter.PushArgument(ArgumentCount);
             emitter.Return();
             
             Assert.AreEqual(OpCodes.Ldarg, emitter.Instructions[0].Code);
@@ -248,7 +266,7 @@
         [TestMethod]
         public void PushVariable_One_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 1);
 
             emitter.Push(localBuilders[localBuilders.Length - 1]);
@@ -260,7 +278,7 @@
         [TestMethod]
         public void PushVariable_Two_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 2);
 
             emitter.Push(localBuilders[localBuilders.Length - 1]);
@@ -272,7 +290,7 @@
         [TestMethod]
         public void PushVariable_Three_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 3);
 
             emitter.Push(localBuilders[localBuilders.Length - 1]);
@@ -284,7 +302,7 @@
         [TestMethod]
         public void PushVariable_Four_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 4);
 
             emitter.Push(localBuilders[localBuilders.Length - 1]);
@@ -296,7 +314,7 @@
         [TestMethod]
         public void PushVariable_Five_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 5);
 
             emitter.Push(localBuilders[localBuilders.Length - 1]);
@@ -308,7 +326,7 @@
         [TestMethod]
         public void PushVariable_ByteMaxValuePlusOne_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, byte.MaxValue + 1);
 
             emitter.Push(localBuilders[localBuilders.Length - 1]);
@@ -320,7 +338,7 @@
         [TestMethod]
         public void PushVariable_ByteMaxValuePlusTwo_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, byte.MaxValue + 2);
             
             emitter.Push(localBuilders[localBuilders.Length - 1]);
@@ -332,7 +350,7 @@
         [TestMethod]
         public void Store_One_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 1);
             
             emitter.Push(42);
@@ -345,7 +363,7 @@
         [TestMethod]
         public void Store_Two_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 2);
 
             emitter.Push(42);
@@ -358,7 +376,7 @@
         [TestMethod]
         public void Store_Three_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 3);
 
             emitter.Push(42);
@@ -371,7 +389,7 @@
         [TestMethod]
         public void Store_Four_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 4);
 
             emitter.Push(42);
@@ -384,7 +402,7 @@
         [TestMethod]
         public void Store_Five_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 5);
 
             emitter.Push(42);
@@ -397,7 +415,7 @@
         [TestMethod]
         public void Store_ByteMaxValuePlusOne_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, byte.MaxValue + 1);
 
             emitter.Push(42);
@@ -410,7 +428,7 @@
         [TestMethod]
         public void Store_ByteMaxValuePlusTwo_EmitsMostEffectiveInstruction()
         {
-            var emitter = new Emitter(CreateDummyGenerator(), Type.EmptyTypes);
+            var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, byte.MaxValue + 2);
 
             emitter.Push(42);
@@ -421,82 +439,74 @@
         }
 
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCodeWithInteger_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Ldarg_0, 42);
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, 42));
+
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCodeWithString_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Ldarg_0, "SomeValue");
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, "SomeValue"));            
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCodeWithLocalBuilder_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Ldarg_0, (LocalBuilder)null);
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (LocalBuilder)null));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCodeWithSignedByte_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Ldarg_0, (sbyte)42);
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (sbyte)42));            
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCodeWithByte_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Ldarg_0, (byte)42);
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (byte)42));                        
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCodeWithType_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Ldarg_0, typeof(object));
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, typeof(object)));                                    
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCodeWithMethodInfo_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Ldarg_0, (MethodInfo)null);
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() =>  emitter.Emit(OpCodes.Ldarg_0, (MethodInfo)null));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCodeWithConstructorInfo_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null);
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));            
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NotSupportedException))]
+        [TestMethod]        
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
-            emitter.Emit(OpCodes.Xor);
+            var emitter = new Emitter(null, new Type[] {});
+            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Xor));                        
         }
 
         [TestMethod]
         public void Push_Zero_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
             
             emitter.Push(0);
 
@@ -506,7 +516,7 @@
         [TestMethod]
         public void Push_One_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(1);
 
@@ -516,7 +526,7 @@
         [TestMethod]
         public void Push_Two_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(2);
 
@@ -526,7 +536,7 @@
         [TestMethod]
         public void Push_Three_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(3);
 
@@ -536,7 +546,7 @@
         [TestMethod]
         public void Push_Four_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(4);
 
@@ -546,7 +556,7 @@
         [TestMethod]
         public void Push_Five_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(5);
 
@@ -556,7 +566,7 @@
         [TestMethod]
         public void Push_Six_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(6);
 
@@ -566,7 +576,7 @@
         [TestMethod]
         public void Push_Seven_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(7);
 
@@ -576,7 +586,7 @@
         [TestMethod]
         public void Push_Eight_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(8);
 
@@ -586,7 +596,7 @@
         [TestMethod]
         public void Push_Nine_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(9);
 
@@ -596,7 +606,7 @@
         [TestMethod]
         public void Push_SignedByteMaxValue_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(sbyte.MaxValue);
 
@@ -606,7 +616,7 @@
         [TestMethod]
         public void Push_SignedByteMaxValuePlusOne_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(sbyte.MaxValue + 1);
 
@@ -616,7 +626,7 @@
         [TestMethod]
         public void Push_SignedByteMinValue_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(sbyte.MinValue);
 
@@ -626,7 +636,7 @@
         [TestMethod]
         public void Push_SignedByteMinValueMinusOne_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
 
             emitter.Push(sbyte.MinValue - 1);
 
@@ -636,7 +646,7 @@
         [TestMethod]
         public void StackType_EmptyMethod_IsNull()
         {
-            var emitter = new Emitter(null, Type.EmptyTypes);
+            var emitter = new Emitter(null, new Type[] {});
             
             Assert.IsNull(emitter.StackType);
         }
@@ -656,19 +666,25 @@
 
             Assert.AreEqual("ldarg 1", instruction.ToString());
         }
-
-        private ILGenerator CreateDummyGenerator()
+#if NET || NET45
+        private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();
         }
-
+#endif
+#if NETFX_CORE || WINDOWS_PHONE
+        private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
+        {
+            return new DynamicMethod(typeof(object), parameterTypes).GetILGenerator();
+        }        
+#endif
         private LocalBuilder[] CreateLocalBuilders(IEmitter emitter, int count)
         {
             var localBuilders = new LocalBuilder[count];
             
             for (int i = 0; i < count; i++)
             {
-                localBuilders[i] = emitter.DeclareLocal(typeof(int));
+                localBuilders[i] = emitter.DeclareLocal(typeof(sbyte));
             }
 
             return localBuilders;
@@ -684,10 +700,5 @@
             }
             return parameterTypes;
         }
-
-
-    }
-
-    
-
+    }    
 }

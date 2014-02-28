@@ -4192,6 +4192,54 @@ namespace LightInject
             {
                 stack.Push(parameters[1]);
             }
+            else if (code == OpCodes.Ldarg_2)
+            {
+                stack.Push(parameters[2]);
+            }
+            else if (code == OpCodes.Ldarg_3)
+            {
+                stack.Push(parameters[3]);
+            }
+            else if (code == OpCodes.Ldloc_0)
+            {
+                stack.Push(locals[0].Variable);
+            }
+            else if (code == OpCodes.Ldloc_1)
+            {
+                stack.Push(locals[1].Variable);
+            }
+            else if (code == OpCodes.Ldloc_2)
+            {
+                stack.Push(locals[2].Variable);
+            }
+            else if (code == OpCodes.Ldloc_3)
+            {
+                stack.Push(locals[3].Variable);
+            }
+            else if (code == OpCodes.Stloc_0)
+            {
+                Expression valueExpression = stack.Pop();
+                var assignExpression = Expression.Assign(locals[0].Variable, valueExpression);
+                expressions.Add(assignExpression);
+            }
+            else if (code == OpCodes.Stloc_1)
+            {
+                Expression valueExpression = stack.Pop();
+                var assignExpression = Expression.Assign(locals[1].Variable, valueExpression);
+                expressions.Add(assignExpression);
+            }
+            else if (code == OpCodes.Stloc_2)
+            {
+                Expression valueExpression = stack.Pop();
+                var assignExpression = Expression.Assign(locals[2].Variable, valueExpression);
+                expressions.Add(assignExpression);
+            }
+            else if (code == OpCodes.Stloc_3)
+            {
+                Expression valueExpression = stack.Pop();
+                var assignExpression = Expression.Assign(locals[3].Variable, valueExpression);
+                expressions.Add(assignExpression);
+            }
             else if (code == OpCodes.Ldelem_Ref)
             {
                 Expression[] indexes = new[] { stack.Pop() };
@@ -4207,10 +4255,42 @@ namespace LightInject
             {
                 stack.Push(Expression.Convert(stack.Pop(), typeof(int)));
             }
+            else if (code == OpCodes.Ldc_I4_0)
+            {
+                stack.Push(Expression.Constant(0, typeof(int)));
+            }
             else if (code == OpCodes.Ldc_I4_1)
             {
                 stack.Push(Expression.Constant(1, typeof(int)));
             }
+            else if (code == OpCodes.Ldc_I4_2)
+            {
+                stack.Push(Expression.Constant(2, typeof(int)));
+            }
+            else if (code == OpCodes.Ldc_I4_3)
+            {
+                stack.Push(Expression.Constant(3, typeof(int)));
+            }
+            else if (code == OpCodes.Ldc_I4_4)
+            {
+                stack.Push(Expression.Constant(4, typeof(int)));
+            }
+            else if (code == OpCodes.Ldc_I4_5)
+            {
+                stack.Push(Expression.Constant(5, typeof(int)));
+            }
+            else if (code == OpCodes.Ldc_I4_6)
+            {
+                stack.Push(Expression.Constant(6, typeof(int)));
+            }
+            else if (code == OpCodes.Ldc_I4_7)
+            {
+                stack.Push(Expression.Constant(7, typeof(int)));
+            }
+            else if (code == OpCodes.Ldc_I4_8)
+            {
+                stack.Push(Expression.Constant(8, typeof(int)));
+            }                                  
             else if (code == OpCodes.Sub)
             {
                 var right = stack.Pop();
@@ -4264,10 +4344,65 @@ namespace LightInject
             {
                 stack.Push(parameters[arg]);
             }
+            else if (code == OpCodes.Ldloc)
+            {
+                stack.Push(locals[arg].Variable);
+            }
+            else if (code == OpCodes.Stloc)
+            {
+                Expression valueExpression = stack.Pop();
+                var assignExpression = Expression.Assign(locals[arg].Variable, valueExpression);
+                expressions.Add(assignExpression);
+            }   
             else
             {
                 throw new NotSupportedException(code.ToString());
             }
+        }
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        public void Emit(OpCode code, sbyte arg)
+        {
+            if (code == OpCodes.Ldc_I4_S)
+            {
+                stack.Push(Expression.Constant(arg, typeof(sbyte)));
+            }            
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+            
+        }
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        public void Emit(OpCode code, byte arg)
+        {
+            if (code == OpCodes.Ldloc_S)
+            {
+                stack.Push(locals[arg].Variable);
+            }
+            else if (code == OpCodes.Ldarg_S)
+            {
+                stack.Push(parameters[arg]);
+            }
+            else if (code == OpCodes.Stloc_S)
+            {
+                Expression valueExpression = stack.Pop();
+                var assignExpression = Expression.Assign(locals[arg].Variable, valueExpression);
+                expressions.Add(assignExpression);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }            
         }
 
         /// <summary>
@@ -4294,7 +4429,7 @@ namespace LightInject
         /// <returns>The declared local variable.</returns>
         public LocalBuilder DeclareLocal(Type type)
         {
-            var localBuilder = new LocalBuilder(type);
+            var localBuilder = new LocalBuilder(type, locals.Count);
             locals.Add(localBuilder);
             return localBuilder;
         }
@@ -4399,10 +4534,11 @@ namespace LightInject
         /// Initializes a new instance of the <see cref="LocalBuilder"/> class.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> of the variable that this <see cref="LocalBuilder"/> represents.</param>
-        public LocalBuilder(Type type)
+        public LocalBuilder(Type type, int localIndex)
         {
             Variable = Expression.Parameter(type);
             LocalType = type;
+            LocalIndex = localIndex;
         }
 
         /// <summary>
