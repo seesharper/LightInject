@@ -1235,12 +1235,7 @@ namespace LightInject
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetGenericArguments();
-        }
-
-        public static Type[] GetGenericTypeParameters(this Type type)
-        {
-            return type.GetGenericArguments();            
-        }
+        }        
         
         public static bool IsClass(this Type type)
         {
@@ -2680,6 +2675,7 @@ namespace LightInject
                     dependencyStack.Clear();
                     throw;
                 }
+
                 emitter.Return();
                 return (Func<object[], object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object, object>));                                        
             }            
@@ -3029,9 +3025,7 @@ namespace LightInject
         private void EmitConstructorDependency(IEmitter emitter, Dependency dependency)
         {
             var emitMethod = GetEmitMethodForDependency(dependency);
-
-            //Wrap IAction<IEmitter> so that we can store the implementing type 
-            
+                        
             try
             {
                 emitMethod(emitter);                
@@ -3251,15 +3245,7 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodForArrayServiceRequest(Type serviceType)
         {
             Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
-            return enumerableEmitter;
-
-            //MethodInfo openGenericToArrayMethod = typeof(Enumerable).GetMethod("ToArray");
-            //MethodInfo closedGenericToArrayMethod = openGenericToArrayMethod.MakeGenericMethod(TypeHelper.GetElementType(serviceType));
-            //return ms =>
-            //    {
-            //        enumerableEmitter(ms);
-            //        ms.Emit(OpCodes.Call, closedGenericToArrayMethod);
-            //    };
+            return enumerableEmitter;            
         }
 
         private Action<IEmitter> CreateEmitMethodForListServiceRequest(Type serviceType)
@@ -3585,14 +3571,12 @@ namespace LightInject
             }
 
             public Delegate CreateDelegate(Type delegateType)
-            {                                                         
-                //emitter.Return();             
+            {                                                                       
                 return dynamicMethod.CreateDelegate(delegateType);
             }
 
             public Delegate CreateDelegate(Type delegateType, object target)
-            {
-                //emitter.Return();                
+            {                         
                 return dynamicMethod.CreateDelegate(delegateType, target);
             }
             
@@ -5624,6 +5608,14 @@ namespace LightInject
             {
                 stack.Push(parameterTypes[arg]);
             }
+            else if (code == OpCodes.Ldloc)
+            {
+                stack.Push(variables[arg].LocalType);
+            }
+            else if (code == OpCodes.Stloc)
+            {
+                stack.Pop();
+            }
             else
             {
                 throw new NotSupportedException(code.ToString());
@@ -5657,8 +5649,16 @@ namespace LightInject
         /// <param name="code">The MSIL instruction to be put onto the stream.</param>
         /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         public void Emit(OpCode code, sbyte arg)
-        {            
-            stack.Push(typeof(sbyte));
+        {
+            if (code == OpCodes.Ldc_I4_S)
+            {
+                stack.Push(typeof(sbyte));    
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
             instructions.Add(new Instruction<sbyte>(code, arg, il => il.Emit(code, arg)));            
         }
 
@@ -5676,6 +5676,10 @@ namespace LightInject
             else if (code == OpCodes.Ldarg_S)
             {
                 stack.Push(parameterTypes[arg]);
+            }
+            else if (code == OpCodes.Stloc_S)
+            {
+                stack.Pop();
             }
             else
             {

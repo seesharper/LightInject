@@ -1,5 +1,5 @@
 ﻿/*****************************************************************************   
-   Copyright 2013 bernhard.richter@gmail.com
+   Copyright 2014 bernhard.richter@gmail.com
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -323,6 +323,41 @@ namespace LightInject.Wcf
             return checkPath.StartsWith(
                 string.Format("~/{0}", servicePath), StringComparison.InvariantCultureIgnoreCase)
                    && checkPath.EndsWith("svc", StringComparison.InvariantCulture);
+        }
+    }
+
+    /// <summary>
+    /// An <see cref="IScopeManagerProvider"/> that provides the <see cref="ScopeManager"/>
+    /// used by the current <see cref="OperationContext"/>.
+    /// </summary>
+    internal class PerWcfOperationScopeManagerProvider : IScopeManagerProvider
+    {
+        private readonly ThreadSafeDictionary<OperationContext, ScopeManager> scopeManagers =
+            new ThreadSafeDictionary<OperationContext, ScopeManager>();
+
+        /// <summary>
+        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// </summary>
+        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
+        public ScopeManager GetScopeManager()
+        {
+            return scopeManagers.GetOrAdd(OperationContext.Current, CreateScopeManager);
+        }
+
+        private ScopeManager CreateScopeManager(OperationContext context)
+        {
+            context.OperationCompleted += ContextOperationCompleted;
+            var scopeManager = new ScopeManager();
+            scopeManager.BeginScope();
+            return scopeManager;
+        }
+
+        private void ContextOperationCompleted(object sender, EventArgs e)
+        {
+            var context = (OperationContext)sender;
+            ScopeManager scopeManager;
+            scopeManagers.TryRemove(context, out scopeManager);
+            scopeManager.CurrentScope.Dispose();
         }
     }    
 }

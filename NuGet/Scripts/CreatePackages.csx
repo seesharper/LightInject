@@ -20,7 +20,7 @@ private void CreateSourcePackages()
 	CreateLightInjectMvcSourcePackage();
 	CreateLightInjectServiceLocationSourcePackage();	
 	CreateLightInjectWcfSourcePackage();
-	//CreateLightInjectWebApiSourcePackage();
+	CreateLightInjectWebApiSourcePackage();
 }
 
 private void UpdateBinaryProjects()

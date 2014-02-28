@@ -4534,6 +4534,7 @@ namespace LightInject
         /// Initializes a new instance of the <see cref="LocalBuilder"/> class.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> of the variable that this <see cref="LocalBuilder"/> represents.</param>
+        /// <param name="localIndex">The zero-based index of the local variable within the method body.</param> 
         public LocalBuilder(Type type, int localIndex)
         {
             Variable = Expression.Parameter(type);
@@ -4552,7 +4553,7 @@ namespace LightInject
         public Type LocalType { get; private set; }
     
         /// <summary>
-        /// Gets the zero-based index of the local variable within the method body
+        /// Gets the zero-based index of the local variable within the method body.
         /// </summary>
         public int LocalIndex { get; private set; }
     } 
