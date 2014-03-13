@@ -44,7 +44,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IUrlRepository.cs" />
     <Compile Include="LightInject.Wcf.Client.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

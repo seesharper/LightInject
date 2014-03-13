@@ -3826,6 +3826,8 @@ namespace LightInject
     {
         private const string Key = "LightInjectScopeManager";
 
+        private readonly object lockObject = new object();
+
         /// <summary>
         /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
         /// </summary>
@@ -3833,10 +3835,19 @@ namespace LightInject
         public ScopeManager GetScopeManager()
         {
             var scopeManagerWrapper = (SerializableScopeManager)CallContext.LogicalGetData(Key);
-            if (scopeManagerWrapper == null)
+            if (scopeManagerWrapper != null)
             {
-                scopeManagerWrapper = new SerializableScopeManager { ScopeManager = new ScopeManager() };
-                CallContext.LogicalSetData(Key, scopeManagerWrapper);
+                return scopeManagerWrapper.ScopeManager;
+            }
+            
+            lock (lockObject)
+            {
+                scopeManagerWrapper = (SerializableScopeManager)CallContext.LogicalGetData(Key);
+                if (scopeManagerWrapper == null)
+                {
+                    scopeManagerWrapper = new SerializableScopeManager { ScopeManager = new ScopeManager() };
+                    CallContext.LogicalSetData(Key, scopeManagerWrapper);        
+                }
             }
 
             return scopeManagerWrapper.ScopeManager;
@@ -5807,6 +5818,10 @@ namespace LightInject
             InternalTypes.Add(typeof(Emitter));
             InternalTypes.Add(typeof(Instruction));
             InternalTypes.Add(typeof(Instruction<>));
+#if NET45
+            InternalTypes.Add(typeof(SerializableScopeManager));
+            InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
+#endif            
 #if NETFX_CORE || WINDOWS_PHONE            
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
