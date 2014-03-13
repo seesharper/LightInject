@@ -1,5 +1,6 @@
 ﻿namespace LightInject.Interception.Tests
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
 
@@ -16,8 +17,8 @@
         {
             var container = new ServiceContainer();
             container.Register<IFoo, Foo>();
-            container.Intercept(sr => sr.ServiceType == typeof(IFoo), factory => new SampleInterceptor());
-
+            container.Intercept(sr => sr.ServiceType == typeof(IFoo), factory => new SampleInterceptor());            
+                      
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance, typeof(IProxy));

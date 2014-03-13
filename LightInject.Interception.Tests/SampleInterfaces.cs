@@ -8,6 +8,12 @@
     {        
     }
 
+    public interface IDisposableTarget : IDisposable
+    {
+        
+    }
+
+
     public class TargetWithGetHashCodeOverride : ITarget
     {
         private readonly int hashCode;

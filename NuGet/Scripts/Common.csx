@@ -328,6 +328,11 @@ public class SourceWriter
                     line = line.Replace("typeof(LightInject.Web.LightInjectHttpModuleInitializer)", "typeof($rootnamespace$.LightInject.Web.LightInjectHttpModuleInitializer)");
                 }
 
+                if (line.Contains("typeof(LightInject.Wcf.LightInjectWcfInitializer)") && processNameSpace)
+                {
+                    line = line.Replace("typeof(LightInject.Wcf.LightInjectWcfInitializer)", "typeof($rootnamespace$.LightInject.Wcf.LightInjectWcfInitializer)");
+                }
+
                 if (line.Contains("public class") || line.Contains("internal class") || line.Contains("internal static class"))
                 {                        
                     var lineWithOutIndent = line.TrimStart(new char[] { ' ' });

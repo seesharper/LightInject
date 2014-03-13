@@ -14,7 +14,8 @@
             serviceRegistry.Register<IPerSessionInstanceAndReentrantConcurrency, PerSessionInstanceAndReentrantConcurrency>();
             serviceRegistry.Register<ISingleInstanceAndSingleConcurrency, SingleInstanceAndSingleConcurrency>();
             serviceRegistry.Register<ISingleInstanceAndMultipleConcurrency, SingleInstanceAndMultipleConcurrency>();
-            serviceRegistry.Register<ISingleInstanceAndReentrantConcurrency, SingleInstanceAndReentrantConcurrency>();                        
+            serviceRegistry.Register<ISingleInstanceAndReentrantConcurrency, SingleInstanceAndReentrantConcurrency>();
+            serviceRegistry.Register<IAsyncService, AsyncService>();
             serviceRegistry.Register<IFoo, Foo>(new PerScopeLifetime());
         }
     }

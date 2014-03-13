@@ -1,6 +1,8 @@
 ﻿namespace LightInject.Wcf.SampleLibrary
 {
+    using System.Runtime.Serialization;
     using System.ServiceModel;
+    using System.Threading.Tasks;
 
     [ServiceContract]
     public interface IService
@@ -92,4 +94,15 @@
     public class ServiceWithoutInterface
     {
     }
+
+    public interface IFoo { }
+    
+    [ServiceContract]
+    public interface IAsyncService
+    {
+        [OperationContract]
+        Task<IFoo> Execute();
+    }
+
+    
 }

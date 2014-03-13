@@ -88,6 +88,7 @@
     <Compile Include="AnnotatedPropertyDependencySelectorTests.cs" />
     <Compile Include="AssemblyAssert.cs" />
     <Compile Include="AssemblyScannerTests.cs" />
+    <Compile Include="AsyncTests.cs" />
     <Compile Include="CompositionRootExecutorTests.cs" />
     <Compile Include="CompositionRootTypeExtractorTests.cs" />
     <Compile Include="ConstructorInjectionTests.cs" />

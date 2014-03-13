@@ -147,6 +147,20 @@ namespace LightInject.Interception.Tests
         }
 
         [TestMethod]
+        public void GetProxyType_InterfaceThatInheritsAnotherInterface_ImplementsBothInterfaces()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(IDisposableTarget), () => null, typeof(IDisposable));
+
+            
+
+            var proxyType = CreateProxyType(proxyDefinition);
+
+        //    var disposable = (IDisposable)Activator.CreateInstance(proxyType);
+        }
+
+
+
+        [TestMethod]
         public void Execute_NoInterceptor_PassesGetHashCodeToTarget()
          {
             var target = new TargetWithGetHashCodeOverride(42);

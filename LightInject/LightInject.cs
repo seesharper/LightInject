@@ -1,7 +1,7 @@
 /*********************************************************************************   
     The MIT License (MIT)
 
-    Copyright (c) 2013 bernhard.richter@gmail.com
+    Copyright (c) 2014 bernhard.richter@gmail.com
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ namespace LightInject
     using System;    
 #if WINDOWS_PHONE
     using System.Collections;
-#endif    
+#endif   
 #if NET || NET45 || NETFX_CORE
     using System.Collections.Concurrent;
 #endif
@@ -53,6 +53,9 @@ namespace LightInject
     using System.Reflection;
     using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
+#if NET45
+    using System.Runtime.Remoting.Messaging;
+#endif
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -3812,6 +3815,62 @@ namespace LightInject
             return scopeManagers.Value;
         }
     }
+
+#if NET45     
+    
+    /// <summary>
+    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> per
+    /// <see cref="CallContext"/>.
+    /// </summary>
+    internal class PerLogicalCallContextScopeManagerProvider : IScopeManagerProvider
+    {
+        private const string Key = "LightInjectScopeManager";
+
+        /// <summary>
+        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// </summary>
+        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
+        public ScopeManager GetScopeManager()
+        {
+            var scopeManagerWrapper = (SerializableScopeManager)CallContext.LogicalGetData(Key);
+            if (scopeManagerWrapper == null)
+            {
+                scopeManagerWrapper = new SerializableScopeManager { ScopeManager = new ScopeManager() };
+                CallContext.LogicalSetData(Key, scopeManagerWrapper);
+            }
+
+            return scopeManagerWrapper.ScopeManager;
+        }
+    }
+
+    /// <summary>
+    /// A serializable wrapper around the <see cref="ScopeManager"/> that 
+    /// allows a <see cref="ScopeManager"/> to be stored in the <see cref="CallContext"/>.
+    /// </summary>
+    [Serializable]
+    internal class SerializableScopeManager : MarshalByRefObject
+    {
+        [NonSerialized]
+        private ScopeManager scopeManager;
+
+        /// <summary>
+        /// Gets or sets the <see cref="ScopeManager"/> instance.
+        /// </summary>
+        public ScopeManager ScopeManager
+        {
+            get
+            {
+                return scopeManager;
+            }
+
+            set
+            {
+                scopeManager = value;
+            }
+        }
+    }
+
+#endif
 
 #if NET || NET45 || NETFX_CORE
     /// <summary>

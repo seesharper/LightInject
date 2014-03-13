@@ -1,17 +1,25 @@
-/*****************************************************************************   
-   Copyright 2013 bernhard.richter@gmail.com
+/*********************************************************************************   
+    The MIT License (MIT)
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+    Copyright (c) 2014 bernhard.richter@gmail.com
 
-       http://www.apache.org/licenses/LICENSE-2.0
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 ******************************************************************************
    LightInject.Wcf version 1.0.0.1
    http://www.lightinject.net/
@@ -21,16 +29,39 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1403:FileMayOnlyContainASingleNamespace", Justification = "Extension methods must be visible")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
+
+namespace LightInject
+{
+    using System.ServiceModel;
+    using LightInject.Wcf;
+
+    /// <summary>
+    /// Extends the <see cref="IServiceContainer"/> interface with a method
+    /// to enable services that are scoped per <see cref="OperationContext"/>.
+    /// </summary>
+    public static class WcfContainerExtensions
+    {
+        /// <summary>
+        /// Ensures that services registered with the <see cref="PerScopeLifetime"/> or <see cref="PerRequestLifeTime"/> 
+        /// is properly disposed at the end of an <see cref="OperationContext"/>.        
+        /// </summary>
+        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
+        public static void EnablePerWcfOperationScope(this IServiceContainer serviceContainer)
+        {
+            LightInjectServiceHostFactory.Container = serviceContainer;           
+        }
+    }
+}
 
 namespace LightInject.Wcf
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections.Generic;    
     using System.IO;
-    using System.Linq;
-    using System.Reflection;
+    using System.Linq;    
     using System.ServiceModel;
     using System.ServiceModel.Activation;
     using System.ServiceModel.Description;
@@ -38,7 +69,7 @@ namespace LightInject.Wcf
     using System.Web.Hosting;
 
     using LightInject.Interception;
-
+  
     /// <summary>
     /// Registers the <see cref="VirtualSvcPathProvider"/> with the current <see cref="HostingEnvironment"/>.
     /// </summary>
@@ -59,13 +90,27 @@ namespace LightInject.Wcf
             }
         }
     }
-    
+ 
     /// <summary>
     /// A <see cref="ServiceHostFactory"/> that uses the LightInject <see cref="ServiceContainer"/>
     /// to create WCF services.
     /// </summary>
     public class LightInjectServiceHostFactory : ServiceHostFactory
-    {        
+    {
+        private static IServiceContainer container;
+        
+        /// <summary>
+        /// Sets the <see cref="IServiceContainer"/> instance that is 
+        /// used to resolve services.
+        /// </summary>
+        internal static IServiceContainer Container
+        {
+            set
+            {
+                container = value;                
+            }
+        }
+                
         /// <summary>
         /// Creates a <see cref="ServiceHost"/> with the specified <paramref name="baseAddresses"/>.
         /// </summary>
@@ -75,7 +120,7 @@ namespace LightInject.Wcf
         public ServiceHost CreateServiceHost<TService>(params string[] baseAddresses)
         {
             var uriBaseAddresses = baseAddresses.Select(s => new Uri(s)).ToArray();
-            return CreateServiceHost(typeof(TService), uriBaseAddresses);
+            return CreateServiceHost(typeof(TService), uriBaseAddresses);            
         }
 
         /// <summary>
@@ -87,22 +132,19 @@ namespace LightInject.Wcf
         /// <param name="serviceType">Specifies the type of service to host. </param><param name="baseAddresses">The <see cref="T:System.Array"/> of type <see cref="T:System.Uri"/> that contains the base addresses for the service hosted.</param>
         protected override ServiceHost CreateServiceHost(Type serviceType, Uri[] baseAddresses)
         {
-            ValidateServiceType(serviceType);
-
-            var container = new ServiceContainer();
-            container.RegisterAssembly("LightInject.Wcf.Configuration.dll");
-            container.Register<IServiceBehavior>(factory => new ServiceMetadataBehavior() {HttpGetEnabled = true});
-            var proxyType = CreateServiceProxyType(serviceType, container);
+            ValidateServiceType(serviceType);            
             
-            ServiceHost serviceHost = base.CreateServiceHost(proxyType, baseAddresses);            
+            var proxyType = CreateServiceProxyType(serviceType);
+            
+            ServiceHost serviceHost = base.CreateServiceHost(proxyType, baseAddresses);                 
             serviceHost.AddDefaultEndpoints();
-            ApplyServiceBehaviors(container, serviceHost);
-            ApplyEndpointBehaviors(container, serviceHost);
+            ApplyServiceBehaviors(serviceHost);
+            ApplyEndpointBehaviors(serviceHost);
                         
             return serviceHost;
         }
 
-        private void ApplyEndpointBehaviors(ServiceContainer container, ServiceHost serviceHost)
+        private static void ApplyEndpointBehaviors(ServiceHost serviceHost)
         {
             IEnumerable<IEndpointBehavior> endpointBehaviors = container.GetAllInstances<IEndpointBehavior>().ToArray();
             foreach (var endpoint in serviceHost.Description.Endpoints)
@@ -114,7 +156,7 @@ namespace LightInject.Wcf
             }
         }
 
-        private void ApplyServiceBehaviors(ServiceContainer container, ServiceHost serviceHost)
+        private static void ApplyServiceBehaviors(ServiceHostBase serviceHost)
         {
             var serviceBehaviors = container.GetAllInstances<IServiceBehavior>();
             var description = serviceHost.Description;
@@ -123,22 +165,16 @@ namespace LightInject.Wcf
                 description.Behaviors.Add(serviceBehavior);
             }            
         }
- 
-        private static Type CreateServiceProxyType(Type serviceType, IServiceContainer container)
-        {            
+
+        private static Type CreateServiceProxyType(Type serviceType)
+        {
             var proxyBuilder = new ProxyBuilder();
-            var proxyDefinition = CreateProxyDefinition(serviceType, container);            
-            ImplementServiceInterface(serviceType, container, proxyDefinition);
+            var proxyDefinition = CreateProxyDefinition(serviceType);
+            ImplementServiceInterface(serviceType, proxyDefinition);
             return proxyBuilder.GetProxyType(proxyDefinition);
         }
-
-        private static void ImplementServiceInterface(
-            Type serviceType, IServiceContainer container, ProxyDefinition proxyDefinition)
-        {
-            proxyDefinition.Implement(() => new ServiceInterceptor(container), m => m.IsDeclaredBy(serviceType));
-        }
-
-        private static ProxyDefinition CreateProxyDefinition(Type serviceType, IServiceContainer container)
+        
+        private static ProxyDefinition CreateProxyDefinition(Type serviceType)
         {
             var proxyDefinition = new ProxyDefinition(serviceType, () => container.GetInstance(serviceType));
             if (container.CanGetInstance(serviceType, string.Empty))
@@ -150,7 +186,14 @@ namespace LightInject.Wcf
                         serviceRegistration.ImplementingType.GetCustomAttributesData().ToArray());
                 }
             }
+
             return proxyDefinition;
+        }
+
+        private static void ImplementServiceInterface(
+           Type serviceType, ProxyDefinition proxyDefinition)
+        {
+            proxyDefinition.Implement(() => new ServiceInterceptor(container), m => m.IsDeclaredBy(serviceType));
         }
 
         private static void ValidateServiceType(Type serviceType)
@@ -197,9 +240,9 @@ namespace LightInject.Wcf
         /// contains information about the current method call.</param>
         /// <returns>The return value from the method.</returns>
         public object Invoke(IInvocationInfo invocationInfo)
-        {
+        {            
             using (serviceContainer.BeginScope())
-            {
+            {                
                 return invocationInfo.Proceed();
             }            
         }
@@ -324,5 +367,5 @@ namespace LightInject.Wcf
                 string.Format("~/{0}", servicePath), StringComparison.InvariantCultureIgnoreCase)
                    && checkPath.EndsWith("svc", StringComparison.InvariantCulture);
         }
-    }    
+    }   
 }
