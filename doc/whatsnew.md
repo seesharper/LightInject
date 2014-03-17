@@ -1,3 +1,9 @@
+## LightInject 3.0.1.6 ##
+(Mars 17, 2014)
+
+Added support for scoped instances across await points.
+
+
 ## LightInject 3.0.1.5 ##
 (February 21, 2014)
 
