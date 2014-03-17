@@ -149,13 +149,12 @@ namespace LightInject.Interception.Tests
         [TestMethod]
         public void GetProxyType_InterfaceThatInheritsAnotherInterface_ImplementsBothInterfaces()
         {
-            var proxyDefinition = new ProxyDefinition(typeof(IDisposableTarget), () => null, typeof(IDisposable));
-
-            
-
+            var proxyDefinition = new ProxyDefinition(typeof(IDisposableTarget), () => null);            
             var proxyType = CreateProxyType(proxyDefinition);
 
-        //    var disposable = (IDisposable)Activator.CreateInstance(proxyType);
+            var disposable = (IDisposable)Activator.CreateInstance(proxyType);
+
+            Assert.IsInstanceOfType(disposable, typeof(IDisposable));
         }
 
 
