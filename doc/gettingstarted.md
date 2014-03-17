@@ -213,6 +213,75 @@ A lifetime object controls the lifetime of a single service and can **never** be
 
 A lifetime object is also shared across threads and that is something we must take into consideration when developing new lifetime implementations.
 
+### Async and Await ###
+
+By default scopes are managed per thread which means that when the container looks for the current scope, it will look for a scope that is associated with the current thread.
+
+With the introduction of the async/await pattern chances are that the code that is requesting a service instance is running on another thread.
+
+To illustrate this lets consider an example that is going to cause an instance to be resolved on another thread.
+
+We start of by creating an interface that returns a **Task&lt;IBar&gt;**
+
+    public interface IAsyncFoo
+    {
+        Task<IBar> GetBar();
+    }
+
+Next we implement this interface in such a way that the **IBar** instance is requested on another thread.
+
+    public class AsyncFoo : IAsyncFoo
+    {
+        private readonly Lazy<IBar> lazyBar;
+
+        public AsyncFoo(Lazy<IBar> lazyBar)
+        {
+            this.lazyBar = lazyBar;
+        }
+
+        public async Task<IBar> GetBar()
+        {
+            await Task.Delay(10);
+            return lazyBar.Value; <--This code is executed on another thread (continuation).
+        }
+    }
+ 
+The we register the dependency (**IBar**) with the **PerScopeLifetime** that is going to cause the container to ask for the current scope so that the instance can be registered with that scope.
+
+	var container = new ServiceContainer();
+    container.Register<IBar, Bar>(new PerScopeLifetime());
+    container.Register<IAsyncFoo, AsyncFoo>();
+
+    using (container.BeginScope())
+    {
+        var instance = container.GetInstance<IAsyncFoo>();
+        ExceptionAssert.Throws<AggregateException>(() => instance.GetBar().Wait());                
+    }
+  
+This will throw an exception that states the following:
+
+	Attempt to create a scoped instance without a current scope.  
+ 
+The reason that this is happening is that the current scope is associated with the thread that created it and when the continuation executes, we are essentially requesting an instance on another thread.
+
+To deal with this issue, **LightInject** now supports scopes across the logical [CallContext](http://msdn.microsoft.com/en-us/library/system.runtime.remoting.messaging.callcontext(v=vs.110).aspx).  
+
+	var container = new ServiceContainer();
+	container.ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
+	container.Register<IBar, Bar>(new PerScopeLifetime());
+	container.Register<IAsyncFoo, AsyncFoo>();
+	
+	using (container.BeginScope())
+	{
+	    var instance = container.GetInstance<IAsyncFoo>();
+	    var bar = instance.GetBar().Result;
+	    Assert.IsInstanceOfType(bar, typeof(IBar));
+	}
+
+> Note that the **PerLogicalCallContextScopeManagerProvider** is only available when running under .Net 4.5.
+> For more information, please refer to the following [article](http://blog.stephencleary.com/2013/04/implicit-async-context-asynclocal.html) by Stephen Cleary.
+
+
 ## Dependencies ##
  
 
