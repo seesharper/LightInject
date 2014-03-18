@@ -104,5 +104,12 @@
         Task<IFoo> Execute();
     }
 
+
+    [ServiceContract]
+    public interface IConfiguredService
+    {
+        [OperationContract]
+        int Execute();
+    }
     
 }

@@ -8,29 +8,36 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class ServiceHostTests
+    public class ServiceHostTests : TestBase
     {
         [TestMethod]
         public void CreateServiceHost_ServiceTypeIsInterfaceWithServiceContractAttribute_ReturnsServieHostWithProxyAsServiceType()
         {
-            var lightInjectServiceHostFactory = new LightInjectServiceHostFactory();            
-            var serviceHost = lightInjectServiceHostFactory.CreateServiceHost<IServiceWithServiceContractAttribute>();
-            var returnedServiceType = serviceHost.Description.ServiceType;
-            Assert.IsTrue(typeof(IProxy).IsAssignableFrom(returnedServiceType));
+            using (var serviceHost = StartService<IService>())
+            {
+                Assert.IsTrue(typeof(IProxy).IsAssignableFrom(serviceHost.Description.ServiceType));
+            }                                     
         }
 
         [TestMethod]
         public void CreateServiceHost_ServiceTypeIsConcrete_ThrowsNotSupportedException()
-        {
-            var lightInjectServiceHostFactory = new LightInjectServiceHostFactory();            
-            ExceptionAssert.Throws<NotSupportedException>(() => lightInjectServiceHostFactory.CreateServiceHost<ServiceWithoutInterface>());
+        {            
+            ExceptionAssert.Throws<NotSupportedException>(() => StartService<ServiceWithoutInterface>());
         }
 
         [TestMethod]
         public void CreateServiceHost_ServiceTypeIsInterfaceWithoutServiceContractAttribute_ThrowsNotSupportedException()
+        {            
+            ExceptionAssert.Throws<NotSupportedException>(() => StartService<IServiceWithoutServiceContractAttribute>());
+        }
+
+        [TestMethod]
+        public void CreateServiceHost_ConfiguredService_AppliesConfiguration()
         {
-            var lightInjectServiceHostFactory = new LightInjectServiceHostFactory();            
-            ExceptionAssert.Throws<NotSupportedException>(() => lightInjectServiceHostFactory.CreateServiceHost<IServiceWithoutServiceContractAttribute>());
-        }     
+            using (var serviceHost = StartService<IConfiguredService>())
+            {
+                Assert.AreEqual(2, serviceHost.Description.Endpoints.Count);
+            }                        
+        }
     }       
 }

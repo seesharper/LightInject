@@ -184,10 +184,7 @@
             return 42;
         }
     }
-
-
     
-
     public class Foo : IFoo
     {
 
