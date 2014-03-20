@@ -93,8 +93,11 @@ namespace LightInject.Web
         /// <param name="context">An <see cref="HttpApplication"/> that provides access to the methods, properties, and events common to all application objects within an ASP.NET application </param>
         public void Init(HttpApplication context)
         {
-            context.BeginRequest += (s, a) => BeginRequest();
-            context.EndRequest += (s, a) => EndRequest();               
+            if (serviceContainer != null)
+            {
+                context.BeginRequest += (s, a) => BeginScope();
+                context.EndRequest += (s, a) => EndScope();
+            }
         }
 
         /// <summary>
