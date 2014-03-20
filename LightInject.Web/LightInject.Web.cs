@@ -113,7 +113,7 @@ namespace LightInject.Web
         private static void BeginRequest()
         {
             var scopeManager = new ScopeManager();
-            scopeManager.BeginScope();
+            if (scopeManager.CurrentScope == null) scopeManager.BeginScope();
             HttpContext.Current.Items["ScopeManager"] = scopeManager;
         }         
     }
@@ -130,7 +130,14 @@ namespace LightInject.Web
         /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
         public ScopeManager GetScopeManager()
         {
-            return (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+            var scopeManager = (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+            if (scopeManager == null)
+            {
+                scopeManager = new ScopeManager();
+                if (scopeManager.CurrentScope == null) scopeManager.BeginScope();
+                HttpContext.Current.Items["ScopeManager"] = scopeManager;
+            }
+            return scopeManager;
         }
     }
 }
