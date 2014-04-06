@@ -762,7 +762,12 @@ namespace LightInject.Interception
         {
             TargetType = targetType;
             TargetFactory = targetFactory;
-            AdditionalInterfaces = additionalInterfaces;
+            AdditionalInterfaces = ResolveAdditionalInterfaces(targetType, additionalInterfaces);
+        }
+
+        private Type[] ResolveAdditionalInterfaces(Type targetType, IEnumerable<Type> additionalInterfaces)
+        {
+            return targetType.GetInterfaces().Concat(additionalInterfaces).Distinct().ToArray();
         }
 
         /// <summary>

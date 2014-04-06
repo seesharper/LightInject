@@ -19,7 +19,7 @@
         public void TestInitialize()
         {
             serviceContainer = new ServiceContainer();
-            serviceContainer.EnableWcf(new UriProvider("http://localhost:6000/"));
+            serviceContainer.EnableWcfClient(new UriProvider("http://localhost:6000/"));
         }
 
         [TestMethod]

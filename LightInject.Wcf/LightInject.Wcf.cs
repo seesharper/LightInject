@@ -42,8 +42,7 @@ namespace LightInject
     /// <summary>
     /// Extends the <see cref="IServiceContainer"/> interface with a method
     /// to enable services that are scoped per <see cref="OperationContext"/>.
-    /// </summary>
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    /// </summary>    
     internal static class WcfContainerExtensions
     {
         /// <summary>
@@ -51,10 +50,12 @@ namespace LightInject
         /// is properly disposed at the end of an <see cref="OperationContext"/>.        
         /// </summary>
         /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
-        public static void EnablePerWcfOperationScope(this IServiceContainer serviceContainer)
+        public static void EnableWcf(this IServiceContainer serviceContainer)
         {
             LightInjectServiceHostFactory.Container = serviceContainer;
+#if NET45
             ((ServiceContainer)serviceContainer).ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
+#endif
         }
     }
 
@@ -79,6 +80,7 @@ namespace LightInject.Wcf
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.IO;
     using System.Linq;
     using System.ServiceModel;
@@ -105,16 +107,40 @@ namespace LightInject.Wcf
             if (!isInitialized)
             {
                 isInitialized = true;
-                HostingEnvironment.RegisterVirtualPathProvider(new VirtualSvcPathProvider(string.Empty));
+                HostingEnvironment.RegisterVirtualPathProvider(new VirtualSvcPathProvider());
             }
+        }
+    }
+
+    /// <summary>
+    /// A subclass of the <see cref="ServiceHost"/> class that exposes the 
+    /// <see cref="ServiceHost.ApplyConfiguration"/> method through the <see cref="LoadConfiguration"/> method.   
+    /// </summary>
+    public class LightInjectServiceHost : ServiceHost
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LightInjectServiceHost"/> class with the type of service and its base addresses specified. 
+        /// </summary>
+        /// <param name="serviceType">The type of hosted service.</param>
+        /// <param name="baseAddresses">An array of type <see cref="Uri"/> that contains the base addresses for the hosted service.</param>
+        public LightInjectServiceHost(Type serviceType, params Uri[] baseAddresses)
+            : base(serviceType, baseAddresses)
+        {
+        }
+
+        /// <summary>
+        /// Loads the service description from the configuration file and applies it to the runtime being constructed.
+        /// </summary>
+        public void LoadConfiguration()
+        {
+            ApplyConfiguration();
         }
     }
 
     /// <summary>
     /// A <see cref="ServiceHostFactory"/> that uses the LightInject <see cref="ServiceContainer"/>
     /// to create WCF services.
-    /// </summary>
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    /// </summary>    
     public class LightInjectServiceHostFactory : ServiceHostFactory
     {
         private static IServiceContainer container;
@@ -126,23 +152,54 @@ namespace LightInject.Wcf
         internal static IServiceContainer Container
         {
             set
-            {
+            {              
                 container = value;
             }
         }
 
         public override ServiceHostBase CreateServiceHost(string constructorString, Uri[] baseAddresses)
         {
-            Type serviceType = Type.GetType(constructorString, false);
-
-            if (serviceType == null)
+            EnsureValidServiceContainer();
+            
+            ServiceRegistration registration = GetServiceRegistrationByName(constructorString);
+            if (registration != null)
             {
-                ServiceRegistration registration = GetServiceRegistrationByName(constructorString);
-                serviceType = registration.ServiceType;
+                return CreateServiceHost(registration.ServiceType, registration.ServiceName, baseAddresses);
             }
 
-            return CreateServiceHost(serviceType, baseAddresses);
+            return base.CreateServiceHost(constructorString, baseAddresses);
         }
+
+        private static void EnsureValidServiceContainer()
+        {
+            if (container == null)
+            {
+                container = new ServiceContainer();
+            }
+        }
+
+        protected override ServiceHost CreateServiceHost(Type serviceType, Uri[] baseAddresses)
+        {
+            return CreateServiceHost(serviceType, serviceType.FullName, baseAddresses);
+        }
+
+        private ServiceHost CreateServiceHost(Type serviceType, string constructorString, Uri[] baseAddresses)
+        {
+            ValidateServiceType(serviceType);
+
+            var proxyType = CreateServiceProxyType(serviceType);
+
+            var serviceHost = new LightInjectServiceHost(proxyType, baseAddresses);
+            serviceHost.Description.ConfigurationName = constructorString;
+            serviceHost.Description.Name = constructorString;
+            serviceHost.AddDefaultEndpoints();
+            serviceHost.LoadConfiguration();
+            ApplyServiceBehaviors(serviceHost);
+            ApplyEndpointBehaviors(serviceHost);
+
+            return serviceHost;
+        }
+
 
         /// <summary>
         /// Creates a <see cref="ServiceHost"/> with the specified <paramref name="baseAddresses"/>.
@@ -152,32 +209,11 @@ namespace LightInject.Wcf
         /// <returns>A <see cref="ServiceHost"/> for the specified <typeparamref name="TService"/>.</returns>
         public ServiceHost CreateServiceHost<TService>(params string[] baseAddresses)
         {
+            
             var uriBaseAddresses = baseAddresses.Select(s => new Uri(s)).ToArray();
             return CreateServiceHost(typeof(TService), uriBaseAddresses);
         }
-
-        /// <summary>
-        /// Creates a <see cref="T:System.ServiceModel.ServiceHost"/> for a specified type of service with a specific base address. 
-        /// </summary>
-        /// <returns>
-        /// A <see cref="T:System.ServiceModel.ServiceHost"/> for the type of service specified with a specific base address.
-        /// </returns>
-        /// <param name="serviceType">Specifies the type of service to host. </param><param name="baseAddresses">The <see cref="T:System.Array"/> of type <see cref="T:System.Uri"/> that contains the base addresses for the service hosted.</param>
-        protected override ServiceHost CreateServiceHost(Type serviceType, Uri[] baseAddresses)
-        {
-            ValidateServiceType(serviceType);
-
-            var proxyType = CreateServiceProxyType(serviceType);
-
-            ServiceHost serviceHost = base.CreateServiceHost(proxyType, baseAddresses);
-            serviceHost.Description.Name = serviceType.Name;
-            serviceHost.AddDefaultEndpoints();
-            ApplyServiceBehaviors(serviceHost);
-            ApplyEndpointBehaviors(serviceHost);
-
-            return serviceHost;
-        }
-
+        
         private static ServiceRegistration GetServiceRegistrationByName(string constructorString)
         {
             var registrations =
@@ -187,7 +223,7 @@ namespace LightInject.Wcf
 
             if (registrations.Length == 0)
             {
-                throw new InvalidOperationException(string.Format("Unable to find a service named '{0}'", constructorString));
+                return null;
             }
 
             if (registrations.Length > 1)
@@ -196,9 +232,9 @@ namespace LightInject.Wcf
                     string.Format("Multiple services found under the same name '{0}'", constructorString));
             }
 
-            return container.AvailableServices.FirstOrDefault(sr => sr.ServiceName == constructorString);
+            return registrations[0];
         }
-
+       
         private static void ApplyEndpointBehaviors(ServiceHost serviceHost)
         {
             IEnumerable<IEndpointBehavior> endpointBehaviors = container.GetAllInstances<IEndpointBehavior>().ToArray();
@@ -274,8 +310,7 @@ namespace LightInject.Wcf
     /// <summary>
     /// An <see cref="IInterceptor"/> that ensures that a service operation is 
     /// executed within a <see cref="Scope"/>.    
-    /// </summary>
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    /// </summary>    
     public class ServiceInterceptor : IInterceptor
     {
         private readonly IServiceContainer serviceContainer;
@@ -306,8 +341,7 @@ namespace LightInject.Wcf
 
     /// <summary>
     /// Represents a virtual .svc file. 
-    /// </summary>
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    /// </summary>    
     public class VirtualSvcFile : VirtualFile
     {
         private readonly string content;
@@ -342,24 +376,12 @@ namespace LightInject.Wcf
 
     /// <summary>
     /// A <see cref="VirtualPathProvider"/> that enables WCF services to be hosted without creating .svc files.
-    /// </summary>
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    /// </summary>    
     public class VirtualSvcPathProvider : VirtualPathProvider
     {
         private const string FileTemplate =
-            "<%@ ServiceHost Service=\"{0}\" Factory = \"WcfService3.LightInject.Wcf.LightInjectServiceHostFactory, WcfService3\" %>";
-
-        private readonly string servicePath;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="VirtualSvcPathProvider"/> class.
-        /// </summary>
-        /// <param name="servicePath">The virtual path to register.</param>        
-        public VirtualSvcPathProvider(string servicePath)
-        {
-            this.servicePath = servicePath;
-        }
-
+            "<%@ ServiceHost Service=\"{0}\" Factory = \"LightInject.Wcf.LightInjectServiceHostFactory, LightInject.Wcf\" %>";
+        
         /// <summary>
         /// Creates a cache dependency based on the specified virtual paths.
         /// </summary>
@@ -427,7 +449,7 @@ namespace LightInject.Wcf
         {
             string checkPath = VirtualPathUtility.ToAppRelative(virtualPath);
             return checkPath.StartsWith(
-                string.Format("~/{0}", servicePath), StringComparison.InvariantCultureIgnoreCase)
+                "~/", StringComparison.InvariantCultureIgnoreCase)
                    && checkPath.EndsWith("svc", StringComparison.InvariantCulture);
         }
     }

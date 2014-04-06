@@ -138,7 +138,7 @@
         private ServiceHost StartService<TService>()
         {
             var container = new ServiceContainer();
-            container.EnablePerWcfOperationScope();
+            container.EnableWcf();
 
             var serviceHost = new LightInjectServiceHostFactory().CreateServiceHost<TService>("http://localhost:6000");
             serviceHost.Open();

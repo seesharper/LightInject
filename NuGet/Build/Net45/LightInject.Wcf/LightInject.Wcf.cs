@@ -35,6 +35,7 @@
 
 namespace LightInject
 {
+    using System;
     using System.ServiceModel;
     using LightInject.Wcf;
 
@@ -42,6 +43,7 @@ namespace LightInject
     /// Extends the <see cref="IServiceContainer"/> interface with a method
     /// to enable services that are scoped per <see cref="OperationContext"/>.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public static class WcfContainerExtensions
     {
         /// <summary>
@@ -51,7 +53,23 @@ namespace LightInject
         /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
         public static void EnablePerWcfOperationScope(this IServiceContainer serviceContainer)
         {
-            LightInjectServiceHostFactory.Container = serviceContainer;           
+            LightInjectServiceHostFactory.Container = serviceContainer;
+        }
+    }
+
+    /// <summary>
+    /// Extends the <see cref="Type"/> class.
+    /// </summary>
+    public static class TypeExtensions
+    {
+        /// <summary>
+        /// Determines if the <paramref name="type"/> represents a service contract.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns><b>true</b> if the <paramref name="type"/> represents a service type, otherwise <b>false</b>.</returns>
+        public static bool IsServiceContract(this Type type)
+        {
+            return type.IsDefined(typeof(ServiceContractAttribute), true);
         }
     }
 }
@@ -59,9 +77,9 @@ namespace LightInject
 namespace LightInject.Wcf
 {
     using System;
-    using System.Collections.Generic;    
+    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;    
+    using System.Linq;
     using System.ServiceModel;
     using System.ServiceModel.Activation;
     using System.ServiceModel.Description;
@@ -69,7 +87,7 @@ namespace LightInject.Wcf
     using System.Web.Hosting;
 
     using LightInject.Interception;
-  
+
     /// <summary>
     /// Registers the <see cref="VirtualSvcPathProvider"/> with the current <see cref="HostingEnvironment"/>.
     /// </summary>
@@ -90,15 +108,16 @@ namespace LightInject.Wcf
             }
         }
     }
- 
+
     /// <summary>
     /// A <see cref="ServiceHostFactory"/> that uses the LightInject <see cref="ServiceContainer"/>
     /// to create WCF services.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public class LightInjectServiceHostFactory : ServiceHostFactory
     {
         private static IServiceContainer container;
-        
+
         /// <summary>
         /// Sets the <see cref="IServiceContainer"/> instance that is 
         /// used to resolve services.
@@ -107,10 +126,35 @@ namespace LightInject.Wcf
         {
             set
             {
-                container = value;                
+                container = value;
             }
         }
-                
+
+        public override ServiceHostBase CreateServiceHost(string constructorString, Uri[] baseAddresses)
+        {            
+            ServiceRegistration registration = GetServiceRegistrationByName(constructorString);
+            if (registration == null)
+            {
+                registration = GetServiceRegistrationByTypeName(constructorString);
+
+                if (registration == null)
+                {
+                    throw new InvalidOperationException(string.Format("Unable to create a service based on the following constructorstring {0}", constructorString));
+                }
+            }
+            
+
+            ServiceHost serviceHost = CreateServiceHost(registration.ServiceType, baseAddresses);
+
+            serviceHost.Description.ConfigurationName = constructorString;
+            serviceHost.Description.Name = constructorString;
+            serviceHost.AddDefaultEndpoints();
+            ApplyServiceBehaviors(serviceHost);
+            ApplyEndpointBehaviors(serviceHost);
+
+            return serviceHost;
+        }
+        
         /// <summary>
         /// Creates a <see cref="ServiceHost"/> with the specified <paramref name="baseAddresses"/>.
         /// </summary>
@@ -120,7 +164,7 @@ namespace LightInject.Wcf
         public ServiceHost CreateServiceHost<TService>(params string[] baseAddresses)
         {
             var uriBaseAddresses = baseAddresses.Select(s => new Uri(s)).ToArray();
-            return CreateServiceHost(typeof(TService), uriBaseAddresses);            
+            return CreateServiceHost(typeof(TService), uriBaseAddresses);
         }
 
         /// <summary>
@@ -132,16 +176,55 @@ namespace LightInject.Wcf
         /// <param name="serviceType">Specifies the type of service to host. </param><param name="baseAddresses">The <see cref="T:System.Array"/> of type <see cref="T:System.Uri"/> that contains the base addresses for the service hosted.</param>
         protected override ServiceHost CreateServiceHost(Type serviceType, Uri[] baseAddresses)
         {
-            ValidateServiceType(serviceType);            
-            
+            ValidateServiceType(serviceType);
+
             var proxyType = CreateServiceProxyType(serviceType);
             
-            ServiceHost serviceHost = base.CreateServiceHost(proxyType, baseAddresses);                 
-            serviceHost.AddDefaultEndpoints();
-            ApplyServiceBehaviors(serviceHost);
-            ApplyEndpointBehaviors(serviceHost);
-                        
+            ServiceHost serviceHost = base.CreateServiceHost(proxyType, baseAddresses);
+
+            // serviceHost.Description.ConfigurationName = serviceType.Name;
+            // serviceHost.Description.Name = serviceType.Name;
+            // serviceHost.AddDefaultEndpoints();            
+            // ApplyServiceBehaviors(serviceHost);
+            // ApplyEndpointBehaviors(serviceHost);
+
             return serviceHost;
+        }
+
+        private static ServiceRegistration GetServiceRegistrationByName(string constructorString)
+        {
+            var registrations =
+                container.AvailableServices.Where(
+                    sr => sr.ServiceName.Equals(constructorString, StringComparison.InvariantCultureIgnoreCase))
+                    .ToArray();
+
+            if (registrations.Length == 0)
+            {
+                return null;
+            }
+
+            if (registrations.Length > 1)
+            {
+                throw new InvalidOperationException(
+                    string.Format("Multiple services found under the same name '{0}'", constructorString));
+            }
+
+            return registrations[0];
+        }
+
+        private static ServiceRegistration GetServiceRegistrationByTypeName(string constructorString)
+        {
+            var registrations =
+                container.AvailableServices.Where(
+                    sr => sr.ServiceType.FullName.Equals(constructorString, StringComparison.InvariantCultureIgnoreCase))
+                    .ToArray();
+
+            if (registrations.Length == 0)
+            {
+                return null;
+            }
+
+            return registrations[0];
         }
 
         private static void ApplyEndpointBehaviors(ServiceHost serviceHost)
@@ -163,7 +246,7 @@ namespace LightInject.Wcf
             foreach (var serviceBehavior in serviceBehaviors)
             {
                 description.Behaviors.Add(serviceBehavior);
-            }            
+            }
         }
 
         private static Type CreateServiceProxyType(Type serviceType)
@@ -173,7 +256,7 @@ namespace LightInject.Wcf
             ImplementServiceInterface(serviceType, proxyDefinition);
             return proxyBuilder.GetProxyType(proxyDefinition);
         }
-        
+
         private static ProxyDefinition CreateProxyDefinition(Type serviceType)
         {
             var proxyDefinition = new ProxyDefinition(serviceType, () => container.GetInstance(serviceType));
@@ -202,14 +285,14 @@ namespace LightInject.Wcf
             {
                 throw new ArgumentNullException("serviceType");
             }
-            
+
             if (!IsInterfaceWithServiceContractAttribute(serviceType))
             {
                 throw new NotSupportedException(
                     "Only interfaces with [ServiceContract] attribute are supported with LightInjectServiceHostFactory.");
             }
-        }       
- 
+        }
+
         private static bool IsInterfaceWithServiceContractAttribute(Type serviceType)
         {
             return serviceType.IsInterface && serviceType.IsDefined(typeof(ServiceContractAttribute), true);
@@ -220,10 +303,11 @@ namespace LightInject.Wcf
     /// An <see cref="IInterceptor"/> that ensures that a service operation is 
     /// executed within a <see cref="Scope"/>.    
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public class ServiceInterceptor : IInterceptor
     {
         private readonly IServiceContainer serviceContainer;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceInterceptor"/> class.
         /// </summary>
@@ -232,7 +316,7 @@ namespace LightInject.Wcf
         {
             this.serviceContainer = serviceContainer;
         }
-               
+
         /// <summary>
         /// Wraps the execution of a service operation inside a <see cref="Scope"/>.
         /// </summary>
@@ -240,17 +324,18 @@ namespace LightInject.Wcf
         /// contains information about the current method call.</param>
         /// <returns>The return value from the method.</returns>
         public object Invoke(IInvocationInfo invocationInfo)
-        {            
+        {
             using (serviceContainer.BeginScope())
-            {                
+            {
                 return invocationInfo.Proceed();
-            }            
+            }
         }
     }
 
     /// <summary>
     /// Represents a virtual .svc file. 
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public class VirtualSvcFile : VirtualFile
     {
         private readonly string content;
@@ -286,20 +371,21 @@ namespace LightInject.Wcf
     /// <summary>
     /// A <see cref="VirtualPathProvider"/> that enables WCF services to be hosted without creating .svc files.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public class VirtualSvcPathProvider : VirtualPathProvider
     {
         private const string FileTemplate =
             "<%@ ServiceHost Service=\"{0}\" Factory = \"LightInject.Wcf.LightInjectServiceHostFactory, LightInject.Wcf\" %>";
 
-        private readonly string servicePath;        
+        private readonly string servicePath;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VirtualSvcPathProvider"/> class.
         /// </summary>
         /// <param name="servicePath">The virtual path to register.</param>        
         public VirtualSvcPathProvider(string servicePath)
-        {            
-            this.servicePath = servicePath;            
+        {
+            this.servicePath = servicePath;
         }
 
         /// <summary>
@@ -322,7 +408,7 @@ namespace LightInject.Wcf
         /// </returns>
         /// <param name="virtualDir">The path to the virtual directory.</param>
         public override bool DirectoryExists(string virtualDir)
-        {           
+        {
             return IsPathVirtual(virtualDir) || base.DirectoryExists(virtualDir);
         }
 
@@ -334,7 +420,7 @@ namespace LightInject.Wcf
         /// </returns>
         /// <param name="virtualPath">The path to the virtual file.</param>
         public override bool FileExists(string virtualPath)
-        {         
+        {
             return IsPathVirtual(virtualPath) || base.FileExists(virtualPath);
         }
 
@@ -347,7 +433,12 @@ namespace LightInject.Wcf
         /// <param name="virtualPath">The path to the virtual file.</param>
         public override VirtualFile GetFile(string virtualPath)
         {
-            return new VirtualSvcFile(virtualPath, CreateFileContent(virtualPath));
+            if (IsPathVirtual(virtualPath))
+            {
+                return new VirtualSvcFile(virtualPath, CreateFileContent(virtualPath));
+            }
+
+            return base.GetFile(virtualPath);
         }
 
         private static string GetServiceName(string virtualPath)
@@ -367,5 +458,5 @@ namespace LightInject.Wcf
                 string.Format("~/{0}", servicePath), StringComparison.InvariantCultureIgnoreCase)
                    && checkPath.EndsWith("svc", StringComparison.InvariantCulture);
         }
-    }   
+    }
 }

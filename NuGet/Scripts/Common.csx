@@ -333,6 +333,13 @@ public class SourceWriter
                     line = line.Replace("typeof(LightInject.Wcf.LightInjectWcfInitializer)", "typeof($rootnamespace$.LightInject.Wcf.LightInjectWcfInitializer)");
                 }
 
+                if (line.Contains("LightInject.Wcf.LightInjectServiceHostFactory, LightInject.Wcf") && processNameSpace)
+                {
+                    line = line.Replace("LightInject.Wcf.LightInjectServiceHostFactory, LightInject.Wcf", "$rootnamespace$.LightInject.Wcf.LightInjectServiceHostFactory, $assemblyname$");
+                }
+
+                
+
                 if (line.Contains("public class") || line.Contains("internal class") || line.Contains("internal static class"))
                 {                        
                     var lineWithOutIndent = line.TrimStart(new char[] { ' ' });

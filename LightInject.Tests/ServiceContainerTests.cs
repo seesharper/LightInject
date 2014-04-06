@@ -116,7 +116,7 @@ namespace LightInject.Tests
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-
+        
         [TestMethod]
         public void GetInstance_ConcreteServiceUsingNonGenericMethod_ReturnsInstance()
         {
@@ -1234,6 +1234,11 @@ namespace LightInject.Tests
 
             Assert.AreEqual(2, instances.Count());
         }
+
+
+
+
+
 
 #if NET || NET45
         [TestMethod]

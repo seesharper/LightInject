@@ -9,7 +9,7 @@
         <projectUrl>http://www.lightinject.net/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An ultra lightweight Inversion of Control container for the .Net framework. See LightInject.Source for the source distribution.</description>
-        <releaseNotes>Performance improvements</releaseNotes>
+        <releaseNotes>Added async/await support.</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime</tags>
     </metadata>   
