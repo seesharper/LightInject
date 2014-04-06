@@ -6826,4 +6826,61 @@ namespace LightInject
             return localBuilder;
         }
     }
+
+    public class LogicalThreadStorage<T>
+    {
+        [Serializable]
+        private class LogicalThreadValue : MarshalByRefObject
+        {
+            [NonSerialized]
+            private T value;
+
+            public T Value
+            {
+                get
+                {
+                    return value;
+                }
+                set
+                {
+                    this.value = value;
+                }
+            }
+        }
+        private readonly Func<T> valueFactory;
+
+        private readonly string key;
+
+        private readonly object lockObject = new object();
+
+        public LogicalThreadStorage(Func<T> valueFactory)
+        {
+            this.valueFactory = valueFactory;
+            key = Guid.NewGuid().ToString();
+        }
+
+        public T Value
+        {
+            get
+            {
+                var holder = (LogicalThreadValue)CallContext.LogicalGetData(key);
+                if (holder != null)
+                {
+                    return holder.Value;
+                }
+
+                lock (lockObject)
+                {
+                    holder = (LogicalThreadValue)CallContext.LogicalGetData(key);
+                    if (holder == null)
+                    {
+                        holder = new LogicalThreadValue { Value = valueFactory() };
+                        CallContext.LogicalSetData(key, holder);
+                    }
+                }
+
+                return holder.Value;
+            }
+        }
+    }
 }
