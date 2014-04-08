@@ -3824,33 +3824,16 @@ namespace LightInject
     /// </summary>
     internal class PerLogicalCallContextScopeManagerProvider : IScopeManagerProvider
     {
-        private const string Key = "LightInjectScopeManager";
-
-        private readonly object lockObject = new object();
-
+        private readonly LogicalThreadStorage<ScopeManager> scopeManagers =
+            new LogicalThreadStorage<ScopeManager>(() => new ScopeManager());
+                
         /// <summary>
         /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
         /// </summary>
         /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
         public ScopeManager GetScopeManager()
         {
-            var scopeManagerWrapper = (SerializableScopeManager)CallContext.LogicalGetData(Key);
-            if (scopeManagerWrapper != null)
-            {
-                return scopeManagerWrapper.ScopeManager;
-            }
-            
-            lock (lockObject)
-            {
-                scopeManagerWrapper = (SerializableScopeManager)CallContext.LogicalGetData(Key);
-                if (scopeManagerWrapper == null)
-                {
-                    scopeManagerWrapper = new SerializableScopeManager { ScopeManager = new ScopeManager() };
-                    CallContext.LogicalSetData(Key, scopeManagerWrapper);        
-                }
-            }
-
-            return scopeManagerWrapper.ScopeManager;
+            return scopeManagers.Value;                        
         }
     }
 
@@ -6827,38 +6810,34 @@ namespace LightInject
         }
     }
 
-    public class LogicalThreadStorage<T>
-    {
-        [Serializable]
-        private class LogicalThreadValue : MarshalByRefObject
-        {
-            [NonSerialized]
-            private T value;
-
-            public T Value
-            {
-                get
-                {
-                    return value;
-                }
-                set
-                {
-                    this.value = value;
-                }
-            }
-        }
+    /// <summary>
+    /// Provides storage per logical thread of execution.
+    /// </summary>
+    /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
+    internal class LogicalThreadStorage<T>
+    {      
         private readonly Func<T> valueFactory;
 
         private readonly string key;
 
         private readonly object lockObject = new object();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LogicalThreadStorage{T}"/> class.
+        /// </summary>
+        /// <param name="valueFactory">The value factory used to create an instance of <see cref="T"/></param>
         public LogicalThreadStorage(Func<T> valueFactory)
         {
             this.valueFactory = valueFactory;
             key = Guid.NewGuid().ToString();
         }
 
+        /// <summary>
+        /// Gets the value for the current logical thread of execution.
+        /// </summary>
+        /// <value>
+        /// The value for the current logical thread of execution.
+        /// </value>
         public T Value
         {
             get
@@ -6880,6 +6859,26 @@ namespace LightInject
                 }
 
                 return holder.Value;
+            }
+        }
+
+        [Serializable]
+        private class LogicalThreadValue : MarshalByRefObject
+        {
+            [NonSerialized]
+            private T value;
+
+            public T Value
+            {
+                get
+                {
+                    return value;
+                }
+
+                set
+                {
+                    this.value = value;
+                }
             }
         }
     }
