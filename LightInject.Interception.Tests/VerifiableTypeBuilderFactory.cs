@@ -16,8 +16,13 @@
             ModuleBuilder moduleBuilder = GetModuleBuilder();
             const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
             var typeName = targetType.Name + "Proxy";
-            Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
-            return moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);
+            if (targetType.IsInterface)
+            {
+                Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
+                return moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);
+            }
+
+            return moduleBuilder.DefineType(typeName, TypeAttributes, targetType, additionalInterfaces);
         }
 
         public Type CreateType(TypeBuilder typeBuilder)

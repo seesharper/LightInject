@@ -63,6 +63,8 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AssemblyAssert.cs" />
+    <Compile Include="ClassBasedProxyBuilderTests.cs" />
+    <Compile Include="ClassBasedProxyBuilderVerificationTests.cs" />
     <Compile Include="ContainerFactory.cs" />
     <Compile Include="ContainerInterceptionTests.cs" />
     <Compile Include="ContainerInterceptorVerificationTests.cs" />
@@ -76,6 +78,7 @@
     <Compile Include="ProxyBuilderTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProxyBuilderVerificationTests.cs" />
+    <Compile Include="SampleClasses.cs" />
     <Compile Include="SampleInterceptor.cs" />
     <Compile Include="SampleInterfaces.cs" />
     <Compile Include="TestBase.cs" />

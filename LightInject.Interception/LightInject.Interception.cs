@@ -945,9 +945,19 @@ namespace LightInject.Interception
             ModuleBuilder moduleBuilder = GetModuleBuilder();
             const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
             var typeName = targetType.Name + "Proxy";
-            Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
-            var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);            
-            return typeBuilder;
+            
+            if (targetType.IsInterface)
+            {
+                Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
+                var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);
+                return typeBuilder;
+            }
+            else
+            {
+                var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, targetType, additionalInterfaces);
+                return typeBuilder;
+            }
+            
         }
 
         /// <summary>
@@ -1042,8 +1052,12 @@ namespace LightInject.Interception
             DefineInitializerMethod();
             DefineStaticTargetFactoryField();
             ImplementConstructor();                                       
-            DefineInterceptorFields(); 
-            ImplementProxyInterface();
+            DefineInterceptorFields();
+            if (definition.TargetType.IsInterface)
+            {
+                ImplementProxyInterface();
+            }
+            
             PopulateTargetMethods();
             ImplementMethods();
             ImplementProperties();
@@ -1344,13 +1358,36 @@ namespace LightInject.Interception
 
         private void ImplementConstructor()
         {
-            if (proxyDefinition.TargetFactory == null)
+            if (proxyDefinition.TargetType.IsClass)
+            {
+                ImplementAllConstructorsFromBaseClass();
+            }
+            
+            else if (proxyDefinition.TargetFactory == null)
             {
                 ImplementConstructorWithLazyTargetParameter();
             }
             else
             {
                 ImplementParameterlessConstructor();
+            }
+        }
+
+        private void ImplementAllConstructorsFromBaseClass()
+        {
+            var constructors = proxyDefinition.TargetType.GetConstructors();
+            foreach (var constructorInfo in constructors)
+            {
+                MethodAttributes methodAttributes = constructorInfo.Attributes;
+                CallingConventions callingConvention = constructorInfo.CallingConvention;
+                Type[] parameterTypes = constructorInfo.GetParameters().Select(p => p.ParameterType).ToArray();
+                var constructorBuilder = typeBuilder.DefineConstructor(methodAttributes, callingConvention, parameterTypes);
+                var generator = constructorBuilder.GetILGenerator();
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Call, constructorInfo);
+                generator.Emit(OpCodes.Ret);
+
+
             }
         }
 
@@ -1429,7 +1466,7 @@ namespace LightInject.Interception
         }
 
         private MethodBuilder ImplementMethod(MethodInfo targetMethod)
-        {
+        {          
             int[] interceptorIndicies = proxyDefinition.Interceptors
                                                        .Where(i => i.MethodSelector(targetMethod)).Select(i => i.Index).ToArray();
             if (interceptorIndicies.Length > 0)
@@ -1542,11 +1579,16 @@ namespace LightInject.Interception
 
         private MethodBuilder ImplementPassThroughMethod(MethodInfo targetMethod)
         {
+            
             MethodBuilder methodBuilder = GetMethodBuilder(targetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
 
             PushProxyInstance(il);
-            PushTargetInstance(il);            
+            if (proxyDefinition.TargetType.IsInterface)
+            {
+                PushTargetInstance(il);
+            }     
+              
             PushArguments(il, targetMethod);
             Call(il, targetMethod);
 
