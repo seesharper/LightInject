@@ -1579,16 +1579,16 @@ namespace LightInject.Interception
 
         private MethodBuilder ImplementPassThroughMethod(MethodInfo targetMethod)
         {
+            if (proxyDefinition.TargetType.IsClass)
+            {
+                return null;
+            }
             
             MethodBuilder methodBuilder = GetMethodBuilder(targetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
 
             PushProxyInstance(il);
-            if (proxyDefinition.TargetType.IsInterface)
-            {
-                PushTargetInstance(il);
-            }     
-              
+            PushTargetInstance(il);
             PushArguments(il, targetMethod);
             Call(il, targetMethod);
 

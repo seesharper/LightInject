@@ -12,7 +12,7 @@ namespace LightInject.Interception.Tests
     public class ClassBasedProxyBuilderTests
     {
         [TestMethod]
-        public void GetProxyType_ClassWithVirtualMethod_ReturnsSubclass()
+        public void GetProxyType_VirtualMethod_ReturnsSubclass()
         {
             var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualMethod));
 
@@ -21,6 +21,19 @@ namespace LightInject.Interception.Tests
             Assert.IsTrue(proxyType.IsSubclassOf(typeof(ClassWithVirtualMethod)));
 
         }
+
+        [TestMethod]
+        public void GetProxyType_InterceptedVirtualMethod_ReturnsSubClass()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualMethod));
+
+            proxyDefinition.Implement(() => null, info => info.Name == "Execute");
+
+            Type proxyType = CreateProxyType(proxyDefinition);
+
+            Assert.IsTrue(proxyType.IsSubclassOf(typeof(ClassWithVirtualMethod)));
+        }
+
 
 
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
