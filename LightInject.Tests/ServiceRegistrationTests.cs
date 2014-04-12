@@ -1,5 +1,7 @@
 ﻿namespace LightInject.Tests
 {
+    using LightInject.SampleLibrary;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -56,6 +58,25 @@
 
            
             Assert.IsFalse(firstRegistration.Equals(null));
+        }
+    
+        [TestMethod]
+        public void GetInstance_OverrideImplementingType_CreateInstanceOfOverriddenImplementingType()
+        {
+            var container = new ServiceContainer();
+            container.Register<IFoo, Foo>();
+
+            container.Override(
+                sr => sr.ServiceType == typeof(IFoo),
+                (factory, registration) =>
+                    {
+                        registration.ImplementingType = typeof(AnotherFoo);
+                        return registration;
+                    });
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
         }
     }
 }

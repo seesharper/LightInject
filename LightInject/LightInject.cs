@@ -37,7 +37,7 @@ namespace LightInject
     using System;    
 #if WINDOWS_PHONE
     using System.Collections;
-#endif   
+#endif    
 #if NET || NET45 || NETFX_CORE
     using System.Collections.Concurrent;
 #endif
@@ -64,7 +64,7 @@ namespace LightInject
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
     internal interface IServiceRegistry
-    {
+    {        
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
         /// registered services.          
@@ -429,8 +429,19 @@ namespace LightInject
         /// </summary>
         /// <param name="decoratorRegistration">The <see cref="DecoratorRegistration"/> instance that contains the decorator metadata.</param>
         void Decorate(DecoratorRegistration decoratorRegistration);
-    }
 
+        /// <summary>
+        /// Allows a registered service to be overridden by another <see cref="ServiceRegistration"/>.
+        /// </summary>
+        /// <param name="serviceSelector">A function delegate that is used to determine the service that should be
+        /// overridden using the <see cref="ServiceRegistration"/> returned from the <paramref name="serviceRegistrationFactory"/>.</param>
+        /// <param name="serviceRegistrationFactory">The factory delegate used to create a <see cref="ServiceRegistration"/> that overrides
+        /// the incoming <see cref="ServiceRegistration"/>.</param>
+        void Override(
+            Func<ServiceRegistration, bool> serviceSelector,
+            Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory);
+    }
+    
     /// <summary>
     /// Defines a set of methods used to retrieve service instances.
     /// </summary>
@@ -1807,7 +1818,7 @@ namespace LightInject
             emitter.Emit(OpCodes.Ret);
         }
     }
-
+ 
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
@@ -1826,6 +1837,7 @@ namespace LightInject
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
 
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
+        private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
 
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
         private readonly ICompositionRootExecutor compositionRootExecutor;
@@ -1858,7 +1870,7 @@ namespace LightInject
             AssemblyLoader = new AssemblyLoader();            
 #endif            
         }
-
+ 
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible 
         /// for providing the <see cref="ScopeManager"/> used to manage scopes.
@@ -1985,7 +1997,7 @@ namespace LightInject
         /// </summary>
         /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> instance that contains service metadata.</param>
         public void Register(ServiceRegistration serviceRegistration)
-        {
+        {            
             var services = GetAvailableServices(serviceRegistration.ServiceType);            
             var sr = serviceRegistration;
             services.AddOrUpdate(
@@ -2125,6 +2137,23 @@ namespace LightInject
         {
             int index = decorators.Add(decoratorRegistration);
             decoratorRegistration.Index = index;            
+        }
+
+        /// <summary>
+        /// Allows a registered service to be overridden by another <see cref="ServiceRegistration"/>.
+        /// </summary>
+        /// <param name="serviceSelector">A function delegate that is used to determine the service that should be
+        /// overridden using the <see cref="ServiceRegistration"/> returned from the <paramref name="serviceRegistrationFactory"/>.</param>
+        /// <param name="serviceRegistrationFactory">The factory delegate used to create a <see cref="ServiceRegistration"/> that overrides
+        /// the incoming <see cref="ServiceRegistration"/>.</param>
+        public void Override(Func<ServiceRegistration, bool> serviceSelector, Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory)
+        {
+            var serviceOverride = new ServiceOverride
+                                      {
+                                          CanOverride = serviceSelector,
+                                          ServiceRegistrationFactory = serviceRegistrationFactory
+                                      };
+            overrides.Add(serviceOverride);
         }
 
         /// <summary>
@@ -2815,7 +2844,7 @@ namespace LightInject
                 return null;
             }
         }
-
+       
         private void EmitEnumerable(IList<Action<IEmitter>> serviceEmitters, Type elementType, IEmitter emitter)
         {
             EmitNewArray(serviceEmitters, elementType, emitter);                       
@@ -2992,6 +3021,12 @@ namespace LightInject
 
         private void EmitNewInstanceWithDecorators(ServiceRegistration serviceRegistration, IEmitter emitter)
         {
+            var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
+            foreach (var serviceOverride in serviceOverrides)
+            {
+                serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
+            }
+                                   
             var serviceDecorators = GetDecorators(serviceRegistration);
             if (serviceDecorators.Length > 0)
             {
@@ -5254,6 +5289,13 @@ namespace LightInject
         }
     }
 
+    internal class ServiceOverride
+    {
+        public Func<ServiceRegistration, bool> CanOverride { get; set; }
+
+        public Func<IServiceFactory, ServiceRegistration, ServiceRegistration> ServiceRegistrationFactory { get; set; }
+    }
+
     /// <summary>
     /// Contains information about how to create a service instance.
     /// </summary>
@@ -5777,6 +5819,7 @@ namespace LightInject
             InternalTypes.Add(typeof(ConstructionInfo));
 #if NET || NET45
             InternalTypes.Add(typeof(AssemblyLoader));
+            InternalTypes.Add(typeof(ServiceOverride));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
@@ -5804,6 +5847,7 @@ namespace LightInject
 #if NET45
             InternalTypes.Add(typeof(SerializableScopeManager));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
+            InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif            
 #if NETFX_CORE || WINDOWS_PHONE            
             InternalTypes.Add(typeof(DynamicMethod));

@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace LightInject.Interception.Tests
 {
+    using System.Reflection;
+
+    using LightInject.SampleLibrary;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -33,6 +37,64 @@ namespace LightInject.Interception.Tests
 
             Assert.IsTrue(proxyType.IsSubclassOf(typeof(ClassWithVirtualMethod)));
         }
+
+        [TestMethod]
+        public void GetProxyType_ClassProxyWithConstructorParameters_ReturnsProxyWithNamedConstructorParameters()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithConstructor));
+
+            Type proxyType = CreateProxyType(proxyDefinition);
+
+            var constructor = proxyType.GetConstructor(new Type[] { typeof(string) });
+
+            Assert.AreEqual("value", constructor.GetParameters()[0].Name);
+
+        }
+
+
+
+        [TestMethod]
+        public void GetProxyType_VirtualMethod_DoesNotDeclareTargetField()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualMethod));
+
+            Type proxyType = CreateProxyType(proxyDefinition);
+            
+            FieldInfo targetField = proxyType.GetField("target", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            Assert.IsNull(targetField);
+        }
+
+
+
+        [TestMethod]
+        public void Execute_VirtualMethod_CallsMethodInBaseClass()
+        {                        
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualMethod));
+
+            proxyDefinition.Implement(() => new SampleInterceptor(), info => info.Name == "Execute");
+
+            Type proxyType = CreateProxyType(proxyDefinition);
+
+            var proxy = (ClassWithVirtualMethod)Activator.CreateInstance(proxyType);
+
+            proxy.Execute();
+        }
+
+        [TestMethod]
+        public void Create_TargetWithConstructorParameter_PassesValueToBaseClass()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithConstructor));
+
+            proxyDefinition.Implement(() => new SampleInterceptor(), info => info.Name == "Execute");
+
+            Type proxyType = CreateProxyType(proxyDefinition);
+
+            var proxy = (ClassWithConstructor)Activator.CreateInstance(proxyType, "SomeValue");
+            
+            Assert.AreEqual("SomeValue", proxy.Value);
+        }
+
 
 
 

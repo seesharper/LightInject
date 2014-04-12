@@ -112,5 +112,40 @@
             Assert.AreEqual(1, interceptedMethods.Count);
             Assert.AreEqual(interceptedMethods[0], "FirstMethod");
         }
+
+        [TestMethod]
+        public void GetInstance_InterceptedClass_ReturnsClassProxy()
+        {
+            var container = new ServiceContainer();
+            container.Register<ClassWithVirtualMethod>();            
+            container.Intercept(sr => sr.ServiceType == typeof(ClassWithVirtualMethod), factory => new SampleInterceptor());
+            var instance = container.GetInstance<ClassWithVirtualMethod>();
+            var test = instance.Execute();
+            Console.WriteLine(test);
+            Assert.IsInstanceOfType(instance, typeof(IProxy));
+        }
+
+        [TestMethod]
+        public void GetInstance_InterceptedClassWithConstructorArguments_ReturnsClassProxy()
+        {
+            var container = new ServiceContainer();
+            container.Register<ClassWithConstructor>();
+            container.RegisterInstance("SomeValue");
+            container.Intercept(sr => sr.ServiceType == typeof(ClassWithConstructor), factory => new SampleInterceptor());
+            var instance = container.GetInstance<ClassWithConstructor>();
+            var test = instance.Execute();
+            Console.WriteLine(test);
+            Assert.IsInstanceOfType(instance, typeof(IProxy));
+        }
+
+        [TestMethod]
+        public void GetInstance_InterceptedClassRegisteredUsingInstanceFactory_ReturnsClassProxy()
+        {
+            var container = new ServiceContainer();
+            container.Register(factory => new ClassWithConstructor("SomeValue"));
+            container.Intercept(sr => sr.ServiceType == typeof(ClassWithConstructor), factory => null);
+            var instance = container.GetInstance<ClassWithConstructor>();
+            Assert.IsInstanceOfType(instance, typeof(IProxy));
+        }
     }
 }
