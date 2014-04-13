@@ -23,4 +23,14 @@
             return 42;
         }
     }
+
+    public class ClassWithPropertyAndVirtualMethod
+    {
+        public string Value { get; set; }
+
+        public virtual int Execute()
+        {
+            return 42;
+        }
+    }
 }

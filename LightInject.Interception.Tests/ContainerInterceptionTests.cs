@@ -147,5 +147,15 @@
             var instance = container.GetInstance<ClassWithConstructor>();
             Assert.IsInstanceOfType(instance, typeof(IProxy));
         }
+
+        [TestMethod]
+        public void GetInstance_InterceptedClassUsingObjectInitializer_SetsProperties()
+        {
+            var container = new ServiceContainer();
+            container.Register(factory => new ClassWithPropertyAndVirtualMethod{Value = "SomeValue"});
+            container.Intercept(sr => sr.ServiceType == typeof(ClassWithPropertyAndVirtualMethod), factory => null);
+            var instance = container.GetInstance<ClassWithPropertyAndVirtualMethod>();
+            Assert.IsInstanceOfType(instance, typeof(IProxy));
+        }
     }
 }

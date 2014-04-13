@@ -137,26 +137,77 @@ namespace LightInject
             
             if (registration.FactoryExpression != null)
             {
-                var newExpression = registration.FactoryExpression.Body as NewExpression;
+                Expression bodyExpression = registration.FactoryExpression.Body;                
                 
-                if (newExpression == null)
-                {
-                    throw new InvalidOperationException("Unable to rewrite expression");
-                }
-                
-                var proxyType = CreateProxyType(registration.ServiceType, additionalInterfaces, serviceFactory, defineProxyType);
-                var parameterTypes = newExpression.Constructor.GetParameters().Select(p => p.ParameterType).ToArray();
-                var proxyConstructor = proxyType.GetConstructor(parameterTypes);
-                newExpression = Expression.New(proxyConstructor, newExpression.Arguments);
-                var lambdaExpression = Expression.Lambda(newExpression);
+                NewExpression newExpression = GetNewExpression(bodyExpression);                                                                
+                Type proxyType = CreateProxyType(newExpression.Type, additionalInterfaces, serviceFactory, defineProxyType);
+                Type[] parameterTypes = GetParameterTypes(newExpression);
+                ConstructorInfo proxyConstructor = GetConstructor(proxyType, parameterTypes);
+                var newProxyExpression = Expression.New(proxyConstructor, newExpression.Arguments);
+
+                var replacer = new NewExpressionReplacer();
+                bodyExpression = replacer.Replace(bodyExpression, newExpression, newProxyExpression);
+
+                                
+                var lambdaExpression = Expression.Lambda(bodyExpression);
                 registration.FactoryExpression = lambdaExpression;
                 return registration;
             }
             else
             {
-                var proxyType = CreateProxyType(registration.ServiceType, additionalInterfaces, serviceFactory, defineProxyType);
+                var proxyType = CreateProxyType(registration.ImplementingType, additionalInterfaces, serviceFactory, defineProxyType);
                 registration.ImplementingType = proxyType;
                 return registration;
+            }
+        }
+
+        private static ConstructorInfo GetConstructor(Type proxyType, Type[] parameterTypes)
+        {
+            return proxyType.GetConstructor(parameterTypes);
+        }
+
+        private static Type[] GetParameterTypes(NewExpression newExpression)
+        {
+            return newExpression.Constructor.GetParameters().Select(p => p.ParameterType).ToArray();
+        }
+
+        private static NewExpression GetNewExpression(Expression expression)
+        {
+            var newExpression = expression as NewExpression;
+            if (newExpression != null)
+            {
+                return newExpression;
+            }
+
+            var memberInitExpression = expression as MemberInitExpression;
+            if (memberInitExpression == null)
+            {
+                throw new InvalidOperationException("Unable to determine the implementing type.");
+            }
+
+            return memberInitExpression.NewExpression;
+        }
+
+        private class NewExpressionReplacer : ExpressionVisitor
+        {
+            private NewExpression currentNewExpression;
+
+            private NewExpression replaceNewExpression;
+
+            public Expression Replace(Expression body, NewExpression current, NewExpression replaceWith)
+            {
+                currentNewExpression = current;
+                replaceNewExpression = replaceWith;
+                return Visit(body);                
+            }
+
+            protected override Expression VisitNew(NewExpression node)
+            {
+                if (node == currentNewExpression)
+                {
+                    return replaceNewExpression;
+                }
+                return base.VisitNew(node);
             }
         }
     }
