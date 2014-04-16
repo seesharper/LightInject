@@ -69,42 +69,85 @@ namespace LightInject.SignalR
         }
     }
 
+    /// <summary>
+    /// An <see cref="IDependencyResolver"/> adapter for the LightInject service container 
+    /// that enables <see cref="Hub"/> instances and their dependencies to be resolved 
+    /// through the service container.
+    /// </summary>
     internal class LightInjectDependencyResolver : DefaultDependencyResolver
     {
         private readonly IServiceContainer serviceContainer;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LightInjectDependencyResolver"/> class.
+        /// </summary>
+        /// <param name="serviceContainer">The <see cref="IServiceContainer"/> instance to 
+        /// be used for resolving service instances.</param>
         public LightInjectDependencyResolver(IServiceContainer serviceContainer) 
         {           
-            this.serviceContainer = serviceContainer;
-            
+            this.serviceContainer = serviceContainer;            
         }
 
+        /// <summary>
+        /// Gets the requested service from the underlying <see cref="IServiceContainer"/>.
+        /// If the service is not found, the request is routed to the <see cref="DefaultDependencyResolver"/>.
+        /// </summary>
+        /// <param name="serviceType">The requested service type.</param>
+        /// <returns>An instance of the requested <paramref name="serviceType"/>.</returns>
         public override object GetService(Type serviceType)
         {
             return serviceContainer.TryGetInstance(serviceType) ?? base.GetService(serviceType);            
         }
 
+        /// <summary>
+        /// Gets all instances of the given <paramref name="serviceType"/>.        
+        /// </summary>
+        /// <param name="serviceType">The requested service type.</param>
+        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
         public override IEnumerable<object> GetServices(Type serviceType)
         {
             return serviceContainer.GetAllInstances(serviceType).Concat(base.GetServices(serviceType));
         }
 
+        /// <summary>
+        /// Disposes the underlying <see cref="IServiceContainer"/>.
+        /// </summary>
+        /// <param name="disposing"><b>true</b> to release both managed and unmanaged resources; 
+        /// <b>false</b> to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing)
         {
-            serviceContainer.Dispose();
+            if (disposing)
+            {
+                serviceContainer.Dispose();
+            }
+            
             base.Dispose(disposing);
         }        
     }
 
+    /// <summary>
+    /// An <see cref="IHubActivator"/> implementation that uses 
+    /// an <see cref="IServiceFactory"/> instance to create <see cref="Hub"/> instances.
+    /// </summary>
     internal class LightInjectHubActivator : IHubActivator
     {
         private readonly IServiceFactory serviceFactory;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LightInjectHubActivator"/> class.
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> instance that 
+        /// is responsible for creating <see cref="Hub"/> instances.</param>
         public LightInjectHubActivator(IServiceFactory serviceFactory)
         {
             this.serviceFactory = serviceFactory;
         }
 
+        /// <summary>
+        /// Creates a new hub instance.
+        /// </summary>
+        /// <param name="descriptor">The hub descriptor that contains information about the <see cref="Hub"/> to create.</param>
+        /// <returns>A <see cref="Hub"/> instance.</returns>
         public IHub Create(HubDescriptor descriptor)
         {
             serviceFactory.BeginScope();
