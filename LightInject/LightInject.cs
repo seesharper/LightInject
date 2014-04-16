@@ -64,7 +64,7 @@ namespace LightInject
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
     internal interface IServiceRegistry
-    {        
+    {           
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
         /// registered services.          
@@ -448,6 +448,17 @@ namespace LightInject
     internal interface IServiceFactory
     {
         /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns><see cref="Scope"/></returns>
+        Scope BeginScope();
+
+        /// <summary>
+        /// Ends the current <see cref="Scope"/>.
+        /// </summary>
+        void EndCurrentScope();
+
+        /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
@@ -645,19 +656,19 @@ namespace LightInject
     internal interface IServiceContainer : IServiceRegistry, IServiceFactory, IDisposable
     {
         /// <summary>
+        /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible 
+        /// for providing the <see cref="ScopeManager"/> used to manage scopes.
+        /// </summary>
+        IScopeManagerProvider ScopeManagerProvider { get; set; }
+        
+        /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
         /// </summary>
         /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         bool CanGetInstance(Type serviceType, string serviceName);
-
-        /// <summary>
-        /// Starts a new <see cref="Scope"/>.
-        /// </summary>
-        /// <returns><see cref="Scope"/></returns>
-        Scope BeginScope();
-
+        
         /// <summary>
         /// Injects the property dependencies for a given <paramref name="instance"/>.
         /// </summary>
@@ -1936,6 +1947,15 @@ namespace LightInject
         public Scope BeginScope()
         {
             return ScopeManagerProvider.GetScopeManager().BeginScope();
+        }
+
+        /// <summary>
+        /// Ends the current <see cref="Scope"/>.
+        /// </summary>
+        public void EndCurrentScope()
+        {
+            Scope currentScope = ScopeManagerProvider.GetScopeManager().CurrentScope;
+            currentScope.Dispose();
         }
 
         /// <summary>

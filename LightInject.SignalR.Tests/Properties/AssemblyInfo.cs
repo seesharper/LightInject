@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LightInject.Interception")]
+[assembly: AssemblyTitle("LightInject.SignalR.Tests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LightInject.Interception")]
-[assembly: AssemblyCopyright("Copyright ©  2013")]
+[assembly: AssemblyProduct("LightInject.SignalR.Tests")]
+[assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("33cb480f-3975-44a1-8721-d6af266bb955")]
+[assembly: Guid("f837a631-7bdb-48bd-bad2-2c21517957aa")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -34,8 +34,3 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: InternalsVisibleTo("LightInject.Interception.Tests")]
-[assembly: InternalsVisibleTo("LightInject.Wcf")]
-[assembly: InternalsVisibleTo("LightInject.Wcf.Client")]
-[assembly: InternalsVisibleTo("LightInject.Wcf.Tests")]
-[assembly: InternalsVisibleTo("LightInject.SignalR")]
