@@ -32,13 +32,13 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 
-namespace LightInject.SignalR
+namespace LightInject
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;    
-    using LightInject;
+
     using LightInject.Interception;
+    using LightInject.SignalR;
+
     using Microsoft.AspNet.SignalR;
     using Microsoft.AspNet.SignalR.Hubs;
 
@@ -51,23 +51,35 @@ namespace LightInject.SignalR
         /// <summary>
         /// Enables dependency injection in an ASP.NET SignalR application.
         /// </summary>
+        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>        
+        public static void EnableSignalR(this IServiceContainer serviceContainer)
+        {
+            EnableSignalR(serviceContainer, new HubConfiguration());            
+        }
+        
+        /// <summary>
+        /// Enables dependency injection in an ASP.NET SignalR application.
+        /// </summary>
         /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
         /// <param name="hubConfiguration">The <see cref="HubConfiguration"/> that represents the configuration of this ASP.Net SignalR application.</param>
         public static void EnableSignalR(this IServiceContainer serviceContainer, HubConfiguration hubConfiguration)
-        {                        
-            serviceContainer.ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
-            serviceContainer.Intercept(
-                sr => sr.ServiceType == typeof(IHub), ImplementDisposeMethod);               
+        {                       
             hubConfiguration.Resolver = new LightInjectDependencyResolver(serviceContainer);
-        }
-
-        private static void ImplementDisposeMethod(IServiceFactory serviceFactory, ProxyDefinition proxyDefinition)
-        {
-            proxyDefinition.Implement(
-                () => new HubDisposeInterceptor(serviceFactory),
-                m => m.IsDeclaredBy<IDisposable>());
-        }
+        }               
     }
+}
+
+namespace LightInject.SignalR
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Linq.Expressions;
+
+    using LightInject;
+    using LightInject.Interception;
+    using Microsoft.AspNet.SignalR;
+    using Microsoft.AspNet.SignalR.Hubs;
 
     /// <summary>
     /// An <see cref="IDependencyResolver"/> adapter for the LightInject service container 
@@ -83,8 +95,12 @@ namespace LightInject.SignalR
         /// </summary>
         /// <param name="serviceContainer">The <see cref="IServiceContainer"/> instance to 
         /// be used for resolving service instances.</param>
-        public LightInjectDependencyResolver(IServiceContainer serviceContainer) 
-        {           
+        public LightInjectDependencyResolver(IServiceContainer serviceContainer)
+        {
+            serviceContainer.Register<IHubActivator>(factory => new LightInjectHubActivator(serviceContainer));
+            serviceContainer.Intercept(
+               sr => typeof(IHub).IsAssignableFrom(sr.ServiceType), ImplementDisposeMethod);
+            serviceContainer.ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
             this.serviceContainer = serviceContainer;            
         }
 
@@ -122,6 +138,13 @@ namespace LightInject.SignalR
             }
             
             base.Dispose(disposing);
+        }
+
+        private static void ImplementDisposeMethod(IServiceFactory serviceFactory, ProxyDefinition proxyDefinition)
+        {
+            proxyDefinition.Implement(
+                () => new HubDisposeInterceptor(serviceFactory),
+                m => m.Name == "Dispose" && m.GetParameters().Any(p => p.ParameterType == typeof(bool)));
         }        
     }
 
@@ -183,7 +206,7 @@ namespace LightInject.SignalR
         public object Invoke(IInvocationInfo invocationInfo)
         {
             serviceContainer.EndCurrentScope();
-            return invocationInfo.Proceed();
+            return invocationInfo.Proceed();            
         }
     }
 }

@@ -217,7 +217,8 @@ namespace LightInject.Interception
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;    
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -344,7 +345,22 @@ namespace LightInject.Interception
         /// <returns>The proxy <see cref="Type"/>.</returns>
         Type CreateType(TypeBuilder typeBuilder);
     }
-   
+
+    /// <summary>
+    /// Represents a class that is capable of selecting method that can be intercepted.
+    /// </summary>
+    internal interface IMethodSelector
+    {
+        /// <summary>
+        /// Returns a list of method that can be intercepted.
+        /// </summary>
+        /// <param name="targetType">The proxy target type.</param>
+        /// <param name="additionalInterfaces">A list of additional interfaces implemented by the proxy type.</param>
+        /// <returns>An array containing method that can be intercepted.</returns>
+        MethodInfo[] Execute(Type targetType, Type[] additionalInterfaces);
+    }
+
+
     /// <summary>
     /// A factory class used to create a <see cref="CompositeInterceptor"/> if the target method has 
     /// multiple interceptors.
@@ -934,7 +950,12 @@ namespace LightInject.Interception
 
         private Type[] ResolveAdditionalInterfaces(Type targetType, IEnumerable<Type> additionalInterfaces)
         {
-            return targetType.GetInterfaces().Concat(additionalInterfaces).Distinct().ToArray();
+            if (targetType.IsInterface)
+            {
+                return targetType.GetInterfaces().Concat(additionalInterfaces).Distinct().ToArray();
+            }
+
+            return additionalInterfaces.ToArray();
         }
     }
 
@@ -1011,6 +1032,45 @@ namespace LightInject.Interception
             return method.GetDeclaringType().GetProperties().FirstOrDefault(p => p.GetGetMethod() == method || p.GetSetMethod() == method);
         }        
     }
+
+    /// <summary>
+    /// A class that is capable of selecting method that can be intercepted.
+    /// </summary>
+    internal class MethodSelector : IMethodSelector
+    {
+        /// <summary>
+        /// Returns a list of method that can be intercepted.
+        /// </summary>
+        /// <param name="targetType">The proxy target type.</param>
+        /// <param name="additionalInterfaces">A list of additional interfaces implemented by the proxy type.</param>
+        /// <returns>An array containing method that can be intercepted.</returns>
+        public MethodInfo[] Execute(Type targetType, Type[] additionalInterfaces)
+        {
+            MethodInfo[] interceptableMethods;
+            
+            if (targetType.IsInterface)
+            {
+                interceptableMethods = targetType.GetMethods()
+                                          .Where(m => !m.IsSpecialName)
+                                          .Concat(typeof(object).GetMethods().Where(m => m.IsVirtual))
+                                          .Concat(additionalInterfaces.SelectMany(i => i.GetMethods()))
+                                          .Distinct()
+                                          .ToArray();
+            }
+            else
+            {
+                interceptableMethods = targetType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                          .Concat(targetType.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.IsFamily && !m.IsDeclaredBy<object>()))
+                                          .Where(m => m.IsVirtual)
+                                          .Concat(additionalInterfaces.SelectMany(i => i.GetMethods()))
+                                          .Distinct()
+                                          .ToArray();
+            }
+
+            return interceptableMethods;
+        }
+    }
+
 
     /// <summary>
     /// A class that is capable of creating a <see cref="TypeBuilder"/> that 
@@ -1120,7 +1180,14 @@ namespace LightInject.Interception
         public ProxyBuilder()
         {
             typeBuilderFactory = new TypeBuilderFactory();
+            MethodSelector = new MethodSelector();
         }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IMethodSelector"/> instance that 
+        /// is responsible for selecting methods that can be intercepted.
+        /// </summary>
+        public IMethodSelector MethodSelector { get; set; }
 
         /// <summary>
         /// Gets a proxy type based on the given <paramref name="definition"/>.
@@ -1504,6 +1571,11 @@ namespace LightInject.Interception
 
         private void ImplementProperties()
         {
+            if (proxyDefinition.TargetType.IsClass)
+            {
+                return;
+            }
+            
             var targetProperties = GetTargetProperties();
 
             foreach (var property in targetProperties)
@@ -1887,8 +1959,11 @@ namespace LightInject.Interception
             }
             else
             {
-                methodAttributes = MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual
-                                   | MethodAttributes.HideBySig;
+                //methodAttributes = MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual
+                //                   | MethodAttributes.HideBySig;
+
+                methodAttributes = targetMethod.Attributes;
+                methodAttributes &= ~MethodAttributes.VtableLayoutMask;
             }
 
             MethodBuilder methodBuilder = typeBuilder.DefineMethod(
@@ -1907,12 +1982,7 @@ namespace LightInject.Interception
 
         private void PopulateTargetMethods()
         {
-            targetMethods = proxyDefinition.TargetType.GetMethods()
-                                           .Where(m => !m.IsSpecialName)
-                                           .Concat(typeof(object).GetMethods().Where(m => m.IsVirtual))
-                                           .Concat(proxyDefinition.AdditionalInterfaces.SelectMany(i => i.GetMethods()))
-                                           .Distinct()
-                                           .ToArray();
+            targetMethods = MethodSelector.Execute(proxyDefinition.TargetType, proxyDefinition.AdditionalInterfaces);     
         }
     }
 

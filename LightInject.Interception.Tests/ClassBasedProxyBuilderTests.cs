@@ -95,6 +95,44 @@ namespace LightInject.Interception.Tests
             Assert.AreEqual("SomeValue", proxy.Value);
         }
 
+        [TestMethod]
+        public void Create_NonInterceptedTargetWithVirtualProperty_PassesValueToBaseClass()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualProperty));
+            proxyDefinition.Implement(() => new SampleInterceptor(), info => false);
+                
+
+            Type proxyType = CreateProxyType(proxyDefinition);
+
+            var proxy = (ClassWithVirtualProperty)Activator.CreateInstance(proxyType);
+
+            proxy.Value = "SomeValue";
+            
+            Assert.AreEqual("SomeValue", proxy.value);
+        }
+
+        [TestMethod]
+        public void Create_InterceptedTargetWithVirtualProperty_PassesValueToBaseClass()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualProperty));
+            //proxyDefinition.Implement(() => new SampleInterceptor(), info => info.IsPropertyGetter() || info.IsPropertySetter());
+
+            proxyDefinition.Implement(() => new SampleInterceptor(), info => info.Name == "ToString");
+
+            Type proxyType = CreateProxyType(proxyDefinition);
+
+            var proxy = (ClassWithVirtualProperty)Activator.CreateInstance(proxyType);
+
+            proxy.Value = "SomeValue";
+
+            Assert.AreEqual("SomeValue", proxy.value);
+        }
+
+        [TestMethod]
+        public void Create()
+        {
+            var methods = typeof(ClassImplementingIDisposableWithVirtualDisposeMethod).GetMethods();
+        }
 
 
 

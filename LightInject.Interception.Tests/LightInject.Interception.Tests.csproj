@@ -74,6 +74,7 @@
     <Compile Include="MethodBuilderDynamicMethodSkeleton.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="MethodInfoExtensionsTests.cs" />
+    <Compile Include="MethodSelectorTests.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="ProxyBuilderTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
