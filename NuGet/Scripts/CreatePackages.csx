@@ -1,10 +1,10 @@
 #load "Common.csx"
 
-//Console.WriteLine("Building CoverageToXml");
-//MsBuild.Build(@"..\CoverageToXml\CoverageToXml.sln");
+Console.WriteLine("Building CoverageToXml");
+MsBuild.Build(@"..\CoverageToXml\CoverageToXml.sln");
 
-//Console.WriteLine("Building LightInject");
-//MsBuild.Build(@"..\..\..\LightInject\LightInject.sln"); 
+Console.WriteLine("Building LightInject");
+MsBuild.Build(@"..\..\..\LightInject\LightInject.sln"); 
 
 //Console.WriteLine("Running tests (LightInject)");
 //MsTest.Run(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
@@ -12,8 +12,8 @@
 //Console.WriteLine("Running tests with code coverage (LightInject)");
 //MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
 
-//Console.WriteLine("Running tests (LightInject.Interception)");
-//MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");
+Console.WriteLine("Running tests (LightInject.Interception)");
+MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");
 
 Console.WriteLine("Running tests (LightInject.Interception)");
 MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll", "lightinject.interception.dll");
