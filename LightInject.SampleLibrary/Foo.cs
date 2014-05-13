@@ -757,4 +757,9 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class FooWithBrokenDependency
+    {
+        public FooWithBrokenDependency(IBar bar)
+        { }
+    }
 }

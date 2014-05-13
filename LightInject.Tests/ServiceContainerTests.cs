@@ -1241,6 +1241,30 @@ namespace LightInject.Tests
             container.RegisterFrom<CompositionRoot>();
             Assert.AreEqual(1, container.AvailableServices.Count());
         }
+        
+        [TestMethod]
+        public void GetInstance_SingletonInstance_EmitterIsProperlyPoppedOnConstructorException()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, BrokenBar>(new PerContainerLifetime());
+            container.Register<FooWithBrokenDependency>(new PerContainerLifetime());
+            
+            try
+            {
+                container.GetInstance<FooWithBrokenDependency>();
+            }
+            catch(BrokenBarException)
+            {
+            }
+
+            try
+            {
+                container.GetInstance<FooWithBrokenDependency>();
+            }
+            catch (BrokenBarException)
+            {
+            }
+        }
 
         #region Internal Classes
 
