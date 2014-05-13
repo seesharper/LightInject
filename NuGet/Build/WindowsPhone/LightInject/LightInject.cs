@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.6
+    LightInject version 3.0.1.7
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -51,7 +51,7 @@ namespace LightInject
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
     public interface IServiceRegistry
-    {
+    {           
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the 
         /// registered services.          
@@ -408,13 +408,35 @@ namespace LightInject
         /// </summary>
         /// <param name="decoratorRegistration">The <see cref="DecoratorRegistration"/> instance that contains the decorator metadata.</param>
         void Decorate(DecoratorRegistration decoratorRegistration);
-    }
 
+        /// <summary>
+        /// Allows a registered service to be overridden by another <see cref="ServiceRegistration"/>.
+        /// </summary>
+        /// <param name="serviceSelector">A function delegate that is used to determine the service that should be
+        /// overridden using the <see cref="ServiceRegistration"/> returned from the <paramref name="serviceRegistrationFactory"/>.</param>
+        /// <param name="serviceRegistrationFactory">The factory delegate used to create a <see cref="ServiceRegistration"/> that overrides
+        /// the incoming <see cref="ServiceRegistration"/>.</param>
+        void Override(
+            Func<ServiceRegistration, bool> serviceSelector,
+            Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory);
+    }
+    
     /// <summary>
     /// Defines a set of methods used to retrieve service instances.
     /// </summary>
     public interface IServiceFactory
     {
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns><see cref="Scope"/></returns>
+        Scope BeginScope();
+
+        /// <summary>
+        /// Ends the current <see cref="Scope"/>.
+        /// </summary>
+        void EndCurrentScope();
+
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
@@ -613,19 +635,19 @@ namespace LightInject
     public interface IServiceContainer : IServiceRegistry, IServiceFactory, IDisposable
     {
         /// <summary>
+        /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible 
+        /// for providing the <see cref="ScopeManager"/> used to manage scopes.
+        /// </summary>
+        IScopeManagerProvider ScopeManagerProvider { get; set; }
+        
+        /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
         /// </summary>
         /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         bool CanGetInstance(Type serviceType, string serviceName);
-
-        /// <summary>
-        /// Starts a new <see cref="Scope"/>.
-        /// </summary>
-        /// <returns><see cref="Scope"/></returns>
-        Scope BeginScope();
-
+        
         /// <summary>
         /// Injects the property dependencies for a given <paramref name="instance"/>.
         /// </summary>
@@ -1709,7 +1731,7 @@ namespace LightInject
             emitter.Emit(OpCodes.Ret);
         }
     }
-
+ 
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
@@ -1728,6 +1750,7 @@ namespace LightInject
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
 
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
+        private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
 
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
         private readonly ICompositionRootExecutor compositionRootExecutor;
@@ -1757,7 +1780,7 @@ namespace LightInject
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
         }
-
+ 
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible 
         /// for providing the <see cref="ScopeManager"/> used to manage scopes.
@@ -1819,6 +1842,15 @@ namespace LightInject
         }
 
         /// <summary>
+        /// Ends the current <see cref="Scope"/>.
+        /// </summary>
+        public void EndCurrentScope()
+        {
+            Scope currentScope = ScopeManagerProvider.GetScopeManager().CurrentScope;
+            currentScope.Dispose();
+        }
+
+        /// <summary>
         /// Injects the property dependencies for a given <paramref name="instance"/>.
         /// </summary>
         /// <param name="instance">The target instance for which to inject its property dependencies.</param>
@@ -1877,7 +1909,7 @@ namespace LightInject
         /// </summary>
         /// <param name="serviceRegistration">The <see cref="ServiceRegistration"/> instance that contains service metadata.</param>
         public void Register(ServiceRegistration serviceRegistration)
-        {
+        {            
             var services = GetAvailableServices(serviceRegistration.ServiceType);            
             var sr = serviceRegistration;
             services.AddOrUpdate(
@@ -2003,6 +2035,23 @@ namespace LightInject
         {
             int index = decorators.Add(decoratorRegistration);
             decoratorRegistration.Index = index;            
+        }
+
+        /// <summary>
+        /// Allows a registered service to be overridden by another <see cref="ServiceRegistration"/>.
+        /// </summary>
+        /// <param name="serviceSelector">A function delegate that is used to determine the service that should be
+        /// overridden using the <see cref="ServiceRegistration"/> returned from the <paramref name="serviceRegistrationFactory"/>.</param>
+        /// <param name="serviceRegistrationFactory">The factory delegate used to create a <see cref="ServiceRegistration"/> that overrides
+        /// the incoming <see cref="ServiceRegistration"/>.</param>
+        public void Override(Func<ServiceRegistration, bool> serviceSelector, Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory)
+        {
+            var serviceOverride = new ServiceOverride
+                                      {
+                                          CanOverride = serviceSelector,
+                                          ServiceRegistrationFactory = serviceRegistrationFactory
+                                      };
+            overrides.Add(serviceOverride);
         }
 
         /// <summary>
@@ -2693,7 +2742,7 @@ namespace LightInject
                 return null;
             }
         }
-
+       
         private void EmitEnumerable(IList<Action<IEmitter>> serviceEmitters, Type elementType, IEmitter emitter)
         {
             EmitNewArray(serviceEmitters, elementType, emitter);                       
@@ -2870,6 +2919,12 @@ namespace LightInject
 
         private void EmitNewInstanceWithDecorators(ServiceRegistration serviceRegistration, IEmitter emitter)
         {
+            var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
+            foreach (var serviceOverride in serviceOverrides)
+            {
+                serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
+            }
+                                   
             var serviceDecorators = GetDecorators(serviceRegistration);
             if (serviceDecorators.Length > 0)
             {
@@ -3635,7 +3690,14 @@ namespace LightInject
             public Func<ServiceRequest, object> Factory { get; set; }
 
             public ILifetime LifeTime { get; set; }
-        }               
+        }
+
+        private class ServiceOverride
+        {
+            public Func<ServiceRegistration, bool> CanOverride { get; set; }
+
+            public Func<IServiceFactory, ServiceRegistration, ServiceRegistration> ServiceRegistrationFactory { get; set; }
+        }
     }
 
     /// <summary>
@@ -5001,7 +5063,7 @@ namespace LightInject
             return result;
         }
     }
-
+    
     /// <summary>
     /// Contains information about how to create a service instance.
     /// </summary>

@@ -157,6 +157,13 @@ namespace LightInject.Wcf
             }
         }
 
+        /// <summary>
+        /// Creates a <see cref="T:System.ServiceModel.ServiceHost"/> with specific base addresses and initializes it with specified data.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="T:System.ServiceModel.ServiceHost"/> with specific base addresses.
+        /// </returns>
+        /// <param name="constructorString">The initialization data passed to the <see cref="T:System.ServiceModel.ServiceHostBase"/> instance being constructed by the factory. </param><param name="baseAddresses">The <see cref="T:System.Array"/> of type <see cref="T:System.Uri"/> that contains the base addresses for the service hosted.</param><exception cref="T:System.ArgumentNullException"><paramref name="baseAddresses"/> is null.</exception><exception cref="T:System.InvalidOperationException">There is no hosting context provided or <paramref name="constructorString"/> is null or empty.</exception>
         public override ServiceHostBase CreateServiceHost(string constructorString, Uri[] baseAddresses)
         {
             EnsureValidServiceContainer();
@@ -169,6 +176,18 @@ namespace LightInject.Wcf
 
             return base.CreateServiceHost(constructorString, baseAddresses);
         }
+       
+        /// <summary>
+        /// Creates a <see cref="T:System.ServiceModel.ServiceHost"/> for a specified type of service with a specific base address. 
+        /// </summary>
+        /// <returns>
+        /// A <see cref="T:System.ServiceModel.ServiceHost"/> for the type of service specified with a specific base address.
+        /// </returns>
+        /// <param name="serviceType">Specifies the type of service to host. </param><param name="baseAddresses">The <see cref="T:System.Array"/> of type <see cref="T:System.Uri"/> that contains the base addresses for the service hosted.</param>
+        protected override ServiceHost CreateServiceHost(Type serviceType, Uri[] baseAddresses)
+        {
+            return CreateServiceHost(serviceType, serviceType.FullName, baseAddresses);
+        }
 
         private static void EnsureValidServiceContainer()
         {
@@ -176,11 +195,6 @@ namespace LightInject.Wcf
             {
                 container = new ServiceContainer();
             }
-        }
-
-        protected override ServiceHost CreateServiceHost(Type serviceType, Uri[] baseAddresses)
-        {
-            return CreateServiceHost(serviceType, serviceType.FullName, baseAddresses);
         }
 
         private ServiceHost CreateServiceHost(Type serviceType, string constructorString, Uri[] baseAddresses)

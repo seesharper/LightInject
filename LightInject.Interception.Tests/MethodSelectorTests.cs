@@ -71,5 +71,14 @@
             Assert.IsTrue(methods.Any(m => m.Name == "Equals"));
         }
 
+        [TestMethod]
+        public void Execute_ClassWithPrivateMethod_DoesNotReturnPrivateMethod()
+        {
+            var methodSelector = new MethodSelector();
+
+            var methods = methodSelector.Execute(typeof(ClassWithPrivateMethod), Type.EmptyTypes);
+
+            Assert.IsTrue(!methods.Any(m => m.IsDeclaredBy<ClassWithPrivateMethod>()));
+        }
     }
 }

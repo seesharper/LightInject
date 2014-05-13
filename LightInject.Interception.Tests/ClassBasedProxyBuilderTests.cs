@@ -1,14 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LightInject.Interception.Tests
 {
     using System.Reflection;
-
-    using LightInject.SampleLibrary;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -51,8 +45,6 @@ namespace LightInject.Interception.Tests
 
         }
 
-
-
         [TestMethod]
         public void GetProxyType_VirtualMethod_DoesNotDeclareTargetField()
         {
@@ -65,7 +57,15 @@ namespace LightInject.Interception.Tests
             Assert.IsNull(targetField);
         }
 
+        [TestMethod]
+        public void GetProxyType_AdditionalInterface_ImplementsInterface()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualMethod), typeof(IAdditionalInterface));
 
+            var proxyType = CreateProxyType(proxyDefinition);
+
+            Assert.IsTrue(typeof(IAdditionalInterface).IsAssignableFrom(proxyType));
+        }
 
         [TestMethod]
         public void Execute_VirtualMethod_CallsMethodInBaseClass()
@@ -115,8 +115,7 @@ namespace LightInject.Interception.Tests
         public void Create_InterceptedTargetWithVirtualProperty_PassesValueToBaseClass()
         {
             var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualProperty));
-            //proxyDefinition.Implement(() => new SampleInterceptor(), info => info.IsPropertyGetter() || info.IsPropertySetter());
-
+            
             proxyDefinition.Implement(() => new SampleInterceptor(), info => info.Name == "ToString");
 
             Type proxyType = CreateProxyType(proxyDefinition);

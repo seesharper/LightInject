@@ -3,6 +3,9 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq.Expressions;
+    using System.Runtime.InteropServices;
+    using System.Runtime.Remoting;
 
     using LightInject.SampleLibrary;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -94,6 +97,31 @@
         }
 
         [TestMethod]
+        public void GetInstance_ServiceWithConstructorArguments_ReturnsProxy()
+        {
+            var container = new ServiceContainer();                                               
+            container.Register<int, IMethodWithValueTypeReturnValue>((factory, i) => new ClassWithConstructorArguments());
+            container.Intercept(sr => sr.ServiceType == typeof(IMethodWithValueTypeReturnValue), info => new SampleInterceptor());
+                        
+            var instance = container.GetInstance<int, IMethodWithValueTypeReturnValue>(42);
+            instance.Execute();
+
+            Assert.IsInstanceOfType(instance, typeof(IProxy));
+        }
+
+        [TestMethod]
+        public void GetInstance_WithNestedNewStatement_ReturnsProxy()
+        {
+            var container = new ServiceContainer();                                               
+            container.Register<ClassWithConstructor>(factory => new ClassWithConstructor(new string(new char[] {'a'})));
+            container.Intercept(sr => sr.ServiceType == typeof(ClassWithConstructor), info => new SampleInterceptor());
+
+            var instance = container.GetInstance<ClassWithConstructor>();
+
+            Assert.IsInstanceOfType(instance, typeof(IProxy));
+        }
+
+        [TestMethod]
         public void Intercept_Method_InvokesInterceptorOnlyForMatchingMethods()
         {
             var container = new ServiceContainer();
@@ -156,6 +184,22 @@
             container.Intercept(sr => sr.ServiceType == typeof(ClassWithPropertyAndVirtualMethod), factory => null);
             var instance = container.GetInstance<ClassWithPropertyAndVirtualMethod>();
             Assert.IsInstanceOfType(instance, typeof(IProxy));
+        }
+
+        [TestMethod, ExpectedException(typeof(InvalidOperationException))]
+        public void GetInstance_InterceptedClassWithUndeterminableImplementingType_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            container.Register(factory => CreateClassWithVirtualMethod());
+            container.RegisterInstance("SomeValue");
+            container.Intercept(sr => sr.ServiceType == typeof(ClassWithVirtualMethod), factory => new SampleInterceptor());
+            container.GetInstance<ClassWithVirtualMethod>();
+
+        }
+
+        private static ClassWithVirtualMethod CreateClassWithVirtualMethod()
+        {
+            return new ClassWithVirtualMethod();
         }
     }
 }

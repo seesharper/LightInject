@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Interception version 1.0.0.3 
+    LightInject.Interception version 1.0.0.4 
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -36,6 +36,7 @@ namespace LightInject
 {
     using System;
     using System.Linq;
+    using System.Linq.Expressions;
     using System.Reflection;
     using LightInject.Interception;
 
@@ -54,14 +55,16 @@ namespace LightInject
         /// <param name="additionalInterfaces">A list of additional interface that will be implemented by the proxy type.</param>
         /// <param name="defineProxyType">An action delegate that is used to define the proxy type.</param>
         public static void Intercept(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> serviceSelector, Type[] additionalInterfaces, Action<IServiceFactory, ProxyDefinition> defineProxyType)
-        {
+        {                                    
             var decoratorRegistration = new DecoratorRegistration();
             decoratorRegistration.CanDecorate =
-                registration => serviceSelector(registration) && registration.ServiceType != typeof(IInterceptor);
-            decoratorRegistration.ImplementingTypeFactory = (serviceFactory, serviceRegistration) => CreateProxyType(serviceRegistration, additionalInterfaces, serviceFactory, defineProxyType);
+                registration => serviceSelector(registration) && registration.ServiceType != typeof(IInterceptor) && registration.ServiceType.IsInterface;
+            decoratorRegistration.ImplementingTypeFactory = (serviceFactory, serviceRegistration) => CreateProxyType(serviceRegistration.ServiceType, additionalInterfaces, serviceFactory, defineProxyType);
             serviceRegistry.Decorate(decoratorRegistration);
-        }
 
+            serviceRegistry.Override(serviceSelector, (serviceFactory, registration) => CreateProxyServiceRegistration(registration, additionalInterfaces, serviceFactory, defineProxyType));
+        }
+                
         /// <summary>
         /// Decorates the service identified by the <paramref name="serviceSelector"/> delegate with a dynamic proxy type
         /// that is used to decorate the target type.
@@ -117,12 +120,95 @@ namespace LightInject
         }
 
         private static Type CreateProxyType(
-            ServiceRegistration registration, Type[] additionalInterfaces, IServiceFactory serviceFactory, Action<IServiceFactory, ProxyDefinition> defineProxyType)
+            Type serviceType, Type[] additionalInterfaces, IServiceFactory serviceFactory, Action<IServiceFactory, ProxyDefinition> defineProxyType)
         {
             var proxyBuilder = new ProxyBuilder();
-            var proxyDefinition = new ProxyDefinition(registration.ServiceType, additionalInterfaces);
+            var proxyDefinition = new ProxyDefinition(serviceType, additionalInterfaces);
             defineProxyType(serviceFactory, proxyDefinition);
             return proxyBuilder.GetProxyType(proxyDefinition);
+        }
+
+        private static ServiceRegistration CreateProxyServiceRegistration(ServiceRegistration registration, Type[] additionalInterfaces, IServiceFactory serviceFactory, Action<IServiceFactory, ProxyDefinition> defineProxyType)
+        {
+            if (registration.ServiceType.IsInterface)
+            {
+                return registration;
+            }
+            
+            if (registration.FactoryExpression != null)
+            {
+                Expression bodyExpression = registration.FactoryExpression.Body;                
+                
+                NewExpression newExpression = GetNewExpression(bodyExpression);                                                                
+                Type proxyType = CreateProxyType(newExpression.Type, additionalInterfaces, serviceFactory, defineProxyType);
+                Type[] parameterTypes = GetParameterTypes(newExpression);
+                ConstructorInfo proxyConstructor = GetConstructor(proxyType, parameterTypes);
+                var newProxyExpression = Expression.New(proxyConstructor, newExpression.Arguments);
+
+                var replacer = new NewExpressionReplacer();
+                bodyExpression = replacer.Replace(bodyExpression, newExpression, newProxyExpression);
+
+                                
+                var lambdaExpression = Expression.Lambda(bodyExpression);
+                registration.FactoryExpression = lambdaExpression;
+                return registration;
+            }
+            else
+            {
+                var proxyType = CreateProxyType(registration.ImplementingType, additionalInterfaces, serviceFactory, defineProxyType);
+                registration.ImplementingType = proxyType;
+                return registration;
+            }
+        }
+
+        private static ConstructorInfo GetConstructor(Type proxyType, Type[] parameterTypes)
+        {
+            return proxyType.GetConstructor(parameterTypes);
+        }
+
+        private static Type[] GetParameterTypes(NewExpression newExpression)
+        {
+            return newExpression.Constructor.GetParameters().Select(p => p.ParameterType).ToArray();
+        }
+
+        private static NewExpression GetNewExpression(Expression expression)
+        {
+            var newExpression = expression as NewExpression;
+            if (newExpression != null)
+            {
+                return newExpression;
+            }
+
+            var memberInitExpression = expression as MemberInitExpression;
+            if (memberInitExpression == null)
+            {
+                throw new InvalidOperationException("Unable to determine the implementing type.");
+            }
+
+            return memberInitExpression.NewExpression;
+        }
+
+        private class NewExpressionReplacer : ExpressionVisitor
+        {
+            private NewExpression currentNewExpression;
+
+            private NewExpression replaceNewExpression;
+
+            public Expression Replace(Expression body, NewExpression current, NewExpression replaceWith)
+            {
+                currentNewExpression = current;
+                replaceNewExpression = replaceWith;
+                return Visit(body);                
+            }
+
+            protected override Expression VisitNew(NewExpression node)
+            {
+                if (node == currentNewExpression)
+                {
+                    return replaceNewExpression;
+                }
+                return base.VisitNew(node);
+            }
         }
     }
 }
@@ -131,11 +217,12 @@ namespace LightInject.Interception
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;    
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
-
+    
     /// <summary>
     /// Implemented by all proxy types.
     /// </summary>
@@ -258,7 +345,22 @@ namespace LightInject.Interception
         /// <returns>The proxy <see cref="Type"/>.</returns>
         Type CreateType(TypeBuilder typeBuilder);
     }
-   
+
+    /// <summary>
+    /// Represents a class that is capable of selecting method that can be intercepted.
+    /// </summary>
+    public interface IMethodSelector
+    {
+        /// <summary>
+        /// Returns a list of method that can be intercepted.
+        /// </summary>
+        /// <param name="targetType">The proxy target type.</param>
+        /// <param name="additionalInterfaces">A list of additional interfaces implemented by the proxy type.</param>
+        /// <returns>An array containing method that can be intercepted.</returns>
+        MethodInfo[] Execute(Type targetType, Type[] additionalInterfaces);
+    }
+
+
     /// <summary>
     /// A factory class used to create a <see cref="CompositeInterceptor"/> if the target method has 
     /// multiple interceptors.
@@ -452,7 +554,7 @@ namespace LightInject.Interception
 
         private static void CallTargetMethod(MethodInfo method, ILGenerator il)
         {
-            il.Emit(OpCodes.Callvirt, method);
+            il.Emit(method.IsAbstract ? OpCodes.Callvirt : OpCodes.Call, method);
         }
 
         private static void PushInstance(MethodInfo method, ILGenerator il)
@@ -765,11 +867,6 @@ namespace LightInject.Interception
             AdditionalInterfaces = ResolveAdditionalInterfaces(targetType, additionalInterfaces);
         }
 
-        private Type[] ResolveAdditionalInterfaces(Type targetType, IEnumerable<Type> additionalInterfaces)
-        {
-            return targetType.GetInterfaces().Concat(additionalInterfaces).Distinct().ToArray();
-        }
-
         /// <summary>
         /// Gets the proxy target type.
         /// </summary>
@@ -806,7 +903,7 @@ namespace LightInject.Interception
                 return typeAttributes.SelectMany(t => t);
             }
         }
-
+               
         /// <summary>
         /// Implements the methods identified by the <paramref name="methodSelector"/> by forwarding method calls
         /// to the <see cref="IInterceptor"/> created by the <paramref name="interceptorFactory"/>.
@@ -849,6 +946,16 @@ namespace LightInject.Interception
         {
             typeAttributes.Add(customAttributeData);
             return this;
+        }
+
+        private Type[] ResolveAdditionalInterfaces(Type targetType, IEnumerable<Type> additionalInterfaces)
+        {
+            if (targetType.IsInterface)
+            {
+                return targetType.GetInterfaces().Concat(additionalInterfaces).Distinct().ToArray();
+            }
+
+            return additionalInterfaces.ToArray();
         }
     }
 
@@ -927,6 +1034,45 @@ namespace LightInject.Interception
     }
 
     /// <summary>
+    /// A class that is capable of selecting method that can be intercepted.
+    /// </summary>
+    public class MethodSelector : IMethodSelector
+    {
+        /// <summary>
+        /// Returns a list of method that can be intercepted.
+        /// </summary>
+        /// <param name="targetType">The proxy target type.</param>
+        /// <param name="additionalInterfaces">A list of additional interfaces implemented by the proxy type.</param>
+        /// <returns>An array containing method that can be intercepted.</returns>
+        public MethodInfo[] Execute(Type targetType, Type[] additionalInterfaces)
+        {
+            MethodInfo[] interceptableMethods;
+            
+            if (targetType.IsInterface)
+            {
+                interceptableMethods = targetType.GetMethods()
+                                          .Where(m => !m.IsSpecialName)
+                                          .Concat(typeof(object).GetMethods().Where(m => m.IsVirtual))
+                                          .Concat(additionalInterfaces.SelectMany(i => i.GetMethods()))
+                                          .Distinct()
+                                          .ToArray();
+            }
+            else
+            {
+                interceptableMethods = targetType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                          .Concat(targetType.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.IsFamily && !m.IsDeclaredBy<object>()))
+                                          .Where(m => m.IsVirtual)
+                                          .Concat(additionalInterfaces.SelectMany(i => i.GetMethods()))
+                                          .Distinct()
+                                          .ToArray();
+            }
+
+            return interceptableMethods;
+        }
+    }
+
+
+    /// <summary>
     /// A class that is capable of creating a <see cref="TypeBuilder"/> that 
     /// is used to build the proxy type.
     /// </summary>
@@ -945,9 +1091,18 @@ namespace LightInject.Interception
             ModuleBuilder moduleBuilder = GetModuleBuilder();
             const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
             var typeName = targetType.Name + "Proxy";
-            Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
-            var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);            
-            return typeBuilder;
+            
+            if (targetType.IsInterface)
+            {
+                Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
+                var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);
+                return typeBuilder;
+            }
+            else
+            {
+                var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, targetType, additionalInterfaces);
+                return typeBuilder;
+            }            
         }
 
         /// <summary>
@@ -1025,7 +1180,14 @@ namespace LightInject.Interception
         public ProxyBuilder()
         {
             typeBuilderFactory = new TypeBuilderFactory();
+            MethodSelector = new MethodSelector();
         }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IMethodSelector"/> instance that 
+        /// is responsible for selecting methods that can be intercepted.
+        /// </summary>
+        public IMethodSelector MethodSelector { get; set; }
 
         /// <summary>
         /// Gets a proxy type based on the given <paramref name="definition"/>.
@@ -1042,8 +1204,8 @@ namespace LightInject.Interception
             DefineInitializerMethod();
             DefineStaticTargetFactoryField();
             ImplementConstructor();                                       
-            DefineInterceptorFields(); 
-            ImplementProxyInterface();
+            DefineInterceptorFields();           
+            ImplementProxyInterface();                        
             PopulateTargetMethods();
             ImplementMethods();
             ImplementProperties();
@@ -1339,12 +1501,33 @@ namespace LightInject.Interception
 
         private IEnumerable<PropertyInfo> GetTargetProperties()
         {
-            return proxyDefinition.TargetType.GetProperties().ToArray();
+            return proxyDefinition.TargetType.GetProperties().Where(IsVirtual);
+        }
+
+        private bool IsVirtual(PropertyInfo propertyInfo)
+        {
+            MethodInfo setMethod = propertyInfo.GetSetMethod();
+            if (setMethod != null)
+            {
+                return setMethod.IsVirtual;
+            }
+
+            MethodInfo getMethod = propertyInfo.GetSetMethod();
+            if (getMethod != null)
+            {
+                return getMethod.IsVirtual;
+            }
+
+            return false;
         }
 
         private void ImplementConstructor()
         {
-            if (proxyDefinition.TargetFactory == null)
+            if (proxyDefinition.TargetType.IsClass)
+            {
+                ImplementAllConstructorsFromBaseClass();
+            }            
+            else if (proxyDefinition.TargetFactory == null)
             {
                 ImplementConstructorWithLazyTargetParameter();
             }
@@ -1354,8 +1537,45 @@ namespace LightInject.Interception
             }
         }
 
+        private void ImplementAllConstructorsFromBaseClass()
+        {
+            var constructors = proxyDefinition.TargetType.GetConstructors();
+            foreach (var constructorInfo in constructors)
+            {
+                MethodAttributes methodAttributes = constructorInfo.Attributes;
+                CallingConventions callingConvention = constructorInfo.CallingConvention;
+                Type[] parameterTypes = constructorInfo.GetParameters().Select(p => p.ParameterType).ToArray();
+                var constructorBuilder = typeBuilder.DefineConstructor(methodAttributes, callingConvention, parameterTypes);
+                foreach (var parameterInfo in constructorInfo.GetParameters())
+                {
+                    constructorBuilder.DefineParameter(
+                        parameterInfo.Position + 1,
+                        parameterInfo.Attributes,
+                        parameterInfo.Name);
+                }
+
+                var generator = constructorBuilder.GetILGenerator();
+
+                generator.Emit(OpCodes.Ldarg_0);
+                for (int i = 1; i <= constructorInfo.GetParameters().Length; ++i)
+                {
+                    generator.Emit(OpCodes.Ldarg, i);
+                }
+
+                generator.Emit(OpCodes.Call, constructorInfo);
+                generator.Emit(OpCodes.Ldarg_0);
+                CallInitializeMethod(generator);
+                generator.Emit(OpCodes.Ret);
+            }
+        }
+
         private void ImplementProperties()
         {
+            if (proxyDefinition.TargetType.IsClass)
+            {
+                return;
+            }
+            
             var targetProperties = GetTargetProperties();
 
             foreach (var property in targetProperties)
@@ -1429,7 +1649,7 @@ namespace LightInject.Interception
         }
 
         private MethodBuilder ImplementMethod(MethodInfo targetMethod)
-        {
+        {          
             int[] interceptorIndicies = proxyDefinition.Interceptors
                                                        .Where(i => i.MethodSelector(targetMethod)).Select(i => i.Index).ToArray();
             if (interceptorIndicies.Length > 0)
@@ -1542,11 +1762,16 @@ namespace LightInject.Interception
 
         private MethodBuilder ImplementPassThroughMethod(MethodInfo targetMethod)
         {
+            if (proxyDefinition.TargetType.IsClass)
+            {
+                return null;
+            }
+            
             MethodBuilder methodBuilder = GetMethodBuilder(targetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
 
             PushProxyInstance(il);
-            PushTargetInstance(il);            
+            PushTargetInstance(il);
             PushArguments(il, targetMethod);
             Call(il, targetMethod);
 
@@ -1572,6 +1797,11 @@ namespace LightInject.Interception
 
         private void DefineLazyTargetField()
         {
+            if (proxyDefinition.TargetType.IsClass)
+            {
+                return;
+            }
+
             Type targetFieldType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
             lazyTargetField = typeBuilder.DefineField("target", targetFieldType, FieldAttributes.Private);            
         }
@@ -1583,7 +1813,19 @@ namespace LightInject.Interception
         }
 
         private void DefineInitializerMethod()
-        {            
+        {
+            if (proxyDefinition.TargetType.IsInterface)
+            {
+                DefineInitializerMethodForInterfaceProxy();
+            }
+            else
+            {
+                DefineInitializerMethodForClassProxy();
+            }            
+        }
+
+        private void DefineInitializerMethodForInterfaceProxy()
+        {
             initializerMethodBuilder = typeBuilder.DefineMethod(
                 "InitializeProxy", MethodAttributes.Private | MethodAttributes.HideBySig, typeof(void), new[] { lazyTargetField.FieldType });
 
@@ -1592,6 +1834,12 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Stfld, lazyTargetField);
+        }
+
+        private void DefineInitializerMethodForClassProxy()
+        {
+            initializerMethodBuilder = typeBuilder.DefineMethod(
+                "InitializeProxy", MethodAttributes.Private | MethodAttributes.HideBySig, typeof(void), Type.EmptyTypes);
         }
 
         private void DefineInterceptorFields()
@@ -1629,6 +1877,11 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Ldsfld, targetFactoryField);
             il.Emit(OpCodes.Newobj, lazyConstructor);
             il.Emit(OpCodes.Call, initializerMethodBuilder);           
+        }
+
+        private void CallInitializeMethod(ILGenerator il)
+        {            
+            il.Emit(OpCodes.Call, initializerMethodBuilder);
         }
 
         private ConstructorInfo GetLazyConstructorForTargetType()
@@ -1672,11 +1925,19 @@ namespace LightInject.Interception
         {
             MethodBuilder methodBuilder = GetMethodBuilder(GetTargetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
-            var getTargetValueMethod = lazyTargetField.FieldType.GetProperty("Value").GetGetMethod();
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, lazyTargetField);
-            il.Emit(OpCodes.Call, getTargetValueMethod);
-            il.Emit(OpCodes.Ret);
+            if (proxyDefinition.TargetType.IsInterface)
+            {
+                var getTargetValueMethod = lazyTargetField.FieldType.GetProperty("Value").GetGetMethod();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, lazyTargetField);
+                il.Emit(OpCodes.Call, getTargetValueMethod);
+                il.Emit(OpCodes.Ret);
+            }
+            else
+            {
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ret);
+            }
         }
 
         private MethodBuilder GetMethodBuilder(MethodInfo targetMethod)
@@ -1698,8 +1959,11 @@ namespace LightInject.Interception
             }
             else
             {
-                methodAttributes = MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual
-                                   | MethodAttributes.HideBySig;
+                //methodAttributes = MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual
+                //                   | MethodAttributes.HideBySig;
+
+                methodAttributes = targetMethod.Attributes;
+                methodAttributes &= ~MethodAttributes.VtableLayoutMask;
             }
 
             MethodBuilder methodBuilder = typeBuilder.DefineMethod(
@@ -1718,12 +1982,7 @@ namespace LightInject.Interception
 
         private void PopulateTargetMethods()
         {
-            targetMethods = proxyDefinition.TargetType.GetMethods()
-                                           .Where(m => !m.IsSpecialName)
-                                           .Concat(typeof(object).GetMethods().Where(m => m.IsVirtual))
-                                           .Concat(proxyDefinition.AdditionalInterfaces.SelectMany(i => i.GetMethods()))
-                                           .Distinct()
-                                           .ToArray();
+            targetMethods = MethodSelector.Execute(proxyDefinition.TargetType, proxyDefinition.AdditionalInterfaces);     
         }
     }
 

@@ -393,4 +393,13 @@
             
         }
     }
+
+
+    public class ClassWithConstructorArguments : IMethodWithValueTypeReturnValue
+    {
+        public int Execute()
+        {
+            return 42;
+        }
+    }
 }

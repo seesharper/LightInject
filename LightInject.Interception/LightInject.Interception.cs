@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Interception version 1.0.0.3 
+    LightInject.Interception version 1.0.0.4 
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -59,9 +59,10 @@ namespace LightInject
             var decoratorRegistration = new DecoratorRegistration();
             decoratorRegistration.CanDecorate =
                 registration => serviceSelector(registration) && registration.ServiceType != typeof(IInterceptor) && registration.ServiceType.IsInterface;
-            decoratorRegistration.ImplementingTypeFactory = (serviceFactory, serviceRegistration) => CreateProxyType(serviceRegistration.ServiceType, additionalInterfaces, serviceFactory, defineProxyType);
+            decoratorRegistration.ImplementingTypeFactory = (serviceFactory, serviceRegistration) => CreateProxyType(serviceRegistration.ServiceType, additionalInterfaces, serviceFactory, defineProxyType, serviceRegistration);
             serviceRegistry.Decorate(decoratorRegistration);
 
+            // class based proxies
             serviceRegistry.Override(serviceSelector, (serviceFactory, registration) => CreateProxyServiceRegistration(registration, additionalInterfaces, serviceFactory, defineProxyType));
         }
                 
@@ -120,10 +121,17 @@ namespace LightInject
         }
 
         private static Type CreateProxyType(
-            Type serviceType, Type[] additionalInterfaces, IServiceFactory serviceFactory, Action<IServiceFactory, ProxyDefinition> defineProxyType)
+            Type serviceType, Type[] additionalInterfaces, IServiceFactory serviceFactory, Action<IServiceFactory, ProxyDefinition> defineProxyType, ServiceRegistration registration)
         {
+            bool hasLazyTarget = true;
+
+            if (registration.FactoryExpression != null && registration.FactoryExpression.Parameters.Count > 1)
+            {
+                hasLazyTarget = false;
+            }
+            
             var proxyBuilder = new ProxyBuilder();
-            var proxyDefinition = new ProxyDefinition(serviceType, additionalInterfaces);
+            var proxyDefinition = new ProxyDefinition(serviceType, hasLazyTarget, additionalInterfaces);
             defineProxyType(serviceFactory, proxyDefinition);
             return proxyBuilder.GetProxyType(proxyDefinition);
         }
@@ -140,7 +148,7 @@ namespace LightInject
                 Expression bodyExpression = registration.FactoryExpression.Body;                
                 
                 NewExpression newExpression = GetNewExpression(bodyExpression);                                                                
-                Type proxyType = CreateProxyType(newExpression.Type, additionalInterfaces, serviceFactory, defineProxyType);
+                Type proxyType = CreateProxyType(newExpression.Type, additionalInterfaces, serviceFactory, defineProxyType, registration);
                 Type[] parameterTypes = GetParameterTypes(newExpression);
                 ConstructorInfo proxyConstructor = GetConstructor(proxyType, parameterTypes);
                 var newProxyExpression = Expression.New(proxyConstructor, newExpression.Arguments);
@@ -149,13 +157,18 @@ namespace LightInject
                 bodyExpression = replacer.Replace(bodyExpression, newExpression, newProxyExpression);
 
                                 
-                var lambdaExpression = Expression.Lambda(bodyExpression);
+                var lambdaExpression = Expression.Lambda(bodyExpression,registration.FactoryExpression.Parameters);
+
+                var compiled = lambdaExpression.Compile();
+
+                var test = compiled.DynamicInvoke(serviceFactory);
+
                 registration.FactoryExpression = lambdaExpression;
                 return registration;
             }
             else
             {
-                var proxyType = CreateProxyType(registration.ImplementingType, additionalInterfaces, serviceFactory, defineProxyType);
+                var proxyType = CreateProxyType(registration.ImplementingType, additionalInterfaces, serviceFactory, defineProxyType, registration);
                 registration.ImplementingType = proxyType;
                 return registration;
             }
@@ -203,11 +216,13 @@ namespace LightInject
 
             protected override Expression VisitNew(NewExpression node)
             {
-                if (node == currentNewExpression)
-                {
-                    return replaceNewExpression;
-                }
-                return base.VisitNew(node);
+                return replaceNewExpression;
+                
+                //if (node == currentNewExpression)
+                //{
+                //    return replaceNewExpression;
+                //}
+                //return base.VisitNew(node);
             }
         }
     }
@@ -850,10 +865,21 @@ namespace LightInject.Interception
         /// <param name="targetType">The type of object to proxy.</param>        
         /// <param name="additionalInterfaces">A list of additional interfaces to be implemented by the proxy type.</param>
         public ProxyDefinition(Type targetType, params Type[] additionalInterfaces) 
-            : this(targetType, null, additionalInterfaces)
+            : this(targetType, true, additionalInterfaces)
         {            
         }
-        
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProxyDefinition"/> class.
+        /// </summary>
+        /// <param name="targetType">The type of object to proxy.</param>        
+        /// <param name="additionalInterfaces">A list of additional interfaces to be implemented by the proxy type.</param>
+        public ProxyDefinition(Type targetType, bool hasLazyTarget, params Type[] additionalInterfaces)
+            : this(targetType, null, additionalInterfaces)
+        {
+            HasLazyTarget = hasLazyTarget;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ProxyDefinition"/> class.
         /// </summary>
@@ -865,12 +891,19 @@ namespace LightInject.Interception
             TargetType = targetType;
             TargetFactory = targetFactory;
             AdditionalInterfaces = ResolveAdditionalInterfaces(targetType, additionalInterfaces);
+            HasLazyTarget = true;
         }
 
         /// <summary>
         /// Gets the proxy target type.
         /// </summary>
         internal Type TargetType { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the proxy type 
+        /// should implement a constructor with a <see cref="Lazy{T}"/> parameter.
+        /// </summary>
+        internal bool HasLazyTarget { get; private set; }
 
         /// <summary>
         /// Gets the function delegate used to create the proxy target.
@@ -1150,7 +1183,7 @@ namespace LightInject.Interception
         private readonly ITypeBuilderFactory typeBuilderFactory;
         
         private FieldBuilder targetFactoryField;
-        private FieldBuilder lazyTargetField;
+        private FieldBuilder targetField;
         private FieldInfo[] lazyInterceptorFields;
         private MethodInfo[] targetMethods;
         private TypeBuilder typeBuilder;
@@ -1200,7 +1233,7 @@ namespace LightInject.Interception
             proxyDefinition = definition;
             InitializeTypeBuilder();
             ApplyTypeAttributes();
-            DefineLazyTargetField();                        
+            this.DefineTargetField();                        
             DefineInitializerMethod();
             DefineStaticTargetFactoryField();
             ImplementConstructor();                                       
@@ -1450,9 +1483,17 @@ namespace LightInject.Interception
 
         private void PushTargetInstance(ILGenerator il)
         {
-            il.Emit(OpCodes.Ldfld, lazyTargetField);
-            var getTargetValueMethod = lazyTargetField.FieldType.GetProperty("Value").GetGetMethod();
-            il.Emit(OpCodes.Call, getTargetValueMethod);
+            if (proxyDefinition.HasLazyTarget)
+            {
+                il.Emit(OpCodes.Ldfld, this.targetField);
+                var getTargetValueMethod = this.targetField.FieldType.GetProperty("Value").GetGetMethod();
+                il.Emit(OpCodes.Call, getTargetValueMethod);    
+            }
+            else
+            {
+                il.Emit(OpCodes.Ldfld, this.targetField);
+            }
+            
         }
 
         private void PushReturnValue(ILGenerator il, Type returnType)
@@ -1481,7 +1522,7 @@ namespace LightInject.Interception
             var lazyTargetType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
             var getValueMethod = lazyTargetType.GetMethod("get_Value");
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, lazyTargetField);
+            il.Emit(OpCodes.Ldfld, this.targetField);
             il.Emit(OpCodes.Callvirt, getValueMethod);
             var equalsMethod = typeof(object).GetMethod("Equals", BindingFlags.Static | BindingFlags.Public);
             var returnProxyLabel = il.DefineLabel();
@@ -1501,25 +1542,26 @@ namespace LightInject.Interception
 
         private IEnumerable<PropertyInfo> GetTargetProperties()
         {
-            return proxyDefinition.TargetType.GetProperties().Where(IsVirtual);
+            //return proxyDefinition.TargetType.GetProperties().Where(IsVirtual);
+            return proxyDefinition.TargetType.GetProperties();
         }
 
-        private bool IsVirtual(PropertyInfo propertyInfo)
-        {
-            MethodInfo setMethod = propertyInfo.GetSetMethod();
-            if (setMethod != null)
-            {
-                return setMethod.IsVirtual;
-            }
+        //private bool IsVirtual(PropertyInfo propertyInfo)
+        //{
+        //    MethodInfo setMethod = propertyInfo.GetSetMethod();
+        //    if (setMethod != null)
+        //    {
+        //        return setMethod.IsVirtual;
+        //    }
 
-            MethodInfo getMethod = propertyInfo.GetSetMethod();
-            if (getMethod != null)
-            {
-                return getMethod.IsVirtual;
-            }
+        //    MethodInfo getMethod = propertyInfo.GetGetMethod();
+        //    if (getMethod != null)
+        //    {
+        //        return getMethod.IsVirtual;
+        //    }
 
-            return false;
-        }
+        //    return false;
+        //}
 
         private void ImplementConstructor()
         {
@@ -1529,14 +1571,21 @@ namespace LightInject.Interception
             }            
             else if (proxyDefinition.TargetFactory == null)
             {
-                ImplementConstructorWithLazyTargetParameter();
+                if (proxyDefinition.HasLazyTarget)
+                {
+                    ImplementConstructorWithLazyTargetParameter();    
+                }
+                else
+                {
+                    ImplementConstructorWithTargetParameter();
+                }
             }
             else
             {
                 ImplementParameterlessConstructor();
             }
         }
-
+        
         private void ImplementAllConstructorsFromBaseClass()
         {
             var constructors = proxyDefinition.TargetType.GetConstructors();
@@ -1795,15 +1844,25 @@ namespace LightInject.Interception
             staticConstructorBuilder = typeBuilder.DefineTypeInitializer();
         }
 
-        private void DefineLazyTargetField()
+        private void DefineTargetField()
         {
             if (proxyDefinition.TargetType.IsClass)
             {
                 return;
             }
 
-            Type targetFieldType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
-            lazyTargetField = typeBuilder.DefineField("target", targetFieldType, FieldAttributes.Private);            
+
+            Type targetFieldType;
+            if (proxyDefinition.HasLazyTarget)
+            {
+                targetFieldType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);    
+            }
+            else
+            {
+                targetFieldType = proxyDefinition.TargetType;
+            }
+            
+            this.targetField = typeBuilder.DefineField("target", targetFieldType, FieldAttributes.Private);            
         }
 
         private void DefineStaticTargetFactoryField()
@@ -1816,7 +1875,7 @@ namespace LightInject.Interception
         {
             if (proxyDefinition.TargetType.IsInterface)
             {
-                DefineInitializerMethodForInterfaceProxy();
+                DefineInitializerMethodForInterfaceProxy(targetField.FieldType);
             }
             else
             {
@@ -1824,16 +1883,16 @@ namespace LightInject.Interception
             }            
         }
 
-        private void DefineInitializerMethodForInterfaceProxy()
+        private void DefineInitializerMethodForInterfaceProxy(Type parameterType)
         {
             initializerMethodBuilder = typeBuilder.DefineMethod(
-                "InitializeProxy", MethodAttributes.Private | MethodAttributes.HideBySig, typeof(void), new[] { lazyTargetField.FieldType });
+                "InitializeProxy", MethodAttributes.Private | MethodAttributes.HideBySig, typeof(void), new[] { parameterType });
 
             var il = initializerMethodBuilder.GetILGenerator();
 
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldarg_1);
-            il.Emit(OpCodes.Stfld, lazyTargetField);
+            il.Emit(OpCodes.Stfld, this.targetField);
         }
 
         private void DefineInitializerMethodForClassProxy()
@@ -1891,6 +1950,22 @@ namespace LightInject.Interception
             return lazyConstructor;
         }
 
+        private void ImplementConstructorWithTargetParameter()
+        {
+            const MethodAttributes Attributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName
+                                                | MethodAttributes.RTSpecialName;
+            var constructorBuilder = typeBuilder.DefineConstructor(Attributes, CallingConventions.Standard, new[] { proxyDefinition.TargetType });
+
+            ILGenerator il = constructorBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, ObjectConstructor);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Call, initializerMethodBuilder);
+            il.Emit(OpCodes.Ret);
+        }
+
+
         private void ImplementConstructorWithLazyTargetParameter()
         {
             var lazyTargetType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
@@ -1923,15 +1998,26 @@ namespace LightInject.Interception
 
         private void ImplementGetTargetMethod()
         {
+            
+            
             MethodBuilder methodBuilder = GetMethodBuilder(GetTargetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
             if (proxyDefinition.TargetType.IsInterface)
             {
-                var getTargetValueMethod = lazyTargetField.FieldType.GetProperty("Value").GetGetMethod();
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldfld, lazyTargetField);
-                il.Emit(OpCodes.Call, getTargetValueMethod);
-                il.Emit(OpCodes.Ret);
+                if (proxyDefinition.HasLazyTarget)
+                {
+                    var getTargetValueMethod = this.targetField.FieldType.GetProperty("Value").GetGetMethod();
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldfld, this.targetField);
+                    il.Emit(OpCodes.Call, getTargetValueMethod);
+                    il.Emit(OpCodes.Ret);
+                }
+                else
+                {
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldfld, this.targetField);
+                    il.Emit(OpCodes.Ret);
+                }
             }
             else
             {

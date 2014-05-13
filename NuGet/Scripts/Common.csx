@@ -1,14 +1,95 @@
+//MsTest.CreateSummaryFile(@"C:\Users\bri\Documents\GitHub\LightInject\NuGet\Scripts\TestResults\00b9623d-be49-4ebf-87c0-9ba64340c33c\bri_BRI-8760W 2014-05-08 22_02_53.coveragexml",
+  //  @"C:\Users\bri\Documents\GitHub\LightInject\NuGet\Scripts\TestResults\00b9623d-be49-4ebf-87c0-9ba64340c33c");
+
+//MsTest.ConvertCoverageFileToXml(@"C:\Users\bri\Documents\GitHub\LightInject\NuGet\Scripts\TestResults\00b9623d-be49-4ebf-87c0-9ba64340c33c\bri_BRI-8760W 2014-05-08 22_02_53.coverage");
+
+
+
+
+
 using System.Diagnostics;
+using System.Xml.Linq;
 
 public static class MsBuild
 {
     public static void Build(string pathToSolutionFile)
     {
         string pathToMsBuild = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\MsBuild.exe";
-        string result = Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release");
+        string result = Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release /verbosity:minimal");
         Console.WriteLine(result);
     }
 }
+
+public static class MsTest
+{
+    public static void Run(string pathToTestAssembly)
+    {
+        string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
+        string result = Command.Execute(pathToMsTest, pathToTestAssembly);
+    }
+
+    public static void RunWithCodeCoverage(string pathToTestAssembly, params string[] includedAssemblies)
+    {
+        string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
+        string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /Enablecodecoverage");
+
+        var pathToCoverageFile = GetPathToCoverageFile(result);
+        var pathToCoverageXmlFile = GetPathToCoverageXmlFile(pathToCoverageFile);    
+        var directory = Path.GetDirectoryName(pathToCoverageFile);
+        
+        ConvertCoverageFileToXml(pathToCoverageFile);
+        CreateSummaryFile(pathToCoverageXmlFile, directory, includedAssemblies);
+        ValidateCodeCoverage(directory);
+        
+    }
+
+    private static void ValidateCodeCoverage(string directory)
+    {
+        var pathToSummaryFile = Path.Combine(directory, "Summary.xml");
+        var doc = XDocument.Load(pathToSummaryFile);       
+        Console.WriteLine(doc);
+        var coverage = doc.Root.Elements().Single( e => e.Name.LocalName == "Summary").Elements().Single (e => e.Name.LocalName == "Coverage").Value;
+        if (coverage != "100%")
+        {
+            throw new InvalidOperationException("Deploy failed. Test coverage is only " + coverage);
+        }        
+    }
+
+
+    public static void ConvertCoverageFileToXml(string pathToCoverageFile)
+    {
+        Command.Execute(@"..\CoverageToXml\CoverageToXml\bin\release\CoverageToXml.exe", StringUtils.Quote(pathToCoverageFile));
+    }
+
+    public static void CreateSummaryFile(string pathToCoverageXmlFile, string directory, string[] includedAssemblies)
+    {
+        
+        var filters = includedAssemblies.Select (a => "+" + a).Aggregate ((current, next) => current + ";" + next).ToLower();
+
+        var result = Command.Execute(@"..\..\packages\ReportGenerator.1.9.1.0\ReportGenerator.exe", "-reports:" + StringUtils.Quote(pathToCoverageXmlFile) + " -targetdir:" + StringUtils.Quote(directory)
+            + " -reporttypes:xmlsummary -filters:" + filters );
+         Console.WriteLine(result);
+    }
+
+
+    public static string GetPathToCoverageFile(string result)
+    {
+        result = result.Substring(result.IndexOf("Attachments:"));
+            
+        StringReader reader = new StringReader(result);
+    
+        reader.ReadLine();
+    
+        return reader.ReadLine().Trim();
+    }
+
+    private static string GetPathToCoverageXmlFile(string pathToCoverageFile)
+    {
+        return Path.Combine(Path.GetDirectoryName(pathToCoverageFile), Path.GetFileNameWithoutExtension(pathToCoverageFile)) + ".coveragexml";
+    }
+
+}
+
 
 public static class VersionUtils
 {

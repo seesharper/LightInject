@@ -1,4 +1,4 @@
-﻿/*****************************************************************************   
+/*****************************************************************************   
     The MIT License (MIT)
 
     Copyright (c) 2014 bernhard.richter@gmail.com
@@ -41,7 +41,7 @@ namespace LightInject
     /// Extends the <see cref="IServiceContainer"/> interface with a set of methods 
     /// that enables dependency injection in an ASP.Net SignalR application.
     /// </summary>
-    internal static class SignalRContainerExtensions
+    public static class SignalRContainerExtensions
     {
         /// <summary>
         /// Enables dependency injection in an ASP.NET SignalR application.
@@ -83,7 +83,7 @@ namespace LightInject.SignalR
     /// that enables <see cref="Hub"/> instances and their dependencies to be resolved 
     /// through the service container.
     /// </summary>
-    internal class LightInjectDependencyResolver : DefaultDependencyResolver
+    public class LightInjectDependencyResolver : DefaultDependencyResolver
     {
         private readonly IServiceContainer serviceContainer;
 
@@ -149,7 +149,7 @@ namespace LightInject.SignalR
     /// An <see cref="IHubActivator"/> implementation that uses 
     /// an <see cref="IServiceFactory"/> instance to create <see cref="Hub"/> instances.
     /// </summary>
-    internal class LightInjectHubActivator : IHubActivator
+    public class LightInjectHubActivator : IHubActivator
     {
         private readonly IServiceFactory serviceFactory;
 
@@ -180,7 +180,7 @@ namespace LightInject.SignalR
     /// An <see cref="IInterceptor"/> that ends the current <see cref="Scope"/>
     /// when an <see cref="IHub"/> instance is disposed.
     /// </summary>
-    internal class HubDisposeInterceptor : IInterceptor
+    public class HubDisposeInterceptor : IInterceptor
     {
         private readonly IServiceFactory serviceContainer;
 

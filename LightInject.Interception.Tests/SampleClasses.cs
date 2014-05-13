@@ -99,5 +99,13 @@
     }
 
 
+    public class ClassWithPrivateMethod
+    {
+        private void PrivateMethod()
+        {
+            
+        }
+    }
+
     
 }

@@ -1,6 +1,7 @@
 ﻿namespace LightInject.Tests
 {
     using System;
+    using System.Linq;
 
     using LightInject.SampleLibrary;
 
@@ -261,6 +262,20 @@
             var instance2 = (AnotherFooWithValueTypeDependency)container.GetInstance(typeof(IFoo), "AnotherFoo", new object[] { 42 });
             Assert.AreEqual(42, instance.Value);
         }
+
+        //[TestMethod]
+        //public void GetAllInstance_FunctionFactoryWithParameters_DoesNotReturnAnyServices()
+        //{
+        //    var container = CreateContainer();
+        //    container.Register<int, IFoo>((factory, i) => new FooWithOneParameter(i));
+
+        //    var services = container.GetAllInstances<IFoo>();
+
+        //    Assert.AreEqual(0, services.Count());
+
+        //}
+
+
 
         //[TestMethod]
         //public void GetInstance_WithTooFewArguments_ThrowsMeaningfulException()

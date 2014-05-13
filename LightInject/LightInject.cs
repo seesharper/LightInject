@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.6
+    LightInject version 3.0.1.7
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3479,6 +3479,7 @@ namespace LightInject
 
         private Action<IEmitter> CreateEmitMethodForListServiceRequest(Type serviceType)
         {
+            //Note replace this with getEmitMethod();
             Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
 
             MethodInfo openGenericToArrayMethod = typeof(Enumerable).GetMethod("ToList");
@@ -3850,7 +3851,14 @@ namespace LightInject
             public Func<ServiceRequest, object> Factory { get; set; }
 
             public ILifetime LifeTime { get; set; }
-        }               
+        }
+
+        private class ServiceOverride
+        {
+            public Func<ServiceRegistration, bool> CanOverride { get; set; }
+
+            public Func<IServiceFactory, ServiceRegistration, ServiceRegistration> ServiceRegistrationFactory { get; set; }
+        }
     }
 
     /// <summary>
@@ -3892,32 +3900,32 @@ namespace LightInject
         }
     }
 
-    /// <summary>
-    /// A serializable wrapper around the <see cref="ScopeManager"/> that 
-    /// allows a <see cref="ScopeManager"/> to be stored in the <see cref="CallContext"/>.
-    /// </summary>
-    [Serializable]
-    internal class SerializableScopeManager : MarshalByRefObject
-    {
-        [NonSerialized]
-        private ScopeManager scopeManager;
+    ///// <summary>
+    ///// A serializable wrapper around the <see cref="ScopeManager"/> that 
+    ///// allows a <see cref="ScopeManager"/> to be stored in the <see cref="CallContext"/>.
+    ///// </summary>
+    //[Serializable]
+    //internal class SerializableScopeManager : MarshalByRefObject
+    //{
+    //    [NonSerialized]
+    //    private ScopeManager scopeManager;
 
-        /// <summary>
-        /// Gets or sets the <see cref="ScopeManager"/> instance.
-        /// </summary>
-        public ScopeManager ScopeManager
-        {
-            get
-            {
-                return scopeManager;
-            }
+    //    /// <summary>
+    //    /// Gets or sets the <see cref="ScopeManager"/> instance.
+    //    /// </summary>
+    //    public ScopeManager ScopeManager
+    //    {
+    //        get
+    //        {
+    //            return scopeManager;
+    //        }
 
-            set
-            {
-                scopeManager = value;
-            }
-        }
-    }
+    //        set
+    //        {
+    //            scopeManager = value;
+    //        }
+    //    }
+    //}
 
 #endif
 
@@ -5308,14 +5316,7 @@ namespace LightInject
             return result;
         }
     }
-
-    internal class ServiceOverride
-    {
-        public Func<ServiceRegistration, bool> CanOverride { get; set; }
-
-        public Func<IServiceFactory, ServiceRegistration, ServiceRegistration> ServiceRegistrationFactory { get; set; }
-    }
-
+    
     /// <summary>
     /// Contains information about how to create a service instance.
     /// </summary>
@@ -5838,8 +5839,7 @@ namespace LightInject
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
 #if NET || NET45
-            InternalTypes.Add(typeof(AssemblyLoader));
-            InternalTypes.Add(typeof(ServiceOverride));
+            InternalTypes.Add(typeof(AssemblyLoader));            
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
@@ -5865,7 +5865,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Instruction));
             InternalTypes.Add(typeof(Instruction<>));
 #if NET45
-            InternalTypes.Add(typeof(SerializableScopeManager));
+            //InternalTypes.Add(typeof(SerializableScopeManager));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif            
@@ -6873,7 +6873,7 @@ namespace LightInject
             return localBuilder;
         }
     }
-
+#if NET45
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>
@@ -6889,7 +6889,7 @@ namespace LightInject
         /// <summary>
         /// Initializes a new instance of the <see cref="LogicalThreadStorage{T}"/> class.
         /// </summary>
-        /// <param name="valueFactory">The value factory used to create an instance of <see cref="T"/></param>
+        /// <param name="valueFactory">The value factory used to create an instance of <typeparamref name="T"/>.</param>
         public LogicalThreadStorage(Func<T> valueFactory)
         {
             this.valueFactory = valueFactory;
@@ -6946,4 +6946,5 @@ namespace LightInject
             }
         }
     }
+#endif
 }

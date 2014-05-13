@@ -77,5 +77,17 @@
             scope.Dispose();
             disposable.Verify(d => d.Dispose(), Times.Once());
         }
+
+        [TestMethod]
+        public void EndCurrentScope_InScope_EndsScope()
+        {
+            var container = new ServiceContainer();
+            ScopeManager manager = container.ScopeManagerProvider.GetScopeManager();
+            
+            container.BeginScope();
+            container.EndCurrentScope();
+
+            Assert.IsNull(manager.CurrentScope);
+        }
     }
 }

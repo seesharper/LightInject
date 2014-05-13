@@ -57,6 +57,19 @@ namespace LightInject.Interception.Tests
         }
 
         [TestMethod]
+        public void GetProxyType_WithoutLazyTargetConstructor_DeclaresTargetField()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget),false);
+
+            var proxyType = CreateProxyType(proxyDefinition);
+
+            FieldInfo targetField = proxyType.GetField("target", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.AreEqual(typeof(ITarget), targetField.FieldType);
+        }
+
+
+
+        [TestMethod]
         public void GetProxyType_SingleInterface_DeclaresPrivateInitializerMethod()
         {
             var proxyDefinition = new ProxyDefinition(typeof(ITarget));

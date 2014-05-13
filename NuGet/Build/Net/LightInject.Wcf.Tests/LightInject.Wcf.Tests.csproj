@@ -70,6 +70,9 @@
     <Compile Include="..\..\..\..\LightInject.Wcf.Tests\ServiceHostTests.cs">
       <Link>ServiceHostTests.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\LightInject.Wcf.Tests\TestBase.cs">
+      <Link>TestBase.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
