@@ -154,15 +154,10 @@ namespace LightInject
                 var newProxyExpression = Expression.New(proxyConstructor, newExpression.Arguments);
 
                 var replacer = new NewExpressionReplacer();
-                bodyExpression = replacer.Replace(bodyExpression, newExpression, newProxyExpression);
-
+                bodyExpression = replacer.Replace(bodyExpression, newProxyExpression);
                                 
-                var lambdaExpression = Expression.Lambda(bodyExpression,registration.FactoryExpression.Parameters);
-
-                var compiled = lambdaExpression.Compile();
-
-                var test = compiled.DynamicInvoke(serviceFactory);
-
+                var lambdaExpression = Expression.Lambda(bodyExpression, registration.FactoryExpression.Parameters);
+               
                 registration.FactoryExpression = lambdaExpression;
                 return registration;
             }
@@ -202,27 +197,18 @@ namespace LightInject
         }
 
         private class NewExpressionReplacer : ExpressionVisitor
-        {
-            private NewExpression currentNewExpression;
-
+        {           
             private NewExpression replaceNewExpression;
 
-            public Expression Replace(Expression body, NewExpression current, NewExpression replaceWith)
-            {
-                currentNewExpression = current;
+            public Expression Replace(Expression body, NewExpression replaceWith)
+            {               
                 replaceNewExpression = replaceWith;
                 return Visit(body);                
             }
 
             protected override Expression VisitNew(NewExpression node)
             {
-                return replaceNewExpression;
-                
-                //if (node == currentNewExpression)
-                //{
-                //    return replaceNewExpression;
-                //}
-                //return base.VisitNew(node);
+                return replaceNewExpression;                 
             }
         }
     }
@@ -232,8 +218,7 @@ namespace LightInject.Interception
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
+    using System.Collections.ObjectModel;    
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -374,7 +359,6 @@ namespace LightInject.Interception
         /// <returns>An array containing method that can be intercepted.</returns>
         MethodInfo[] Execute(Type targetType, Type[] additionalInterfaces);
     }
-
 
     /// <summary>
     /// A factory class used to create a <see cref="CompositeInterceptor"/> if the target method has 
@@ -872,12 +856,14 @@ namespace LightInject.Interception
         /// <summary>
         /// Initializes a new instance of the <see cref="ProxyDefinition"/> class.
         /// </summary>
-        /// <param name="targetType">The type of object to proxy.</param>        
+        /// <param name="targetType">The type of object to proxy.</param>
+        /// <param name="useLazyTarget">Indicates whether the proxy type 
+        /// should implement a constructor with a <see cref="Lazy{T}"/> parameter.</param>
         /// <param name="additionalInterfaces">A list of additional interfaces to be implemented by the proxy type.</param>
-        public ProxyDefinition(Type targetType, bool hasLazyTarget, params Type[] additionalInterfaces)
+        public ProxyDefinition(Type targetType, bool useLazyTarget, params Type[] additionalInterfaces)
             : this(targetType, null, additionalInterfaces)
         {
-            HasLazyTarget = hasLazyTarget;
+            this.UseLazyTarget = useLazyTarget;
         }
 
         /// <summary>
@@ -891,7 +877,7 @@ namespace LightInject.Interception
             TargetType = targetType;
             TargetFactory = targetFactory;
             AdditionalInterfaces = ResolveAdditionalInterfaces(targetType, additionalInterfaces);
-            HasLazyTarget = true;
+            this.UseLazyTarget = true;
         }
 
         /// <summary>
@@ -903,7 +889,7 @@ namespace LightInject.Interception
         /// Gets a value indicating whether the proxy type 
         /// should implement a constructor with a <see cref="Lazy{T}"/> parameter.
         /// </summary>
-        internal bool HasLazyTarget { get; private set; }
+        internal bool UseLazyTarget { get; private set; }
 
         /// <summary>
         /// Gets the function delegate used to create the proxy target.
@@ -1103,7 +1089,6 @@ namespace LightInject.Interception
             return interceptableMethods;
         }
     }
-
 
     /// <summary>
     /// A class that is capable of creating a <see cref="TypeBuilder"/> that 
@@ -1483,7 +1468,7 @@ namespace LightInject.Interception
 
         private void PushTargetInstance(ILGenerator il)
         {
-            if (proxyDefinition.HasLazyTarget)
+            if (proxyDefinition.UseLazyTarget)
             {
                 il.Emit(OpCodes.Ldfld, this.targetField);
                 var getTargetValueMethod = this.targetField.FieldType.GetProperty("Value").GetGetMethod();
@@ -1492,8 +1477,7 @@ namespace LightInject.Interception
             else
             {
                 il.Emit(OpCodes.Ldfld, this.targetField);
-            }
-            
+            }            
         }
 
         private void PushReturnValue(ILGenerator il, Type returnType)
@@ -1541,28 +1525,10 @@ namespace LightInject.Interception
         }
 
         private IEnumerable<PropertyInfo> GetTargetProperties()
-        {
-            //return proxyDefinition.TargetType.GetProperties().Where(IsVirtual);
+        {            
             return proxyDefinition.TargetType.GetProperties();
         }
-
-        //private bool IsVirtual(PropertyInfo propertyInfo)
-        //{
-        //    MethodInfo setMethod = propertyInfo.GetSetMethod();
-        //    if (setMethod != null)
-        //    {
-        //        return setMethod.IsVirtual;
-        //    }
-
-        //    MethodInfo getMethod = propertyInfo.GetGetMethod();
-        //    if (getMethod != null)
-        //    {
-        //        return getMethod.IsVirtual;
-        //    }
-
-        //    return false;
-        //}
-
+        
         private void ImplementConstructor()
         {
             if (proxyDefinition.TargetType.IsClass)
@@ -1571,7 +1537,7 @@ namespace LightInject.Interception
             }            
             else if (proxyDefinition.TargetFactory == null)
             {
-                if (proxyDefinition.HasLazyTarget)
+                if (proxyDefinition.UseLazyTarget)
                 {
                     ImplementConstructorWithLazyTargetParameter();    
                 }
@@ -1851,9 +1817,8 @@ namespace LightInject.Interception
                 return;
             }
 
-
             Type targetFieldType;
-            if (proxyDefinition.HasLazyTarget)
+            if (proxyDefinition.UseLazyTarget)
             {
                 targetFieldType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);    
             }
@@ -1965,7 +1930,6 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Ret);
         }
 
-
         private void ImplementConstructorWithLazyTargetParameter()
         {
             var lazyTargetType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
@@ -1997,14 +1961,12 @@ namespace LightInject.Interception
         }
 
         private void ImplementGetTargetMethod()
-        {
-            
-            
+        {                       
             MethodBuilder methodBuilder = GetMethodBuilder(GetTargetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
             if (proxyDefinition.TargetType.IsInterface)
             {
-                if (proxyDefinition.HasLazyTarget)
+                if (proxyDefinition.UseLazyTarget)
                 {
                     var getTargetValueMethod = this.targetField.FieldType.GetProperty("Value").GetGetMethod();
                     il.Emit(OpCodes.Ldarg_0);
@@ -2044,10 +2006,7 @@ namespace LightInject.Interception
                 }
             }
             else
-            {
-                //methodAttributes = MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual
-                //                   | MethodAttributes.HideBySig;
-
+            {                
                 methodAttributes = targetMethod.Attributes;
                 methodAttributes &= ~MethodAttributes.VtableLayoutMask;
             }

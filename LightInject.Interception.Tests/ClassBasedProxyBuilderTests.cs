@@ -126,15 +126,7 @@ namespace LightInject.Interception.Tests
 
             Assert.AreEqual("SomeValue", proxy.value);
         }
-
-        [TestMethod]
-        public void Create()
-        {
-            var methods = typeof(ClassImplementingIDisposableWithVirtualDisposeMethod).GetMethods();
-        }
-
-
-
+       
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
         {
             return CreateProxyBuilder().GetProxyType(proxyDefinition);
