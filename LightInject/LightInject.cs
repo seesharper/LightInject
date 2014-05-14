@@ -2995,9 +2995,16 @@ namespace LightInject
                         string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceType, serviceName));
                 }
 
+
                 dependencyStack.Push(emitter);
-                emitter(ms);
-                dependencyStack.Pop();
+                try
+                {
+                    emitter(ms);
+                }
+                finally
+                {
+                    dependencyStack.Pop();
+                }
             };
         }
 

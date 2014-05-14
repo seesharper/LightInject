@@ -116,7 +116,7 @@ namespace LightInject.Tests
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-        
+
         [TestMethod]
         public void GetInstance_ConcreteServiceUsingNonGenericMethod_ReturnsInstance()
         {
@@ -252,7 +252,7 @@ namespace LightInject.Tests
             var instance = container.GetInstance(typeof(IFoo<int>));
             Assert.IsInstanceOfType(instance, typeof(Foo<int>));
         }
-       
+
         [TestMethod]
         public void GetInstance_OpenGenericType_ReturnsInstanceOfLastRegisteredType()
         {
@@ -1248,7 +1248,31 @@ namespace LightInject.Tests
             container.RegisterFrom<CompositionRoot>();
             Assert.AreEqual(1, container.AvailableServices.Count());
         }
-#endif
+        
+        [TestMethod]
+        public void GetInstance_SingletonInstance_EmitterIsProperlyPoppedOnConstructorException()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, BrokenBar>(new PerContainerLifetime());
+            container.Register<FooWithBrokenDependency>(new PerContainerLifetime());
+            
+            try
+            {
+                container.GetInstance<FooWithBrokenDependency>();
+            }
+            catch(BrokenBarException)
+            {
+            }
+
+            try
+            {
+                container.GetInstance<FooWithBrokenDependency>();
+            }
+            catch (BrokenBarException)
+            {
+            }
+        }
+
         #region Internal Classes
 
         [TestMethod]
