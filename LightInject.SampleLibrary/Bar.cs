@@ -62,5 +62,13 @@ namespace LightInject.SampleLibrary
     {
     }
 
-    
+    public class BrokenBar : IBar 
+    { 
+        public BrokenBar()
+        {
+            throw new BrokenBarException();
+        }
+    }
+
+    public class BrokenBarException : Exception { }
 }
