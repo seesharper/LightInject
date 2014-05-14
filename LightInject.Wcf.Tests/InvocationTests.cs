@@ -2,6 +2,7 @@
 {
     using System;
     using System.ServiceModel;
+    using System.Threading.Tasks;
 
     using LightInject.Tests;
     using LightInject.Wcf;
@@ -35,9 +36,21 @@
             using (StartService<IServiceWithSameDependencyTwice>())
             {
                 Invoke<IServiceWithSameDependencyTwice, int>(c => c.Execute());    
-            }            
+            }  
+          
             Assert.AreEqual(1, Foo.InitializeCount);            
         }
+
+        [TestMethod]
+        public void Invoke_ServiceWithAsyncCode_CreatesScopedInstance()
+        {            
+            using (StartService<IAsyncService>())
+            {
+                //ParallelInvoker.Invoke(50, () => Invoke<IAsyncService, int>(c => c.Execute()));
+                Invoke<IAsyncService, Task<IFoo>>(c => c.Execute());
+            }                        
+        }
+
 
         [TestMethod]
         public void Invoke_PerCallInstanceSingleConcurrency_CanHandleMultipleThreads()
@@ -124,6 +137,9 @@
 
         private ServiceHost StartService<TService>()
         {
+            var container = new ServiceContainer();
+            container.EnableWcf();
+
             var serviceHost = new LightInjectServiceHostFactory().CreateServiceHost<TService>("http://localhost:6000");
             serviceHost.Open();
             return serviceHost;

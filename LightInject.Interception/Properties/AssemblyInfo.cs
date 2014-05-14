@@ -38,3 +38,4 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.Wcf")]
 [assembly: InternalsVisibleTo("LightInject.Wcf.Client")]
 [assembly: InternalsVisibleTo("LightInject.Wcf.Tests")]
+[assembly: InternalsVisibleTo("LightInject.SignalR")]

@@ -2,7 +2,7 @@
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [TestClass]
+    [TestClass]    
     public class ContainerInterceptorVerificationTests : ContainerInterceptionTests
     {
         internal override IServiceContainer CreateContainer()

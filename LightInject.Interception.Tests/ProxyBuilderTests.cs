@@ -57,6 +57,19 @@ namespace LightInject.Interception.Tests
         }
 
         [TestMethod]
+        public void GetProxyType_WithoutLazyTargetConstructor_DeclaresTargetField()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ITarget),false);
+
+            var proxyType = CreateProxyType(proxyDefinition);
+
+            FieldInfo targetField = proxyType.GetField("target", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.AreEqual(typeof(ITarget), targetField.FieldType);
+        }
+
+
+
+        [TestMethod]
         public void GetProxyType_SingleInterface_DeclaresPrivateInitializerMethod()
         {
             var proxyDefinition = new ProxyDefinition(typeof(ITarget));
@@ -145,6 +158,19 @@ namespace LightInject.Interception.Tests
 
             Assert.IsTrue(typeof(IProxy).IsAssignableFrom(proxyType));        
         }
+
+        [TestMethod]
+        public void GetProxyType_InterfaceThatInheritsAnotherInterface_ImplementsBothInterfaces()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(IDisposableTarget), () => null);            
+            var proxyType = CreateProxyType(proxyDefinition);
+
+            var disposable = (IDisposable)Activator.CreateInstance(proxyType);
+
+            Assert.IsInstanceOfType(disposable, typeof(IDisposable));
+        }
+
+
 
         [TestMethod]
         public void Execute_NoInterceptor_PassesGetHashCodeToTarget()

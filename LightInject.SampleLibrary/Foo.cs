@@ -4,9 +4,7 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
-    using System.Runtime.Remoting.Messaging;
-
-    using LightInject.Annotation;
+    using System.Threading.Tasks;
 
     public class FooWithCompilerGeneratedType : IFoo
     {      
@@ -19,6 +17,29 @@ namespace LightInject.SampleLibrary
             }
         }
 
+    }
+
+    public interface IAsyncFoo
+    {
+        Task<IBar> GetBar();
+    }
+
+    public class AsyncFoo : IAsyncFoo
+    {
+        private readonly Lazy<IBar> lazyBar;
+
+        public AsyncFoo(Lazy<IBar> lazyBar)
+        {
+            this.lazyBar = lazyBar;
+        }
+
+        public async Task<IBar> GetBar()
+        {
+            await Task.Delay(10);
+            return lazyBar.Value;
+        }
+
+        
     }
 
 
@@ -455,6 +476,10 @@ namespace LightInject.SampleLibrary
     {
         public IFoo Foo { get; set; }
     }
+
+    public interface IFoo<T1, T2> { }
+
+    public class FooWithPartiallyClosedGenericInterface<T> : IFoo<T, string> { }
 
     public interface IFoo<T> { }
 

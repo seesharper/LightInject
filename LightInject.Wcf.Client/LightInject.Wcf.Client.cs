@@ -43,7 +43,7 @@ namespace LightInject
         /// <param name="serviceRegistery">The target <see cref="IServiceRegistry"/>.</param>
         /// <param name="uriProvider">The <see cref="IUriProvider"/> that is responsible 
         /// for providing an <see cref="Uri"/> that represents the service endpoint address.</param>
-        internal static void EnableWcf(this IServiceRegistry serviceRegistery, IUriProvider uriProvider)
+        internal static void EnableWcfClient(this IServiceRegistry serviceRegistery, IUriProvider uriProvider)
         {
             serviceRegistery.RegisterFallback(
                 (serviceType, serviceName) => serviceType.IsDefined(typeof(ServiceContractAttribute), true),

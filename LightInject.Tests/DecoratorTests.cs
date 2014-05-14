@@ -2,6 +2,8 @@
 {
     using System;
     using System.Linq;
+    using System.Runtime.Remoting.Messaging;
+
     using LightInject.SampleLibrary;
 #if NETFX_CORE || WINDOWS_PHONE
     using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
@@ -454,6 +456,51 @@
 
             Assert.IsInstanceOfType(instance.Bar, typeof(BarDecorator));
         }
+
+        [TestMethod]
+        public void GetInstance_DeferredDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            var registration = new DecoratorRegistration();            
+            registration.CanDecorate = serviceRegistration => true;
+            registration.ImplementingTypeFactory = (factory, serviceRegistration) => typeof(FooDecorator);
+            container.Decorate(registration);
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+        }
+
+        [TestMethod]
+        public void GetInstance_ClassWithConstructorArguments_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, IFoo>((factory, i) => new FooWithValueTypeDependency(i));
+            container.Decorate(typeof(IFoo), typeof(FooDecorator));
+
+            var instance = container.GetInstance<int, IFoo>(42);
+
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+
+        }
+
+        [TestMethod]
+        public void GetInstance_ClassWithConstructorArgumentsAndLazyDecorator_CanCrTCreeateTarget()
+        {
+            var container = CreateContainer();
+            container.Register<int, IFoo>((factory, i) => new FooWithValueTypeDependency(i));
+            container.Decorate<IFoo>((factory, foo) => new LazyFooDecorator(new Lazy<IFoo>(() => foo)));
+
+            var instance = (LazyFooDecorator)container.GetInstance<int, IFoo>(42);
+
+            Assert.IsNotNull(instance.Foo.Value);
+
+        }
+
+
+
+
 
         private IFoo CreateFooWithDependency(IServiceFactory factory)
         {

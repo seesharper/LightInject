@@ -1,14 +1,43 @@
 #load "Common.csx"
 
-Console.WriteLine("***Start creating NuGet packages***");
+Console.WriteLine("Building CoverageToXml");
+MsBuild.Build(@"..\CoverageToXml\CoverageToXml.sln");
 
-DirectoryUtils.DeleteAllPackages("..");
+Console.WriteLine("Building LightInject");
+MsBuild.Build(@"..\..\..\LightInject\LightInject.sln"); 
+
+//Console.WriteLine("Running tests (LightInject)");
+//MsTest.Run(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
+
+//Console.WriteLine("Running tests with code coverage (LightInject)");
+//MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
+
+//Console.WriteLine("Running tests (LightInject.Interception)");
+//MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");
+
+//Console.WriteLine("Running tests with coverage (LightInject.Interception)");
+//MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll", "lightinject.interception.dll");
 
 
-CreateBinaryPackages();
-CreateSourcePackages();
+Console.WriteLine("Running tests (LightInject.SignalR)");
+MsTest.Run(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll");
 
-Console.WriteLine("***Finished creating NuGet packages***");
+Console.WriteLine("Running tests with coverage (LightInject.SignalR)");
+MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll", "lightinject.signalr.dll");
+
+
+
+//MsTest.ValidateCodeCoverage();
+
+//Console.WriteLine("***Start creating NuGet packages***");
+
+//DirectoryUtils.DeleteAllPackages("..");
+
+
+//CreateBinaryPackages();
+//CreateSourcePackages();
+
+//Console.WriteLine("***Finished creating NuGet packages***");
 
 private void CreateSourcePackages()
 {
@@ -20,9 +49,10 @@ private void CreateSourcePackages()
 	CreateLightInjectMvcSourcePackage();
 	CreateLightInjectServiceLocationSourcePackage();	
 	CreateLightInjectWcfSourcePackage();
-	//CreateLightInjectWebApiSourcePackage();
-}
+	CreateLightInjectWebApiSourcePackage();
+	CreateLightInjectSignalRSourcePackage();
 
+}
 private void UpdateBinaryProjects()
 {
 	//LightInject
@@ -141,15 +171,24 @@ private void UpdateBinaryProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf..ClientSource\package\LightInject.Wcf.Client.nuspec", version); */
 
 	//LightInject.WebApi
-	//version = VersionUtils.GetVersionString(@"..\..\LightInject.WebApi\LightInject.WebApi.cs");		
-	//VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
-	//VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.WebApi\LightInject.WebApi.cs");		
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.WebApi\Properties\AssemblyInfo.cs", version);
 	
-	//Publicizer.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net\LightInject.WebApi\LightInject.WebApi.cs");
-	//Publicizer.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net45\LightInject.WebApi\LightInject.WebApi.cs");
+	Publicizer.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net\LightInject.WebApi\LightInject.WebApi.cs");
+	Publicizer.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net45\LightInject.WebApi\LightInject.WebApi.cs");
 
-	//VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", version);
-	//VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", version);
+
+	//LightInject.SignalR
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.SignalR\LightInject.SignalR.cs");			
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.SignalR\Properties\AssemblyInfo.cs", version);
+		
+	Publicizer.Write("NET45", @"..\..\LightInject.SignalR\LightInject.SignalR.cs", @"..\Build\Net45\LightInject.SignalR\LightInject.SignalR.cs");
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR\package\LightInject.SignalR.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR.Source\package\LightInject.SignalR.nuspec", version);
 }
 
 
@@ -174,7 +213,8 @@ private void CreateBinaryPackages()
 	CreateLightInjectWebBinaryPackage();
 	CreateLightInjectServiceLocationBinaryPackage(); 
 	CreateLightInjectWcfBinaryPackage();
-	//CreateLightInjectWebApiBinaryPackage();
+	CreateLightInjectWebApiBinaryPackage();
+	CreateLightInjectSignalRBinaryPackage();
 }
 
 private void CreateLightInjectBinaryPackage()
@@ -387,6 +427,23 @@ private void CreateLightInjectWebApiBinaryPackage()
 	Console.WriteLine("Finished building the LightInject.WebApi(Binary) NuGet package");
 }
 
+private void CreateLightInjectSignalRBinaryPackage()
+{
+	Console.WriteLine("Start building the LightInject.SignalR(Binary) NuGet package");
+
+	DirectoryUtils.Delete(@"..\LightInject.SignalR\package\lib");	
+	Directory.CreateDirectory(@"..\LightInject.SignalR\package\lib\net45");
+
+	File.Copy(@"..\Build\Net45\LightInject.SignalR\bin\release\LightInject.SignalR.dll", @"..\LightInject.SignalR\package\lib\net45\LightInject.SignalR.dll", true);
+	File.Copy(@"..\Build\Net45\LightInject.SignalR\bin\release\LightInject.SignalR.pdb", @"..\LightInject.SignalR\package\lib\net45\LightInject.SignalR.pdb", true);
+	File.Copy(@"..\Build\Net45\LightInject.SignalR\bin\release\LightInject.SignalR.xml", @"..\LightInject.SignalR\package\lib\net45\LightInject.SignalR.xml", true);
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.SignalR\package\LightInject.SignalR.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.SignalR(Binary) NuGet package");
+}
+
+
 private void CreateLightInjectServiceLocationBinaryPackage()
 {
 	Console.WriteLine("Start building the LightInject.ServiceLocation(Binary) NuGet package");
@@ -568,6 +625,21 @@ private void CreateLightInjectWebApiSourcePackage()
 	Console.WriteLine("Finished building the LightInject.WebApi.Source NuGet package");
 }
 
+private void CreateLightInjectSignalRSourcePackage()
+{
+	Console.WriteLine("Start building the LightInject.SignalR.Source NuGet package");
+	
+	DirectoryUtils.Delete(@"..\LightInject.SignalR.Source\package\content");
+	Directory.CreateDirectory(@"..\LightInject.SignalR.Source\package\content\net40\LightInject\SignalR");
+	Directory.CreateDirectory(@"..\LightInject.SignalR.Source\package\content\net45\LightInject\SignalR");
+	
+	SourceWriter.Write("NET45", @"..\..\LightInject.SignalR\LightInject.SignalR.cs",  @"..\LightInject.SignalR.Source\package\content\net45\LightInject\SignalR\LightInject.SignalR.cs.pp", true, true);
+	
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.SignalR.Source\package\LightInject.SignalR.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.SignalR.Source NuGet package");
+}
 
 private void CreateLightInjectMvcSourcePackage()
 {

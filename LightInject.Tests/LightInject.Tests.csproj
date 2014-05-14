@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;NET45</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -88,6 +88,7 @@
     <Compile Include="AnnotatedPropertyDependencySelectorTests.cs" />
     <Compile Include="AssemblyAssert.cs" />
     <Compile Include="AssemblyScannerTests.cs" />
+    <Compile Include="AsyncTests.cs" />
     <Compile Include="CompositionRootExecutorTests.cs" />
     <Compile Include="CompositionRootTypeExtractorTests.cs" />
     <Compile Include="ConstructorInjectionTests.cs" />
@@ -97,6 +98,7 @@
     <Compile Include="DecoratorTests.cs" />
     <Compile Include="DecoratorVerificationTests.cs" />
     <Compile Include="DisposableTests.cs" />
+    <Compile Include="EmitterTests.cs" />
     <Compile Include="ErrorMessages.cs" />
     <Compile Include="ExceptionAssert.cs" />
     <Compile Include="FunctionFactoryTests.cs" />

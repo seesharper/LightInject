@@ -8,6 +8,12 @@
     {        
     }
 
+    public interface IDisposableTarget : IDisposable
+    {
+        
+    }
+
+
     public class TargetWithGetHashCodeOverride : ITarget
     {
         private readonly int hashCode;
@@ -385,6 +391,15 @@
         public void SecondMethod()
         {
             
+        }
+    }
+
+
+    public class ClassWithConstructorArguments : IMethodWithValueTypeReturnValue
+    {
+        public int Execute()
+        {
+            return 42;
         }
     }
 }

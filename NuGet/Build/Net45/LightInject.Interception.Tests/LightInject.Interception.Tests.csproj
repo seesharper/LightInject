@@ -65,6 +65,12 @@
     <Compile Include="..\..\..\..\LightInject.Interception.Tests\AssemblyAssert.cs">
       <Link>AssemblyAssert.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\LightInject.Interception.Tests\ClassBasedProxyBuilderTests.cs">
+      <Link>ClassBasedProxyBuilderTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Interception.Tests\ClassBasedProxyBuilderVerificationTests.cs">
+      <Link>ClassBasedProxyBuilderVerificationTests.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\LightInject.Interception.Tests\ContainerFactory.cs">
       <Link>ContainerFactory.cs</Link>
     </Compile>
@@ -100,6 +106,9 @@
     </Compile>
     <Compile Include="..\..\..\..\LightInject.Interception.Tests\ProxyBuilderVerificationTests.cs">
       <Link>ProxyBuilderVerificationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Interception.Tests\SampleClasses.cs">
+      <Link>SampleClasses.cs</Link>
     </Compile>
     <Compile Include="..\..\..\..\LightInject.Interception.Tests\SampleInterceptor.cs">
       <Link>SampleInterceptor.cs</Link>
