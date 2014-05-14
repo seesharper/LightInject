@@ -12,11 +12,18 @@ MsBuild.Build(@"..\..\..\LightInject\LightInject.sln");
 //Console.WriteLine("Running tests with code coverage (LightInject)");
 //MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
 
-Console.WriteLine("Running tests (LightInject.Interception)");
-MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");
+//Console.WriteLine("Running tests (LightInject.Interception)");
+//MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");
 
-Console.WriteLine("Running tests (LightInject.Interception)");
-MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll", "lightinject.interception.dll");
+//Console.WriteLine("Running tests with coverage (LightInject.Interception)");
+//MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll", "lightinject.interception.dll");
+
+
+Console.WriteLine("Running tests (LightInject.SignalR)");
+MsTest.Run(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll");
+
+Console.WriteLine("Running tests with coverage (LightInject.SignalR)");
+MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll", "lightinject.signalr.dll");
 
 
 

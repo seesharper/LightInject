@@ -3,7 +3,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace LightInject.SignalR.Tests
 {
+    using System.Linq;
+
     using LightInject.SampleLibrary;
+
+    using Microsoft.AspNet.SignalR.Tracing;
 
     using Moq;
 
@@ -33,6 +37,36 @@ namespace LightInject.SignalR.Tests
 
             Assert.IsInstanceOfType(instance, typeof(IFoo));
         }
+
+        [TestMethod]
+        public void GetServices_ServiceRegisteredWithContainer_ReturnsServices()
+        {
+            var container = new ServiceContainer();
+            container.Register<IFoo, Foo>();
+            var resolver = new LightInjectDependencyResolver(container);
+
+            var instances = resolver.GetServices(typeof(IFoo));
+
+            Assert.AreEqual(1, instances.Count());
+        }
+
+        [TestMethod]
+        public void GetServices_UnknownService_ReturnsNull()
+        {
+            var container = new ServiceContainer();            
+
+            var resolver = new LightInjectDependencyResolver(container);
+
+            var instances = resolver.GetServices(typeof(IFoo));
+
+            Assert.IsNull(instances); 
+        }
+
+        public void GetServices_ServiceTypeExistsInAdapterAndBase_ReturnsBothInstances()
+        {
+            
+        }
+
 
         [TestMethod]
         public void Dispose_Adapter_DisposesContainer()

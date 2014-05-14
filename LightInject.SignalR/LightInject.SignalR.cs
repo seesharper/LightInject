@@ -118,8 +118,15 @@ namespace LightInject.SignalR
         /// <param name="serviceType">The requested service type.</param>
         /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
         public override IEnumerable<object> GetServices(Type serviceType)
-        {
-            return serviceContainer.GetAllInstances(serviceType).Concat(base.GetServices(serviceType));
+        {                        
+            var baseServices = base.GetServices(serviceType);
+            if (baseServices != null)
+            {
+                return serviceContainer.GetAllInstances(serviceType).Concat(baseServices);
+            }
+
+            var services = (object[])this.serviceContainer.GetAllInstances(serviceType);
+            return services.Length == 0 ? null : services;            
         }
 
         /// <summary>
