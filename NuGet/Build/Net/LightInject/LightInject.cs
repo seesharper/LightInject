@@ -1038,7 +1038,7 @@ namespace LightInject
         /// <param name="key">The key to be associated with the value.</param>
         /// <param name="value">The value to be added to the tree.</param>
         /// <returns>A new <see cref="ImmutableHashTree{TKey,TValue}"/> that contains the new key/value pair.</returns>
-        internal static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
+        public static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
         {
             if (tree.IsEmpty)
             {
@@ -2832,8 +2832,14 @@ namespace LightInject
                 }
 
                 dependencyStack.Push(emitter);
-                emitter(ms);
-                dependencyStack.Pop();
+                try
+                {
+                    emitter(ms);
+                }
+                finally
+                {
+                    dependencyStack.Pop();
+                }
             };
         }
 
@@ -2900,6 +2906,7 @@ namespace LightInject
             
             registeredDecorators.AddRange(GetOpenGenericDecoratorRegistrations(serviceRegistration));            
             registeredDecorators.AddRange(GetDeferredDecoratorRegistrations(serviceRegistration));                      
+
             return registeredDecorators.OrderBy(d => d.Index).ToArray();
         }
 
@@ -3305,6 +3312,7 @@ namespace LightInject
 
         private Action<IEmitter> CreateEmitMethodForListServiceRequest(Type serviceType)
         {
+            // Note replace this with getEmitMethod();
             Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
 
             MethodInfo openGenericToArrayMethod = typeof(Enumerable).GetMethod("ToList");
@@ -3681,7 +3689,6 @@ namespace LightInject
             return scopeManagers.Value;
         }
     }
-
 
     /// <summary>
     /// A thread safe dictionary.
@@ -4723,12 +4730,12 @@ namespace LightInject
         public event EventHandler<EventArgs> Completed;
 
         /// <summary>
-        /// Gets or sets the parent <see cref="Scope"/>.
+        /// Gets the parent <see cref="Scope"/>.
         /// </summary>
         public Scope ParentScope { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the child <see cref="Scope"/>.
+        /// Gets the child <see cref="Scope"/>.
         /// </summary>
         public Scope ChildScope { get; internal set; }
 

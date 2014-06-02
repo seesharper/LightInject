@@ -1,43 +1,115 @@
 #load "Common.csx"
+DirectoryUtils.DeleteAllPackages("..");
 
-Console.WriteLine("Building CoverageToXml");
-MsBuild.Build(@"..\CoverageToXml\CoverageToXml.sln");
+EnsureBuildToolsAreUpToDate();
 
-Console.WriteLine("Building LightInject");
-MsBuild.Build(@"..\..\..\LightInject\LightInject.sln"); 
+BuildMainSolution();
+//RunUnitTestsForMainSolution();
+//AssertTestCoverageIs100PercentForMainSolution();
 
-//Console.WriteLine("Running tests (LightInject)");
-//MsTest.Run(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
+//RunUnitTestsForInterception();
+//AssertTestCoverageIs100PercentForInterception();
 
-//Console.WriteLine("Running tests with code coverage (LightInject)");
-//MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
+//RunUnitTestsForSignalR();
+//AssertTestCoverageIs100PercentForSignalR(); 
 
-//Console.WriteLine("Running tests (LightInject.Interception)");
-//MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");
+BuildNugetBinaries();
 
-//Console.WriteLine("Running tests with coverage (LightInject.Interception)");
-//MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll", "lightinject.interception.dll");
+//RunUnitTestsForNet4NuGetPackage();
+//AssertTestCoverageIs100PercentForNet4NuGetPackage();
 
-
-Console.WriteLine("Running tests (LightInject.SignalR)");
-MsTest.Run(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll");
-
-Console.WriteLine("Running tests with coverage (LightInject.SignalR)");
-MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll", "lightinject.signalr.dll");
+RunUnitTestsForNet45NuGetPackage();
+//AssertTestCoverageIs100PercentForNet45NuGetPackage();
 
 
 
-//MsTest.ValidateCodeCoverage();
+/*Console.WriteLine("***Start creating NuGet packages***");
 
-//Console.WriteLine("***Start creating NuGet packages***");
-
-//DirectoryUtils.DeleteAllPackages("..");
+DirectoryUtils.DeleteAllPackages("..");
 
 
-//CreateBinaryPackages();
-//CreateSourcePackages();
+CreateBinaryPackages();
+CreateSourcePackages();
 
-//Console.WriteLine("***Finished creating NuGet packages***");
+Console.WriteLine("***Finished creating NuGet packages***"); */
+
+private void EnsureBuildToolsAreUpToDate()
+{
+	Console.WriteLine("Building CoverageToXml");
+	MsBuild.Build(@"..\CoverageToXml\CoverageToXml.sln");
+}
+
+private void BuildMainSolution()
+{
+	Console.WriteLine("Building LightInject");
+	MsBuild.Build(@"..\..\..\LightInject\LightInject.sln"); 
+}
+
+private void RunUnitTestsForMainSolution()
+{
+	Console.WriteLine("Running tests (LightInject)");
+	MsTest.Run(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
+}
+
+private void AssertTestCoverageIs100PercentForMainSolution()
+{
+	Console.WriteLine("Running tests with code coverage (LightInject)");
+	MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll", "lightinject.dll");
+}
+
+private void RunUnitTestsForInterception()
+{
+	Console.WriteLine("Running tests (LightInject.Interception)");
+	MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");	
+}
+
+private void AssertTestCoverageIs100PercentForInterception()
+{
+	Console.WriteLine("Running tests with coverage (LightInject.Interception)");
+	MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll", "lightinject.interception.dll");	
+}
+
+private void RunUnitTestsForSignalR()
+{
+	Console.WriteLine("Running tests (LightInject.SignalR)");
+	MsTest.Run(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll");	
+}
+
+private void AssertTestCoverageIs100PercentForSignalR()
+{
+	Console.WriteLine("Running tests with coverage (LightInject.SignalR)");
+	MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll", "lightinject.signalr.dll");	
+}
+
+private void RunUnitTestsForNet4NuGetPackage()
+{
+	Console.WriteLine("Running tests (LightInject NuGet NET)");
+	MsTest.Run(@"..\Build\Net\LightInject.Tests\bin\release\LightInject.Tests.dll");
+}
+
+private void AssertTestCoverageIs100PercentForNet4NuGetPackage()
+{
+	Console.WriteLine("Running tests with coverage (LightInject NuGet NET)");
+	MsTest.RunWithCodeCoverage(@"..\Build\Net\LightInject.Tests\bin\release\LightInject.Tests.dll","lightinject.dll");
+}
+
+private void RunUnitTestsForNet45NuGetPackage()
+{
+	Console.WriteLine("Running tests (LightInject NuGet NET45)");
+	MsTest.Run(@"..\Build\Net45\LightInject.Tests\bin\release\LightInject.Tests.dll");
+
+	Console.WriteLine("Running tests (LightInject.Interception NuGet NET45)");
+	MsTest.Run(@"..\Build\Net45\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");
+
+	Console.WriteLine("Running tests (LightInject.SignalR NuGet NET45)");
+	MsTest.Run(@"..\Build\Net45\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll");
+}
+
+private void AssertTestCoverageIs100PercentForNet45NuGetPackage()
+{
+	Console.WriteLine("Running tests with coverage (LightInject NuGet NET45)");
+	MsTest.RunWithCodeCoverage(@"..\Build\Net45\LightInject.Tests\bin\release\LightInject.Tests.dll","lightinject.dll");
+}
 
 private void CreateSourcePackages()
 {
@@ -53,7 +125,15 @@ private void CreateSourcePackages()
 	CreateLightInjectSignalRSourcePackage();
 
 }
-private void UpdateBinaryProjects()
+
+private void BuildNugetBinaries()
+{
+	UpdateNuGetBuildProjects();
+	BuildBinaryProjects();	
+}
+
+
+private void UpdateNuGetBuildProjects()
 {
 	//LightInject
 	string version = VersionUtils.GetVersionString(@"..\..\LightInject\LightInject.cs");		
@@ -202,8 +282,7 @@ private void BuildBinaryProjects()
 
 
 private void CreateBinaryPackages()
-{
-	UpdateBinaryProjects();
+{	
 	BuildBinaryProjects();
 	CreateLightInjectBinaryPackage();
 	CreateLightInjectAnnotationBinaryPackage();

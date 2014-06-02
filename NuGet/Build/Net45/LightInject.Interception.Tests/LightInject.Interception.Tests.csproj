@@ -131,13 +131,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
-      <Project>{2acc6b94-364a-40b5-9d4b-1f74b85cacfd}</Project>
-      <Name>LightInject.SampleLibrary</Name>
-    </ProjectReference>
     <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
       <Project>{201db42a-3bfb-4d0f-bd68-860cfbe889b7}</Project>
       <Name>LightInject.Interception</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
+      <Project>{e68ca833-73da-4d9c-bcd8-8c6f8e2560ee}</Project>
+      <Name>LightInject.SampleLibrary</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject\LightInject.csproj">
       <Project>{e0840582-8930-4663-921d-4365f1469f91}</Project>

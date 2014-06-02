@@ -1040,7 +1040,7 @@ namespace LightInject
         /// <param name="key">The key to be associated with the value.</param>
         /// <param name="value">The value to be added to the tree.</param>
         /// <returns>A new <see cref="ImmutableHashTree{TKey,TValue}"/> that contains the new key/value pair.</returns>
-        internal static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
+        public static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
         {
             if (tree.IsEmpty)
             {
@@ -2839,8 +2839,14 @@ namespace LightInject
                 }
 
                 dependencyStack.Push(emitter);
-                emitter(ms);
-                dependencyStack.Pop();
+                try
+                {
+                    emitter(ms);
+                }
+                finally
+                {
+                    dependencyStack.Pop();
+                }
             };
         }
 
@@ -2907,6 +2913,7 @@ namespace LightInject
             
             registeredDecorators.AddRange(GetOpenGenericDecoratorRegistrations(serviceRegistration));            
             registeredDecorators.AddRange(GetDeferredDecoratorRegistrations(serviceRegistration));                      
+
             return registeredDecorators.OrderBy(d => d.Index).ToArray();
         }
 
@@ -3316,6 +3323,7 @@ namespace LightInject
 
         private Action<IEmitter> CreateEmitMethodForListServiceRequest(Type serviceType)
         {
+            // Note replace this with getEmitMethod();
             Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
 
             MethodInfo openGenericToArrayMethod = typeof(Enumerable).GetMethod("ToList");
@@ -3708,7 +3716,6 @@ namespace LightInject
         }
     }
 
-    
     /// <summary>
     /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> per
     /// <see cref="CallContext"/>.
@@ -3727,34 +3734,6 @@ namespace LightInject
             return scopeManagers.Value;                        
         }
     }
-
-    /// <summary>
-    /// A serializable wrapper around the <see cref="ScopeManager"/> that 
-    /// allows a <see cref="ScopeManager"/> to be stored in the <see cref="CallContext"/>.
-    /// </summary>
-    [Serializable]
-    public class SerializableScopeManager : MarshalByRefObject
-    {
-        [NonSerialized]
-        private ScopeManager scopeManager;
-
-        /// <summary>
-        /// Gets or sets the <see cref="ScopeManager"/> instance.
-        /// </summary>
-        public ScopeManager ScopeManager
-        {
-            get
-            {
-                return scopeManager;
-            }
-
-            set
-            {
-                scopeManager = value;
-            }
-        }
-    }
-
 
     /// <summary>
     /// A thread safe dictionary.
@@ -4796,12 +4775,12 @@ namespace LightInject
         public event EventHandler<EventArgs> Completed;
 
         /// <summary>
-        /// Gets or sets the parent <see cref="Scope"/>.
+        /// Gets the parent <see cref="Scope"/>.
         /// </summary>
         public Scope ParentScope { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the child <see cref="Scope"/>.
+        /// Gets the child <see cref="Scope"/>.
         /// </summary>
         public Scope ChildScope { get; internal set; }
 
@@ -4966,7 +4945,6 @@ namespace LightInject
             InternalTypes.Add(typeof(Emitter));
             InternalTypes.Add(typeof(Instruction));
             InternalTypes.Add(typeof(Instruction<>));
-            InternalTypes.Add(typeof(SerializableScopeManager));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
         }
@@ -5962,6 +5940,7 @@ namespace LightInject
             return localBuilder;
         }
     }
+    
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>

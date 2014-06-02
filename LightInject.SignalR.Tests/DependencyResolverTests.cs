@@ -7,6 +7,7 @@ namespace LightInject.SignalR.Tests
 
     using LightInject.SampleLibrary;
 
+    using Microsoft.AspNet.SignalR;
     using Microsoft.AspNet.SignalR.Tracing;
 
     using Moq;
@@ -62,9 +63,17 @@ namespace LightInject.SignalR.Tests
             Assert.IsNull(instances); 
         }
 
+        [TestMethod]
         public void GetServices_ServiceTypeExistsInAdapterAndBase_ReturnsBothInstances()
         {
+            var container = new ServiceContainer();                        
+            var traceManagerMock = new Mock<ITraceManager>();
+            container.RegisterInstance(traceManagerMock.Object);
+            var resolver = new LightInjectDependencyResolver(container);            
             
+            var instances = resolver.GetServices(typeof(ITraceManager));
+            
+            Assert.AreEqual(2, instances.Count());
         }
 
 

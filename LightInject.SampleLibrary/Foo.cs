@@ -19,6 +19,8 @@ namespace LightInject.SampleLibrary
 
     }
 
+#if NET45
+
     public interface IAsyncFoo
     {
         Task<IBar> GetBar();
@@ -42,6 +44,7 @@ namespace LightInject.SampleLibrary
         
     }
 
+#endif    
 
     public interface IFoo { }
 

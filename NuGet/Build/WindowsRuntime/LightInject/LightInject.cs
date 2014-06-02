@@ -810,19 +810,6 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
-    /// </summary>
-    public interface IAssemblyLoader
-    {
-        /// <summary>
-        /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern to use.</param>
-        /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
-        IEnumerable<Assembly> Load(string searchPattern);
-    }
-
-    /// <summary>
     /// Represents a class that is capable of scanning an assembly and register services into an <see cref="IServiceContainer"/> instance.
     /// </summary>
     public interface IAssemblyScanner
@@ -1032,7 +1019,7 @@ namespace LightInject
         /// <param name="key">The key to be associated with the value.</param>
         /// <param name="value">The value to be added to the tree.</param>
         /// <returns>A new <see cref="ImmutableHashTree{TKey,TValue}"/> that contains the new key/value pair.</returns>
-        internal static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
+        public static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
         {
             if (tree.IsEmpty)
             {
@@ -1248,16 +1235,6 @@ namespace LightInject
             return type.GetTypeInfo().GenericTypeArguments;
         }
        
-        public static Type[] GetGenericTypeParameters(this Type type)
-        {
-            return type.GetTypeInfo().GenericTypeParameters;
-        }
-
-        public static Type[] GetGenericParameterConstraints(this Type type)
-        {
-            return type.GetTypeInfo().GetGenericParameterConstraints();
-        }
-
         public static MethodInfo[] GetMethods(this Type type)
         {
             return type.GetTypeInfo().DeclaredMethods.ToArray();
@@ -1811,11 +1788,6 @@ namespace LightInject
         public IAssemblyScanner AssemblyScanner { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning. 
-        /// </summary>
-        public IAssemblyLoader AssemblyLoader { get; set; }
-
-        /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the registered services.           
         /// </summary>                  
         public IEnumerable<ServiceRegistration> AvailableServices
@@ -1988,18 +1960,6 @@ namespace LightInject
             compositionRootExecutor.Execute(typeof(TCompositionRoot));
         }
 
-        /// <summary>
-        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        public void RegisterAssembly(string searchPattern)
-        {
-            foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
-            {
-                RegisterAssembly(assembly);
-            }
-        }    
-    
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
         /// </summary>
@@ -2891,8 +2851,14 @@ namespace LightInject
                 }
 
                 dependencyStack.Push(emitter);
-                emitter(ms);
-                dependencyStack.Pop();
+                try
+                {
+                    emitter(ms);
+                }
+                finally
+                {
+                    dependencyStack.Pop();
+                }
             };
         }
 
@@ -2958,6 +2924,8 @@ namespace LightInject
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();            
             
             registeredDecorators.AddRange(GetOpenGenericDecoratorRegistrations(serviceRegistration));            
+            registeredDecorators.AddRange(GetDeferredDecoratorRegistrations(serviceRegistration));                      
+
             return registeredDecorators.OrderBy(d => d.Index).ToArray();
         }
 
@@ -2973,6 +2941,29 @@ namespace LightInject
                     openGenericDecorators.Select(
                         openGenericDecorator =>
                         CreateClosedGenericDecoratorRegistration(serviceRegistration, openGenericDecorator)));
+            }
+
+            return registrations;
+        }
+
+        private IEnumerable<DecoratorRegistration> GetDeferredDecoratorRegistrations(
+            ServiceRegistration serviceRegistration)
+        {
+            var registrations = new List<DecoratorRegistration>();
+            
+            var deferredDecorators =
+                decorators.Items.Where(ds => ds.CanDecorate(serviceRegistration) && ds.HasDeferredImplementingType);            
+            foreach (var deferredDecorator in deferredDecorators)
+            {
+                var decoratorRegistration = new DecoratorRegistration
+                {
+                    ServiceType = serviceRegistration.ServiceType,
+                    ImplementingType =
+                        deferredDecorator.ImplementingTypeFactory(this, serviceRegistration),
+                    CanDecorate = sr => true, 
+                    Index = deferredDecorator.Index
+                };
+                registrations.Add(decoratorRegistration);
             }
 
             return registrations;
@@ -3344,6 +3335,7 @@ namespace LightInject
 
         private Action<IEmitter> CreateEmitMethodForListServiceRequest(Type serviceType)
         {
+            // Note replace this with getEmitMethod();
             Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
 
             MethodInfo openGenericToArrayMethod = typeof(Enumerable).GetMethod("ToList");
@@ -3735,7 +3727,6 @@ namespace LightInject
         }
     }
 
-
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
@@ -3764,7 +3755,7 @@ namespace LightInject
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
     /// </summary>    
-    internal class DynamicMethod
+    public class DynamicMethod
     {
         private readonly Type returnType;
 
@@ -3772,7 +3763,7 @@ namespace LightInject
 
         private readonly ParameterExpression[] parameters;
 
-        private readonly ILGenerator ilGenerator;
+        private readonly ILGenerator generator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicMethod"/> class.
@@ -3784,7 +3775,7 @@ namespace LightInject
             this.returnType = returnType;
             this.parameterTypes = parameterTypes;
             parameters = parameterTypes.Select(Expression.Parameter).ToArray();
-            ilGenerator = new ILGenerator(parameters);
+            generator = new ILGenerator(parameters);
         }
 
         /// <summary>
@@ -3794,7 +3785,7 @@ namespace LightInject
         /// <returns>A delegate of the specified type, which can be used to execute the dynamic method.</returns>
         public Delegate CreateDelegate(Type delegateType)
         {
-            var lambda = Expression.Lambda(delegateType, ilGenerator.CurrentExpression, parameters);
+            var lambda = Expression.Lambda(delegateType, generator.CurrentExpression, parameters);
             return lambda.Compile();
         }
 
@@ -3809,7 +3800,7 @@ namespace LightInject
             Type delegateTypeWithTargetParameter =
                 Expression.GetDelegateType(parameterTypes.Concat(new[] { returnType }).ToArray());
             var lambdaWithTargetParameter = Expression.Lambda(
-                delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
+                delegateTypeWithTargetParameter, generator.CurrentExpression, true, parameters);
 
             Expression[] arguments = new Expression[] { Expression.Constant(target) }.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
             var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
@@ -3824,7 +3815,7 @@ namespace LightInject
         /// <returns>An <see cref="ILGenerator"/> object for the method.</returns>
         public ILGenerator GetILGenerator()
         {
-            return ilGenerator;
+            return generator;
         }
     }
 
@@ -4075,8 +4066,7 @@ namespace LightInject
             else
             {
                 throw new NotSupportedException(code.ToString());
-            }
-            
+            }            
         }
 
         /// <summary>
@@ -4828,6 +4818,17 @@ namespace LightInject
         /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.
         /// </summary>
         public int Index { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether this registration has a deferred implementing type.
+        /// </summary>
+        public bool HasDeferredImplementingType
+        {
+            get
+            {
+                return ImplementingType == null && FactoryExpression == null;
+            }
+        }       
     }
 
     /// <summary>
@@ -5263,12 +5264,12 @@ namespace LightInject
         public event EventHandler<EventArgs> Completed;
 
         /// <summary>
-        /// Gets or sets the parent <see cref="Scope"/>.
+        /// Gets the parent <see cref="Scope"/>.
         /// </summary>
         public Scope ParentScope { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the child <see cref="Scope"/>.
+        /// Gets the child <see cref="Scope"/>.
         /// </summary>
         public Scope ChildScope { get; internal set; }
 

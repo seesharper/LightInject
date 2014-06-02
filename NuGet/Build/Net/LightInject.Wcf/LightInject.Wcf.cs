@@ -77,7 +77,6 @@ namespace LightInject.Wcf
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.IO;
     using System.Linq;
     using System.ServiceModel;
@@ -110,8 +109,8 @@ namespace LightInject.Wcf
     }
 
     /// <summary>
-    /// A subclass of the <see cref="ServiceHost"/> class that exposes the 
-    /// <see cref="ServiceHost.ApplyConfiguration"/> method through the <see cref="LoadConfiguration"/> method.   
+    /// A subclass of the <see cref="ServiceHost"/> class that allows 
+    /// xml configuration to be applied.
     /// </summary>
     public class LightInjectServiceHost : ServiceHost
     {
@@ -173,7 +172,19 @@ namespace LightInject.Wcf
 
             return base.CreateServiceHost(constructorString, baseAddresses);
         }
-       
+
+        /// <summary>
+        /// Creates a <see cref="ServiceHost"/> with the specified <paramref name="baseAddresses"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of service to be hosted by the <see cref="ServiceHost"/>.</typeparam>
+        /// <param name="baseAddresses">The base addresses for the hosted service.</param>
+        /// <returns>A <see cref="ServiceHost"/> for the specified <typeparamref name="TService"/>.</returns>
+        public ServiceHost CreateServiceHost<TService>(params string[] baseAddresses)
+        {
+            var uriBaseAddresses = baseAddresses.Select(s => new Uri(s)).ToArray();
+            return CreateServiceHost(typeof(TService), uriBaseAddresses);
+        }
+
         /// <summary>
         /// Creates a <see cref="T:System.ServiceModel.ServiceHost"/> for a specified type of service with a specific base address. 
         /// </summary>
@@ -194,7 +205,7 @@ namespace LightInject.Wcf
             }
         }
 
-        private ServiceHost CreateServiceHost(Type serviceType, string constructorString, Uri[] baseAddresses)
+        private static ServiceHost CreateServiceHost(Type serviceType, string constructorString, Uri[] baseAddresses)
         {
             ValidateServiceType(serviceType);
 
@@ -210,21 +221,7 @@ namespace LightInject.Wcf
 
             return serviceHost;
         }
-
-
-        /// <summary>
-        /// Creates a <see cref="ServiceHost"/> with the specified <paramref name="baseAddresses"/>.
-        /// </summary>
-        /// <typeparam name="TService">The type of service to be hosted by the <see cref="ServiceHost"/>.</typeparam>
-        /// <param name="baseAddresses">The base addresses for the hosted service.</param>
-        /// <returns>A <see cref="ServiceHost"/> for the specified <typeparamref name="TService"/>.</returns>
-        public ServiceHost CreateServiceHost<TService>(params string[] baseAddresses)
-        {
-            
-            var uriBaseAddresses = baseAddresses.Select(s => new Uri(s)).ToArray();
-            return CreateServiceHost(typeof(TService), uriBaseAddresses);
-        }
-        
+                
         private static ServiceRegistration GetServiceRegistrationByName(string constructorString)
         {
             var registrations =

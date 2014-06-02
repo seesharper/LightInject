@@ -5,7 +5,7 @@ using System.Text;
 
 namespace LightInject.SampleLibraryWithCompositionRootTypeAttribute
 {
-    internal class CompositionRoot : ICompositionRoot
+    public class CompositionRoot : ICompositionRoot
     {
         [ThreadStatic]
         private static int callCount;
@@ -22,7 +22,7 @@ namespace LightInject.SampleLibraryWithCompositionRootTypeAttribute
             }
         }
 
-        public void Compose(IServiceRegistry serviceRegistry)
+        void ICompositionRoot.Compose(IServiceRegistry serviceRegistry)
         {
             CallCount++;
             serviceRegistry.Register<IFoo,Foo>();

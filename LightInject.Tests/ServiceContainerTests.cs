@@ -14,21 +14,12 @@ namespace LightInject.Tests
 
     using LightInject;
     using LightInject.SampleLibrary;
-    
-#if NETFX_CORE || WINDOWS_PHONE
-    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
-#else
-    using LightInject.SampleLibraryWithCompositionRoot;
     using LightInject.SampleLibraryWithCompositionRootTypeAttribute;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-
     using Foo = LightInject.SampleLibrary.Foo;
     using IFoo = LightInject.SampleLibrary.IFoo;
-
-#endif
-    
 
     [TestClass]
     public class ServiceContainerTests : TestBase
@@ -127,6 +118,19 @@ namespace LightInject.Tests
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
+
+        [TestMethod]
+        public void GetInstance_ConcreteSingletonServiceUsingNonGenericMethod_ReturnsSingleInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(Foo), new PerContainerLifetime());
+
+            var first = container.GetInstance<Foo>();
+            var second = container.GetInstance<Foo>();
+            Assert.AreSame(first, second);
+        }
+
+
 
         [TestMethod]
         public void GetInstance_ConcreteServiceAsSingleton_ReturnsSameInstance()
@@ -467,7 +471,7 @@ namespace LightInject.Tests
 
         #endregion
 
-#if NET45 || NETFX_CORE
+#if NET45 || NETFX_CORE || WINDOWS_PHONE
         #region ReadOnly Collection
 
         [TestMethod]
@@ -935,7 +939,7 @@ namespace LightInject.Tests
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
             
         }
-#if !WINDOWS_PHONE    
+
         [TestMethod]
         public void Run()
         {
@@ -959,7 +963,7 @@ namespace LightInject.Tests
                       
             Assert.AreEqual(1,Foo.Instances);
         }
-#endif
+
         [TestMethod]
         public void GetInstance_UnknownDependencyService_DoesNotThrowRecursiveDependencyExceptionOnSecondAttempt()
         {
@@ -989,7 +993,7 @@ namespace LightInject.Tests
                 }
             }
         }
-#if !NETFX_CORE && !WINDOWS_PHONE
+
         [TestMethod]
         public void Dispose_ServiceContainer_DisposesDisposableLifeTimeInstances()
         {
@@ -1020,8 +1024,8 @@ namespace LightInject.Tests
             disposableFooMock.Verify(d => d.Dispose(), Times.Once());
         }
 
-#endif
-#if !WINDOWS_PHONE
+
+
         private static void RunParallel(IServiceContainer container)
         {
             Parallel.Invoke(
@@ -1068,7 +1072,7 @@ namespace LightInject.Tests
                 () => container.GetInstance<IFoo>(),
                 () => container.GetInstance<IFoo>());
         }
-#endif
+
         #endregion
 
 
@@ -1234,13 +1238,7 @@ namespace LightInject.Tests
 
             Assert.AreEqual(2, instances.Count());
         }
-
-
-        
-
-
-
-#if NET || NET45
+       
         [TestMethod]
         public void RegisterFrom_CompositionRoot_RegistersService()
         {

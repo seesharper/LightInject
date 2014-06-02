@@ -125,7 +125,7 @@ namespace LightInject.SignalR
                 return serviceContainer.GetAllInstances(serviceType).Concat(baseServices);
             }
 
-            var services = (object[])this.serviceContainer.GetAllInstances(serviceType);
+            var services = (object[])serviceContainer.GetAllInstances(serviceType);
             return services.Length == 0 ? null : services;            
         }
 

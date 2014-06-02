@@ -829,6 +829,7 @@ namespace LightInject
         /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
         ConstructorInfo Execute(Type implementingType);
     }
+#if NET || NET45
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -842,6 +843,7 @@ namespace LightInject
         /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
         IEnumerable<Assembly> Load(string searchPattern);
     }
+#endif
 
     /// <summary>
     /// Represents a class that is capable of scanning an assembly and register services into an <see cref="IServiceContainer"/> instance.
@@ -1053,7 +1055,7 @@ namespace LightInject
         /// <param name="key">The key to be associated with the value.</param>
         /// <param name="value">The value to be added to the tree.</param>
         /// <returns>A new <see cref="ImmutableHashTree{TKey,TValue}"/> that contains the new key/value pair.</returns>
-        internal static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
+        public static ImmutableHashTree<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
         {
             if (tree.IsEmpty)
             {
@@ -1270,16 +1272,6 @@ namespace LightInject
             return type.GetTypeInfo().GenericTypeArguments;
         }
        
-        public static Type[] GetGenericTypeParameters(this Type type)
-        {
-            return type.GetTypeInfo().GenericTypeParameters;
-        }
-
-        public static Type[] GetGenericParameterConstraints(this Type type)
-        {
-            return type.GetTypeInfo().GetGenericParameterConstraints();
-        }
-
         public static MethodInfo[] GetMethods(this Type type)
         {
             return type.GetTypeInfo().DeclaredMethods.ToArray();
@@ -1910,7 +1902,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET || NET45 || NETFX_CORE 
+#if NET || NET45 
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning. 
@@ -2091,7 +2083,7 @@ namespace LightInject
             compositionRootExecutor.Execute(typeof(TCompositionRoot));
         }
 
-#if NET || NET45 || NETFX_CORE
+#if NET || NET45 
         /// <summary>
         /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -2995,7 +2987,6 @@ namespace LightInject
                         string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceType, serviceName));
                 }
 
-
                 dependencyStack.Push(emitter);
                 try
                 {
@@ -3070,9 +3061,8 @@ namespace LightInject
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();            
             
             registeredDecorators.AddRange(GetOpenGenericDecoratorRegistrations(serviceRegistration));            
-#if NET || NET45
             registeredDecorators.AddRange(GetDeferredDecoratorRegistrations(serviceRegistration));                      
-#endif            
+
             return registeredDecorators.OrderBy(d => d.Index).ToArray();
         }
 
@@ -3093,7 +3083,6 @@ namespace LightInject
             return registrations;
         }
 
-#if NET || NET45
         private IEnumerable<DecoratorRegistration> GetDeferredDecoratorRegistrations(
             ServiceRegistration serviceRegistration)
         {
@@ -3117,7 +3106,6 @@ namespace LightInject
             return registrations;
         }
 
-#endif
         private void EmitNewDecoratorInstance(DecoratorRegistration decoratorRegistration, IEmitter emitter, Action<IEmitter> pushInstance)
         {
             ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
@@ -3486,7 +3474,7 @@ namespace LightInject
 
         private Action<IEmitter> CreateEmitMethodForListServiceRequest(Type serviceType)
         {
-            //Note replace this with getEmitMethod();
+            // Note replace this with getEmitMethod();
             Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
 
             MethodInfo openGenericToArrayMethod = typeof(Enumerable).GetMethod("ToList");
@@ -3886,8 +3874,7 @@ namespace LightInject
         }
     }
 
-#if NET45     
-    
+#if NET45         
     /// <summary>
     /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> per
     /// <see cref="CallContext"/>.
@@ -3907,35 +3894,7 @@ namespace LightInject
         }
     }
 
-    ///// <summary>
-    ///// A serializable wrapper around the <see cref="ScopeManager"/> that 
-    ///// allows a <see cref="ScopeManager"/> to be stored in the <see cref="CallContext"/>.
-    ///// </summary>
-    //[Serializable]
-    //internal class SerializableScopeManager : MarshalByRefObject
-    //{
-    //    [NonSerialized]
-    //    private ScopeManager scopeManager;
-
-    //    /// <summary>
-    //    /// Gets or sets the <see cref="ScopeManager"/> instance.
-    //    /// </summary>
-    //    public ScopeManager ScopeManager
-    //    {
-    //        get
-    //        {
-    //            return scopeManager;
-    //        }
-
-    //        set
-    //        {
-    //            scopeManager = value;
-    //        }
-    //    }
-    //}
-
 #endif
-
 #if NET || NET45 || NETFX_CORE
     /// <summary>
     /// A thread safe dictionary.
@@ -4129,12 +4088,7 @@ namespace LightInject
         /// <param name="value">The value of the element to add.</param>
         /// <returns>true if the key/value pair was added to the <see cref="ThreadSafeDictionary{TKey,TValue}"/> successfully; false if the key already exists.</returns>
         public bool TryAdd(TKey key, TValue value)
-        {
-            if (dictionary.ContainsKey(key))
-            {
-                return false;
-            }
-
+        {           
             lock (syncObject)
             {
                 if (dictionary.ContainsKey(key))
@@ -4179,7 +4133,6 @@ namespace LightInject
             return GetEnumerator();
         }
     }                
-
 #endif
 
 #if NETFX_CORE || WINDOWS_PHONE || SILVERLIGHT
@@ -4194,7 +4147,7 @@ namespace LightInject
 
         private readonly ParameterExpression[] parameters;
 
-        private readonly ILGenerator ilGenerator;
+        private readonly ILGenerator generator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicMethod"/> class.
@@ -4206,7 +4159,7 @@ namespace LightInject
             this.returnType = returnType;
             this.parameterTypes = parameterTypes;
             parameters = parameterTypes.Select(Expression.Parameter).ToArray();
-            ilGenerator = new ILGenerator(parameters);
+            generator = new ILGenerator(parameters);
         }
 
         /// <summary>
@@ -4216,7 +4169,7 @@ namespace LightInject
         /// <returns>A delegate of the specified type, which can be used to execute the dynamic method.</returns>
         public Delegate CreateDelegate(Type delegateType)
         {
-            var lambda = Expression.Lambda(delegateType, ilGenerator.CurrentExpression, parameters);
+            var lambda = Expression.Lambda(delegateType, generator.CurrentExpression, parameters);
             return lambda.Compile();
         }
 
@@ -4231,7 +4184,7 @@ namespace LightInject
             Type delegateTypeWithTargetParameter =
                 Expression.GetDelegateType(parameterTypes.Concat(new[] { returnType }).ToArray());
             var lambdaWithTargetParameter = Expression.Lambda(
-                delegateTypeWithTargetParameter, ilGenerator.CurrentExpression, true, parameters);
+                delegateTypeWithTargetParameter, generator.CurrentExpression, true, parameters);
 
             Expression[] arguments = new Expression[] { Expression.Constant(target) }.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
             var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
@@ -4246,7 +4199,7 @@ namespace LightInject
         /// <returns>An <see cref="ILGenerator"/> object for the method.</returns>
         public ILGenerator GetILGenerator()
         {
-            return ilGenerator;
+            return generator;
         }
     }
 
@@ -4497,8 +4450,7 @@ namespace LightInject
             else
             {
                 throw new NotSupportedException(code.ToString());
-            }
-            
+            }            
         }
 
         /// <summary>
@@ -5251,7 +5203,6 @@ namespace LightInject
         /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.
         /// </summary>
         public int Index { get; set; }
-#if NET || NET45
 
         /// <summary>
         /// Gets a value indicating whether this registration has a deferred implementing type.
@@ -5263,7 +5214,6 @@ namespace LightInject
                 return ImplementingType == null && FactoryExpression == null;
             }
         }       
-#endif
     }
 
     /// <summary>
@@ -5871,8 +5821,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Emitter));
             InternalTypes.Add(typeof(Instruction));
             InternalTypes.Add(typeof(Instruction<>));
-#if NET45
-            //InternalTypes.Add(typeof(SerializableScopeManager));
+#if NET45            
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif            
@@ -6881,6 +6830,7 @@ namespace LightInject
         }
     }
 #if NET45
+    
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>

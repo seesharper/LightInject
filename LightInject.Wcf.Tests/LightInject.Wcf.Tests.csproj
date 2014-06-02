@@ -68,6 +68,7 @@
     <Compile Include="BindingProviderTests.cs" />
     <Compile Include="ChannelFactoryProviderTests.cs" />
     <Compile Include="ChannelProviderTests.cs" />
+    <Compile Include="InitializerTests.cs" />
     <Compile Include="InvocationTests.cs" />
     <Compile Include="SampleEndPointBehavior.cs" />
     <Compile Include="ServiceHostTests.cs" />

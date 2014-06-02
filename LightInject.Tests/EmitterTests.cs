@@ -4,10 +4,10 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
-#if NETFX_CORE || WINDOWS_PHONE
-    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
-#else
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+#if NETFX_CORE || WINDOWS_PHONE
+    using LocalBuilder = LightInject.LocalBuilder;
+    using ILGenerator = LightInject.ILGenerator;
 #endif
 
     [TestClass]
@@ -19,7 +19,7 @@
             var emitter = CreateEmitter();
             emitter.Push(0);
             emitter.Return();
-            Assert.AreEqual(OpCodes.Ldc_I4_0, emitter.Instructions[0].Code);
+            Assert.AreEqual(OpCodes.Ldc_I4_0, emitter.Instructions[0].Code);            
         }
 
         [TestMethod]
@@ -209,7 +209,7 @@
 
             emitter.PushArgument(ArgumentCount);
             emitter.Return();
-
+            
             Assert.AreEqual(OpCodes.Ldarg_3, emitter.Instructions[0].Code);
         }
 
@@ -675,7 +675,7 @@
 #if NETFX_CORE || WINDOWS_PHONE
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
-            return new DynamicMethod(typeof(object), parameterTypes).GetILGenerator();
+            return new LightInject.DynamicMethod(typeof(object), parameterTypes).GetILGenerator();
         }        
 #endif
         private LocalBuilder[] CreateLocalBuilders(IEmitter emitter, int count)

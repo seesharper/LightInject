@@ -44,6 +44,7 @@
     </Reference>
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceModel.Activation" />
+    <Reference Include="System.Web" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -58,14 +59,11 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="..\..\..\..\LightInject.Tests\ExceptionAssert.cs">
-      <Link>ExceptionAssert.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\..\LightInject.Tests\ParallelInvoker.cs">
-      <Link>ParallelInvoker.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\..\LightInject.Wcf.Tests\InvocationTests.cs">
       <Link>InvocationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Wcf.Tests\SampleEndPointBehavior.cs">
+      <Link>SampleEndPointBehavior.cs</Link>
     </Compile>
     <Compile Include="..\..\..\..\LightInject.Wcf.Tests\ServiceHostTests.cs">
       <Link>ServiceHostTests.cs</Link>
@@ -73,20 +71,34 @@
     <Compile Include="..\..\..\..\LightInject.Wcf.Tests\TestBase.cs">
       <Link>TestBase.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\LightInject.Wcf.Tests\VirtualPathProviderTests.cs">
+      <Link>VirtualPathProviderTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Wcf.Tests\WcfClientTests.cs">
+      <Link>WcfClientTests.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj">
-      <Project>{3013ca8c-3036-4bcb-baa7-cd8fa081f4f8}</Project>
-      <Name>LightInject.Wcf.SampleLibrary.Implementation</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\LightInject.Wcf.SampleLibrary\LightInject.Wcf.SampleLibrary.csproj">
-      <Project>{15b3e0d2-6217-493a-a690-158c497f5318}</Project>
-      <Name>LightInject.Wcf.SampleLibrary</Name>
-    </ProjectReference>
     <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
       <Project>{201db42a-3bfb-4d0f-bd68-860cfbe889b7}</Project>
       <Name>LightInject.Interception</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Tests\LightInject.Tests.csproj">
+      <Project>{06accc01-c1fb-4f53-afb9-3268a27b2c5f}</Project>
+      <Name>LightInject.Tests</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Wcf.Client\LightInject.Wcf.Client.csproj">
+      <Project>{b2b16bd3-85f0-4cdb-8bef-f3d8e08350e4}</Project>
+      <Name>LightInject.Wcf.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj">
+      <Project>{4795e441-deea-4571-9c9d-67f22d17dbe7}</Project>
+      <Name>LightInject.Wcf.SampleLibrary.Implementation</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Wcf.SampleLibrary\LightInject.Wcf.SampleLibrary.csproj">
+      <Project>{ec7f0f0c-7c1c-48d8-a4aa-8eb85e756ff6}</Project>
+      <Name>LightInject.Wcf.SampleLibrary</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.Wcf\LightInject.Wcf.csproj">
       <Project>{ee842e91-d277-478a-8a85-27e5b9543e67}</Project>
@@ -96,6 +108,11 @@
       <Project>{e0840582-8930-4663-921d-4365f1469f91}</Project>
       <Name>LightInject</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\LightInject.Wcf.Tests\App.config">
+      <Link>App.config</Link>
+    </None>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

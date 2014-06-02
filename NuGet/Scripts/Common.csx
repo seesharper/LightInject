@@ -454,16 +454,19 @@ public class Publicizer
 {
     private static readonly List<string> Exceptions = new List<string>();
     private static readonly List<string> Includes = new List<string>();
+   
 
     static Publicizer()
     {
+       
+
         Exceptions.Add("TypeHelper");
         Exceptions.Add("ReflectionHelper");        
         //Exceptions.Add("OpCodes");
         //Exceptions.Add("OpCode");
         //Exceptions.Add("ILGenerator");        
         Exceptions.Add("DynamicMethodSkeleton");
-        Exceptions.Add("DynamicMethod");
+        //Exceptions.Add("DynamicMethod");
         //Exceptions.Add("MethodInfoExtensions");
        
 
@@ -503,8 +506,19 @@ public class Publicizer
              var line = reader.ReadLine();
              if (Includes.Any(i => line.Contains(i)) && !Exceptions.Any(e => line.Contains(e)))
              {
-                 line = line.Replace("internal", "public");
+                 line = line.Replace("internal", "public");                 
              }
+             
+             if (line.Contains(@"Gets or sets the parent <see cref=""Scope""/>."))
+             {
+                line = line.Replace("Gets or sets", "Gets");
+             }
+
+             if (line.Contains(@"Gets or sets the child <see cref=""Scope""/>."))
+             {
+                line = line.Replace("Gets or sets", "Gets");
+             }   
+
              writer.WriteLine(line);
          }
     }

@@ -15,8 +15,10 @@
             serviceRegistry.Register<ISingleInstanceAndSingleConcurrency, SingleInstanceAndSingleConcurrency>();
             serviceRegistry.Register<ISingleInstanceAndMultipleConcurrency, SingleInstanceAndMultipleConcurrency>();
             serviceRegistry.Register<ISingleInstanceAndReentrantConcurrency, SingleInstanceAndReentrantConcurrency>();
-            serviceRegistry.Register<IAsyncService, AsyncService>();
-            serviceRegistry.Register<IFoo, Foo>(new PerScopeLifetime());
+#if NET45
+            serviceRegistry.Register<IAsyncService, AsyncService>();      
+#endif
+            serviceRegistry.Register<IFoo, Foo>(new PerScopeLifetime());    
         }
     }
 }

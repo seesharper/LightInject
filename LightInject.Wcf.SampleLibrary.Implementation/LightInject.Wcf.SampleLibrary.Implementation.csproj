@@ -52,7 +52,7 @@
       <Name>LightInject.Wcf.SampleLibrary</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.Wcf\LightInject.Wcf.csproj">
-      <Project>{682E02DA-D307-4DB3-B984-A280C9A532D9}</Project>
+      <Project>{682e02da-d307-4db3-b984-a280c9a532d9}</Project>
       <Name>LightInject.Wcf</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject\LightInject.csproj">

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "LightInject\LightInject.csproj", "{E0840582-8930-4663-921D-4365F1469F91}"
 EndProject
@@ -21,22 +21,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Tests", "LightI
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Interception.Tests", "LightInject.Interception.Tests\LightInject.Interception.Tests.csproj", "{E75A908C-E1EF-4B2F-995A-A0DD6919A2D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibrary", "..\..\..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj", "{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRoot", "..\..\..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj", "{65FF0CEB-76B4-44FD-898A-00C32C21738C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRootTypeAttribute", "..\..\..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj", "{75EA6152-B0C9-40C1-AF22-10DBCA192239}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{A437BA8C-F530-4EAD-B557-6039CA8B2B2F}"
 	ProjectSection(SolutionItems) = preProject
 		.nuget\NuGet.Config = .nuget\NuGet.Config
 		.nuget\NuGet.exe = .nuget\NuGet.exe
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary", "..\..\..\LightInject.Wcf.SampleLibrary\LightInject.Wcf.SampleLibrary.csproj", "{15B3E0D2-6217-493A-A690-158C497F5318}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary.Implementation", "..\..\..\LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj", "{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf", "LightInject.Wcf\LightInject.Wcf.csproj", "{EE842E91-D277-478A-8A85-27E5B9543E67}"
 EndProject
@@ -45,6 +35,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.Client", "LightInject.Wcf.Client\LightInject.Wcf.Client.csproj", "{B2B16BD3-85F0-4CDB-8BEF-F3D8E08350E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.WebApi", "LightInject.WebApi\LightInject.WebApi.csproj", "{61AB5B19-C830-4BD8-A8AA-C207C1DF19A7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibrary", "LightInject.SampleLibrary\LightInject.SampleLibrary.csproj", "{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary", "LightInject.Wcf.SampleLibrary\LightInject.Wcf.SampleLibrary.csproj", "{CE4149D5-83BD-468A-A480-D3EDC290E79E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary.Implementation", "LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj", "{323B266C-C139-414E-92F9-C072764807BC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRoot", "LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj", "{3D510916-A46E-431C-AB7A-491D4FC83B48}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRootTypeAttribute", "LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj", "{AFA619AE-6EA7-4ADA-B738-8F545F4F2E9D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -88,26 +88,6 @@ Global
 		{E75A908C-E1EF-4B2F-995A-A0DD6919A2D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E75A908C-E1EF-4B2F-995A-A0DD6919A2D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E75A908C-E1EF-4B2F-995A-A0DD6919A2D6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2ACC6B94-364A-40B5-9D4B-1F74B85CACFD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{65FF0CEB-76B4-44FD-898A-00C32C21738C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{75EA6152-B0C9-40C1-AF22-10DBCA192239}.Release|Any CPU.Build.0 = Release|Any CPU
-		{15B3E0D2-6217-493A-A690-158C497F5318}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{15B3E0D2-6217-493A-A690-158C497F5318}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{15B3E0D2-6217-493A-A690-158C497F5318}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{15B3E0D2-6217-493A-A690-158C497F5318}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EE842E91-D277-478A-8A85-27E5B9543E67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EE842E91-D277-478A-8A85-27E5B9543E67}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE842E91-D277-478A-8A85-27E5B9543E67}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -124,6 +104,26 @@ Global
 		{61AB5B19-C830-4BD8-A8AA-C207C1DF19A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61AB5B19-C830-4BD8-A8AA-C207C1DF19A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61AB5B19-C830-4BD8-A8AA-C207C1DF19A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE4149D5-83BD-468A-A480-D3EDC290E79E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE4149D5-83BD-468A-A480-D3EDC290E79E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE4149D5-83BD-468A-A480-D3EDC290E79E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE4149D5-83BD-468A-A480-D3EDC290E79E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{323B266C-C139-414E-92F9-C072764807BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{323B266C-C139-414E-92F9-C072764807BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{323B266C-C139-414E-92F9-C072764807BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{323B266C-C139-414E-92F9-C072764807BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D510916-A46E-431C-AB7A-491D4FC83B48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D510916-A46E-431C-AB7A-491D4FC83B48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D510916-A46E-431C-AB7A-491D4FC83B48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D510916-A46E-431C-AB7A-491D4FC83B48}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFA619AE-6EA7-4ADA-B738-8F545F4F2E9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFA619AE-6EA7-4ADA-B738-8F545F4F2E9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFA619AE-6EA7-4ADA-B738-8F545F4F2E9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFA619AE-6EA7-4ADA-B738-8F545F4F2E9D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -13,6 +13,7 @@
         }
     }
 
+#if NET45
     public class ServiceWithFuncDependency : IService
     {
         private readonly Func<IFoo> fooFactory;
@@ -56,6 +57,7 @@
         }
     }
 
+#endif
     public class ServiceWithSameDependencyTwice : IServiceWithSameDependencyTwice
     {
         public ServiceWithSameDependencyTwice(IFoo foo1, IFoo foo2)

@@ -34,7 +34,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;NET</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -112,6 +112,9 @@
     <Compile Include="..\..\..\..\LightInject.Tests\DisposableTests.cs">
       <Link>DisposableTests.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\EmitterTests.cs">
+      <Link>EmitterTests.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\ErrorMessages.cs">
       <Link>ErrorMessages.cs</Link>
     </Compile>
@@ -126,6 +129,12 @@
     </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\FunctionFactoryVerificationTests.cs">
       <Link>FunctionFactoryVerificationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ImmutableListTests.cs">
+      <Link>ImmutableListTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ImmutableTreeTests.cs">
+      <Link>ImmutableTreeTests.cs</Link>
     </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\LambdaExpressionParserTests.cs">
       <Link>LambdaExpressionParserTests.cs</Link>
@@ -192,18 +201,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj">
-      <Project>{75ea6152-b0c9-40c1-af22-10dbca192239}</Project>
-      <Name>LightInject.SampleLibraryWithCompositionRootTypeAttribute</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
-      <Project>{65ff0ceb-76b4-44fd-898a-00c32c21738c}</Project>
-      <Name>LightInject.SampleLibraryWithCompositionRoot</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
-      <Project>{2acc6b94-364a-40b5-9d4b-1f74b85cacfd}</Project>
-      <Name>LightInject.SampleLibrary</Name>
-    </ProjectReference>
     <ProjectReference Include="..\LightInject.Annotation\LightInject.Annotation.csproj">
       <Project>{56d23f67-fde0-48d1-8649-fb8f45952a3e}</Project>
       <Name>LightInject.Annotation</Name>
@@ -219,6 +216,18 @@
     <ProjectReference Include="..\LightInject.Mvc\LightInject.Mvc.csproj">
       <Project>{1b70b789-c89b-4944-95ed-25c60c4efe60}</Project>
       <Name>LightInject.Mvc</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj">
+      <Project>{afa619ae-6ea7-4ada-b738-8f545f4f2e9d}</Project>
+      <Name>LightInject.SampleLibraryWithCompositionRootTypeAttribute</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
+      <Project>{3d510916-a46e-431c-ab7a-491d4fc83b48}</Project>
+      <Name>LightInject.SampleLibraryWithCompositionRoot</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
+      <Project>{8583f2a8-f11f-45e2-ace3-d1b2cb881b8f}</Project>
+      <Name>LightInject.SampleLibrary</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.ServiceLocation\LightInject.ServiceLocation.csproj">
       <Project>{ea39a757-2118-4872-8655-13ab341c01a1}</Project>

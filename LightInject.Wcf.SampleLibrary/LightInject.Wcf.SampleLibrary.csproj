@@ -52,8 +52,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LightInject\LightInject.csproj">
-      <Project>{3d54591b-b055-4edd-96b6-e6f184e8ca6e}</Project>
+    <ProjectReference Include="..\NuGet\Build\Net\LightInject\LightInject.csproj">
+      <Project>{e0840582-8930-4663-921d-4365f1469f91}</Project>
       <Name>LightInject</Name>
     </ProjectReference>
   </ItemGroup>

@@ -4,12 +4,8 @@
 
     using LightInject.SampleLibrary;  
     using LightInject.Mocking;
-
-#if NETFX_CORE
-    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
-#else
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-#endif
+
 
     [TestClass]
     public class MockingTests
@@ -26,6 +22,20 @@
             Assert.IsInstanceOfType(instance, typeof(FooMock));
             container.EndMocking<IFoo>();
         }
+
+        [TestMethod]
+        public void GetInstance_MultipleServices_ReturnsMockInstanceOnlyForMockedServices()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();                        
+            container.Register<IFoo, Foo>();
+            container.StartMocking<IFoo>(() => new FooMock());
+            var foo = container.GetInstance<IFoo>();
+            var bar = container.GetInstance<IBar>();
+            Assert.IsInstanceOfType(foo, typeof(FooMock));
+            Assert.IsInstanceOfType(bar, typeof(Bar));
+        }
+
 
         [TestMethod]
         public void GetInstance_NamedExistingService_ReturnsMockInstance()
@@ -117,7 +127,6 @@
             Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
             container.EndMocking<IFoo>();
         }
-
 
         [TestMethod]
         public void GetInstance_ExistingServiceAfterGetInstance_ReturnsMockInstance()
