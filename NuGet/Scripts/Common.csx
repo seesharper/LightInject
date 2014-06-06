@@ -10,13 +10,20 @@
 using System.Diagnostics;
 using System.Xml.Linq;
 
+
+public class VersionInfo
+{
+    public string PackageName {get; set;}
+    public string Version {get;set;}
+}
+
+
 public static class MsBuild
 {
     public static void Build(string pathToSolutionFile)
     {
         string pathToMsBuild = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\MsBuild.exe";
-        string result = Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release /verbosity:minimal");
-        Console.WriteLine(result);
+        Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release /verbosity:quiet /nologo");     
     }
 }
 
@@ -46,11 +53,11 @@ public static class MsTest
     private static void ValidateCodeCoverage(string directory)
     {
         var pathToSummaryFile = Path.Combine(directory, "Summary.xml");
-        var doc = XDocument.Load(pathToSummaryFile);       
-        Console.WriteLine(doc);
+        var doc = XDocument.Load(pathToSummaryFile);               
         var coverage = doc.Root.Elements().Single( e => e.Name.LocalName == "Summary").Elements().Single (e => e.Name.LocalName == "Coverage").Value;
         if (coverage != "100%")
         {
+            Console.WriteLine(doc);
             throw new InvalidOperationException("Deploy failed. Test coverage is only " + coverage);
         }        
     }
@@ -66,9 +73,8 @@ public static class MsTest
         
         var filters = includedAssemblies.Select (a => "+" + a).Aggregate ((current, next) => current + ";" + next).ToLower();
 
-        var result = Command.Execute(@"..\..\packages\ReportGenerator.1.9.1.0\ReportGenerator.exe", "-reports:" + StringUtils.Quote(pathToCoverageXmlFile) + " -targetdir:" + StringUtils.Quote(directory)
-            + " -reporttypes:xmlsummary -filters:" + filters );
-         Console.WriteLine(result);
+        Command.Execute(@"..\..\packages\ReportGenerator.1.9.1.0\ReportGenerator.exe", "-reports:" + StringUtils.Quote(pathToCoverageXmlFile) + " -targetdir:" + StringUtils.Quote(directory)
+            + " -reporttypes:xmlsummary -filters:" + filters );        
     }
 
 
@@ -109,7 +115,7 @@ public static class VersionUtils
         throw new InvalidOperationException("version string not found");
     }
 
-    public static void UpdateNuGetPackageSpecification(string pathToPackageSpecification, string version)
+    public static void UpdateNuGetPackageSpecification(string pathToPackageSpecification, string version, Dictionary<string, string> dependencies)
     {
         Console.WriteLine("[VersionUtils] Updating {0} to version {1}", pathToPackageSpecification, version);
         var tempFile = Path.GetTempFileName();
@@ -123,7 +129,20 @@ public static class VersionUtils
                     if (line.Contains("<version>"))
                     {
                         line = string.Format("        <version>{0}</version>", version);
-                    }                    
+                    }           
+
+                    if (line.Contains("<dependency id"))    
+                    {
+                        XElement element = XElement.Parse(line);
+                        var idAttribute = element.Attribute("id");
+                        if (dependencies.ContainsKey(idAttribute.Value))
+                        {
+                            var versionAttribute = element.Attribute("version");
+                            versionAttribute.Value = dependencies[idAttribute.Value];
+                        }
+                        line = "            " + element.ToString();
+                    }
+
                     writer.WriteLine(line);
                 } 
            }           
@@ -134,8 +153,7 @@ public static class VersionUtils
 
 
     public static void UpdateAssemblyInfo(string pathToAssemblyInfoFile, string version)
-    {
-        Console.WriteLine("[VersionUtils] Updating {0} to version {1}", pathToAssemblyInfoFile, version);
+    {        
         var tempFile = Path.GetTempFileName();
         using (var reader = new StreamReader(pathToAssemblyInfoFile))
         {
@@ -181,8 +199,7 @@ public static class DirectoryUtils
     public static void DeleteAllPackages(string directory)
     {
         foreach(var file in Directory.GetFiles(directory, "*.nupkg"))
-        {
-            Console.WriteLine("Deleting package {0}", file);
+        {            
             File.Delete(file);
         }
     }
@@ -256,7 +273,8 @@ public static class Command
         if (process.ExitCode != 0)
         {
             throw new InvalidOperationException(processOutput);
-        }
+            Console.WriteLine(processOutput);
+        }     
         return processOutput;
     }
 
@@ -363,17 +381,14 @@ public class SourceWriter
     private static DirectiveEvaluator directiveEvaluator = new DirectiveEvaluator();
 
     public static void Write(string directive, string inputFile, string outputFile, bool processNameSpace, bool excludeFromCodeCoverage)
-    {
-        
-    	Console.WriteLine("[SourceWriter] Start processing file '{0}'' with directive '{1}'.", inputFile, directive);
+    {            
         using (var reader = new StreamReader(inputFile))
         {
             using (var writer = new StreamWriter(outputFile))
             {
                 Write(directive, reader, writer, processNameSpace, excludeFromCodeCoverage);                    
             }
-        }
-        Console.WriteLine("[SourceWriter] Finished processing file '{0}'' with directive '{1}'. Output was written to {2}", inputFile, directive, outputFile);        
+        }     
     }
 
 
@@ -487,16 +502,14 @@ public class Publicizer
     public static void Write(string directive, string inputFile, string outputFile)
      {
          var tempFile = Path.GetTempFileName();
-         SourceWriter.Write(directive, inputFile, tempFile, false, false);
-         Console.WriteLine("[Publicizer] Start processing file '{0}''.", tempFile);
+         SourceWriter.Write(directive, inputFile, tempFile, false, false);         
          using (var reader = new StreamReader(tempFile))
          {             
              using (var writer = new StreamWriter(outputFile))
              {
                  Write(reader, writer);
              }
-         }    
-         Console.WriteLine("[Publicizer] Finished processing file '{0}'. Output was written to {1}", tempFile, outputFile);        
+         }             
      }
 
     public static void Write(StreamReader reader, StreamWriter writer)

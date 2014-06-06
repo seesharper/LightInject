@@ -5,14 +5,15 @@
         <version>1.0.0.1</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An extension to the LightInject service container that enables dependency injection for SignalR applications. See LightInject.SignalR.Source for the source distribution.</description>        
         <copyright>Bernhard Richter</copyright>
+        <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP AspNet SignalR AspNetSignalR</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.1.7" />            
+            <dependency id="LightInject" version="3.0.1.7" />
         </dependencies>
     </metadata>   
 </package>

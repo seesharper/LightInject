@@ -5,11 +5,11 @@
         <version>3.0.1.7</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
         <projectUrl>http://www.lightinject.net/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>An ultra lightweight Inversion of Control container for the .Net framework. See LightInject.Source for the source distribution.</description>
-        <releaseNotes>Added async/await support.</releaseNotes>
+        <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime</tags>
     </metadata>   

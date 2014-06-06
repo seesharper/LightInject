@@ -1,115 +1,137 @@
 #load "Common.csx"
 DirectoryUtils.DeleteAllPackages("..");
-
-EnsureBuildToolsAreUpToDate();
-
-BuildMainSolution();
-//RunUnitTestsForMainSolution();
-//AssertTestCoverageIs100PercentForMainSolution();
-
-//RunUnitTestsForInterception();
-//AssertTestCoverageIs100PercentForInterception();
-
-//RunUnitTestsForSignalR();
-//AssertTestCoverageIs100PercentForSignalR(); 
+//BuildCoverageToXml();
+//BuildMainSolution();
+//RunUnitTests();
+//RunUnitTestsWithCodeCoverage();
 
 BuildNugetBinaries();
-
-//RunUnitTestsForNet4NuGetPackage();
-//AssertTestCoverageIs100PercentForNet4NuGetPackage();
-
-RunUnitTestsForNet45NuGetPackage();
-//AssertTestCoverageIs100PercentForNet45NuGetPackage();
-
-
-
-/*Console.WriteLine("***Start creating NuGet packages***");
-
-DirectoryUtils.DeleteAllPackages("..");
+//RunUnitTestsForNuGetBinaries();
 
 
 CreateBinaryPackages();
 CreateSourcePackages();
+//BuildTestBuilds();
 
-Console.WriteLine("***Finished creating NuGet packages***"); */
-
-private void EnsureBuildToolsAreUpToDate()
+private void BuildTestBuilds()
 {
-	Console.WriteLine("Building CoverageToXml");
-	MsBuild.Build(@"..\CoverageToXml\CoverageToXml.sln");
+	Execute(() => MsBuild.Build(@"..\Build\TestBuilds\Net\Net.sln"), "Building testbuild for NET");
+	Execute(() => MsBuild.Build(@"..\Build\TestBuilds\NetWcf\NetWcf.sln"), "Building testbuild for NET (WCF)");
+	Execute(() => MsBuild.Build(@"..\Build\TestBuilds\Net45\Net45.sln"), "Building testbuild for NET45");
+	Execute(() => MsBuild.Build(@"..\Build\TestBuilds\netcore45\Netcore45.sln"), "Building testbuild for WindowsRuntime");
+	Execute(() => MsBuild.Build(@"..\Build\TestBuilds\windowsphone\WindowsPhone.sln"), "Building testbuild for WindowsPhone");
+}
+
+
+
+private void Execute(Action action, string description)
+{
+	Console.Write(description);
+	Stopwatch watch = new Stopwatch();
+	watch.Start();
+	action();
+	watch.Stop();
+	Console.WriteLine("...Done! ({0} milliseconds)", watch.ElapsedMilliseconds);
+}
+
+
+private void BuildCoverageToXml()
+{	
+	Execute(() => MsBuild.Build(@"..\CoverageToXml\CoverageToXml.sln"), "Building CoverageToXml");	
 }
 
 private void BuildMainSolution()
-{
-	Console.WriteLine("Building LightInject");
-	MsBuild.Build(@"..\..\..\LightInject\LightInject.sln"); 
+{	
+	Execute(() => MsBuild.Build(@"..\..\..\LightInject\LightInject.sln"), "Building LightInject");
 }
 
-private void RunUnitTestsForMainSolution()
-{
-	Console.WriteLine("Running tests (LightInject)");
-	MsTest.Run(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll");
+
+private void RunUnitTests()
+{	
+    Execute(() => MsTest.Run(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll"),"Running tests (LightInject)");
+
+    Execute(() => MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll"), "Running tests (LightInject.Interception)");
+
+    Execute(() => MsTest.Run(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll"), "Running tests (LightInject.SignalR)");	
 }
 
-private void AssertTestCoverageIs100PercentForMainSolution()
+private void RunUnitTestsWithCodeCoverage()
 {
-	Console.WriteLine("Running tests with code coverage (LightInject)");
-	MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll", "lightinject.dll");
+	Execute(() => MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Tests\bin\release\LightInject.Tests.dll", "lightinject.dll"),
+		"Running unit tests with test coverage for LightInject");
+
+	Execute(() => MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll", "lightinject.interception.dll"),
+		"Running unit tests with test coverage for LightInject.Interception");
+	
+	Execute(() => MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll", "lightinject.signalr.dll"), 
+		"Running unit tests with test coverage for SignalR");		
 }
 
-private void RunUnitTestsForInterception()
+private void RunUnitTestsForNuGetBinaries()
 {
-	Console.WriteLine("Running tests (LightInject.Interception)");
-	MsTest.Run(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");	
+	Execute(() => RunUnitTestsForNet4NuGetPackage(), "Running tests Nuget NET");
+	Execute(() => RunUnitTestsForNet45NuGetPackage(), "Running tests Nuget NET45");
+	Execute(() => RunUnitTestsForWindowsRuntimeNuGetPackage(), "Running tests Nuget WindowsRuntime");
+	Execute(() => RunUnitTestsForWindowsPhoneNuGetPackage(), "Running tests Nuget WindowsPhone");
 }
 
-private void AssertTestCoverageIs100PercentForInterception()
+private void RunUnitTestsWithCodeCoverageForNuGetBinaries()
 {
-	Console.WriteLine("Running tests with coverage (LightInject.Interception)");
-	MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll", "lightinject.interception.dll");	
+	Execute(() => RunUnitTestsWithCodeCoverageForNetPackage(), "Validate code coverage for NET package");
+	Execute(() => RunUnitTestsWithCodeCoverageForNet45Package(), "Validate code coverage for NET45 package");
+	Execute(() => RunUnitTestsWithCodeCoverageForWindowsRuntimePackage(), "Validate code coverage for WindowsRuntime package");
+	Execute(() => RunUnitTestsWithCodeCoverageForWindowsPhonePackage(), "Validate code coverage for WindowsPhone package");
 }
 
-private void RunUnitTestsForSignalR()
+private void RunUnitTestsWithCodeCoverageForNetPackage()
 {
-	Console.WriteLine("Running tests (LightInject.SignalR)");
-	MsTest.Run(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll");	
+	MsTest.RunWithCodeCoverage(@"..\Build\Net\LightInject.Tests\bin\release\LightInject.Tests.dll","lightinject.dll");
+	MsTest.RunWithCodeCoverage(@"..\Build\Net\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll","lightinject.interception.dll");
 }
 
-private void AssertTestCoverageIs100PercentForSignalR()
+private void RunUnitTestsWithCodeCoverageForNet45Package()
 {
-	Console.WriteLine("Running tests with coverage (LightInject.SignalR)");
-	MsTest.RunWithCodeCoverage(@"..\..\..\LightInject\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll", "lightinject.signalr.dll");	
+	
+	MsTest.RunWithCodeCoverage(@"..\Build\Net45\LightInject.Tests\bin\release\LightInject.Tests.dll","lightinject.dll");
+	MsTest.RunWithCodeCoverage(@"..\Build\Net45\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll","lightinject.interception.dll");
+	MsTest.RunWithCodeCoverage(@"..\Build\Net45\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll","lightinject.signalr.dll");
 }
+
+private void RunUnitTestsWithCodeCoverageForWindowsRuntimePackage()
+{
+	MsTest.RunWithCodeCoverage(@"..\Build\WindowsRuntime\LightInject.Tests\bin\release\LightInject.Tests.dll","lightinject.dll");
+}
+
+
+private void RunUnitTestsWithCodeCoverageForWindowsPhonePackage()
+{
+	MsTest.RunWithCodeCoverage(@"..\Build\WindowsPhone\LightInject.Tests\bin\release\LightInject.Tests.dll","lightinject.dll");
+}
+
 
 private void RunUnitTestsForNet4NuGetPackage()
 {
-	Console.WriteLine("Running tests (LightInject NuGet NET)");
-	MsTest.Run(@"..\Build\Net\LightInject.Tests\bin\release\LightInject.Tests.dll");
-}
-
-private void AssertTestCoverageIs100PercentForNet4NuGetPackage()
-{
-	Console.WriteLine("Running tests with coverage (LightInject NuGet NET)");
-	MsTest.RunWithCodeCoverage(@"..\Build\Net\LightInject.Tests\bin\release\LightInject.Tests.dll","lightinject.dll");
+	MsTest.Run(@"..\Build\Net\LightInject.Tests\bin\release\LightInject.Tests.dll");	
+	MsTest.Run(@"..\Build\Net\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");		
 }
 
 private void RunUnitTestsForNet45NuGetPackage()
-{
-	Console.WriteLine("Running tests (LightInject NuGet NET45)");
-	MsTest.Run(@"..\Build\Net45\LightInject.Tests\bin\release\LightInject.Tests.dll");
-
-	Console.WriteLine("Running tests (LightInject.Interception NuGet NET45)");
-	MsTest.Run(@"..\Build\Net45\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");
-
-	Console.WriteLine("Running tests (LightInject.SignalR NuGet NET45)");
+{	
+	MsTest.Run(@"..\Build\Net45\LightInject.Tests\bin\release\LightInject.Tests.dll");	
+	MsTest.Run(@"..\Build\Net45\LightInject.Interception.Tests\bin\release\LightInject.Interception.Tests.dll");	
 	MsTest.Run(@"..\Build\Net45\LightInject.SignalR.Tests\bin\release\LightInject.SignalR.Tests.dll");
 }
 
-private void AssertTestCoverageIs100PercentForNet45NuGetPackage()
+private void RunUnitTestsForWindowsRuntimeNuGetPackage()
 {
-	Console.WriteLine("Running tests with coverage (LightInject NuGet NET45)");
-	MsTest.RunWithCodeCoverage(@"..\Build\Net45\LightInject.Tests\bin\release\LightInject.Tests.dll","lightinject.dll");
+	MsTest.Run(@"..\Build\WindowsRuntime\LightInject.Tests\bin\release\LightInject.Tests.dll");		
 }
+
+private void RunUnitTestsForWindowsPhoneNuGetPackage()
+{
+	MsTest.Run(@"..\Build\WindowsPhone\LightInject.Tests\bin\release\LightInject.Tests.dll");		
+}
+
 
 private void CreateSourcePackages()
 {
@@ -128,21 +150,26 @@ private void CreateSourcePackages()
 
 private void BuildNugetBinaries()
 {
-	UpdateNuGetBuildProjects();
-	BuildBinaryProjects();	
+	Execute(() => UpdateNuGetBuildProjects(), "Update version numbers on NuGet build projects"); 
+	Execute(() => BuildBinaryProjects(), "Building NuGet projects");
 }
 
 
 private void UpdateNuGetBuildProjects()
 {
+	Dictionary<string, string> dependencies = new Dictionary<string, string>();
+
 	//LightInject
 	string version = VersionUtils.GetVersionString(@"..\..\LightInject\LightInject.cs");		
+	dependencies["LightInject"] = version;
+	dependencies["LightInject.Source"] = version;
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject\Properties\AssemblyInfo.cs", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject\package\LightInject.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Source\package\LightInject.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject\package\LightInject.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Source\package\LightInject.nuspec", version, dependencies);
+	
 
 	Publicizer.Write("NETFX_CORE", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsRuntime\LightInject\LightInject.cs");
 	Publicizer.Write("NET", @"..\..\LightInject\LightInject.cs", @"..\Build\Net\LightInject\LightInject.cs"); 
@@ -156,8 +183,10 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
 
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation\package\LightInject.Annotation.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation.Source\package\LightInject.Annotation.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation\package\LightInject.Annotation.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation.Source\package\LightInject.Annotation.nuspec", version, dependencies);
+
+	
 
 	Publicizer.Write("NETFX_CORE",@"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsRuntime\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net\LightInject.Annotation\LightInject.Annotation.cs");
@@ -166,10 +195,12 @@ private void UpdateNuGetBuildProjects()
 
 	//LightInject.Interception
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Interception\LightInject.Interception.cs");		
+	dependencies["LightInject.Interception"] = version;
+	dependencies["LightInject.Interception.Source"] = version;
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Interception\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Interception\Properties\AssemblyInfo.cs", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Interception\package\LightInject.Interception.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Interception.Source\package\LightInject.Interception.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Interception\package\LightInject.Interception.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Interception.Source\package\LightInject.Interception.nuspec", version, dependencies);
 
 
 	Publicizer.Write("NET", @"..\..\LightInject.Interception\LightInject.Interception.cs", @"..\Build\Net\LightInject.Interception\LightInject.Interception.cs");
@@ -183,14 +214,27 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject.Mocking\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject.Mocking\Properties\AssemblyInfo.cs", version);
 
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mocking\package\LightInject.Mocking.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mocking.Source\package\LightInject.Mocking.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mocking\package\LightInject.Mocking.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mocking.Source\package\LightInject.Mocking.nuspec", version, dependencies);
 
 	Publicizer.Write("NETFX_CORE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsRuntime\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\Net\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\Net45\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsPhone\LightInject.Mocking\LightInject.Mocking.cs");
 	
+	//LightInject.Web	
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Web\LightInject.Web.cs");		
+	dependencies["LightInject.Web"] = version;
+	dependencies["LightInject.Web.Source"] = version;
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Web\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Web\Properties\AssemblyInfo.cs", version);
+
+	Publicizer.Write("NET", @"..\..\LightInject.Web\LightInject.Web.cs", @"..\Build\Net\LightInject.Web\LightInject.Web.cs");
+	Publicizer.Write("NET45", @"..\..\LightInject.Web\LightInject.Web.cs", @"..\Build\Net45\LightInject.Web\LightInject.Web.cs");
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web\package\LightInject.Web.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web.Source\package\LightInject.Web.nuspec", version, dependencies);
+
 	//LightInject.Mvc
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Mvc\LightInject.Mvc.cs");		
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Mvc\Properties\AssemblyInfo.cs", version);
@@ -199,8 +243,8 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NET", @"..\..\LightInject.Mvc\LightInject.Mvc.cs", @"..\Build\Net\LightInject.Mvc\LightInject.Mvc.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Mvc\LightInject.Mvc.cs", @"..\Build\Net45\LightInject.Mvc\LightInject.Mvc.cs");
 
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mvc\package\LightInject.Mvc.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mvc.Source\package\LightInject.Mvc.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mvc\package\LightInject.Mvc.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mvc.Source\package\LightInject.Mvc.nuspec", version, dependencies);
 
 	//LightInject.ServiceLocation
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");		
@@ -209,24 +253,15 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject.ServiceLocation\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject.ServiceLocation\Properties\AssemblyInfo.cs", version);
 
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.ServiceLocation\package\LightInject.ServiceLocation.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.ServiceLocation.Source\package\LightInject.ServiceLocation.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.ServiceLocation\package\LightInject.ServiceLocation.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.ServiceLocation.Source\package\LightInject.ServiceLocation.nuspec", version, dependencies);
 
 	Publicizer.Write("NETFX_CORE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsRuntime\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\Net\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\Net45\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsPhone\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 
-	//LightInject.Web	
-	version = VersionUtils.GetVersionString(@"..\..\LightInject.Web\LightInject.Web.cs");		
-	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Web\Properties\AssemblyInfo.cs", version);
-	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Web\Properties\AssemblyInfo.cs", version);
-
-	Publicizer.Write("NET", @"..\..\LightInject.Web\LightInject.Web.cs", @"..\Build\Net\LightInject.Web\LightInject.Web.cs");
-	Publicizer.Write("NET45", @"..\..\LightInject.Web\LightInject.Web.cs", @"..\Build\Net45\LightInject.Web\LightInject.Web.cs");
-
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web\package\LightInject.Web.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web.Source\package\LightInject.Web.nuspec", version);
+	
 
 	//LightInject.Wcf
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Wcf\LightInject.Wcf.cs");		
@@ -236,8 +271,8 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NET", @"..\..\LightInject.Wcf\LightInject.Wcf.cs", @"..\Build\Net\LightInject.Wcf\LightInject.Wcf.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Wcf\LightInject.Wcf.cs", @"..\Build\Net45\LightInject.Wcf\LightInject.Wcf.cs");
 
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf\package\LightInject.Wcf.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf\package\LightInject.Wcf.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", version, dependencies);
 
 	//LightInject.Wcf.Client
 	/*version = VersionUtils.GetVersionString(@"..\..\LightInject.Wcf.Client\LightInject.Wcf.Client.cs");		
@@ -258,8 +293,8 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net\LightInject.WebApi\LightInject.WebApi.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net45\LightInject.WebApi\LightInject.WebApi.cs");
 
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", version, dependencies);
 
 	//LightInject.SignalR
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.SignalR\LightInject.SignalR.cs");			
@@ -267,8 +302,8 @@ private void UpdateNuGetBuildProjects()
 		
 	Publicizer.Write("NET45", @"..\..\LightInject.SignalR\LightInject.SignalR.cs", @"..\Build\Net45\LightInject.SignalR\LightInject.SignalR.cs");
 
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR\package\LightInject.SignalR.nuspec", version);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR.Source\package\LightInject.SignalR.nuspec", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR\package\LightInject.SignalR.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR.Source\package\LightInject.SignalR.nuspec", version, dependencies);
 }
 
 
@@ -565,10 +600,7 @@ private void CopyLightInjectToContentFolder()
 
 
 
-private void CopyLightInjectToLibFolder()
-{
-	
-}
+
 
 
 private void CreateLightInjectSourcePackage()
@@ -585,6 +617,12 @@ private void CreateLightInjectSourcePackage()
 	SourceWriter.Write("NET45", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\net45\LightInject\LightInject.cs.pp", true, true);
 	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\netcore45\LightInject\LightInject.cs.pp", true, false);
 	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject\LightInject.cs",  @"..\LightInject.Source\package\content\windowsphone8\LightInject\LightInject.cs.pp", true, false);
+
+	SourceWriter.Write("NET", @"..\..\LightInject\LightInject.cs",  @"..\Build\TestBuilds\Net\LightInject\LightInject.cs", false, true);
+	SourceWriter.Write("NET", @"..\..\LightInject\LightInject.cs",  @"..\Build\TestBuilds\NetWcf\LightInject\LightInject.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject\LightInject.cs",  @"..\Build\TestBuilds\Net45\LightInject\LightInject.cs", false, true);
+	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject\LightInject.cs",  @"..\Build\TestBuilds\netcore45\LightInject\LightInject.cs", false, false);
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject\LightInject.cs",  @"..\Build\TestBuilds\windowsphone\LightInject\LightInject.cs", false, false);
 
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Source\package\LightInject.nuspec", @"..");
 
@@ -606,6 +644,12 @@ private void CreateLightInjectAnnotationSourcePackage()
 	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\LightInject.Annotation.Source\package\content\netcore45\LightInject\Annotation\LightInject.Annotation.cs.pp", true, false);
 	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\LightInject.Annotation.Source\package\content\windowsphone8\LightInject\Annotation\LightInject.Annotation.cs.pp", true, false);
 	
+	SourceWriter.Write("NET", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\Build\TestBuilds\Net\LightInject\Annotation\LightInject.Annotation.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\Build\TestBuilds\Net45\LightInject\Annotation\LightInject.Annotation.cs", false, true);
+	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\Build\TestBuilds\netcore45\LightInject\Annotation\LightInject.Annotation.cs", false, false);
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs",  @"..\Build\TestBuilds\windowsphone\LightInject\Annotation\LightInject.Annotation.cs", false, false);
+
+
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Annotation.Source\package\LightInject.Annotation.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.Annotation.Source NuGet package");
@@ -620,9 +664,12 @@ private void CreateLightInjectInterceptionSourcePackage()
 	Directory.CreateDirectory(@"..\LightInject.Interception.Source\package\content\net45\LightInject\Interception");
 	
 
-	SourceWriter.Write("NET", @"..\..\LightInject.Interception\LightInject.Interception.cs",  @"..\LightInject.Interception.Source\package\content\net40\LightInject\Interception\LightInject.Interception.cs.pp", true, true);
+	SourceWriter.Write("NET", @"..\..\LightInject.Interception\LightInject.Interception.cs",  @"..\LightInject.Interception.Source\package\content\net40\LightInject\Interception\LightInject.Interception.cs.pp", true, true);	
 	SourceWriter.Write("NET45", @"..\..\LightInject.Interception\LightInject.Interception.cs",  @"..\LightInject.Interception.Source\package\content\net45\LightInject\Interception\LightInject.Interception.cs.pp", true, true);
 	
+	SourceWriter.Write("NET", @"..\..\LightInject.Interception\LightInject.Interception.cs",  @"..\Build\TestBuilds\Net\LightInject\Interception\LightInject.Interception.cs", false, true);
+	SourceWriter.Write("NET", @"..\..\LightInject.Interception\LightInject.Interception.cs",  @"..\Build\TestBuilds\NetWcf\LightInject\Interception\LightInject.Interception.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.Interception\LightInject.Interception.cs",  @"..\Build\TestBuilds\Net45\LightInject\Interception\LightInject.Interception.cs", false, true);
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Interception.Source\package\LightInject.Interception.nuspec", @"..");
 
@@ -644,7 +691,13 @@ private void CreateLightInjectMockingSourcePackage()
 	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\LightInject.Mocking.Source\package\content\netcore45\LightInject\Mocking\LightInject.Mocking.cs.pp", true, false);
 	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\LightInject.Mocking.Source\package\content\windowsphone8\LightInject\Mocking\LightInject.Mocking.cs.pp", true, false);
 	
+	SourceWriter.Write("NET", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\Build\TestBuilds\Net\LightInject\Mocking\LightInject.Mocking.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\Build\TestBuilds\Net45\LightInject\Mocking\LightInject.Mocking.cs", false, true);
+	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\Build\TestBuilds\netcore45\LightInject\Mocking\LightInject.Mocking.cs", false, false);
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs",  @"..\Build\TestBuilds\windowsphone\LightInject\Mocking\LightInject.Mocking.cs", false, false);
 	
+
+
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Mocking.Source\package\LightInject.Mocking.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.Mocking.Source NuGet package");
@@ -662,6 +715,9 @@ private void CreateLightInjectWebSourcePackage()
 	SourceWriter.Write("NET", @"..\..\LightInject.Web\LightInject.Web.cs",  @"..\LightInject.Web.Source\package\content\net40\LightInject\Web\LightInject.Web.cs.pp", true, true);
 	SourceWriter.Write("NET45", @"..\..\LightInject.Web\LightInject.Web.cs",  @"..\LightInject.Web.Source\package\content\net45\LightInject\Web\LightInject.Web.cs.pp", true, true);
 	
+	SourceWriter.Write("NET", @"..\..\LightInject.Web\LightInject.Web.cs",  @"..\Build\TestBuilds\Net\LightInject\Web\LightInject.Web.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.Web\LightInject.Web.cs",  @"..\Build\TestBuilds\Net45\LightInject\Web\LightInject.Web.cs", false, true);
+
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Web.Source\package\LightInject.Web.nuspec", @"..");
 
@@ -679,7 +735,10 @@ private void CreateLightInjectWcfSourcePackage()
 
 	SourceWriter.Write("NET", @"..\..\LightInject.Wcf\LightInject.Wcf.cs",  @"..\LightInject.Wcf.Source\package\content\net40\LightInject\Wcf\LightInject.Wcf.cs.pp", true, true);
 	SourceWriter.Write("NET45", @"..\..\LightInject.Wcf\LightInject.Wcf.cs",  @"..\LightInject.Wcf.Source\package\content\net45\LightInject\Wcf\LightInject.Wcf.cs.pp", true, true);
-	
+		
+	SourceWriter.Write("NET", @"..\..\LightInject.Wcf\LightInject.Wcf.cs",  @"..\Build\TestBuilds\NetWcf\LightInject\Wcf\LightInject.Wcf.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.Wcf\LightInject.Wcf.cs",  @"..\Build\TestBuilds\Net45\LightInject\Wcf\LightInject.Wcf.cs", false, true);
+
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", @"..");
 
@@ -698,6 +757,9 @@ private void CreateLightInjectWebApiSourcePackage()
 	SourceWriter.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs",  @"..\LightInject.WebApi.Source\package\content\net40\LightInject\WebApi\LightInject.WebApi.cs.pp", true, true);
 	SourceWriter.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs",  @"..\LightInject.WebApi.Source\package\content\net45\LightInject\WebApi\LightInject.WebApi.cs.pp", true, true);
 	
+	SourceWriter.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs",  @"..\Build\TestBuilds\Net\LightInject\WebApi\LightInject.WebApi.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs",  @"..\Build\TestBuilds\Net45\LightInject\WebApi\LightInject.WebApi.cs", false, true);
+
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", @"..");
 
@@ -714,6 +776,7 @@ private void CreateLightInjectSignalRSourcePackage()
 	
 	SourceWriter.Write("NET45", @"..\..\LightInject.SignalR\LightInject.SignalR.cs",  @"..\LightInject.SignalR.Source\package\content\net45\LightInject\SignalR\LightInject.SignalR.cs.pp", true, true);
 	
+	SourceWriter.Write("NET45", @"..\..\LightInject.SignalR\LightInject.SignalR.cs",  @"..\Build\TestBuilds\Net45\LightInject\SignalR\LightInject.SignalR.cs", false, true);
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.SignalR.Source\package\LightInject.SignalR.nuspec", @"..");
 
@@ -732,6 +795,9 @@ private void CreateLightInjectMvcSourcePackage()
 	SourceWriter.Write("NET", @"..\..\LightInject.Mvc\LightInject.Mvc.cs",  @"..\LightInject.Mvc.Source\package\content\net40\LightInject\Mvc\LightInject.Mvc.cs.pp", true, true);
 	SourceWriter.Write("NET45", @"..\..\LightInject.Mvc\LightInject.Mvc.cs",  @"..\LightInject.Mvc.Source\package\content\net45\LightInject\Mvc\LightInject.Mvc.cs.pp", true, true);
 	
+	SourceWriter.Write("NET", @"..\..\LightInject.Mvc\LightInject.Mvc.cs",  @"..\Build\TestBuilds\Net\LightInject\Mvc\LightInject.Mvc.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.Mvc\LightInject.Mvc.cs",  @"..\Build\TestBuilds\Net45\LightInject\Mvc\LightInject.Mvc.cs", false, true);
+
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Mvc.Source\package\LightInject.Mvc.nuspec", @"..");
 
@@ -753,6 +819,11 @@ private void CreateLightInjectServiceLocationSourcePackage()
 	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\LightInject.ServiceLocation.Source\package\content\netcore45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp", true, false);
 	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\LightInject.ServiceLocation.Source\package\content\windowsphone8\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp", true, false);
 	
+	SourceWriter.Write("NET", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\Build\TestBuilds\Net\LightInject\ServiceLocation\LightInject.ServiceLocation.cs", false, true);
+	SourceWriter.Write("NET45", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\Build\TestBuilds\Net45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs", false, true);
+	SourceWriter.Write("NETFX_CORE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\Build\TestBuilds\netcore45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs", false, false);
+	SourceWriter.Write("WINDOWS_PHONE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs",  @"..\Build\TestBuilds\windowsphone\LightInject\ServiceLocation\LightInject.ServiceLocation.cs", false, false);
+
 	
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.ServiceLocation.Source\package\LightInject.ServiceLocation.nuspec", @"..");
 

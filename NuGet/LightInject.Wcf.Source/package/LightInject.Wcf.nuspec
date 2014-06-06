@@ -5,15 +5,16 @@
         <version>1.0.0.1</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Enables the LightInject service container to be used when creating WCF services.</description>          
         <copyright>Bernhard Richter</copyright>
+        <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET WCF Windows-Communication-Foundation</tags>
         <dependencies>
-            <dependency id="LightInject.Source" version="3.0.1.0" />            
-            <dependency id="LightInject.Interception.Source" version="1.0.0.3" />            
+            <dependency id="LightInject.Source" version="3.0.1.7" />
+            <dependency id="LightInject.Interception.Source" version="1.0.0.4" />
         </dependencies>
         <frameworkAssemblies>
             <frameworkAssembly assemblyName="System.ServiceModel"/>            

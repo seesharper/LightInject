@@ -2,18 +2,18 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject.Web.Source</id>
-        <version>1.0.0.3</version>
+        <version>1.0.0.4</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
         <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Enables the LightInject service container to be used in a web application by providing per web request scoped services.</description>
-        <releaseNotes>Now installs into a dedicated LightInject folder.</releaseNotes>
+        <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET</tags>
         <dependencies>
-            <dependency id="LightInject.Source" version="3.0.0.9" />            
+            <dependency id="LightInject.Source" version="3.0.1.7" />
         </dependencies>
         <frameworkAssemblies>
             <frameworkAssembly assemblyName="System.Web"/>            

@@ -1,7 +1,7 @@
 /*****************************************************************************   
     The MIT License (MIT)
 
-    Copyright (c) 2013 bernhard.richter@gmail.com
+    Copyright (c) 2014 bernhard.richter@gmail.com
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -863,7 +863,7 @@ namespace LightInject.Interception
         public ProxyDefinition(Type targetType, bool useLazyTarget, params Type[] additionalInterfaces)
             : this(targetType, null, additionalInterfaces)
         {
-            this.UseLazyTarget = useLazyTarget;
+            UseLazyTarget = useLazyTarget;
         }
 
         /// <summary>
@@ -877,7 +877,7 @@ namespace LightInject.Interception
             TargetType = targetType;
             TargetFactory = targetFactory;
             AdditionalInterfaces = ResolveAdditionalInterfaces(targetType, additionalInterfaces);
-            this.UseLazyTarget = true;
+            UseLazyTarget = true;
         }
 
         /// <summary>
@@ -1218,7 +1218,7 @@ namespace LightInject.Interception
             proxyDefinition = definition;
             InitializeTypeBuilder();
             ApplyTypeAttributes();
-            this.DefineTargetField();                        
+            DefineTargetField();                        
             DefineInitializerMethod();
             DefineStaticTargetFactoryField();
             ImplementConstructor();                                       
@@ -1470,13 +1470,13 @@ namespace LightInject.Interception
         {
             if (proxyDefinition.UseLazyTarget)
             {
-                il.Emit(OpCodes.Ldfld, this.targetField);
-                var getTargetValueMethod = this.targetField.FieldType.GetProperty("Value").GetGetMethod();
+                il.Emit(OpCodes.Ldfld, targetField);
+                var getTargetValueMethod = targetField.FieldType.GetProperty("Value").GetGetMethod();
                 il.Emit(OpCodes.Call, getTargetValueMethod);    
             }
             else
             {
-                il.Emit(OpCodes.Ldfld, this.targetField);
+                il.Emit(OpCodes.Ldfld, targetField);
             }            
         }
 
@@ -1506,7 +1506,7 @@ namespace LightInject.Interception
             var lazyTargetType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
             var getValueMethod = lazyTargetType.GetMethod("get_Value");
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, this.targetField);
+            il.Emit(OpCodes.Ldfld, targetField);
             il.Emit(OpCodes.Callvirt, getValueMethod);
             var equalsMethod = typeof(object).GetMethod("Equals", BindingFlags.Static | BindingFlags.Public);
             var returnProxyLabel = il.DefineLabel();
@@ -1827,7 +1827,7 @@ namespace LightInject.Interception
                 targetFieldType = proxyDefinition.TargetType;
             }
             
-            this.targetField = typeBuilder.DefineField("target", targetFieldType, FieldAttributes.Private);            
+            targetField = typeBuilder.DefineField("target", targetFieldType, FieldAttributes.Private);            
         }
 
         private void DefineStaticTargetFactoryField()
@@ -1857,7 +1857,7 @@ namespace LightInject.Interception
 
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldarg_1);
-            il.Emit(OpCodes.Stfld, this.targetField);
+            il.Emit(OpCodes.Stfld, targetField);
         }
 
         private void DefineInitializerMethodForClassProxy()
@@ -1968,16 +1968,16 @@ namespace LightInject.Interception
             {
                 if (proxyDefinition.UseLazyTarget)
                 {
-                    var getTargetValueMethod = this.targetField.FieldType.GetProperty("Value").GetGetMethod();
+                    var getTargetValueMethod = targetField.FieldType.GetProperty("Value").GetGetMethod();
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, this.targetField);
+                    il.Emit(OpCodes.Ldfld, targetField);
                     il.Emit(OpCodes.Call, getTargetValueMethod);
                     il.Emit(OpCodes.Ret);
                 }
                 else
                 {
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, this.targetField);
+                    il.Emit(OpCodes.Ldfld, targetField);
                     il.Emit(OpCodes.Ret);
                 }
             }

@@ -110,9 +110,6 @@
       </violation>
     </violations>
   </sourcecode>
-  <project key="60861655">
-    <configuration>TRACE;DEBUG;TEST,NET45</configuration>
-  </project>
   <sourcecode name="LightInject.cs" parser="StyleCop.CSharp.CsParser">
     <timestamps>
       <styleCop>2014.04.01 10:18:24.000</styleCop>
@@ -182,4 +179,7 @@
     </timestamps>
     <violations />
   </sourcecode>
+  <project key="60861655">
+    <configuration>TRACE;TEST,NET45</configuration>
+  </project>
 </stylecopresultscache>
