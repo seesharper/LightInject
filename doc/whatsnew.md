@@ -1,3 +1,23 @@
+## LightInject.Mvc 1.0.0.4 ##
+(June 6, 2014)
+
+Removed dependency to specific version to System.Web.Mvc 
+
+## LightInject.SignalR 1.0.0.1 ##
+(June 6, 2014)
+
+Added support for ASP.NET SignalR
+
+[Learn more](http://www.lightinject.net/#signalr)
+
+
+## LightInject.Interception 1.0.0.4 ##
+(June 6, 2014)
+
+Added support for class based proxies
+
+[Learn more](http://www.lightinject.net/#interception)
+
 ## LightInject.Interception 1.0.0.3 ##
 (Mars 17, 2014)
 
