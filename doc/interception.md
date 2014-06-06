@@ -26,10 +26,7 @@ This adds a reference to the LightInject.Interception.dll in the target project.
 
 This will install a single file (LightInject.Interception.cs) into the current project.
 
-### Limitations ###
-
-**LightInject** is currently limited to intercepting interfaces and NOT virtual methods declared in classes. 
-
+ 
 ## Interceptors ##
 
 An interceptor sits between the call site and the target instance and intercepts method calls.
@@ -282,5 +279,21 @@ Another scenario is when the proxy instance itself is leaking its target.
 
 Other scenarios such as event handlers or passing "this" to another method is NOT taken care of by **LightInject** as it is not possible without modifying the code in the target type itself. 
 
+## Class Proxies ##
 
+Starting from version 1.0.0.4, **LightInject.Interception** can be used to intercept classes with virtual members.
+	
+	public class Foo
+	{
+		public virtual void A()
+		{
+		}
+	}
 
+Any member that is marked as virtual can be intercepted.	
+
+	var container = new ServiceContainer();
+    container.Register<Foo>();
+    container.Intercept(sr => sr.ServiceType == typeof(Foo), factory => new SampleInterceptor());
+
+Class proxies are implemented internally by subclassing the target type and overriding virtual members to support interception.  
