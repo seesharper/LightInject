@@ -1,3 +1,9 @@
+## LightInject.Interception 1.0.0.5 ##
+(June 6, 2014)
+
+ProxyDefinition.TargetType now has a public getter.
+
+
 ## LightInject.Mvc 1.0.0.4 ##
 (June 6, 2014)
 
