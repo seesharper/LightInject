@@ -3192,7 +3192,8 @@ namespace LightInject
             var serviceFactoryIndex = constants.Add(this);
             Type funcType = factoryDelegate.GetType();
             emitter.PushConstant(factoryDelegateIndex, funcType);
-            emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));            
+            emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
+            var t = factoryDelegate.GetMethodInfo().GetParameters();
             if (factoryDelegate.GetMethodInfo().GetParameters().Length > 2)
             {
                 var parameters = factoryDelegate.GetMethodInfo().GetParameters().Skip(2).ToArray();
@@ -3429,7 +3430,7 @@ namespace LightInject
 
         private Action<IEmitter> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
-            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = rule.LifeTime };
+            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = CloneLifeTime(rule.LifeTime) };
             ParameterExpression serviceFactoryParameterExpression = Expression.Parameter(typeof(IServiceFactory));
             ConstantExpression serviceRequestConstantExpression = Expression.Constant(new ServiceRequest(serviceType, serviceName, this));
             ConstantExpression delegateConstantExpression = Expression.Constant(rule.Factory);

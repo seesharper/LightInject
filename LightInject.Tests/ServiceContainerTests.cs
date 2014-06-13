@@ -7,6 +7,7 @@ namespace LightInject.Tests
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
+    using System.Runtime.Serialization.Formatters;
     using System.Security;
     
     using System.Text;
@@ -882,6 +883,18 @@ namespace LightInject.Tests
             var secondInstance = container.GetInstance<IFoo>();
             Assert.AreSame(firstInstance, secondInstance);
         }
+
+        [TestMethod]
+        public void GetInstance_UsingFallback_DoesNotReuseLifetimeAcrossServices()
+        {
+            var container = CreateContainer();
+            container.RegisterFallback((serviceType, serviceName) => true, request => Activator.CreateInstance(request.ServiceType), new PerContainerLifetime());
+            var foo = container.GetInstance(typeof(Foo));
+            var bar = container.GetInstance(typeof(Bar));            
+            Assert.IsInstanceOfType(foo, typeof(Foo));
+            Assert.IsInstanceOfType(bar, typeof(Bar));
+        }
+
 
         [TestMethod]
         public void CanGetInstance_KnownService_ReturnsTrue()
