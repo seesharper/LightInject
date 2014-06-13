@@ -3570,117 +3570,681 @@ namespace LightInject
         }
     }
 
-    /// <summary>
-    /// Defines and represents a dynamic method that can be compiled and executed.
-    /// </summary>    
+    // ///<summary>
+    // ///Defines and represents a dynamic method that can be compiled and executed.
+    // ///</summary>    
+    //internal class DynamicMethod
+    //{
+    //    private readonly Type returnType;
+
+    //    private readonly Type[] parameterTypes;
+
+    //    private readonly ParameterExpression[] parameters;
+
+    //    private readonly ILGenerator generator;
+
+    //    /// <summary>
+    //    /// Initializes a new instance of the <see cref="DynamicMethod"/> class.
+    //    /// </summary>
+    //    /// <param name="returnType">A <see cref="Type"/> object that specifies the return type of the dynamic method.</param>
+    //    /// <param name="parameterTypes">An array of <see cref="Type"/> objects specifying the types of the parameters of the dynamic method, or null if the method has no parameters.</param>
+    //    public DynamicMethod(Type returnType, Type[] parameterTypes)
+    //    {
+    //        this.returnType = returnType;
+    //        this.parameterTypes = parameterTypes;
+    //        parameters = parameterTypes.Select(Expression.Parameter).ToArray();
+    //        generator = new ILGenerator(parameters);
+    //    }
+
+    //    /// <summary>
+    //    /// Completes the dynamic method and creates a delegate that can be used to execute it
+    //    /// </summary>
+    //    /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method.</param>
+    //    /// <returns>A delegate of the specified type, which can be used to execute the dynamic method.</returns>
+    //    public Delegate CreateDelegate(Type delegateType)
+    //    {
+    //        var lambda = Expression.Lambda(delegateType, generator.CurrentExpression, parameters);
+    //        return lambda.Compile();
+    //    }
+
+    //    /// <summary>
+    //    /// Completes the dynamic method and creates a delegate that can be used to execute it, specifying the delegate type and an object the delegate is bound to.
+    //    /// </summary>
+    //    /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method, minus the first parameter.</param>
+    //    /// <param name="target">An object the delegate is bound to. Must be of the same type as the first parameter of the dynamic method.</param>
+    //    /// <returns>A delegate of the specified type, which can be used to execute the dynamic method with the specified target object.</returns>
+    //    public Delegate CreateDelegate(Type delegateType, object target)
+    //    {
+    //        Type delegateTypeWithTargetParameter =
+    //            Expression.GetDelegateType(parameterTypes.Concat(new[] { returnType }).ToArray());
+    //        var lambdaWithTargetParameter = Expression.Lambda(
+    //            delegateTypeWithTargetParameter, generator.CurrentExpression, true, parameters);
+
+    //        Expression[] arguments = new Expression[] { Expression.Constant(target) }.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
+    //        var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
+
+    //        var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
+    //        return lambda.Compile();
+    //    }
+
+    //    /// <summary>
+    //    /// Returns a <see cref="ILGenerator"/> for the method
+    //    /// </summary>
+    //    /// <returns>An <see cref="ILGenerator"/> object for the method.</returns>
+    //    public ILGenerator GetILGenerator()
+    //    {
+    //        return generator;
+    //    }
+    //}
+
+    ///// <summary>
+    ///// A generator that transforms <see cref="OpCodes"/> into an expression tree.
+    ///// </summary>
+    //internal class ILGenerator
+    //{
+    //    private readonly ParameterExpression[] parameters;
+    //    private readonly Stack<Expression> stack = new Stack<Expression>();
+    //    private readonly List<LocalBuilder> locals = new List<LocalBuilder>();
+    //    private readonly List<Expression> expressions = new List<Expression>();
+
+    //    /// <summary>
+    //    /// Initializes a new instance of the <see cref="ILGenerator"/> class.
+    //    /// </summary>
+    //    /// <param name="parameters">An array of parameters used by the target <see cref="DynamicMethod"/>.</param>
+    //    public ILGenerator(ParameterExpression[] parameters)
+    //    {
+    //        this.parameters = parameters;
+    //    }
+
+    //    /// <summary>
+    //    /// Gets the current expression based the emitted <see cref="OpCodes"/>. 
+    //    /// </summary>
+    //    public Expression CurrentExpression
+    //    {
+    //        get
+    //        {
+    //            var variables = locals.Select(l => l.Variable).ToList();
+    //            var ex = new List<Expression>(expressions) { stack.Peek() };
+    //            return Expression.Block(variables, ex);
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction and metadata token for the specified constructor onto the Microsoft intermediate language (MSIL) stream of instructions.
+    //    /// </summary>
+    //    /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+    //    /// <param name="constructor">A <see cref="ConstructorInfo"/> representing a constructor.</param>
+    //    public void Emit(OpCode code, ConstructorInfo constructor)
+    //    {
+    //        if (code == OpCodes.Newobj)
+    //        {
+    //            var parameterCount = constructor.GetParameters().Length;
+    //            var expression = Expression.New(constructor, Pop(parameterCount));
+    //            stack.Push(expression);
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction onto the stream of instructions.
+    //    /// </summary>
+    //    /// <param name="code">The Microsoft Intermediate Language (MSIL) instruction to be put onto the stream.</param>
+    //    public void Emit(OpCode code)
+    //    {
+    //        if (code == OpCodes.Ldarg_0)
+    //        {
+    //            stack.Push(parameters[0]);
+    //        }
+    //        else if (code == OpCodes.Ldarg_1)
+    //        {
+    //            stack.Push(parameters[1]);
+    //        }
+    //        else if (code == OpCodes.Ldarg_2)
+    //        {
+    //            stack.Push(parameters[2]);
+    //        }
+    //        else if (code == OpCodes.Ldarg_3)
+    //        {
+    //            stack.Push(parameters[3]);
+    //        }
+    //        else if (code == OpCodes.Ldloc_0)
+    //        {
+    //            stack.Push(locals[0].Variable);
+    //        }
+    //        else if (code == OpCodes.Ldloc_1)
+    //        {
+    //            stack.Push(locals[1].Variable);
+    //        }
+    //        else if (code == OpCodes.Ldloc_2)
+    //        {
+    //            stack.Push(locals[2].Variable);
+    //        }
+    //        else if (code == OpCodes.Ldloc_3)
+    //        {
+    //            stack.Push(locals[3].Variable);
+    //        }
+    //        else if (code == OpCodes.Stloc_0)
+    //        {
+    //            Expression valueExpression = stack.Pop();
+    //            var assignExpression = Expression.Assign(locals[0].Variable, valueExpression);
+    //            expressions.Add(assignExpression);
+    //        }
+    //        else if (code == OpCodes.Stloc_1)
+    //        {
+    //            Expression valueExpression = stack.Pop();
+    //            var assignExpression = Expression.Assign(locals[1].Variable, valueExpression);
+    //            expressions.Add(assignExpression);
+    //        }
+    //        else if (code == OpCodes.Stloc_2)
+    //        {
+    //            Expression valueExpression = stack.Pop();
+    //            var assignExpression = Expression.Assign(locals[2].Variable, valueExpression);
+    //            expressions.Add(assignExpression);
+    //        }
+    //        else if (code == OpCodes.Stloc_3)
+    //        {
+    //            Expression valueExpression = stack.Pop();
+    //            var assignExpression = Expression.Assign(locals[3].Variable, valueExpression);
+    //            expressions.Add(assignExpression);
+    //        }
+    //        else if (code == OpCodes.Ldelem_Ref)
+    //        {
+    //            Expression[] indexes = { stack.Pop() };
+    //            Expression array = stack.Pop();
+    //            stack.Push(Expression.ArrayAccess(array, indexes));
+    //        }
+    //        else if (code == OpCodes.Ldlen)
+    //        {
+    //            Expression array = stack.Pop();
+    //            stack.Push(Expression.ArrayLength(array));
+    //        }
+    //        else if (code == OpCodes.Conv_I4)
+    //        {
+    //            stack.Push(Expression.Convert(stack.Pop(), typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_0)
+    //        {
+    //            stack.Push(Expression.Constant(0, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_1)
+    //        {
+    //            stack.Push(Expression.Constant(1, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_2)
+    //        {
+    //            stack.Push(Expression.Constant(2, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_3)
+    //        {
+    //            stack.Push(Expression.Constant(3, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_4)
+    //        {
+    //            stack.Push(Expression.Constant(4, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_5)
+    //        {
+    //            stack.Push(Expression.Constant(5, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_6)
+    //        {
+    //            stack.Push(Expression.Constant(6, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_7)
+    //        {
+    //            stack.Push(Expression.Constant(7, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldc_I4_8)
+    //        {
+    //            stack.Push(Expression.Constant(8, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Sub)
+    //        {
+    //            var right = stack.Pop();
+    //            var left = stack.Pop();
+    //            stack.Push(Expression.Subtract(left, right));
+    //        }
+    //        else if (code == OpCodes.Ret)
+    //        {
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the index of the given local variable.
+    //    /// </summary>
+    //    /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+    //    /// <param name="localBuilder">A local variable.</param>
+    //    public void Emit(OpCode code, LocalBuilder localBuilder)
+    //    {
+    //        if (code == OpCodes.Stloc)
+    //        {
+    //            Expression valueExpression = stack.Pop();
+    //            var assignExpression = Expression.Assign(localBuilder.Variable, valueExpression);
+    //            expressions.Add(assignExpression);
+    //        }
+    //        else if (code == OpCodes.Ldloc)
+    //        {
+    //            stack.Push(localBuilder.Variable);
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+    //    /// </summary>
+    //    /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+    //    /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+    //    public void Emit(OpCode code, int arg)
+    //    {
+    //        if (code == OpCodes.Ldc_I4)
+    //        {
+    //            stack.Push(Expression.Constant(arg, typeof(int)));
+    //        }
+    //        else if (code == OpCodes.Ldarg)
+    //        {
+    //            stack.Push(parameters[arg]);
+    //        }
+    //        else if (code == OpCodes.Ldloc)
+    //        {
+    //            stack.Push(locals[arg].Variable);
+    //        }
+    //        else if (code == OpCodes.Stloc)
+    //        {
+    //            Expression valueExpression = stack.Pop();
+    //            var assignExpression = Expression.Assign(locals[arg].Variable, valueExpression);
+    //            expressions.Add(assignExpression);
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+    //    /// </summary>
+    //    /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+    //    /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+    //    public void Emit(OpCode code, sbyte arg)
+    //    {
+    //        if (code == OpCodes.Ldc_I4_S)
+    //        {
+    //            stack.Push(Expression.Constant(arg, typeof(sbyte)));
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+    //    /// </summary>
+    //    /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+    //    /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+    //    public void Emit(OpCode code, byte arg)
+    //    {
+    //        if (code == OpCodes.Ldloc_S)
+    //        {
+    //            stack.Push(locals[arg].Variable);
+    //        }
+    //        else if (code == OpCodes.Ldarg_S)
+    //        {
+    //            stack.Push(parameters[arg]);
+    //        }
+    //        else if (code == OpCodes.Stloc_S)
+    //        {
+    //            Expression valueExpression = stack.Pop();
+    //            var assignExpression = Expression.Assign(locals[arg].Variable, valueExpression);
+    //            expressions.Add(assignExpression);
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
+    //    /// </summary>
+    //    /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+    //    /// <param name="arg">The String to be emitted.</param>
+    //    public void Emit(OpCode code, string arg)
+    //    {
+    //        if (code == OpCodes.Ldstr)
+    //        {
+    //            stack.Push(Expression.Constant(arg, typeof(string)));
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Declares a local variable of the specified type.
+    //    /// </summary>
+    //    /// <param name="type">A <see cref="Type"/> object that represents the type of the local variable.</param>
+    //    /// <returns>The declared local variable.</returns>
+    //    public LocalBuilder DeclareLocal(Type type)
+    //    {
+    //        var localBuilder = new LocalBuilder(type, locals.Count);
+    //        locals.Add(localBuilder);
+    //        return localBuilder;
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given type.
+    //    /// </summary>
+    //    /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+    //    /// <param name="type">A <see cref="Type"/>.</param>
+    //    public void Emit(OpCode code, Type type)
+    //    {
+    //        if (code == OpCodes.Newarr)
+    //        {
+    //            stack.Push(Expression.NewArrayBounds(type, Pop(1)));
+    //        }
+    //        else if (code == OpCodes.Stelem)
+    //        {
+    //            var value = stack.Pop();
+    //            var index = stack.Pop();
+    //            var array = stack.Pop();
+    //            var arrayAccess = Expression.ArrayAccess(array, index);
+
+    //            var assignExpression = Expression.Assign(arrayAccess, value);
+    //            expressions.Add(assignExpression);
+    //        }
+    //        else if (code == OpCodes.Castclass)
+    //        {
+    //            stack.Push(Expression.Convert(stack.Pop(), type));
+    //        }
+    //        else if (code == OpCodes.Box)
+    //        {
+    //            stack.Push(Expression.Convert(stack.Pop(), typeof(object)));
+    //        }
+    //        else if (code == OpCodes.Unbox_Any)
+    //        {
+    //            stack.Push(Expression.Convert(stack.Pop(), type));
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given method.
+    //    /// </summary>
+    //    /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+    //    /// <param name="methodInfo">A <see cref="MethodInfo"/> representing a method.</param>
+    //    public void Emit(OpCode code, MethodInfo methodInfo)
+    //    {
+    //        if (code == OpCodes.Callvirt || code == OpCodes.Call)
+    //        {
+    //            var parameterCount = methodInfo.GetParameters().Length;
+    //            Expression[] arguments = Pop(parameterCount);
+
+    //            MethodCallExpression methodCallExpression;
+
+    //            if (!methodInfo.IsStatic)
+    //            {
+    //                var instance = stack.Pop();
+    //                methodCallExpression = Expression.Call(instance, methodInfo, arguments);
+    //            }
+    //            else
+    //            {
+    //                methodCallExpression = Expression.Call(null, methodInfo, arguments);
+    //            }
+
+    //            if (methodInfo.ReturnType == typeof(void))
+    //            {
+    //                expressions.Add(methodCallExpression);
+    //            }
+    //            else
+    //            {
+    //                stack.Push(methodCallExpression);
+    //            }
+    //        }
+    //        else
+    //        {
+    //            throw new NotSupportedException(code.ToString());
+    //        }
+    //    }
+
+    //    private Expression[] Pop(int numberOfElements)
+    //    {
+    //        var expressionsToPop = new Expression[numberOfElements];
+
+    //        for (int i = 0; i < numberOfElements; i++)
+    //        {
+    //            expressionsToPop[i] = stack.Pop();
+    //        }
+
+    //        return expressionsToPop.Reverse().ToArray();
+    //    }
+    //}
+
+    ///// <summary>
+    ///// Represents a local variable within a method or constructor.
+    ///// </summary>
+    //internal class LocalBuilder
+    //{
+    //    /// <summary>
+    //    /// Initializes a new instance of the <see cref="LocalBuilder"/> class.
+    //    /// </summary>
+    //    /// <param name="type">The <see cref="Type"/> of the variable that this <see cref="LocalBuilder"/> represents.</param>
+    //    /// <param name="localIndex">The zero-based index of the local variable within the method body.</param> 
+    //    public LocalBuilder(Type type, int localIndex)
+    //    {
+    //        Variable = Expression.Parameter(type);
+    //        LocalType = type;
+    //        LocalIndex = localIndex;
+    //    }
+
+    //    /// <summary>
+    //    /// Gets the <see cref="ParameterExpression"/> that represents the variable.
+    //    /// </summary>
+    //    public ParameterExpression Variable { get; private set; }
+
+    //    /// <summary>
+    //    /// Gets the type of the local variable.
+    //    /// </summary>
+    //    public Type LocalType { get; private set; }
+
+    //    /// <summary>
+    //    /// Gets the zero-based index of the local variable within the method body.
+    //    /// </summary>
+    //    public int LocalIndex { get; private set; }
+    //}
+
     internal class DynamicMethod
     {
         private readonly Type returnType;
 
         private readonly Type[] parameterTypes;
 
-        private readonly ParameterExpression[] parameters;
-
         private readonly ILGenerator generator;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DynamicMethod"/> class.
-        /// </summary>
-        /// <param name="returnType">A <see cref="Type"/> object that specifies the return type of the dynamic method.</param>
-        /// <param name="parameterTypes">An array of <see cref="Type"/> objects specifying the types of the parameters of the dynamic method, or null if the method has no parameters.</param>
         public DynamicMethod(Type returnType, Type[] parameterTypes)
         {
             this.returnType = returnType;
             this.parameterTypes = parameterTypes;
-            parameters = parameterTypes.Select(Expression.Parameter).ToArray();
-            generator = new ILGenerator(parameters);
+            generator = new ILGenerator();
         }
 
-        /// <summary>
-        /// Completes the dynamic method and creates a delegate that can be used to execute it
-        /// </summary>
-        /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method.</param>
-        /// <returns>A delegate of the specified type, which can be used to execute the dynamic method.</returns>
         public Delegate CreateDelegate(Type delegateType)
         {
-            var lambda = Expression.Lambda(delegateType, generator.CurrentExpression, parameters);
-            return lambda.Compile();
+            var executeMethod = typeof(ILGenerator).GetMethod("Execute");
+            var d = executeMethod.CreateDelegate(delegateType, generator);
+            return d;
         }
 
-        /// <summary>
-        /// Completes the dynamic method and creates a delegate that can be used to execute it, specifying the delegate type and an object the delegate is bound to.
-        /// </summary>
-        /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method, minus the first parameter.</param>
-        /// <param name="target">An object the delegate is bound to. Must be of the same type as the first parameter of the dynamic method.</param>
-        /// <returns>A delegate of the specified type, which can be used to execute the dynamic method with the specified target object.</returns>
         public Delegate CreateDelegate(Type delegateType, object target)
         {
             Type delegateTypeWithTargetParameter =
-                Expression.GetDelegateType(parameterTypes.Concat(new[] { returnType }).ToArray());
-            var lambdaWithTargetParameter = Expression.Lambda(
-                delegateTypeWithTargetParameter, generator.CurrentExpression, true, parameters);
+               Expression.GetDelegateType(parameterTypes.Concat(new[] { returnType }).ToArray());
 
-            Expression[] arguments = new Expression[] { Expression.Constant(target) }.Concat(parameters.Cast<Expression>().Skip(1)).ToArray();
-            var invokeExpression = Expression.Invoke(lambdaWithTargetParameter, arguments);
+            var executeMethod = typeof(ILGenerator).GetMethod("Execute");
 
-            var lambda = Expression.Lambda(delegateType, invokeExpression, parameters.Skip(1));
-            return lambda.Compile();
+            var d = executeMethod.CreateDelegate(delegateTypeWithTargetParameter, generator);
+            return d;
         }
 
-        /// <summary>
-        /// Returns a <see cref="ILGenerator"/> for the method
-        /// </summary>
-        /// <returns>An <see cref="ILGenerator"/> object for the method.</returns>
         public ILGenerator GetILGenerator()
         {
             return generator;
         }
     }
 
-    /// <summary>
-    /// A generator that transforms <see cref="OpCodes"/> into an expression tree.
-    /// </summary>
+    internal class ExecutionContext
+    {
+        public ExecutionContext(object[] arguments, LocalBuilder[] locals)
+        {
+            Arguments = arguments;
+            Stack = new Stack<object>();
+            Locals = locals;
+        }
+
+        public object[] Arguments { get; private set; }
+
+        public Stack<object> Stack { get; private set; }
+
+        public LocalBuilder[] Locals { get; private set; }
+    }
+
     internal class ILGenerator
     {
-        private readonly ParameterExpression[] parameters;
-        private readonly Stack<Expression> stack = new Stack<Expression>();
-        private readonly List<LocalBuilder> locals = new List<LocalBuilder>();
-        private readonly List<Expression> expressions = new List<Expression>();
+        private readonly List<Action<ExecutionContext>> instructions = new List<Action<ExecutionContext>>();
+        private readonly List<LocalBuilder> declaredLocals = new List<LocalBuilder>();
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ILGenerator"/> class.
-        /// </summary>
-        /// <param name="parameters">An array of parameters used by the target <see cref="DynamicMethod"/>.</param>
-        public ILGenerator(ParameterExpression[] parameters)
+        public object Execute(object arguments)
         {
-            this.parameters = parameters;
-        }
+            var context = new ExecutionContext(new object[] { arguments }, declaredLocals.Select(l => new LocalBuilder(l.LocalType, l.LocalIndex)).ToArray());
 
-        /// <summary>
-        /// Gets the current expression based the emitted <see cref="OpCodes"/>. 
-        /// </summary>
-        public Expression CurrentExpression
-        {
-            get
+            foreach (var instruction in instructions)
             {
-                var variables = locals.Select(l => l.Variable).ToList();
-                var ex = new List<Expression>(expressions) { stack.Peek() };
-                return Expression.Block(variables, ex);
+                instruction(context);
             }
+            return context.Stack.Pop();
         }
 
-        /// <summary>
-        /// Puts the specified instruction and metadata token for the specified constructor onto the Microsoft intermediate language (MSIL) stream of instructions.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
-        /// <param name="constructor">A <see cref="ConstructorInfo"/> representing a constructor.</param>
+        //public object ExecuteWithTarget(object firstArgument, object secondArgument)
+        //{
+        //    foreach (var instruction in instructions)
+        //    {
+        //        instruction(new object[] { firstArgument, secondArgument });
+        //    }
+        //    return stack.Pop();
+        //}
+
+        public LocalBuilder DeclareLocal(Type type)
+        {
+            var localBuilder = new LocalBuilder(type, declaredLocals.Count);
+            declaredLocals.Add(localBuilder);
+            return localBuilder;
+        }
+
         public void Emit(OpCode code, ConstructorInfo constructor)
         {
+            instructions.Add((context) => EmitInternal(code, constructor, context));
+        }
+
+        public void Emit(OpCode code, int arg)
+        {
+            instructions.Add((context) => EmitInternal(code, arg, context));
+        }
+
+        public void Emit(OpCode code, LocalBuilder localBuilder)
+        {
+            instructions.Add(context => EmitInternal(code, context.Locals[localBuilder.LocalIndex], context));
+        }
+
+        public void Emit(OpCode code, sbyte arg)
+        {
+            instructions.Add(context => EmitInternal(code, arg, context));
+        }
+
+        public void Emit(OpCode code, byte arg)
+        {
+            instructions.Add(context => EmitInternal(code, arg, context));
+        }
+
+        public void Emit(OpCode code, string arg)
+        {
+            instructions.Add(context => EmitInternal(code, arg, context));
+        }
+
+        public void Emit(OpCode code, Type type)
+        {
+            instructions.Add(context => EmitInternal(code, type, context));
+        }
+
+        public void Emit(OpCode code, MethodInfo methodInfo)
+        {
+            instructions.Add(context => EmitInternal(code, methodInfo, context));
+        }
+
+        public void Emit(OpCode code)
+        {
+            instructions.Add(context => EmitInternal(code, context));
+        }
+
+        internal void EmitInternal(OpCode code, ConstructorInfo constructor, ExecutionContext context)
+        {
+            var stack = context.Stack;
+
             if (code == OpCodes.Newobj)
             {
                 var parameterCount = constructor.GetParameters().Length;
-                var expression = Expression.New(constructor, Pop(parameterCount));
-                stack.Push(expression);
+                object[] arguments = stack.Pop(parameterCount);
+                Type type = constructor.DeclaringType;
+                object instance;
+                try
+                {
+                    instance = Activator.CreateInstance(type, arguments);
+                }
+                catch (TargetInvocationException ex)
+                {
+
+                    throw ex.InnerException;
+                }
+
+                stack.Push(instance);
+            }
+        }
+
+
+        internal void EmitInternal(OpCode code, int arg, ExecutionContext context)
+        {
+            var stack = context.Stack;
+            var locals = context.Locals;
+            var arguments = context.Arguments;
+
+            if (code == OpCodes.Ldc_I4)
+            {
+                stack.Push(arg);
+            }
+            else if (code == OpCodes.Ldarg)
+            {
+                stack.Push(arguments[arg]);
+            }
+            else if (code == OpCodes.Ldloc)
+            {
+                stack.Push(locals[arg].Value);
+            }
+            else if (code == OpCodes.Stloc)
+            {
+                locals[arg].Value = stack.Pop();
             }
             else
             {
@@ -3688,124 +4252,259 @@ namespace LightInject
             }
         }
 
-        /// <summary>
-        /// Puts the specified instruction onto the stream of instructions.
-        /// </summary>
-        /// <param name="code">The Microsoft Intermediate Language (MSIL) instruction to be put onto the stream.</param>
-        public void Emit(OpCode code)
+        internal void EmitInternal(OpCode code, LocalBuilder localBuilder, ExecutionContext context)
         {
+            var stack = context.Stack;
+
+            if (code == OpCodes.Stloc)
+            {
+                localBuilder.Value = stack.Pop();
+            }
+            else if (code == OpCodes.Ldloc)
+            {
+                stack.Push(localBuilder.Value);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        internal void EmitInternal(OpCode code, sbyte arg, ExecutionContext context)
+        {
+            var stack = context.Stack;
+
+            if (code == OpCodes.Ldc_I4_S)
+            {
+                stack.Push(arg);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        internal void EmitInternal(OpCode code, byte arg, object[] args, ExecutionContext context)
+        {
+            var stack = context.Stack;
+            var locals = context.Locals;
+
+            if (code == OpCodes.Ldloc_S)
+            {
+                stack.Push(locals[arg].Value);
+            }
+            else if (code == OpCodes.Ldarg_S)
+            {
+                stack.Push(args[arg]);
+            }
+            else if (code == OpCodes.Stloc_S)
+            {
+                locals[arg].Value = stack.Pop();
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        internal void EmitInternal(OpCode code, string arg, ExecutionContext context)
+        {
+            var stack = context.Stack;
+
+            if (code == OpCodes.Ldstr)
+            {
+                stack.Push(arg);
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        internal void EmitInternal(OpCode code, Type type, ExecutionContext context)
+        {
+            var stack = context.Stack;
+            if (code == OpCodes.Newarr)
+            {
+                var array = Array.CreateInstance(type, (int)stack.Pop());
+                stack.Push(array);
+            }
+            else if (code == OpCodes.Stelem)
+            {
+                var value = stack.Pop();
+                var index = stack.Pop();
+                var array = (Array)stack.Pop();
+                array.SetValue(value, (int)index);
+            }
+            else if (code == OpCodes.Castclass)
+            {
+                stack.Push(stack.Pop());
+            }
+            else if (code == OpCodes.Box)
+            {
+                stack.Push(stack.Pop());
+            }
+            else if (code == OpCodes.Unbox_Any)
+            {
+                stack.Push(stack.Pop());
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        internal void EmitInternal(OpCode code, MethodInfo methodInfo, ExecutionContext context)
+        {
+            var stack = context.Stack;
+
+            if (code == OpCodes.Callvirt || code == OpCodes.Call)
+            {
+                var parameterCount = methodInfo.GetParameters().Length;
+                object[] arguments = stack.Pop(parameterCount);
+
+                object result;
+                if (!methodInfo.IsStatic)
+                {
+                    object instance = stack.Pop();
+                    try
+                    {
+                        result = methodInfo.Invoke(instance, arguments);
+                    }
+                    catch (TargetInvocationException ex)
+                    {
+
+                        throw ex.InnerException;
+                    }
+
+                }
+                else
+                {
+                    result = methodInfo.Invoke(null, arguments);
+                }
+
+                if (methodInfo.ReturnType != typeof(void))
+                {
+                    stack.Push(result);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        public void EmitInternal(OpCode code, ExecutionContext context)
+        {
+            var stack = context.Stack;
+            var args = context.Arguments;
+            var locals = context.Locals;
+
             if (code == OpCodes.Ldarg_0)
             {
-                stack.Push(parameters[0]);
+                stack.Push(args[0]);
             }
             else if (code == OpCodes.Ldarg_1)
             {
-                stack.Push(parameters[1]);
+                stack.Push(args[1]);
             }
             else if (code == OpCodes.Ldarg_2)
             {
-                stack.Push(parameters[2]);
+                stack.Push(args[2]);
             }
             else if (code == OpCodes.Ldarg_3)
             {
-                stack.Push(parameters[3]);
+                stack.Push(args[3]);
             }
             else if (code == OpCodes.Ldloc_0)
             {
-                stack.Push(locals[0].Variable);
+                stack.Push(locals[0].Value);
             }
             else if (code == OpCodes.Ldloc_1)
             {
-                stack.Push(locals[1].Variable);
+                stack.Push(locals[1].Value);
             }
             else if (code == OpCodes.Ldloc_2)
             {
-                stack.Push(locals[2].Variable);
+                stack.Push(locals[2].Value);
             }
             else if (code == OpCodes.Ldloc_3)
             {
-                stack.Push(locals[3].Variable);
+                stack.Push(locals[3].Value);
             }
             else if (code == OpCodes.Stloc_0)
             {
-                Expression valueExpression = stack.Pop();
-                var assignExpression = Expression.Assign(locals[0].Variable, valueExpression);
-                expressions.Add(assignExpression);
+                locals[0].Value = stack.Pop();
             }
             else if (code == OpCodes.Stloc_1)
             {
-                Expression valueExpression = stack.Pop();
-                var assignExpression = Expression.Assign(locals[1].Variable, valueExpression);
-                expressions.Add(assignExpression);
+                locals[1].Value = stack.Pop();
             }
             else if (code == OpCodes.Stloc_2)
             {
-                Expression valueExpression = stack.Pop();
-                var assignExpression = Expression.Assign(locals[2].Variable, valueExpression);
-                expressions.Add(assignExpression);
+                locals[2].Value = stack.Pop();
             }
             else if (code == OpCodes.Stloc_3)
             {
-                Expression valueExpression = stack.Pop();
-                var assignExpression = Expression.Assign(locals[3].Variable, valueExpression);
-                expressions.Add(assignExpression);
+                locals[3].Value = stack.Pop();
             }
             else if (code == OpCodes.Ldelem_Ref)
             {
-                Expression[] indexes = { stack.Pop() };
-                Expression array = stack.Pop();
-                stack.Push(Expression.ArrayAccess(array, indexes));
+                var index = (int)stack.Pop();
+                var array = (Array)stack.Pop();
+                var value = array.GetValue(index);
+                stack.Push(value);
             }
             else if (code == OpCodes.Ldlen)
             {
-                Expression array = stack.Pop();
-                stack.Push(Expression.ArrayLength(array));
+                var array = (Array)stack.Pop();
+                stack.Push(array.Length);
             }
             else if (code == OpCodes.Conv_I4)
             {
-                stack.Push(Expression.Convert(stack.Pop(), typeof(int)));
+                stack.Push(stack.Pop());
             }
             else if (code == OpCodes.Ldc_I4_0)
             {
-                stack.Push(Expression.Constant(0, typeof(int)));
+                stack.Push(0);
             }
             else if (code == OpCodes.Ldc_I4_1)
             {
-                stack.Push(Expression.Constant(1, typeof(int)));
+                stack.Push(1);
             }
             else if (code == OpCodes.Ldc_I4_2)
             {
-                stack.Push(Expression.Constant(2, typeof(int)));
+                stack.Push(2);
             }
             else if (code == OpCodes.Ldc_I4_3)
             {
-                stack.Push(Expression.Constant(3, typeof(int)));
+                stack.Push(3);
             }
             else if (code == OpCodes.Ldc_I4_4)
             {
-                stack.Push(Expression.Constant(4, typeof(int)));
+                stack.Push(4);
             }
             else if (code == OpCodes.Ldc_I4_5)
             {
-                stack.Push(Expression.Constant(5, typeof(int)));
+                stack.Push(5);
             }
             else if (code == OpCodes.Ldc_I4_6)
             {
-                stack.Push(Expression.Constant(6, typeof(int)));
+                stack.Push(6);
             }
             else if (code == OpCodes.Ldc_I4_7)
             {
-                stack.Push(Expression.Constant(7, typeof(int)));
+                stack.Push(7);
             }
             else if (code == OpCodes.Ldc_I4_8)
             {
-                stack.Push(Expression.Constant(8, typeof(int)));
+                stack.Push(8);
             }
             else if (code == OpCodes.Sub)
             {
-                var right = stack.Pop();
-                var left = stack.Pop();
-                stack.Push(Expression.Subtract(left, right));
+                var right = (int)stack.Pop();
+                var left = (int)stack.Pop();
+                stack.Push(left - right);
             }
             else if (code == OpCodes.Ret)
             {
@@ -3816,223 +4515,23 @@ namespace LightInject
             }
         }
 
-        /// <summary>
-        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the index of the given local variable.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
-        /// <param name="localBuilder">A local variable.</param>
-        public void Emit(OpCode code, LocalBuilder localBuilder)
+
+    }
+
+    internal static class StackExtensions
+    {
+        public static T[] Pop<T>(this Stack<T> stack, int numberOfElements)
         {
-            if (code == OpCodes.Stloc)
-            {
-                Expression valueExpression = stack.Pop();
-                var assignExpression = Expression.Assign(localBuilder.Variable, valueExpression);
-                expressions.Add(assignExpression);
-            }
-            else if (code == OpCodes.Ldloc)
-            {
-                stack.Push(localBuilder.Variable);
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
-        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
-        public void Emit(OpCode code, int arg)
-        {
-            if (code == OpCodes.Ldc_I4)
-            {
-                stack.Push(Expression.Constant(arg, typeof(int)));
-            }
-            else if (code == OpCodes.Ldarg)
-            {
-                stack.Push(parameters[arg]);
-            }
-            else if (code == OpCodes.Ldloc)
-            {
-                stack.Push(locals[arg].Variable);
-            }
-            else if (code == OpCodes.Stloc)
-            {
-                Expression valueExpression = stack.Pop();
-                var assignExpression = Expression.Assign(locals[arg].Variable, valueExpression);
-                expressions.Add(assignExpression);
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
-        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
-        public void Emit(OpCode code, sbyte arg)
-        {
-            if (code == OpCodes.Ldc_I4_S)
-            {
-                stack.Push(Expression.Constant(arg, typeof(sbyte)));
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
-        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
-        public void Emit(OpCode code, byte arg)
-        {
-            if (code == OpCodes.Ldloc_S)
-            {
-                stack.Push(locals[arg].Variable);
-            }
-            else if (code == OpCodes.Ldarg_S)
-            {
-                stack.Push(parameters[arg]);
-            }
-            else if (code == OpCodes.Stloc_S)
-            {
-                Expression valueExpression = stack.Pop();
-                var assignExpression = Expression.Assign(locals[arg].Variable, valueExpression);
-                expressions.Add(assignExpression);
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
-        /// <param name="arg">The String to be emitted.</param>
-        public void Emit(OpCode code, string arg)
-        {
-            if (code == OpCodes.Ldstr)
-            {
-                stack.Push(Expression.Constant(arg, typeof(string)));
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Declares a local variable of the specified type.
-        /// </summary>
-        /// <param name="type">A <see cref="Type"/> object that represents the type of the local variable.</param>
-        /// <returns>The declared local variable.</returns>
-        public LocalBuilder DeclareLocal(Type type)
-        {
-            var localBuilder = new LocalBuilder(type, locals.Count);
-            locals.Add(localBuilder);
-            return localBuilder;
-        }
-
-        /// <summary>
-        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given type.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
-        /// <param name="type">A <see cref="Type"/>.</param>
-        public void Emit(OpCode code, Type type)
-        {
-            if (code == OpCodes.Newarr)
-            {
-                stack.Push(Expression.NewArrayBounds(type, Pop(1)));
-            }
-            else if (code == OpCodes.Stelem)
-            {
-                var value = stack.Pop();
-                var index = stack.Pop();
-                var array = stack.Pop();
-                var arrayAccess = Expression.ArrayAccess(array, index);
-
-                var assignExpression = Expression.Assign(arrayAccess, value);
-                expressions.Add(assignExpression);
-            }
-            else if (code == OpCodes.Castclass)
-            {
-                stack.Push(Expression.Convert(stack.Pop(), type));
-            }
-            else if (code == OpCodes.Box)
-            {
-                stack.Push(Expression.Convert(stack.Pop(), typeof(object)));
-            }
-            else if (code == OpCodes.Unbox_Any)
-            {
-                stack.Push(Expression.Convert(stack.Pop(), type));
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given method.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
-        /// <param name="methodInfo">A <see cref="MethodInfo"/> representing a method.</param>
-        public void Emit(OpCode code, MethodInfo methodInfo)
-        {
-            if (code == OpCodes.Callvirt || code == OpCodes.Call)
-            {
-                var parameterCount = methodInfo.GetParameters().Length;
-                Expression[] arguments = Pop(parameterCount);
-
-                MethodCallExpression methodCallExpression;
-
-                if (!methodInfo.IsStatic)
-                {
-                    var instance = stack.Pop();
-                    methodCallExpression = Expression.Call(instance, methodInfo, arguments);
-                }
-                else
-                {
-                    methodCallExpression = Expression.Call(null, methodInfo, arguments);
-                }
-
-                if (methodInfo.ReturnType == typeof(void))
-                {
-                    expressions.Add(methodCallExpression);
-                }
-                else
-                {
-                    stack.Push(methodCallExpression);
-                }
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        private Expression[] Pop(int numberOfElements)
-        {
-            var expressionsToPop = new Expression[numberOfElements];
-
+            var elementsToPop = new T[numberOfElements];
             for (int i = 0; i < numberOfElements; i++)
             {
-                expressionsToPop[i] = stack.Pop();
+                elementsToPop[i] = stack.Pop();
             }
 
-            return expressionsToPop.Reverse().ToArray();
+            return elementsToPop.Reverse().ToArray();
         }
     }
+
 
     /// <summary>
     /// Represents a local variable within a method or constructor.
@@ -4046,15 +4545,9 @@ namespace LightInject
         /// <param name="localIndex">The zero-based index of the local variable within the method body.</param> 
         public LocalBuilder(Type type, int localIndex)
         {
-            Variable = Expression.Parameter(type);
             LocalType = type;
             LocalIndex = localIndex;
         }
-
-        /// <summary>
-        /// Gets the <see cref="ParameterExpression"/> that represents the variable.
-        /// </summary>
-        public ParameterExpression Variable { get; private set; }
 
         /// <summary>
         /// Gets the type of the local variable.
@@ -4065,6 +4558,11 @@ namespace LightInject
         /// Gets the zero-based index of the local variable within the method body.
         /// </summary>
         public int LocalIndex { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the value associated with this <see cref="LocalBuilder"/>.
+        /// </summary>
+        public object Value { get; set; }
     }
 
     /// <summary>
