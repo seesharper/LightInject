@@ -129,7 +129,7 @@ The following example shows how to set up the container so that only calls metho
 
     private void DefineProxyType(ProxyDefinition proxyDefinition)
     {
-        proxyDefinition.Implement(m => m.Name == "SomeMethodName", () => new SampleInterceptor());       
+        proxyDefinition.Implement(() => new SampleInterceptor(), m => m.Name == "SomeMethodName");       
     }
 
 Methods that does not match the method selector predicate will NOT be intercepted and method calls will be passed directly down to the target instance.  
@@ -143,7 +143,7 @@ If we omit the method selector, **LightInject** will intercept all methods from 
 
 If we choose to use a method selector, these methods will also be intercepted if they match the predicate in the method selector.
 
-    proxyDefinition.Implement(m => m.IsDeclaredBy<object>() , () => new SampleInterceptor());
+    proxyDefinition.Implement(() => new SampleInterceptor(), m => m.IsDeclaredBy<object>());
 
 We can also use a method selector with the **Intercept** method that allows easy interception of any method without implementing an **IInterceptor**.
 
