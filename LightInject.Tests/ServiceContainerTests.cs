@@ -17,8 +17,7 @@ namespace LightInject.Tests
     using LightInject.SampleLibrary;
     using LightInject.SampleLibraryWithCompositionRootTypeAttribute;
 
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;    
     using Foo = LightInject.SampleLibrary.Foo;
     using IFoo = LightInject.SampleLibrary.IFoo;
 
@@ -515,6 +514,7 @@ namespace LightInject.Tests
 
         #endregion
 #endif
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE 
         #region Func Services
 
         [TestMethod]
@@ -584,7 +584,7 @@ namespace LightInject.Tests
         }
   
         #endregion
-
+#endif
         #region Func Factory
 
         [TestMethod]
@@ -1010,31 +1010,27 @@ namespace LightInject.Tests
         [TestMethod]
         public void Dispose_ServiceContainer_DisposesDisposableLifeTimeInstances()
         {
-            var lifetimeMock = new Mock<ILifetime>();
-            var disposableLifeTimeMock = lifetimeMock.As<IDisposable>();
+            var lifetime = new DisposableLifetime();
             
             using (var container = new ServiceContainer())
             {               
-                container.Register<IFoo, Foo>(lifetimeMock.Object);                
+                container.Register<IFoo, Foo>(lifetime);                
             }
-
-            disposableLifeTimeMock.Verify(d => d.Dispose(), Times.Once());
+            Assert.IsTrue(lifetime.IsDisposed);
         }
 
 
         [TestMethod]
         public void Dispose_ServiceContainerWithDisposablePerContainerLifetimeService_DisposesInstance()
         {
-            var fooMock = new Mock<IFoo>();
-            var disposableFooMock = fooMock.As<IDisposable>();
-
+            DisposableFoo foo;
             using (var container = new ServiceContainer())
             {
-                container.Register(f => fooMock.Object, new PerContainerLifetime());
-                container.GetInstance<IFoo>();
+                container.Register<IFoo, DisposableFoo>(new PerContainerLifetime());                
+                foo = (DisposableFoo)container.GetInstance<IFoo>();                
             }
 
-            disposableFooMock.Verify(d => d.Dispose(), Times.Once());
+            Assert.IsTrue(foo.IsDisposed);
         }
 
 
@@ -1159,7 +1155,7 @@ namespace LightInject.Tests
            
             ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());            
         }
-
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
         [TestMethod]
         public void GetInstance_LazyService_ReturnsInstance()
         {            
@@ -1206,7 +1202,7 @@ namespace LightInject.Tests
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-
+#endif
         [TestMethod]
         public void GetInstance_ServiceWithGenericConstraint_ThrowsException()
         {

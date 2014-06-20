@@ -9,7 +9,7 @@
         void ICompositionRoot.Compose(IServiceRegistry serviceRegistry)
         {
             CallCount++;
-#if NETFX_CORE || WINDOWS_PHONE
+#if NETFX_CORE || WINDOWS_PHONE || IOS
             serviceRegistry.RegisterAssembly(typeof(SampleCompositionRoot).GetTypeInfo().Assembly);
 #else
             serviceRegistry.RegisterAssembly(typeof(SampleCompositionRoot).Assembly);

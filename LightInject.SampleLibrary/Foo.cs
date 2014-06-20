@@ -643,9 +643,11 @@ namespace LightInject.SampleLibrary
 
     public class DisposableFoo : IFoo, IDisposable
     {
+        public bool IsDisposed { get; private set; }
+        
         public void Dispose()
         {
-            
+            IsDisposed = true;
         }
     }
 
@@ -789,5 +791,21 @@ namespace LightInject.SampleLibrary
     {
         public FooWithBrokenDependency(IBar bar)
         { }
+    }
+
+    
+    public class DisposableLifetime : ILifetime, IDisposable
+    {
+        public bool IsDisposed { get; set; }
+        
+        public void Dispose()
+        {
+            IsDisposed = true;
+        }
+
+        object ILifetime.GetInstance(Func<object> createInstance, Scope scope)
+        {
+            return createInstance();
+        }
     }
 }
