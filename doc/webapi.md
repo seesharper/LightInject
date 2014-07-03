@@ -50,5 +50,103 @@ Although filter attributes are instantiated by the MFC infrastructure, **LightIn
     }
 
 
+## Owin Selfhosting ##
 
+This example shows how to do Web API self hosting using OWIN.
+
+### Step 1 ###
+
+Create a standard console application and run the following command from the package manager console.
+
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package Microsoft.AspNet.WebApi.OwinSelfHost </code>
+   </p>
+</div>
+
+
+
+### Step 2 ###
+
+Add a OWIN startup class.
+
+    public class Startup
+    {
+        public void Configuration(IAppBuilder app)
+        {                        
+            // Configure Web API for self-host. 
+            var config = new HttpConfiguration();          
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{id}",
+                defaults: new { id = RouteParameter.Optional });
+
+            app.UseWebApi(config); 
+        }
+    }
  
+
+### Step 3 ###
+
+Add a controller
+
+    public class ValuesController : ApiController
+    {        
+        public IEnumerable<string> Get()
+        {
+            return new string[] { "value1", "value2" };
+        }        
+    } 
+
+### Step 4 ###
+
+Modify the *Main* method to start the OWIN host.
+
+    class Program
+    {
+        static void Main(string[] args)
+        {            
+            // Start OWIN host 
+            using (WebApp.Start<Startup>("http://localhost:9000/"))
+            {
+                Console.ReadLine(); 
+            }
+
+            Console.ReadLine(); 
+        }
+    }  
+
+Press **F5** to run the application and browse to [http://localhost:9000/api/values](http://localhost:9000/api/values).
+
+### Step 5 ###
+  
+<div class="nuget-badge" >
+   <p>
+         <code>PM&gt; Install-Package LightInject.WebApi </code>
+   </p>
+</div>
+
+Modify the *Startup* class to enable LightInject to be used as the dependency resolver.
+
+    public class Startup
+    {
+        public void Configuration(IAppBuilder app)
+        {                        
+            // Configure Web API for self-host. 
+            var config = new HttpConfiguration();
+            var container = new ServiceContainer();
+            container.RegisterApiControllers();
+            container.EnableWebApi(config);
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{id}",
+                defaults: new { id = RouteParameter.Optional });
+
+            app.UseWebApi(config); 
+        }
+    }   
+
+### Scoping ###
+
+Scopes are handled by Web API itself and services registered with the PerScopeLifetime or PerRequestLifetime are disposed when the web request ends.
+
