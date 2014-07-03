@@ -146,6 +146,9 @@ Modify the *Startup* class to enable LightInject to be used as the dependency re
         }
     }   
 
+> Note: LightInject.Web can be uninstalled as it is not used in the self host scenario. 
+
+
 ### Scoping ###
 
 Scopes are handled by Web API itself and services registered with the PerScopeLifetime or PerRequestLifetime are disposed when the web request ends.
