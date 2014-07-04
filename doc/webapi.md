@@ -153,3 +153,71 @@ Modify the *Startup* class to enable LightInject to be used as the dependency re
 
 Scopes are handled by Web API itself and services registered with the PerScopeLifetime or PerRequestLifetime are disposed when the web request ends.
 
+### HttpRequestMessage ###
+
+The current *HttpRequestMessage* is available to us in the controllers as it is exposed through the *Request* property.
+To make the *HttpRequestMessage* available to other services we need to make some minor changes
+
+> The following code will be included as part of the next version of LightInject.WebApi.
+
+The first thing we need is a handler that can keep track of the current *HttpRequestMessage*.
+
+    internal class HttpRequestMessageHandler : DelegatingHandler
+    {
+        private LogicalThreadStorage<HttpRequestMessageStorage> messageStorage =
+            new LogicalThreadStorage<HttpRequestMessageStorage>(() => new HttpRequestMessageStorage());
+        
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            messageStorage.Value.Message = request;            
+            return base.SendAsync(request, cancellationToken);
+        }
+
+        public HttpRequestMessage GetCurrentMessage()
+        {
+            return messageStorage.Value.Message;
+        }
+    }
+
+The *HttpRequestMessageStorage* class is simply a "holder" class for the actual *HttpRequestMessage*.
+
+    public class HttpRequestMessageStorage
+    {
+        public HttpRequestMessage Message { get; set; }
+    }
+
+Next we modify the Startup class to support injection of a *Func&lt;HttpRequestMessage&gt;*.
+
+    public class Startup
+    {
+        public void Configuration(IAppBuilder app)
+        {                                                
+            // Configure Web API for self-host. 
+            var config = new HttpConfiguration();
+            var container = new ServiceContainer();
+            container.RegisterApiControllers();
+            container.EnableWebApi(config);
+            container.ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
+            var handler = new HttpRequestMessageHandler();
+            config.MessageHandlers.Insert(0, handler);
+            container.Register<Func<HttpRequestMessage>>(factory => () => handler.GetCurrentMessage());
+
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{id}",
+                defaults: new { id = RouteParameter.Optional });
+
+            app.UseWebApi(config); 
+        }
+    }
+
+Now, if we need access to the current *HttpRequestMessage*, we can just inject a function delegate.
+
+	public class Foo
+	{
+		public Foo(Func<HttpRequestMessage> getCurrentRequestMessage)
+		{
+			var currentMessage = getCurrentRequestMessage();
+		}
+
+	}	
