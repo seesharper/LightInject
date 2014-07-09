@@ -25,6 +25,9 @@
     http://seesharper.github.io/LightInject/
     http://twitter.com/bernhardrichter    
 ******************************************************************************/
+
+
+
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
@@ -38,6 +41,7 @@ namespace LightInject
     using System.Reflection;
     using System.Web.Mvc;
     using LightInject.Mvc;
+	
 
     /// <summary>
     /// Extends the <see cref="IServiceContainer"/> interface with a method that 
@@ -113,6 +117,7 @@ namespace LightInject.Mvc
     using System.Collections.Generic;
     using System.Linq;
     using System.Web.Mvc;
+	using System.ComponentModel.DataAnnotations;
     
     /// <summary>
     /// An <see cref="IDependencyResolver"/> adapter for the LightInject service container.
@@ -194,4 +199,88 @@ namespace LightInject.Mvc
             return filters;
         }                
     }
+
+	/// <summary>
+	/// A <see cref="DataAnnotationsModelValidator"/> that uses an <see cref="IServiceContainer"/>    
+	/// to inject property dependencies into <see cref="ValidationAttribute"/> instances.
+	/// </summary>
+	internal class LightInjectModelValidator : DataAnnotationsModelValidator
+	{
+		/// <summary>
+		/// An Instance of a service container
+		/// </summary>
+		public IServiceContainer ServiceContainer { get; set; }
+
+		/// <summary>
+		/// Initializes a new instance of the  <see cref="LightInjectModelValidator"/> class.
+		/// </summary>
+		/// <param name="metadata">The metadata for the model.</param>
+		/// <param name="context">The controller context for the model.</param>
+		/// <param name="attribute">The validation attribute for the model.</param>
+		public LightInjectModelValidator(ModelMetadata metadata, ControllerContext context, ValidationAttribute attribute) : base(metadata, context, attribute)
+		{
+			
+		}
+		
+		/// <summary>
+		/// Returns a list of validation error messages for the model.
+		/// </summary>
+		/// <param name="container">The container for the model.</param>
+		/// <returns> A list of validation error messages for the model, or an empty list if no errors have occurred.</returns>
+		public override IEnumerable<ModelValidationResult> Validate(object container)
+		{
+			ServiceContainer.InjectProperties(Attribute);
+			var context = CreateValidationContext(container);
+			var result = Attribute.GetValidationResult(Metadata.Model, context);
+			if (result != ValidationResult.Success)
+			{
+				yield return new ModelValidationResult
+				{
+					Message = result.ErrorMessage
+				};
+			}  
+		}
+
+		/// <summary>
+		/// Creates a new ValidationContext
+		/// </summary>
+		/// <param name="container">An Instance of the ServiceContainer</param>
+		/// <returns>A validation Context</returns>
+		protected virtual ValidationContext CreateValidationContext(object container)
+		{
+			var context = new ValidationContext(container ?? Metadata.Model, new LightInjectServiceProvider(ServiceContainer), null)
+			{
+				DisplayName = Metadata.GetDisplayName()
+			};
+			return context;
+		}  
+	}
+
+	internal class LightInjectServiceProvider : IServiceProvider
+	{
+		private readonly IServiceContainer _serviceContainer;
+
+		/// <summary>
+		/// Public Constructor for Service Provider
+		/// </summary>
+		/// <param name="serviceContainer"></param>
+		public LightInjectServiceProvider(IServiceContainer serviceContainer)
+		{
+			_serviceContainer = serviceContainer;
+		}
+
+		/// <summary>
+		/// Gets the service object of the specified type.
+		/// </summary>
+		/// <param name="serviceType">An object that specifies the type of service object to get.</param>
+		/// <returns>A service object of type serviceType.-or- null if there is no service object of type serviceType.</returns>
+		public object GetService(Type serviceType)
+		{
+			return _serviceContainer.GetInstance(serviceType);
+		}
+	}
 }
+	
+
+
+
