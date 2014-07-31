@@ -52,6 +52,20 @@ If only one named registration exists, **LightInject** is capable of resolving t
     var instance = container.GetInstance<IFoo>();
     Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
 
+### Unresolved services ###
+
+LightInject can resolve services that are not registered with the container using the *RegisterFallback* method.
+
+    var container = new ServiceContainer();
+    container.RegisterFallback((type, s) => true, request => new Foo());
+    var foo = container.GetInstance<IFoo>();
+
+The first argument to the *RegisterFallback* method makes it possible to possible to decide if the service can be "late-resolved".
+The second argument is a *ServiceRequest* instance that provides the requested service type and service name.
+
+
+ 
+
 
 ### IEnumerable&lt;T&gt; ###
 
