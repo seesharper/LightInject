@@ -35,10 +35,10 @@
 namespace LightInject
 {
     using System;    
-#if WINDOWS_PHONE || IOS
+#if WINDOWS_PHONE 
     using System.Collections;
 #endif    
-#if NET || NET45 || NETFX_CORE
+#if NET || NET45 || NETFX_CORE || IOS
     using System.Collections.Concurrent;
 #endif
     using System.Collections.Generic;
@@ -960,14 +960,7 @@ namespace LightInject
         /// <param name="code">The MSIL instruction to be put onto the stream.</param>
         /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         void Emit(OpCode code, int arg);
-
-        /// <summary>
-        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
-        /// <param name="arg">The String to be emitted.</param>
-        void Emit(OpCode code, string arg);
-
+       
         /// <summary>
         /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
         /// </summary>
@@ -1034,17 +1027,7 @@ namespace LightInject
         /// </summary>
         /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method.</param>
         /// <returns>A delegate of the specified type, which can be used to execute the dynamic method.</returns>
-        Delegate CreateDelegate(Type delegateType);
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
-        /// <summary>
-        /// Completes the dynamic method and creates a delegate that can be used to execute it, 
-        /// specifying the delegate type and an object the delegate is bound to.
-        /// </summary>
-        /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method, minus the first parameter.</param>
-        /// <param name="target">An object the delegate is bound to. Must be of the same type as the first parameter of the dynamic method.</param>
-        /// <returns>A delegate of the specified type, which can be used to execute the dynamic method with the specified target object.</returns>
-        Delegate CreateDelegate(Type delegateType, object target);
-#endif
+        Delegate CreateDelegate(Type delegateType); 
     }
 
     /// <summary>
@@ -1145,8 +1128,7 @@ namespace LightInject
     internal static class ReflectionHelper
     {
         private static readonly Lazy<MethodInfo> LifetimeGetInstanceMethodInfo;
-        private static readonly Lazy<MethodInfo> OpenGenericGetInstanceMethodInfo;
-        private static readonly Lazy<MethodInfo> OpenGenericGetNamedInstanceMethodInfo;        
+        private static readonly Lazy<MethodInfo> OpenGenericGetInstanceMethodInfo;        
         private static readonly Lazy<MethodInfo[]> OpenGenericGetInstanceMethods;
         private static readonly Lazy<MethodInfo> GetCurrentScopeMethodInfo;
         private static readonly Lazy<MethodInfo> GetCurrentScopeManagerMethodInfo;
@@ -1154,14 +1136,8 @@ namespace LightInject
         private static readonly Lazy<ThreadSafeDictionary<Type, Type>> FuncTypes;        
         private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyConstructors;        
         private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceMethods;
-        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetNamedInstanceMethods;
-
-        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>>
-            GetInstanceWithParametersMethods;
-
-        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>>
-           NamedGetInstanceWithParametersMethods;
-
+        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceWithParametersMethods;
+            
         private static readonly Lazy<ThreadSafeDictionary<Type, Type>> EnumerableTypes;
 
         static ReflectionHelper()
@@ -1170,9 +1146,7 @@ namespace LightInject
             OpenGenericGetInstanceMethods = new Lazy<MethodInfo[]>(
                 () => typeof(IServiceFactory).GetMethods().Where(TypeHelper.IsGenericGetInstanceMethod).ToArray());
             OpenGenericGetInstanceMethodInfo = new Lazy<MethodInfo>(
-                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => !m.GetParameters().Any()));
-            OpenGenericGetNamedInstanceMethodInfo = new Lazy<MethodInfo>(
-                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => m.GetParameters().Any()));
+                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => !m.GetParameters().Any()));            
             GetCurrentScopeMethodInfo = new Lazy<MethodInfo>(
                 () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
             GetCurrentScopeManagerMethodInfo =
@@ -1181,15 +1155,13 @@ namespace LightInject
             LazyTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
             FuncTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());            
             LazyConstructors = new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
-            GetInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
-            GetNamedInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
+            GetInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());            
             
             EnumerableTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
             
             GetInstanceWithParametersMethods =
                 new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
-                    () => new ThreadSafeDictionary<Type, MethodInfo>());
-            NamedGetInstanceWithParametersMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
+                    () => new ThreadSafeDictionary<Type, MethodInfo>());            
         }
 
         public static MethodInfo LifetimeGetInstanceMethod
@@ -1227,12 +1199,7 @@ namespace LightInject
         {
             return GetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateGetInstanceWithParametersMethod);            
         }
-
-        public static MethodInfo GetNamedGetInstanceWithParametersMethod(Type serviceType)
-        {
-            return NamedGetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateNamedGetInstanceWithParametersMethod);
-        }
-        
+      
         public static Type GetEnumerableType(Type type)
         {
             return EnumerableTypes.Value.GetOrAdd(type, CreateEnumerableType);
@@ -1258,11 +1225,6 @@ namespace LightInject
             return GetInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetInstanceMethod);
         }
 
-        public static MethodInfo GetGetNamedInstanceMethod(Type type)
-        {
-            return GetNamedInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetNamedInstanceMethod);
-        }
-
         private static MethodInfo CreateGetInstanceWithParametersMethod(Type serviceType)
         {
             Type[] genericTypeArguments = serviceType.GetGenericTypeArguments();
@@ -1271,18 +1233,6 @@ namespace LightInject
                     && m.GetGenericArguments().Length == genericTypeArguments.Length && m.GetParameters().All(p => p.Name != "serviceName"));
 
             MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
-
-            return closedGenericMethod;
-        }
-
-        private static MethodInfo CreateNamedGetInstanceWithParametersMethod(Type serviceType)
-        {
-            Type[] genericArguments = serviceType.GetGenericTypeArguments();
-            MethodInfo openGenericMethod =
-                typeof(IServiceFactory).GetMethods().Single(m => m.Name == "GetInstance"
-                    && m.GetGenericArguments().Length == genericArguments.Length && m.GetParameters().Any(p => p.Name == "serviceName"));
-
-            MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericArguments);
 
             return closedGenericMethod;
         }
@@ -1311,11 +1261,7 @@ namespace LightInject
         {
             return OpenGenericGetInstanceMethodInfo.Value.MakeGenericMethod(type);
         }
-     
-        private static MethodInfo CreateClosedGenericGetNamedInstanceMethod(Type type)
-        {
-            return OpenGenericGetNamedInstanceMethodInfo.Value.MakeGenericMethod(type);
-        }
+            
     }
 
     internal static class TypeHelper
@@ -1787,17 +1733,7 @@ namespace LightInject
                 emitter.Emit(OpCodes.Stloc, index);
             }                                                    
         }
-
-        /// <summary>
-        /// Pushes a string value onto the stack.
-        /// </summary>
-        /// <param name="emitter">The target <see cref="IEmitter"/>.</param>
-        /// <param name="value">The <see cref="string"/> value to be pushed onto the stack.</param>
-        public static void Push(this IEmitter emitter, string value)
-        {
-            emitter.Emit(OpCodes.Ldstr, value);
-        }
-
+        
         /// <summary>
         /// Pushes a new array of the given <paramref name="elementType"/> onto the stack.
         /// </summary>
@@ -2445,7 +2381,6 @@ namespace LightInject
         }
 #endif
 
-
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -3073,12 +3008,18 @@ namespace LightInject
         {
             return new ConstructionInfoProvider(CreateConstructionInfoBuilder());
         }
-
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
         private ConstructionInfoBuilder CreateConstructionInfoBuilder()
         {
             return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
         }
-        
+#endif 
+#if IOS
+        private ConstructionInfoBuilder CreateConstructionInfoBuilder()
+        {
+            return new ConstructionInfoBuilder(CreateTypeConstructionInfoBuilder);
+        }
+#endif
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
             return new TypeConstructionInfoBuilder(ConstructorSelector, ConstructorDependencySelector, PropertyDependencySelector);
@@ -3219,10 +3160,9 @@ namespace LightInject
         private DecoratorRegistration[] GetDecorators(ServiceRegistration serviceRegistration)
         {
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();            
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE            
+
             registeredDecorators.AddRange(GetOpenGenericDecoratorRegistrations(serviceRegistration));            
             registeredDecorators.AddRange(GetDeferredDecoratorRegistrations(serviceRegistration));                      
-#endif
             return registeredDecorators.OrderBy(d => d.Index).ToArray();
         }
 
@@ -3242,7 +3182,7 @@ namespace LightInject
 
             return registrations;
         }
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
+
         private IEnumerable<DecoratorRegistration> GetDeferredDecoratorRegistrations(
             ServiceRegistration serviceRegistration)
         {
@@ -3265,7 +3205,7 @@ namespace LightInject
 
             return registrations;
         }
-#endif
+
         private void EmitNewDecoratorInstance(DecoratorRegistration decoratorRegistration, IEmitter emitter, Action<IEmitter> pushInstance)
         {
             ConstructionInfo constructionInfo = GetConstructionInfo(decoratorRegistration);
@@ -3395,7 +3335,6 @@ namespace LightInject
         }
 #endif
 
-
         private void EmitConstructorDependencies(ConstructionInfo constructionInfo, IEmitter emitter, Action<IEmitter> decoratorTargetEmitter)
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
@@ -3465,11 +3404,12 @@ namespace LightInject
 
         private Action<IEmitter> GetEmitMethodForDependency(Dependency dependency)
         {
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             if (dependency.FactoryExpression != null)
             {
                 return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
             }
-
+#endif
             Action<IEmitter> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
             if (emitter == null)
             {
@@ -3482,7 +3422,7 @@ namespace LightInject
 
             return emitter;
         }
-  
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE  
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
             var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
@@ -3490,7 +3430,7 @@ namespace LightInject
             emitter.PushConstant(constants.Add(lambda), lambda.GetType());            
             emitter.Call(methodInfo);            
         }
-
+#endif
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IEmitter emitter)
         {
             if (constructionInfo.PropertyDependencies.Count == 0)
@@ -3511,26 +3451,18 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodForUnknownService(Type serviceType, string serviceName)
         {
             Action<IEmitter> emitter = null;
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE         
             if (serviceType.IsLazy())
             {
                 emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType, t => ReflectionHelper.CreateGetInstanceDelegate(t, this));
             }
             else if (serviceType.IsFuncWithParameters())
             {
-                emitter = CreateEmitMethodBasedParameterizedFuncRequest(serviceType, serviceName);
+                emitter = CreateEmitMethodBasedParameterizedFuncRequest(serviceType);
             }
             else if (serviceType.IsFunc())
             {
-                emitter = CreateEmitMethodBasedOnFuncServiceRequest(serviceType, serviceName);
+                emitter = CreateEmitMethodBasedOnFuncServiceRequest(serviceType);
             }
-#endif
-#if IOS
-            if (serviceType.IsFunc() || serviceType.IsFuncWithParameters())
-            {
-                emitter = CreateEmitMethodBasedOnFuncServiceRequest(serviceType, serviceName);
-            }
-#endif
             else if (serviceType.IsEnumerableOfT())
             {
                 emitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
@@ -3539,8 +3471,6 @@ namespace LightInject
             {
                 emitter = CreateEmitMethodForArrayServiceRequest(serviceType);
             }
-
-
 
 #if NET45 || NETFX_CORE || WINDOWS_PHONE 
             else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
@@ -3569,68 +3499,25 @@ namespace LightInject
 
             return emitter;
         }
-
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE        
-        private Action<IEmitter> CreateEmitMethodBasedParameterizedFuncRequest(Type serviceType, string serviceName)
-        {
-            Type[] genericArguments = serviceType.GetGenericTypeArguments();
-            Type returnType = genericArguments[genericArguments.Length - 1];
-            Type[] parameterTypes = genericArguments.Take(genericArguments.Length - 1).ToArray();
-            Type[] methodParameterTypes = new[] { typeof(IServiceFactory) }.Concat(parameterTypes).ToArray();
-            
-            var methodSkeleton = methodSkeletonFactory(returnType, methodParameterTypes);
-            var emitter = methodSkeleton.GetEmitter();
-
-            MethodInfo getInstanceMethod;
-
-            emitter.PushArgument(0);
-            for (int i = 0; i < parameterTypes.Length; i++)
-            {
-                emitter.PushArgument(i + 1);
-            }
-            
-            if (string.IsNullOrEmpty(serviceName))
-            {
-                getInstanceMethod = ReflectionHelper.GetGetInstanceWithParametersMethod(serviceType);
-            }
-            else
-            {
-                getInstanceMethod = ReflectionHelper.GetNamedGetInstanceWithParametersMethod(serviceType);
-                emitter.Push(serviceName);                
-            }
-
-            emitter.Call(getInstanceMethod);        
-            emitter.Return();
-            var getInstanceDelegate = methodSkeleton.CreateDelegate(serviceType, this);            
-            var constantIndex = constants.Add(getInstanceDelegate);
-            return e => e.PushConstant(constantIndex, serviceType);
-        }
-
-        private Action<IEmitter> CreateEmitMethodBasedOnFuncServiceRequest(Type serviceType, string serviceName)
+        
+        private Action<IEmitter> CreateEmitMethodBasedOnFuncServiceRequest(Type serviceType)
         {
             var returnType = serviceType.GetGenericTypeArguments().Single();
-            var methodSkeleton = methodSkeletonFactory(returnType, new[] { typeof(IServiceFactory) });
-            
-            var emitter = methodSkeleton.GetEmitter();
-            MethodInfo getInstanceMethod;
-            emitter.PushArgument(0);
-            if (string.IsNullOrEmpty(serviceName))
-            {
-                getInstanceMethod = ReflectionHelper.GetGetInstanceMethod(returnType);
-            }
-            else
-            {
-                getInstanceMethod = ReflectionHelper.GetGetNamedInstanceMethod(returnType);
-                emitter.Push(serviceName);                
-            }
+            MethodInfo getInstanceMethod = ReflectionHelper.GetGetInstanceMethod(returnType);                                    
+            var del = getInstanceMethod.CreateDelegate(serviceType, this);
+            var constantIndex = constants.Add(del);
+            return e => e.PushConstant(constantIndex, serviceType);            
+        }
 
-            emitter.Call(getInstanceMethod);
-            emitter.Return();
-            var getInstanceDelegate = methodSkeleton.CreateDelegate(serviceType, this);            
-            var constantIndex = constants.Add(getInstanceDelegate);
+        private Action<IEmitter> CreateEmitMethodBasedParameterizedFuncRequest(Type serviceType)
+        {
+            var getInstanceMethod = ReflectionHelper.GetGetInstanceWithParametersMethod(serviceType);
+            var del = getInstanceMethod.CreateDelegate(serviceType, this);
+            var constantIndex = constants.Add(del);
             return e => e.PushConstant(constantIndex, serviceType);
         }
 
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
         private Action<IEmitter> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = CloneLifeTime(rule.LifeTime) };
@@ -3669,23 +3556,8 @@ namespace LightInject
 
             return emitter => EmitNewInstanceWithDecorators(serviceRegistration, emitter);
         }
-
-        private Action<IEmitter> CreateEmitMethodBasedOnFuncServiceRequest(Type serviceType, string serviceName)
-        {
-            var returnType = serviceType.GetGenericTypeArguments().Last();
-            var registrations = GetAvailableServices(returnType);
-            ServiceRegistration registration;
-            registrations.TryGetValue(serviceName, out registration);
-            if (registration != null && registration.FactoryDelegate != null)
-            {
-                var constantIndex = constants.Add(registration.FactoryDelegate);
-                return e => e.PushConstant(constantIndex, serviceType);
-            }
-
-            return null;
-        }
 #endif
-        
+
         private Action<IEmitter> CreateEmitMethodForArrayServiceRequest(Type serviceType)
         {
             Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
@@ -4073,12 +3945,7 @@ namespace LightInject
             {                                                                       
                 return dynamicMethod.CreateDelegate(delegateType);
             }
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
-            public Delegate CreateDelegate(Type delegateType, object target)
-            {                         
-                return dynamicMethod.CreateDelegate(delegateType, target);
-            }
-#endif            
+            
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
 #if NET || NET45
@@ -4152,7 +4019,7 @@ namespace LightInject
     }
 
 #endif
-#if NET || NET45 || NETFX_CORE
+#if NET || NET45 || NETFX_CORE || IOS
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
@@ -4178,7 +4045,7 @@ namespace LightInject
         }
     }
 #endif
-#if WINDOWS_PHONE || IOS
+#if WINDOWS_PHONE 
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
@@ -4386,7 +4253,7 @@ namespace LightInject
         /// </summary>
         /// <returns>An enumerator for the <see cref="ThreadSafeDictionary{TKey,TValue}"/></returns>
         IEnumerator IEnumerable.GetEnumerator()
-        {
+        {          
             return GetEnumerator();
         }
     }                
@@ -4913,8 +4780,8 @@ namespace LightInject
         public Delegate CreateDelegate(Type delegateType)
         {
             MethodInfo executeMethod;
-            var parameterCount = delegateType.GetGenericTypeArguments().Length - 1;
-
+            var parameterCount = parameterTypes.Length;
+            
             if (parameterCount == 1)
             {
                 executeMethod = typeof(ILGenerator).GetMethod("ExecuteUsingOneArgument");
@@ -4932,6 +4799,7 @@ namespace LightInject
         {
             return generator;
         }
+
     }
 
     internal class ExecutionContext
@@ -4978,7 +4846,7 @@ namespace LightInject
 
             return context.Stack.Pop();
         }
-
+        
         public LocalBuilder DeclareLocal(Type type)
         {
             var localBuilder = new LocalBuilder(type, declaredLocals.Count);
@@ -5011,11 +4879,6 @@ namespace LightInject
             instructions.Add(context => EmitInternal(code, arg, context));
         }
 
-        public void Emit(OpCode code, string arg)
-        {
-            instructions.Add(context => EmitInternal(code, arg, context));
-        }
-
         public void Emit(OpCode code, Type type)
         {
             instructions.Add(context => EmitInternal(code, type, context));
@@ -5031,7 +4894,7 @@ namespace LightInject
             instructions.Add(context => EmitInternal(code, context));
         }
 
-        internal void EmitInternal(OpCode code, ConstructorInfo constructor, ExecutionContext context)
+        private void EmitInternal(OpCode code, ConstructorInfo constructor, ExecutionContext context)
         {
             var stack = context.Stack;
 
@@ -5055,14 +4918,17 @@ namespace LightInject
             }
         }
 
-
-        internal void EmitInternal(OpCode code, int arg, ExecutionContext context)
+        private static void EmitInternal(OpCode code, int arg, ExecutionContext context)
         {
             var stack = context.Stack;
             var locals = context.Locals;
             var arguments = context.Arguments;
 
             if (code == OpCodes.Ldc_I4)
+            {
+                stack.Push(arg);
+            }
+            else if (code == OpCodes.Ldc_I4_S)
             {
                 stack.Push(arg);
             }
@@ -5084,7 +4950,7 @@ namespace LightInject
             }
         }
 
-        internal void EmitInternal(OpCode code, LocalBuilder localBuilder, ExecutionContext context)
+        private static void EmitInternal(OpCode code, LocalBuilder localBuilder, ExecutionContext context)
         {
             var stack = context.Stack;
 
@@ -5102,56 +4968,42 @@ namespace LightInject
             }
         }
 
-        internal void EmitInternal(OpCode code, sbyte arg, ExecutionContext context)
-        {
-            var stack = context.Stack;
+        //private static void EmitInternal(OpCode code, sbyte arg, ExecutionContext context)
+        //{
+        //    var stack = context.Stack;
 
-            if (code == OpCodes.Ldc_I4_S)
-            {
-                stack.Push(arg);
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
+        //    if (code == OpCodes.Ldc_I4_S)
+        //    {
+        //        stack.Push(arg);
+        //    }
+        //    else
+        //    {
+        //        throw new NotSupportedException(code.ToString());
+        //    }
+        //}
 
-        internal void EmitInternal(OpCode code, byte arg, object[] args, ExecutionContext context)
-        {
-            var stack = context.Stack;
-            var locals = context.Locals;
+        //private void EmitInternal(OpCode code, byte arg, object[] args, ExecutionContext context)
+        //{
+        //    var stack = context.Stack;
+        //    var locals = context.Locals;
 
-            if (code == OpCodes.Ldloc_S)
-            {
-                stack.Push(locals[arg].Value);
-            }
-            else if (code == OpCodes.Ldarg_S)
-            {
-                stack.Push(args[arg]);
-            }
-            else if (code == OpCodes.Stloc_S)
-            {
-                locals[arg].Value = stack.Pop();
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        internal void EmitInternal(OpCode code, string arg, ExecutionContext context)
-        {
-            var stack = context.Stack;
-
-            if (code == OpCodes.Ldstr)
-            {
-                stack.Push(arg);
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
+        //    if (code == OpCodes.Ldloc_S)
+        //    {
+        //        stack.Push(locals[arg].Value);
+        //    }
+        //    else if (code == OpCodes.Ldarg_S)
+        //    {
+        //        stack.Push(args[arg]);
+        //    }
+        //    else if (code == OpCodes.Stloc_S)
+        //    {
+        //        locals[arg].Value = stack.Pop();
+        //    }
+        //    else
+        //    {
+        //        throw new NotSupportedException(code.ToString());
+        //    }
+        //}
 
         internal void EmitInternal(OpCode code, Type type, ExecutionContext context)
         {
@@ -5226,7 +5078,7 @@ namespace LightInject
             }
         }
 
-        public void EmitInternal(OpCode code, ExecutionContext context)
+        internal void EmitInternal(OpCode code, ExecutionContext context)
         {
             var stack = context.Stack;
             var args = context.Arguments;
@@ -5240,14 +5092,14 @@ namespace LightInject
             {
                 stack.Push(args[1]);
             }
-            else if (code == OpCodes.Ldarg_2)
-            {
-                stack.Push(args[2]);
-            }
-            else if (code == OpCodes.Ldarg_3)
-            {
-                stack.Push(args[3]);
-            }
+            //else if (code == OpCodes.Ldarg_2)
+            //{
+            //    stack.Push(args[2]);
+            //}
+            //else if (code == OpCodes.Ldarg_3)
+            //{
+            //    stack.Push(args[3]);
+            //}
             else if (code == OpCodes.Ldloc_0)
             {
                 stack.Push(locals[0].Value);
@@ -5615,24 +5467,32 @@ namespace LightInject
     /// </summary>
     internal class ConstructionInfoBuilder : IConstructionInfoBuilder
     {
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
         private readonly Lazy<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilder;
+#endif
         private readonly Lazy<ITypeConstructionInfoBuilder> typeConstructionInfoBuilder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.             
         /// </summary>
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
         /// <param name="lambdaConstructionInfoBuilderFactory">
         /// A function delegate used to provide a <see cref="ILambdaConstructionInfoBuilder"/> instance.
         /// </param>
+#endif        
         /// <param name="typeConstructionInfoBuilderFactory">
         /// A function delegate used to provide a <see cref="ITypeConstructionInfoBuilder"/> instance.
         /// </param>
         public ConstructionInfoBuilder(
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             Func<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilderFactory,
+#endif
             Func<ITypeConstructionInfoBuilder> typeConstructionInfoBuilderFactory)
         {
             typeConstructionInfoBuilder = new Lazy<ITypeConstructionInfoBuilder>(typeConstructionInfoBuilderFactory);
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             lambdaConstructionInfoBuilder = new Lazy<ILambdaConstructionInfoBuilder>(lambdaConstructionInfoBuilderFactory);
+#endif
         }
 
         /// <summary>
@@ -5649,30 +5509,30 @@ namespace LightInject
 #endif
 #if IOS
             return registration.FactoryDelegate != null
-                ? CreateConstructionInfoFromLambdaExpression(registration.FactoryDelegate)
+                ? CreateConstructionInfoFromFactoryDelegate(registration.FactoryDelegate)
                 : CreateConstructionInfoFromImplementingType(registration.ImplementingType);
 #endif
-
         }
+
+#if IOS
+        private ConstructionInfo CreateConstructionInfoFromFactoryDelegate(Delegate factoryDelegate)
+        {
+            return new ConstructionInfo() { FactoryDelegate = factoryDelegate };
+        }
+#endif
 #if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
         private ConstructionInfo CreateConstructionInfoFromLambdaExpression(LambdaExpression lambdaExpression)
         {
             return lambdaConstructionInfoBuilder.Value.Execute(lambdaExpression);
         }
 #endif
-#if IOS
-        private ConstructionInfo CreateConstructionInfoFromLambdaExpression(Delegate factoryDelegate)
-        {
-            return new ConstructionInfo() { FactoryDelegate = factoryDelegate };
-        }
-#endif
-
         private ConstructionInfo CreateConstructionInfoFromImplementingType(Type implementingType)
         {
             return typeConstructionInfoBuilder.Value.Execute(implementingType);
         }
     }
 
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
     /// <summary>
     /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
     /// </summary>
@@ -5794,6 +5654,7 @@ namespace LightInject
             return methodInfo.DeclaringType == typeof(IServiceFactory);
         }
 
+        
         private static void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
         {
             dependency.FactoryExpression = expression;
@@ -5905,7 +5766,7 @@ namespace LightInject
             return base.VisitNewArray(node);
         }
     }
-
+#endif
     /// <summary>
     /// Contains information about a service request that originates from a rule based service registration.
     /// </summary>    
@@ -5988,7 +5849,7 @@ namespace LightInject
         /// Gets or sets the index of this <see cref="DecoratorRegistration"/>.
         /// </summary>
         public int Index { get; set; }
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
+
         /// <summary>
         /// Gets a value indicating whether this registration has a deferred implementing type.
         /// </summary>
@@ -5996,10 +5857,15 @@ namespace LightInject
         {
             get
             {
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
                 return ImplementingType == null && FactoryExpression == null;
+#endif
+#if IOS
+                return ImplementingType == null && FactoryDelegate == null;
+#endif
             }
         }       
-#endif
+
     }
 
     /// <summary>
@@ -6566,8 +6432,10 @@ namespace LightInject
        
         static ConcreteTypeExtractor()
         {        
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
             InternalTypes.Add(typeof(LambdaExpressionValidator));
+#endif
             InternalTypes.Add(typeof(ConstructorDependency));
             InternalTypes.Add(typeof(PropertyDependency));
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
@@ -6611,7 +6479,7 @@ namespace LightInject
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif            
-#if NETFX_CORE || WINDOWS_PHONE            
+#if NETFX_CORE || WINDOWS_PHONE || IOS           
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
@@ -6619,6 +6487,10 @@ namespace LightInject
 #if SILVERLIGHT
             InternalTypes.Add(typeof(ThreadLocal<>));
             InternalTypes.Add(typeof(ThreadLocal<>.Holder));
+#endif
+#if IOS
+            InternalTypes.Add(typeof(ExecutionContext));    
+
 #endif
         }
 
@@ -7415,26 +7287,7 @@ namespace LightInject
 
             instructions.Add(new Instruction<int>(code, arg, il => il.Emit(code, arg)));            
         }
-
-        /// <summary>
-        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
-        /// </summary>
-        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
-        /// <param name="arg">The String to be emitted.</param>
-        public void Emit(OpCode code, string arg)
-        {
-            if (code == OpCodes.Ldstr)
-            {
-                stack.Push(typeof(string));
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-
-            instructions.Add(new Instruction<string>(code, arg, il => il.Emit(code, arg)));            
-        }
-
+       
         /// <summary>
         /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
         /// </summary>

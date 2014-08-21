@@ -28,16 +28,7 @@
             var instance = fooFactory();
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-
-        [TestMethod]
-        public void GetInstance_NoParameters_ReturnsFactoryInstanceAsSingleton()
-        {
-            var container = CreateContainer();            
-            var firstInstance = container.GetInstance<Func<IFoo>>();
-            var secondInstance = container.GetInstance<Func<IFoo>>();
-            Assert.AreSame(firstInstance, secondInstance);
-        }
-
+       
         [TestMethod]
         public void GetInstance_NamedNoParameters_ReturnsFactoryInstanceAsSingleton()
         {
@@ -49,16 +40,25 @@
         }
 
         [TestMethod]
-        public void GetInstance_TwoServices_FactoriesAreNotSame()
+        public void GetInstance_TwoServices_FactoriesAreSame()
         {
             var container = CreateContainer();
             container.Register<IFoo>(factory => new Foo(), "SomeFoo");
             container.Register<IFoo>(factory => new Foo(), "AnotherFoo");
             var firstInstance = container.GetInstance<Func<IFoo>>("SomeFoo");
             var secondInstance = container.GetInstance<Func<IFoo>>("AnotherFoo");
-            Assert.AreNotSame(firstInstance, secondInstance);
+            Assert.AreSame(firstInstance, secondInstance);
         }
 
+        [TestMethod]
+        public void GetInstance_NoParameters_ReturnsFactoryInstanceAsSingleton()
+        {
+            var container = CreateContainer();            
+            var firstInstance = container.GetInstance<Func<IFoo>>();
+            var secondInstance = container.GetInstance<Func<IFoo>>();
+            Assert.AreSame(firstInstance, secondInstance);
+        }
+        
         [TestMethod]
         public void GetInstance_OneParameter_ReturnsFactoryInstance()
         {
@@ -90,7 +90,6 @@
             var instance = container.GetInstance<Func<int, int, int, int, IFoo>>();
             Assert.IsInstanceOfType(instance, typeof(Func<int, int, int, int, IFoo>));
         }
-
 
         [TestMethod]
         public void Invoke_OneParameter_FactoryCreatesInstanceAndPassesValuesToConstructor()
@@ -256,6 +255,90 @@
             var instance = (FooWithValueTypeDependency)container.GetInstance(typeof(IFoo), "SomeFoo", new object[] { 42 });
             var instance2 = (AnotherFooWithValueTypeDependency)container.GetInstance(typeof(IFoo), "AnotherFoo", new object[] { 42 });
             Assert.AreEqual(42, instance.Value);
+        }
+
+        [TestMethod]
+        public void GetInstance_OneParameter_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, IFoo>((factory, i) => new FooWithOneParameter(i));
+            var instance = (FooWithOneParameter)container.GetInstance<int, IFoo>(1);
+            Assert.AreEqual(1, instance.Arg1);
+        }
+
+        [TestMethod]
+        public void GetInstance_NamedOneParameter_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, IFoo>((factory, i) => new FooWithOneParameter(i), "SomeFoo");
+            var instance = (FooWithOneParameter)container.GetInstance<int, IFoo>(1, "SomeFoo");
+            Assert.AreEqual(1, instance.Arg1);
+        }
+
+        [TestMethod]
+        public void GetInstance_TwoParameters_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, int, IFoo>((factory, i1, i2) => new FooWithTwoParameters(i1, i2));
+            var instance = (FooWithTwoParameters)container.GetInstance<int, int, IFoo>(1, 2);
+            Assert.AreEqual(1, instance.Arg1);
+            Assert.AreEqual(2, instance.Arg2);
+        }
+
+        [TestMethod]
+        public void GetInstance_NamedTwoParameters_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, int, IFoo>((factory, i1, i2) => new FooWithTwoParameters(i1, i2), "SomeFoo");
+            var instance = (FooWithTwoParameters)container.GetInstance<int, int, IFoo>(1, 2, "SomeFoo");
+            Assert.AreEqual(1, instance.Arg1);
+            Assert.AreEqual(2, instance.Arg2);
+        }
+
+        [TestMethod]
+        public void GetInstance_ThreeParameters_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, int, int, IFoo>((factory, i1, i2, i3) => new FooWithThreeParameters(i1, i2, i3));
+            var instance = (FooWithThreeParameters)container.GetInstance<int, int, int, IFoo>(1, 2, 3);
+            Assert.AreEqual(1, instance.Arg1);
+            Assert.AreEqual(2, instance.Arg2);
+            Assert.AreEqual(3, instance.Arg3);
+        }
+
+        [TestMethod]
+        public void GetInstance_NamedThreeParameters_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, int, int, IFoo>((factory, i1, i2, i3) => new FooWithThreeParameters(i1, i2, i3), "SomeFoo");
+            var instance = (FooWithThreeParameters)container.GetInstance<int, int, int, IFoo>(1, 2, 3, "SomeFoo");
+            Assert.AreEqual(1, instance.Arg1);
+            Assert.AreEqual(2, instance.Arg2);
+            Assert.AreEqual(3, instance.Arg3);
+        }
+
+        [TestMethod]
+        public void GetInstance_FourParameters_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, int, int, int, IFoo>((factory, i1, i2, i3, i4) => new FooWithFourParameters(i1, i2, i3, i4));
+            var instance = (FooWithFourParameters)container.GetInstance<int, int, int, int, IFoo>(1, 2, 3, 4);
+            Assert.AreEqual(1, instance.Arg1);
+            Assert.AreEqual(2, instance.Arg2);
+            Assert.AreEqual(3, instance.Arg3);
+            Assert.AreEqual(4, instance.Arg4);
+        }
+
+        [TestMethod]
+        public void GetInstance_NamedFourParameters_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<int, int, int, int, IFoo>((factory, i1, i2, i3, i4) => new FooWithFourParameters(i1, i2, i3, i4), "SomeFoo");
+            var instance = (FooWithFourParameters)container.GetInstance<int, int, int, int, IFoo>(1, 2, 3, 4, "SomeFoo");
+            Assert.AreEqual(1, instance.Arg1);
+            Assert.AreEqual(2, instance.Arg2);
+            Assert.AreEqual(3, instance.Arg3);
+            Assert.AreEqual(4, instance.Arg4);
         }
 
         //[TestMethod]

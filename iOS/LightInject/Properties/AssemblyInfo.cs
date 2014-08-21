@@ -30,6 +30,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 [assembly: InternalsVisibleTo("LightInject.Tests")]
 [assembly: InternalsVisibleTo("LightInject.Annotation")]
+[assembly: InternalsVisibleTo("LightInject.Mocking")]
 [assembly: InternalsVisibleTo("LightInject.SampleLibrary")]
 [assembly: InternalsVisibleTo("LightInject.SampleLibraryWithCompositionRootTypeAttribute")]
 [assembly: InternalsVisibleTo("LightInject.SampleLibraryWithCompositionRoot")]

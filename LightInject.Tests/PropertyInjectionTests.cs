@@ -250,7 +250,7 @@
 
             Assert.IsInstanceOfType(result.Bar, typeof(Bar));
         }
-       
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE       
         [TestMethod]
         public void InjectProperties_FuncFactory_InjectsPropertyDependencies()
         {
@@ -264,7 +264,7 @@
 
             Assert.IsInstanceOfType(result.Bar, typeof(AnotherBar));
         }
-
+#endif
         [TestMethod]
         public void InjectProperties_RecursiveDependency_ThrowsException()
         {

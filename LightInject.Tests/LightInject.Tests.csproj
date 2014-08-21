@@ -43,13 +43,17 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LightMock, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\LightMock.1.0.0.3\lib\portable-net4+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1\LightMock.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Practices.ServiceLocation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=59d6d24383174ac4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\CommonServiceLocator.1.0\lib\NET35\Microsoft.Practices.ServiceLocation.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Moq">
-      <HintPath>..\Tools\Moq\Moq.dll</HintPath>
+      <HintPath>..\packages\Moq.4.2.1402.2112\lib\net40\Moq.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -84,6 +88,7 @@
     <Compile Include="AnnotatedPropertiesVerificationTests.cs" />
     <Compile Include="AnnotatedPropertyDependencySelectorTests.cs" />
     <Compile Include="AssemblyAssert.cs" />
+    <Compile Include="AssemblyScannerMock.cs" />
     <Compile Include="AssemblyScannerTests.cs" />
     <Compile Include="AsyncTests.cs" />
     <Compile Include="CompositionRootExecutorTests.cs" />
@@ -92,6 +97,7 @@
     <Compile Include="ConstructorInjectionVerificationTests.cs" />
     <Compile Include="ConstructorSelectorTests.cs" />
     <Compile Include="ContainerFactory.cs" />
+    <Compile Include="ContainerMock.cs" />
     <Compile Include="DecoratorTests.cs" />
     <Compile Include="DecoratorVerificationTests.cs" />
     <Compile Include="DisposableTests.cs" />

@@ -514,9 +514,8 @@ namespace LightInject.Tests
 
         #endregion
 #endif
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE 
         #region Func Services
-
+                
         [TestMethod]
         public void GetInstance_Func_ReturnsFuncInstance()
         {
@@ -524,6 +523,7 @@ namespace LightInject.Tests
             var factory = container.GetInstance(typeof(Func<IFoo>));
             Assert.IsInstanceOfType(factory, typeof(Func<IFoo>));
         }
+    
 
         [TestMethod]
         public void GetInstance_FuncWithStringArgument_ReturnsFuncInstance()
@@ -583,8 +583,9 @@ namespace LightInject.Tests
             Assert.AreNotSame(instance1, instance2);
         }
   
+        
+
         #endregion
-#endif
         #region Func Factory
 
         [TestMethod]
@@ -1155,7 +1156,7 @@ namespace LightInject.Tests
            
             ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());            
         }
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
+
         [TestMethod]
         public void GetInstance_LazyService_ReturnsInstance()
         {            
@@ -1202,7 +1203,7 @@ namespace LightInject.Tests
 
             Assert.IsInstanceOfType(instance, typeof(Foo));
         }
-#endif
+
         [TestMethod]
         public void GetInstance_ServiceWithGenericConstraint_ThrowsException()
         {

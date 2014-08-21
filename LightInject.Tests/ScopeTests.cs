@@ -3,9 +3,10 @@
     using System;
     using System.Threading;
 
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using LightInject.SampleLibrary;
 
-    using Moq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    
 
     [TestClass]
     public class ScopeTests
@@ -71,11 +72,11 @@
         [TestMethod]
         public void Dispose_WithTrackedInstances_DisposesTrackedInstances()
         {
-            Mock<IDisposable> disposable = new Mock<IDisposable>();
+            var disposable = new DisposableFoo();
             Scope scope = scopeManagers.Value.BeginScope();
-            scope.TrackInstance(disposable.Object);
+            scope.TrackInstance(disposable);
             scope.Dispose();
-            disposable.Verify(d => d.Dispose(), Times.Once());
+            Assert.IsTrue(disposable.IsDisposed);
         }
 
         [TestMethod]

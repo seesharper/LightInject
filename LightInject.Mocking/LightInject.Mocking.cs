@@ -179,7 +179,12 @@ namespace LightInject.Mocking
         {
             var mockServiceRegistration = new ServiceRegistration { ServiceType = typeof(TService), ServiceName = serviceName, Lifetime = lifeTime, IsReadOnly = true };
             Expression<Func<IServiceFactory, TService>> factoryExpression = factory => mockFactory();
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             mockServiceRegistration.FactoryExpression = factoryExpression;
+#endif
+#if IOS
+            mockServiceRegistration.FactoryDelegate = mockFactory;
+#endif
             return mockServiceRegistration;
         }
 

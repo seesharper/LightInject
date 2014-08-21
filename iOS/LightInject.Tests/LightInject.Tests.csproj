@@ -22,7 +22,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;IOS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -35,6 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LightMock">
+      <HintPath>..\packages\LightMock.1.0.0.3\lib\portable-net4+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1\LightMock.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
@@ -65,8 +68,32 @@
     <Compile Include="..\..\LightInject.Tests\AnnotatedPropertyDependencySelectorTests.cs">
       <Link>AnnotatedPropertyDependencySelectorTests.cs</Link>
     </Compile>
+    <Compile Include="..\..\LightInject.Tests\AssemblyScannerMock.cs">
+      <Link>AssemblyScannerMock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\AssemblyScannerTests.cs">
+      <Link>AssemblyScannerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\CompositionRootTypeExtractorTests.cs">
+      <Link>CompositionRootTypeExtractorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\ConstructorInjectionTests.cs">
+      <Link>ConstructorInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\ConstructorSelectorTests.cs">
+      <Link>ConstructorSelectorTests.cs</Link>
+    </Compile>
     <Compile Include="..\..\LightInject.Tests\ContainerFactory.cs">
       <Link>ContainerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\DecoratorTests.cs">
+      <Link>DecoratorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\DisposableTests.cs">
+      <Link>DisposableTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\EmitterTests.cs">
+      <Link>EmitterTests.cs</Link>
     </Compile>
     <Compile Include="..\..\LightInject.Tests\ErrorMessages.cs">
       <Link>ErrorMessages.cs</Link>
@@ -74,18 +101,50 @@
     <Compile Include="..\..\LightInject.Tests\ExceptionAssert.cs">
       <Link>ExceptionAssert.cs</Link>
     </Compile>
+    <Compile Include="..\..\LightInject.Tests\FunctionFactoryTests.cs">
+      <Link>FunctionFactoryTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\ImmutableListTests.cs">
+      <Link>ImmutableListTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\ImmutableTreeTests.cs">
+      <Link>ImmutableTreeTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\LazyCompositionRootTests.cs">
+      <Link>LazyCompositionRootTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\MockingTests.cs">
+      <Link>MockingTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\PropertyInjectionTests.cs">
+      <Link>PropertyInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\PropertySelectorTests.cs">
+      <Link>PropertySelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\ScopeTests.cs">
+      <Link>ScopeTests.cs</Link>
+    </Compile>
     <Compile Include="..\..\LightInject.Tests\ServiceContainerTests.cs">
       <Link>ServiceContainerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\LightInject.Tests\ServiceRegistrationTests.cs">
+      <Link>ServiceRegistrationTests.cs</Link>
     </Compile>
     <Compile Include="..\..\LightInject.Tests\TestBase.cs">
       <Link>TestBase.cs</Link>
     </Compile>
+    <Compile Include="ContainerMock.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.Annotation\LightInject.Annotation.csproj">
       <Project>{2ac1acf6-0949-438c-b72a-702b117ff8b7}</Project>
       <Name>LightInject.Annotation</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Mocking\LightInject.Mocking.csproj">
+      <Project>{49f1b5e3-3564-4f19-90b0-fcae7789812c}</Project>
+      <Name>LightInject.Mocking</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj">
       <Project>{09e4291b-5a4c-4396-a574-c9f9c9eec190}</Project>
@@ -103,6 +162,9 @@
       <Project>{acb6ac2e-0d29-4b57-be66-f28a243ca5a4}</Project>
       <Name>LightInject</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

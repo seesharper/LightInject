@@ -1,10 +1,11 @@
 ﻿namespace LightInject.Tests
 {
-    using System;
+    
 
+    using LightInject.SampleLibrary;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    using Moq;
+    
 
     [TestClass]
     public class DisposableTests
@@ -12,29 +13,29 @@
         [TestMethod]
         public void Dispose_ServiceWithPerScopeLifetime_IsDisposed()
         {
-            var container = CreateContainer();
-            var disposableMock = new Mock<IDisposable>();
-            container.Register(factory => disposableMock.Object, new PerScopeLifetime());
+            var container = CreateContainer();            
+            var disposableFoo = new DisposableFoo();
+            container.Register<IFoo>(factory => disposableFoo, new PerScopeLifetime());
             using (container.BeginScope())
             {
-                container.GetInstance<IDisposable>();
+                container.GetInstance<IFoo>();
             }
 
-            disposableMock.Verify(d => d.Dispose(), Times.Once());
+            Assert.IsTrue(disposableFoo.IsDisposed);
         }
 
         [TestMethod]
         public void Dispose_ServiceWithPerRequestLifetime_IsDisposed()
         {
             var container = CreateContainer();
-            var disposableMock = new Mock<IDisposable>();
-            container.Register(factory => disposableMock.Object, new PerRequestLifeTime());
+            var disposableFoo = new DisposableFoo();
+            container.Register<IFoo>(factory => disposableFoo, new PerRequestLifeTime());
             using (container.BeginScope())
             {
-                container.GetInstance<IDisposable>();
+                container.GetInstance<IFoo>();
             }
 
-            disposableMock.Verify(d => d.Dispose(), Times.Once());
+            Assert.IsTrue(disposableFoo.IsDisposed);
         }
 
 

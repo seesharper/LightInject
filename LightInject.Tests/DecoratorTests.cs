@@ -196,6 +196,21 @@
         }
 
         [TestMethod]
+        public void GetInstance_DeferredDecorator_ReturnsDecoratedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            var registration = new DecoratorRegistration();            
+            registration.CanDecorate = serviceRegistration => true;
+            registration.ImplementingTypeFactory = (factory, serviceRegistration) => typeof(FooDecorator);
+            container.Decorate(registration);
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
+        }
+
+        [TestMethod]
         public void GetInstance_DecoratorFactory_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
@@ -453,21 +468,6 @@
             var instance = (FooWithDependency)container.GetInstance<IFoo>();
 
             Assert.IsInstanceOfType(instance.Bar, typeof(BarDecorator));
-        }
-
-        [TestMethod]
-        public void GetInstance_DeferredDecorator_ReturnsDecoratedInstance()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo, Foo>();
-            var registration = new DecoratorRegistration();            
-            registration.CanDecorate = serviceRegistration => true;
-            registration.ImplementingTypeFactory = (factory, serviceRegistration) => typeof(FooDecorator);
-            container.Decorate(registration);
-
-            var instance = container.GetInstance<IFoo>();
-
-            Assert.IsInstanceOfType(instance, typeof(FooDecorator));
         }
 
         [TestMethod]
