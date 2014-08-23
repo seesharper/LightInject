@@ -177,7 +177,7 @@ namespace LightInject.Mocking
         private static ServiceRegistration CreateFactoryBasedMockServiceRegistration<TService>(Func<TService> mockFactory, string serviceName, ILifetime lifeTime)
            where TService : class
         {
-            var mockServiceRegistration = new ServiceRegistration { ServiceType = typeof(TService), ServiceName = serviceName, Lifetime = lifeTime, IsReadOnly = true };
+            var mockServiceRegistration = new ServiceRegistration { ServiceType = typeof(TService), ServiceName = serviceName, Lifetime = lifeTime, IsReadOnly = true };            
             Expression<Func<IServiceFactory, TService>> factoryExpression = factory => mockFactory();
             mockServiceRegistration.FactoryExpression = factoryExpression;
             return mockServiceRegistration;
