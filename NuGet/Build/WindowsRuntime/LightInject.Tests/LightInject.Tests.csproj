@@ -37,6 +37,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LightMock">
+      <HintPath>..\packages\LightMock.1.0.0.3\lib\portable-net4+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1\LightMock.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Practices.ServiceLocation">
       <HintPath>..\packages\Portable.CommonServiceLocator.1.2.2\lib\net35\Microsoft.Practices.ServiceLocation.dll</HintPath>
     </Reference>
@@ -76,6 +79,9 @@
     <Compile Include="..\..\..\..\LightInject.Tests\AssemblyAssert.cs">
       <Link>AssemblyAssert.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AssemblyScannerMock.cs">
+      <Link>AssemblyScannerMock.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\AssemblyScannerTests.cs">
       <Link>AssemblyScannerTests.cs</Link>
     </Compile>
@@ -93,6 +99,9 @@
     </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\ContainerFactory.cs">
       <Link>ContainerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ContainerMock.cs">
+      <Link>ContainerMock.cs</Link>
     </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\DecoratorTests.cs">
       <Link>DecoratorTests.cs</Link>

@@ -38,6 +38,10 @@
       <Project>{5071525b-32af-4739-b7f0-bfbc27a182c3}</Project>
       <Name>LightInject.Annotation</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LightInject\LightInject.csproj">
+      <Project>{99c436a4-0665-4478-923f-cc111db75e83}</Project>
+      <Name>LightInject</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\..\LightInject.SampleLibrary\Bar.cs">

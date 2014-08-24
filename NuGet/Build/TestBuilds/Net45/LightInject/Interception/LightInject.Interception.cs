@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Interception version 1.0.0.4 
+    LightInject.Interception version 1.0.0.5 
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -893,7 +893,7 @@ namespace LightInject.Interception
         /// <summary>
         /// Gets the proxy target type.
         /// </summary>
-        internal Type TargetType { get; private set; }
+        public Type TargetType { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether the proxy type 

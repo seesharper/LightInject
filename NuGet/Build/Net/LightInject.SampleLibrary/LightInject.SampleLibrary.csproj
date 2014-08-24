@@ -58,6 +58,10 @@
       <Project>{56d23f67-fde0-48d1-8649-fb8f45952a3e}</Project>
       <Name>LightInject.Annotation</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LightInject\LightInject.csproj">
+      <Project>{e0840582-8930-4663-921d-4365f1469f91}</Project>
+      <Name>LightInject</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

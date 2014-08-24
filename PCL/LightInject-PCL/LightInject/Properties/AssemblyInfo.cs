@@ -31,4 +31,5 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.Tests")]
 [assembly: InternalsVisibleTo("LightInject.Annotation")]
 [assembly: InternalsVisibleTo("LightInject.SampleLibraryWithCompositionRootTypeAttribute")]
+[assembly: InternalsVisibleTo("LightInject.SampleLibraryWithCompositionRoot")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]

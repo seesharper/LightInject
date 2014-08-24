@@ -1,6 +1,6 @@
 #load "Common.csx"
 DirectoryUtils.DeleteAllPackages("..");
-//BuildCoverageToXml();
+BuildCoverageToXml();
 //BuildMainSolution();
 //RunUnitTests();
 //RunUnitTestsWithCodeCoverage();
@@ -9,8 +9,8 @@ BuildNugetBinaries();
 //RunUnitTestsForNuGetBinaries();
 
 
-CreateBinaryPackages();
-CreateSourcePackages();
+//CreateBinaryPackages();
+//CreateSourcePackages();
 //BuildTestBuilds();
 
 private void BuildTestBuilds()
@@ -167,6 +167,7 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Portable\LightInject\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject\package\LightInject.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Source\package\LightInject.nuspec", version, dependencies);
 	
@@ -175,6 +176,7 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NET", @"..\..\LightInject\LightInject.cs", @"..\Build\Net\LightInject\LightInject.cs"); 
 	Publicizer.Write("NET45", @"..\..\LightInject\LightInject.cs", @"..\Build\Net45\LightInject\LightInject.cs"); 
 	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsPhone\LightInject\LightInject.cs"); 
+	Publicizer.Write("IOS", @"..\..\LightInject\LightInject.cs", @"..\Build\Portable\LightInject\LightInject.cs"); 
 
 	//LightInject.Annotation
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Annotation\LightInject.Annotation.cs");		

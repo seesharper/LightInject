@@ -68,6 +68,15 @@
     <Compile Include="..\..\..\LightInject.Tests\AnnotatedPropertyDependencySelectorTests.cs">
       <Link>AnnotatedPropertyDependencySelectorTests.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\LightInject.Tests\AssemblyScannerTests.cs">
+      <Link>AssemblyScannerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\LightInject.Tests\CompositionRootExecutorTests.cs">
+      <Link>CompositionRootExecutorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\LightInject.Tests\CompositionRootTypeExtractorTests.cs">
+      <Link>CompositionRootTypeExtractorTests.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\LightInject.Tests\ConstructorInjectionTests.cs">
       <Link>ConstructorInjectionTests.cs</Link>
     </Compile>
@@ -95,6 +104,15 @@
     <Compile Include="..\..\..\LightInject.Tests\FunctionFactoryTests.cs">
       <Link>FunctionFactoryTests.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\LightInject.Tests\LazyCompositionRootTests.cs">
+      <Link>LazyCompositionRootTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\LightInject.Tests\PropertyInjectionTests.cs">
+      <Link>PropertyInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\LightInject.Tests\PropertySelectorTests.cs">
+      <Link>PropertySelectorTests.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\LightInject.Tests\ScopeTests.cs">
       <Link>ScopeTests.cs</Link>
     </Compile>
@@ -114,6 +132,10 @@
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj">
       <Project>{150fd939-f5cf-4dae-a542-df1c3de3c9d3}</Project>
       <Name>LightInject.SampleLibraryWithCompositionRootTypeAttribute</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
+      <Project>{48165231-5de0-4ef4-99e8-ce3028b394b6}</Project>
+      <Name>LightInject.SampleLibraryWithCompositionRoot</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
       <Project>{8b8e5c87-6936-4f71-a33f-5db639fb94f7}</Project>

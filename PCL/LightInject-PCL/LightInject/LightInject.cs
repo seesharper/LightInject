@@ -944,16 +944,7 @@ namespace LightInject
         /// </summary>
         /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method.</param>
         /// <returns>A delegate of the specified type, which can be used to execute the dynamic method.</returns>
-        Delegate CreateDelegate(Type delegateType);
-
-        /// <summary>
-        /// Completes the dynamic method and creates a delegate that can be used to execute it, 
-        /// specifying the delegate type and an object the delegate is bound to.
-        /// </summary>
-        /// <param name="delegateType">A delegate type whose signature matches that of the dynamic method, minus the first parameter.</param>
-        /// <param name="target">An object the delegate is bound to. Must be of the same type as the first parameter of the dynamic method.</param>
-        /// <returns>A delegate of the specified type, which can be used to execute the dynamic method with the specified target object.</returns>
-        Delegate CreateDelegate(Type delegateType, object target);
+        Delegate CreateDelegate(Type delegateType);        
     }
 
     /// <summary>
@@ -1126,7 +1117,12 @@ namespace LightInject
 
         public static MethodInfo GetMethod(this Type type, string name)
         {
-            return type.GetTypeInfo().GetDeclaredMethod(name);
+            return type.GetTypeInfo().GetDeclaredMethod(name);            
+        }
+
+        public static MethodInfo[] GetMethods(this Type type, string name)
+        {
+            return type.GetTypeInfo().GetDeclaredMethods(name).ToArray();
         }
 
         public static bool IsAssignableFrom(this Type type, Type fromType)
@@ -3306,12 +3302,7 @@ namespace LightInject
             {
                 return dynamicMethod.CreateDelegate(delegateType);
             }
-
-            public Delegate CreateDelegate(Type delegateType, object target)
-            {
-                return dynamicMethod.CreateDelegate(delegateType, target);
-            }
-
+           
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);
@@ -4075,6 +4066,8 @@ namespace LightInject
 
         private readonly ILGenerator generator;
 
+        
+
         public DynamicMethod(Type returnType, Type[] parameterTypes)
         {
             this.returnType = returnType;
@@ -4084,22 +4077,22 @@ namespace LightInject
 
         public Delegate CreateDelegate(Type delegateType)
         {
-            var executeMethod = typeof(ILGenerator).GetMethod("Execute");
+            MethodInfo executeMethod;
+            var parameterCount = delegateType.GetGenericTypeArguments().Length -1 ;
+
+            if (parameterCount == 1)
+            {
+                executeMethod = typeof(ILGenerator).GetMethod("ExecuteUsingOneArgument");
+            }
+            else
+            {
+                executeMethod = typeof(ILGenerator).GetMethod("ExecuteUsingTwoArguments");
+            }
+            
             var d = executeMethod.CreateDelegate(delegateType, generator);
             return d;
         }
-
-        public Delegate CreateDelegate(Type delegateType, object target)
-        {
-            Type delegateTypeWithTargetParameter =
-               Expression.GetDelegateType(parameterTypes.Concat(new[] { returnType }).ToArray());
-
-            var executeMethod = typeof(ILGenerator).GetMethod("Execute");
-
-            var d = executeMethod.CreateDelegate(delegateTypeWithTargetParameter, generator);
-            return d;
-        }
-
+       
         public ILGenerator GetILGenerator()
         {
             return generator;
@@ -4127,25 +4120,29 @@ namespace LightInject
         private readonly List<Action<ExecutionContext>> instructions = new List<Action<ExecutionContext>>();
         private readonly List<LocalBuilder> declaredLocals = new List<LocalBuilder>();
 
-        public object Execute(object arguments)
+        public object ExecuteUsingOneArgument(object argument)
         {
-            var context = new ExecutionContext(new object[] { arguments }, declaredLocals.Select(l => new LocalBuilder(l.LocalType, l.LocalIndex)).ToArray());
+            var context = new ExecutionContext(new[] { argument }, declaredLocals.Select(l => new LocalBuilder(l.LocalType, l.LocalIndex)).ToArray());
 
             foreach (var instruction in instructions)
             {
                 instruction(context);
             }
+
             return context.Stack.Pop();
         }
 
-        //public object ExecuteWithTarget(object firstArgument, object secondArgument)
-        //{
-        //    foreach (var instruction in instructions)
-        //    {
-        //        instruction(new object[] { firstArgument, secondArgument });
-        //    }
-        //    return stack.Pop();
-        //}
+        public object ExecuteUsingTwoArguments(object firstArgument, object secondArgument)
+        {
+            var context = new ExecutionContext(new[] { firstArgument, secondArgument }, declaredLocals.Select(l => new LocalBuilder(l.LocalType, l.LocalIndex)).ToArray());
+
+            foreach (var instruction in instructions)
+            {
+                instruction(context);
+            }
+
+            return context.Stack.Pop();
+        }
 
         public LocalBuilder DeclareLocal(Type type)
         {
@@ -5570,6 +5567,7 @@ namespace LightInject
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
+            InternalTypes.Add(typeof(ExecutionContext));
         }
 
         /// <summary>

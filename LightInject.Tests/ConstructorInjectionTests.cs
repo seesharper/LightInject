@@ -273,7 +273,7 @@
             Assert.AreEqual(2, instance.FooList.Count());
         }
 
-        [TestMethod]
+        [TestMethod, Ignore]
         public void GetInstance_SecondLevelCompositeDependency_InjectsOnlyOtherImplementations()
         {
             var container = CreateContainer();

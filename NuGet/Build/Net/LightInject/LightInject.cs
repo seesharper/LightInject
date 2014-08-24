@@ -1764,6 +1764,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, lifetime, serviceName);
         }
+
         /// <summary>
         /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
         /// </summary>
@@ -1919,6 +1920,7 @@ namespace LightInject
             var decoratorRegistration = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
             Decorate(decoratorRegistration);            
         }
+
         /// <summary>
         /// Registers a decorator based on a <see cref="DecoratorRegistration"/> instance.
         /// </summary>
@@ -2024,6 +2026,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, lifetime, string.Empty);
         }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2035,6 +2038,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
         /// <summary>
         /// Registers a concrete type as a service.
         /// </summary>
@@ -2137,6 +2141,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2149,6 +2154,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2161,6 +2167,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2174,6 +2181,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2187,6 +2195,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2201,6 +2210,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2215,6 +2225,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2230,6 +2241,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -3809,7 +3821,7 @@ namespace LightInject
     {
         private readonly Lazy<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilder;
         private readonly Lazy<ITypeConstructionInfoBuilder> typeConstructionInfoBuilder;
-
+ 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.             
         /// </summary>

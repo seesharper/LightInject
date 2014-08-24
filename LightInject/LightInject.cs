@@ -1997,6 +1997,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, lifetime, serviceName);
         }
+
 #endif
 #if IOS
         public void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime)
@@ -2164,6 +2165,7 @@ namespace LightInject
             var decoratorRegistration = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
             Decorate(decoratorRegistration);            
         }
+
 #endif
 #if IOS
         public void Decorate<TService>(Func<IServiceFactory, TService, TService> factory)
@@ -2171,6 +2173,7 @@ namespace LightInject
             var decoratorRegistration = new DecoratorRegistration { FactoryDelegate = factory, ServiceType = typeof(TService), CanDecorate = si => true };
             Decorate(decoratorRegistration);
         }
+
 #endif
         /// <summary>
         /// Registers a decorator based on a <see cref="DecoratorRegistration"/> instance.
@@ -2278,6 +2281,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, lifetime, string.Empty);
         }
+
 #endif
 #if IOS
         public void Register<TService>(Func<IServiceFactory, TService> factory, ILifetime lifetime)
@@ -2285,6 +2289,7 @@ namespace LightInject
             Func<TService> factoryDelegate = () => factory(this);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService), lifetime: lifetime);
         }
+
 #endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -2298,6 +2303,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
 #endif
 #if IOS
         public void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName)
@@ -2305,6 +2311,7 @@ namespace LightInject
             Func<TService> factoryDelegate = () => factory(this);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
         }
+
 #endif
         /// <summary>
         /// Registers a concrete type as a service.
@@ -2397,6 +2404,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
 #endif
 #if IOS
         public void Register<TService>(Func<IServiceFactory, TService> factory)
@@ -2404,8 +2412,8 @@ namespace LightInject
             Func<TService> factoryDelegate = () => factory(this);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService));
         }
-#endif
 
+#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
         /// describes the dependencies of the service. 
@@ -2418,6 +2426,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
 #endif
 #if IOS
         public void Register<T, TService>(Func<IServiceFactory, T, TService> factory)
@@ -2425,6 +2434,7 @@ namespace LightInject
             Func<T, TService> factoryDelegate = arg => factory(this, arg);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService));
         }
+
 #endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -2439,6 +2449,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
 #endif
 #if IOS
         public void Register<T, TService>(Func<IServiceFactory, T, TService> factory, string serviceName)
@@ -2446,6 +2457,7 @@ namespace LightInject
             Func<T, TService> factoryDelegate = arg => factory(this, arg);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
         }
+
 #endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -2460,6 +2472,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
 #endif
 #if IOS
         public void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory)
@@ -2467,6 +2480,7 @@ namespace LightInject
             Func<T1, T2, TService> factoryDelegate = (arg1, arg2) => factory(this, arg1, arg2);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService));
         }
+
 #endif        
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -2482,6 +2496,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
 #endif
 #if IOS
         public void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory, string serviceName)
@@ -2489,6 +2504,7 @@ namespace LightInject
             Func<T1, T2, TService> factoryDelegate = (arg1, arg2) => factory(this, arg1, arg2);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
         }
+
 #endif 
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -2504,6 +2520,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
 #endif
 #if IOS
         public void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory)
@@ -2511,6 +2528,7 @@ namespace LightInject
             Func<T1, T2, T3, TService> factoryDelegate = (arg1, arg2, arg3) => factory(this, arg1, arg2, arg3);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService));
         }
+
 #endif 
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -2527,6 +2545,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
 #endif
 #if IOS
         public void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory, string serviceName)
@@ -2534,6 +2553,7 @@ namespace LightInject
             Func<T1, T2, T3, TService> factoryDelegate = (arg1, arg2, arg3) => factory(this, arg1, arg2, arg3);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
         }
+
 #endif 
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -2550,6 +2570,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
+
 #endif
 #if IOS
         public void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory)
@@ -2557,6 +2578,7 @@ namespace LightInject
             Func<T1, T2, T3, T4, TService> factoryDelegate = (arg1, arg2, arg3, arg4) => factory(this, arg1, arg2, arg3, arg4);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService));
         }
+
 #endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that 
@@ -2574,6 +2596,7 @@ namespace LightInject
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
+
 #endif
 #if IOS
         public void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory, string serviceName)
@@ -2581,6 +2604,7 @@ namespace LightInject
             Func<T1, T2, T3, T4, TService> factoryDelegate = (arg1, arg2, arg3, arg4) => factory(this, arg1, arg2, arg3, arg4);
             RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
         }
+
 #endif 
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
@@ -5497,30 +5521,40 @@ namespace LightInject
         private readonly Lazy<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilder;
 #endif
         private readonly Lazy<ITypeConstructionInfoBuilder> typeConstructionInfoBuilder;
-
+ 
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
         /// <summary>
         /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.             
         /// </summary>
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
         /// <param name="lambdaConstructionInfoBuilderFactory">
         /// A function delegate used to provide a <see cref="ILambdaConstructionInfoBuilder"/> instance.
         /// </param>
-#endif        
         /// <param name="typeConstructionInfoBuilderFactory">
         /// A function delegate used to provide a <see cref="ITypeConstructionInfoBuilder"/> instance.
         /// </param>
         public ConstructionInfoBuilder(
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             Func<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilderFactory,
-#endif
             Func<ITypeConstructionInfoBuilder> typeConstructionInfoBuilderFactory)
         {
             typeConstructionInfoBuilder = new Lazy<ITypeConstructionInfoBuilder>(typeConstructionInfoBuilderFactory);
-#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             lambdaConstructionInfoBuilder = new Lazy<ILambdaConstructionInfoBuilder>(lambdaConstructionInfoBuilderFactory);
-#endif
         }
 
+#endif
+#if IOS
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.             
+        /// </summary>        
+        /// <param name="typeConstructionInfoBuilderFactory">
+        /// A function delegate used to provide a <see cref="ITypeConstructionInfoBuilder"/> instance.
+        /// </param>
+        public ConstructionInfoBuilder(            
+            Func<ITypeConstructionInfoBuilder> typeConstructionInfoBuilderFactory)
+        {
+            typeConstructionInfoBuilder = new Lazy<ITypeConstructionInfoBuilder>(typeConstructionInfoBuilderFactory);            
+        }
+
+#endif
         /// <summary>
         /// Returns a <see cref="ConstructionInfo"/> instance based on the given <see cref="Registration"/>.
         /// </summary>
