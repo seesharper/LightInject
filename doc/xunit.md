@@ -1,16 +1,16 @@
-# LightInject.Xunit #
+# LightInject.xUnit #
 
-**LightInject.Xunit** provides an integration that enables dependency injection in [xUnit](https://github.com/xunit/xunit) test methods.
+**LightInject.xUnit** provides an integration that enables dependency injection in [xUnit](https://github.com/xunit/xunit) test methods.
 
 ## Installing ##
 
-**LightInject.Xunit** provides two distribution models via NuGet
+**LightInject.xUnit** provides two distribution models via NuGet
 
 ### Binary ###
 
 <div class="nuget-badge" >
    <p>
-         <code>PM&gt; Install-Package LightInject.Xunit </code>
+         <code>PM&gt; Install-Package LightInject.xUnit </code>
    </p>
 </div>
 
@@ -20,7 +20,7 @@ This adds a reference to the **LightInject.Xunit.dll** in the target project.
 
 <div class="nuget-badge" >
    <p>
-         <code>PM&gt; Install-Package LightInject.Xunit.Source </code>
+         <code>PM&gt; Install-Package LightInject.xUnit.Source </code>
    </p>
 </div>
 
