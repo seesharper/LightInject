@@ -39,7 +39,7 @@ Services from **LightInject** are injected into methods that are decorated with 
  
 ## Configuration ##
 
-**LightInject** will look for an **ICompositionRoot** implementation in the same assembly as the requested service. It it is found, it will be executed and the container gets configured through that composition root.   
+**LightInject** will look for an **ICompositionRoot** implementation in the same assembly as the requested service. If it is found, it will be executed and the container gets configured through that composition root.   
 
 If such an implementation does not exists or that we for some other reason need to configure the container, we can do this by simply implementing a static method in the test class with the following signature.
 
