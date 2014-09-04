@@ -1,3 +1,11 @@
+## LightInject.xUnit 1.0.0.1 ##
+(September 4, 2014)
+
+
+Added support for integrating with xUnit.
+
+[Learn more](http://www.lightinject.net/#xunit)
+
 ## LightInject.Interception 1.0.0.5 ##
 (June 6, 2014)
 

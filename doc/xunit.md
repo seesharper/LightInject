@@ -1,6 +1,6 @@
 # LightInject.Xunit #
 
-**LightInject.Xunit** provides an integration that enables dependency injection in [Xunit](https://github.com/xunit/xunit) test methods.
+**LightInject.Xunit** provides an integration that enables dependency injection in [xUnit](https://github.com/xunit/xunit) test methods.
 
 ## Installing ##
 
@@ -49,10 +49,19 @@ If such an implementation does not exists or that we for some other reason need 
 	}
 
 This method is executed regardless of other composition roots and allows customized configuration of the container before the test is executed.  
+ 
 
 ## Scoping ##
 
-**LightInject.Xunit** will start a new **Scope** when the tests starts so that services registered with the **PerScopeLifetime** or **PerRequestLifetime** are properly disposed when the test method ends. 
+Services registered with the **PerScopeLifetime** or **PerRequestLifetime** needs to be resolved within an active **Scope** to ensure that any services that implements **IDisposable** are properly disposed.  
+
+By decorating the test method with the **ScopedTheory** attribute, a new **Scope** will be started when the test method starts and it will end when the test method ends.   
+	
+	[ScopedTheory, InjectData]
+	public void MethodWithScopedArgument(IFoo foo)
+	{
+	    Assert.NotNull(foo);
+	}
 
 
 
