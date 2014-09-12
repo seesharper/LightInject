@@ -26,6 +26,8 @@ namespace LightInject.SampleLibraryWithCompositionRootTypeAttribute
         {
             CallCount++;
             serviceRegistry.Register<IFoo,Foo>();
+
+            serviceRegistry.RegisterFallback((type, s) => type == typeof(IBar), request => new Bar());
         }
     }
 }

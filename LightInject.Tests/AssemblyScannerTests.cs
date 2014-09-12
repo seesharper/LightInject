@@ -138,27 +138,11 @@
         }
         
         [TestMethod]
-        public void GetInstance_UnknownService_CallsAssemblyScannerBeforeInvokingRules()
-        {
-            List<string> sequence = new List<string>();
-	        var mockContext = new MockContext<IAssemblyScanner>();
-			mockContext.Arrange(m => m.Scan(The<Assembly>.IsAnyValue, The<IServiceRegistry>.IsAnyValue))
-				.Callback<Assembly, IServiceRegistry>((a,r) => sequence.Add("Scan"));
-            
-	        var scannerMock = new AssemblyScannerMock(mockContext);
-
-            var container = new ServiceContainer();
-	        container.AssemblyScanner = scannerMock;
-            container.RegisterFallback((type, s) => type.Name == "IFoo",
-                request =>
-                    {
-                        sequence.Add("Fallback");
-                        return new SampleLibraryWithCompositionRootTypeAttribute.Foo();
-                    });
-            container.GetInstance<SampleLibraryWithCompositionRootTypeAttribute.IFoo>();
-
-            Assert.AreEqual("Scan", sequence[0]);
-            Assert.AreEqual("Fallback", sequence[1]);
+        public void GetInstance_FallBackRegisteredInScannedAssembly_ReturnsInstance()
+        {            	        
+            var container = new ServiceContainer();            
+            var instance = container.GetInstance<SampleLibraryWithCompositionRootTypeAttribute.IBar>();
+            Assert.IsNotNull(instance);            
         }
 
 

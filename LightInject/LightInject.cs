@@ -3128,22 +3128,34 @@ namespace LightInject
 
             if (emitMethod == null)
             {
+                emitMethod = TryGetFallbackEmitMethod(serviceType, serviceName);
+            }
+
+            if (emitMethod == null)
+            {
                 AssemblyScanner.Scan(serviceType.GetAssembly(), this);                
                 emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);                
             }
 
             if (emitMethod == null)
             {
-                var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
-                if (rule != null)
-                {
-                    emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
-                }
+                emitMethod = TryGetFallbackEmitMethod(serviceType, serviceName);
             }
 
             return CreateEmitMethodWrapper(emitMethod, serviceType, serviceName);
         }
-        
+
+        private Action<IEmitter> TryGetFallbackEmitMethod(Type serviceType, string serviceName)
+        {
+            Action<IEmitter> emitMethod = null;
+            var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
+            if (rule != null)
+            {
+                emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
+            }
+            return emitMethod;
+        }
+
         private Action<IEmitter> CreateEmitMethodWrapper(Action<IEmitter> emitter, Type serviceType, string serviceName)
         {
             if (emitter == null)
