@@ -49,6 +49,20 @@
         }
 
         [TestMethod]
+        public void GetServices_MultipleServicesFromScope_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>(new PerScopeLifetime());
+            container.Register<IFoo, AnotherFoo>("AnotherFoo", new PerScopeLifetime());
+            IDependencyResolver resolver = new LightInjectWebApiDependencyResolver(container);
+            using (var scope = resolver.BeginScope())
+            {
+                var instances = scope.GetServices(typeof(IFoo));
+                Assert.AreEqual(2, instances.Count());    
+            }            
+        }
+
+        [TestMethod]
         public void GetServices_UnknownService_ReturnsEmptyEnumerable()
         {
             var container = CreateContainer();
@@ -86,13 +100,56 @@
             container.RegisterInstance("SomeValue");
             var server = CreateServer(container);
 
-            var client = new HttpClient(server) { BaseAddress = new Uri("http://sample:8737") };
+            var client = new HttpClient(server) { BaseAddress = new Uri("http://localhost:8737") };
 
             client.GetAsync("SampleApi/0").Wait();
 
             Assert.AreEqual("SomeValue", SampleWebApiActionFilter.StaticValue);
         }
 
+        [TestMethod]
+        public void Get_UsingControllerActionFilter_InjectsFuncDependencyIntoActionFilter()
+        {
+            WebApiActionFilterWithFuncDependency.StaticValue = null;
+            var container = CreateContainer();        
+            container.Register<IFooFactory>(sf => new FooFactory(() => new Foo()));
+
+            container.Register(factory => CreateFoo(factory));            
+            var server = CreateServer(container);
+
+            var client = new HttpClient(server) { BaseAddress = new Uri("http://localhost:8737") };
+
+            var result = client.GetAsync("AnotherSampleApi/0").Result;
+
+            Assert.IsNotNull(WebApiActionFilterWithFuncDependency.StaticValue);
+        }
+
+
+        [TestMethod]
+        public void GetService_MultipleThreads_DoesNotThrowInvalidScopeException()
+        {
+             var container = CreateContainer();
+            container.Register<IFoo, Foo>(new PerScopeLifetime());
+            IDependencyResolver resolver = new LightInjectWebApiDependencyResolver(container);
+            
+            ParallelInvoker.Invoke(10, () => GetFooWithinScope(resolver));
+        }
+
+        private void GetFooWithinScope(IDependencyResolver resolver)
+        {
+            using (var scope = resolver.BeginScope())
+            {
+                scope.GetService(typeof(IFoo));
+            }
+        }
+
+
+        private IFoo CreateFoo(IServiceFactory sf)
+        {
+            return sf.GetInstance<IFooFactory>().CreateFoo();
+        }
+
+        
 
         private HttpServer CreateServer(IServiceContainer container)
         {
@@ -100,7 +157,7 @@
             container.EnableWebApi(configuration);
             container.RegisterApiControllers();
 
-            configuration.Routes.MapHttpRoute("Default", "{controller}/{id}");            
+            configuration.Routes.MapHttpRoute("Default", "{controller}/{id}");                        
             var server = new HttpServer(configuration);            
             return server;
         }       

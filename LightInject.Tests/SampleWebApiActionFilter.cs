@@ -1,8 +1,11 @@
 ﻿namespace LightInject.Tests
 {
+    using System;
     using System.Diagnostics;
     using System.Web.Http.Controllers;
     using System.Web.Http.Filters;
+
+    using LightInject.SampleLibrary;
 
     public class SampleWebApiActionFilter : ActionFilterAttribute
     {
@@ -30,5 +33,23 @@
         {
             base.OnActionExecuting(actionContext);
         }
+    }
+
+
+    public class WebApiActionFilterWithFuncDependency : ActionFilterAttribute
+    {
+        public Func<IFoo> Value
+        {
+            set
+            {
+                StaticValue = value;
+            }
+            get
+            {
+                return null;
+            }
+        }
+
+        public static Func<IFoo> StaticValue { get; set; }
     }
 }
