@@ -599,6 +599,12 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; set; }
     }
 
+    public class FooWithFuncPropertyDependency : IFoo
+    {
+        public Func<IBar> BarFunc { get; set; }
+    }
+
+
     public class FooWithInheritedProperyDepenency : FooWithProperyDependency {}
 
     public class FooWithAnnotatedProperyDependency : IFoo
@@ -647,7 +653,7 @@ namespace LightInject.SampleLibrary
         
         public void Dispose()
         {
-            IsDisposed = true;
+            IsDisposed = true;            
         }
     }
 

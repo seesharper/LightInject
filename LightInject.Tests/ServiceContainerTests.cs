@@ -20,7 +20,8 @@ namespace LightInject.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;    
     using Foo = LightInject.SampleLibrary.Foo;
     using IFoo = LightInject.SampleLibrary.IFoo;
-
+    using IBar = LightInject.SampleLibrary.IBar;
+    using Bar = LightInject.SampleLibrary.Bar;
     [TestClass]
     public class ServiceContainerTests : TestBase
     {

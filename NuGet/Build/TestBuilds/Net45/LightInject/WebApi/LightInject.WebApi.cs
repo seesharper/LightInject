@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.WebApi version 1.0.0.2
+    LightInject.WebApi version 1.0.0.3
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter    
 ******************************************************************************/
@@ -91,8 +91,7 @@ namespace LightInject
 
 namespace LightInject.WebApi
 {
-    using System;
-    using System.Collections.Concurrent;
+    using System;    
     using System.Collections.Generic;
     using System.Linq;
     using System.Web.Http;
@@ -108,9 +107,8 @@ namespace LightInject.WebApi
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     internal class LightInjectWebApiDependencyResolver : IDependencyResolver
     {
-        private readonly IServiceContainer serviceContainer;
-        private readonly ConcurrentStack<Scope> scopes = new ConcurrentStack<Scope>();
-        
+        private readonly IServiceContainer serviceContainer;        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="LightInjectWebApiDependencyResolver"/> class.
         /// </summary>
@@ -118,20 +116,15 @@ namespace LightInject.WebApi
         /// be used for resolving service instances.</param>
         internal LightInjectWebApiDependencyResolver(IServiceContainer serviceContainer)
         {
-            this.serviceContainer = serviceContainer;            
+            this.serviceContainer = serviceContainer;
         }
-        
+
         /// <summary>
-        /// Closes the current <see cref="Scope"/> if any, otherwise the container itself is disposed.
+        /// Disposes the underlying <see cref="IServiceContainer"/>.
         /// </summary>
         public void Dispose()
         {
-            Scope scope;
-            bool isInScope = scopes.TryPop(out scope);
-            if (isInScope)
-            {
-                scope.Dispose();    
-            }            
+            serviceContainer.Dispose();
         }
 
         /// <summary>
@@ -163,8 +156,35 @@ namespace LightInject.WebApi
         /// </returns>
         public IDependencyScope BeginScope()
         {
-            scopes.Push(serviceContainer.BeginScope());
-            return this;            
+            return new LightInjectWebApiDependencyScope(serviceContainer, serviceContainer.BeginScope());
+        }
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    internal class LightInjectWebApiDependencyScope : IDependencyScope
+    {
+        private readonly IServiceContainer serviceContainer;
+        private readonly Scope scope;
+
+        public LightInjectWebApiDependencyScope(IServiceContainer serviceContainer, Scope scope)
+        {
+            this.serviceContainer = serviceContainer;
+            this.scope = scope;
+        }
+
+        public object GetService(Type serviceType)
+        {
+            return serviceContainer.GetInstance(serviceType);
+        }
+
+        public IEnumerable<object> GetServices(Type serviceType)
+        {
+            return serviceContainer.GetAllInstances(serviceType);
+        }
+
+        public void Dispose()
+        {
+            scope.Dispose();
         }
     }
 

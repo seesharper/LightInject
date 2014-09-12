@@ -228,6 +228,19 @@
         }
 
         [TestMethod]
+        public void InjectProperties_FuncDependency_InjectsDependency()
+        {
+            var container = CreateContainer();            
+            container.Register<IBar, Bar>((factory, bar) => new Bar());
+            var fooWithFuncPropertyDependency = new FooWithFuncPropertyDependency();
+
+            var result = (FooWithFuncPropertyDependency)container.InjectProperties(fooWithFuncPropertyDependency);            
+            Assert.IsNotNull(result.BarFunc);
+        }
+
+
+
+        [TestMethod]
         public void InjectProperties_UnknownClassWithPropertyDependency_InjectsPropertyDependencies()
         {
             var container = CreateContainer();            

@@ -98,6 +98,12 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="xunit">
+      <HintPath>packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>packages\xunit.extensions.1.9.2\lib\net20\xunit.extensions.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LightInject\Annotation\LightInject.Annotation.cs" />
@@ -110,6 +116,7 @@
     <Compile Include="LightInject\Wcf\LightInject.Wcf.cs" />
     <Compile Include="LightInject\WebApi\LightInject.WebApi.cs" />
     <Compile Include="LightInject\Web\LightInject.Web.cs" />
+    <Compile Include="LightInject\Xunit\LightInject.Xunit.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

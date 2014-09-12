@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject.WebApi</id>
-        <version>1.0.0.2</version>
+        <version>1.0.0.3</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
@@ -14,7 +14,6 @@
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP MVC AspNet WebApi AspNetWebApi</tags>
         <dependencies>
             <dependency id="LightInject" version="3.0.1.7" />
-            <dependency id="LightInject.Web" version="1.0.0.4" />
         </dependencies>
     </metadata>   
 </package>

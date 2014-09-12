@@ -73,6 +73,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Microsoft.AspNet.Mvc.5.1.2\lib\net45\System.Web.Mvc.dll</HintPath>
     </Reference>
+    <Reference Include="xunit">
+      <HintPath>..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\packages\xunit.extensions.1.9.2\lib\net20\xunit.extensions.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -133,6 +139,7 @@
     <Compile Include="VerificationContainerFactory.cs" />
     <Compile Include="WebApiTests.cs" />
     <Compile Include="WebTests.cs" />
+    <Compile Include="XunitTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.Annotation\LightInject.Annotation.csproj">
@@ -170,6 +177,10 @@
     <ProjectReference Include="..\LightInject.Web\LightInject.Web.csproj">
       <Project>{92e9b349-5655-4d6c-924c-707d05a5d812}</Project>
       <Name>LightInject.Web</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Xunit\LightInject.Xunit.csproj">
+      <Project>{a433d921-8d2a-4cff-b745-76475892ac93}</Project>
+      <Name>LightInject.Xunit</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject\LightInject.csproj">
       <Project>{3d54591b-b055-4edd-96b6-e6f184e8ca6e}</Project>

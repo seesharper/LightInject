@@ -3549,7 +3549,6 @@ namespace LightInject
         private class DynamicMethodSkeleton : IMethodSkeleton
         {            
             private IEmitter emitter;
-
             private DynamicMethod dynamicMethod;
 
             public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
@@ -3566,10 +3565,10 @@ namespace LightInject
             {                                                                       
                 return dynamicMethod.CreateDelegate(delegateType);
             }
-            
+
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
-                dynamicMethod = new DynamicMethod(returnType, parameterTypes);                    
+                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
         }
@@ -5521,7 +5520,7 @@ namespace LightInject
             return assembly.GetTypes().Where(t => t.IsClass()
                                                && !t.IsNestedPrivate()
                                                && !t.IsAbstract() 
-                                               && t.GetAssembly() != typeof(string).GetAssembly()                                          
+                                               && !Equals(t.GetAssembly(), typeof(string).GetAssembly())
                                                && !IsCompilerGenerated(t)).Except(InternalTypes).ToArray();
         }
 

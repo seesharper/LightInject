@@ -9,8 +9,8 @@ BuildNugetBinaries();
 //RunUnitTestsForNuGetBinaries();
 
 
-//CreateBinaryPackages();
-//CreateSourcePackages();
+CreateBinaryPackages();
+CreateSourcePackages();
 //BuildTestBuilds();
 
 private void BuildTestBuilds()
@@ -138,6 +138,7 @@ private void CreateSourcePackages()
 	CreateLightInjectSourcePackage();
 	CreateLightInjectAnnotationSourcePackage();
 	CreateLightInjectInterceptionSourcePackage();
+	CreateLightInjectXunitSourcePackage();
 	CreateLightInjectMockingSourcePackage();
 	CreateLightInjectWebSourcePackage();
 	CreateLightInjectMvcSourcePackage();
@@ -207,6 +208,17 @@ private void UpdateNuGetBuildProjects()
 
 	Publicizer.Write("NET", @"..\..\LightInject.Interception\LightInject.Interception.cs", @"..\Build\Net\LightInject.Interception\LightInject.Interception.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Interception\LightInject.Interception.cs", @"..\Build\Net45\LightInject.Interception\LightInject.Interception.cs");
+
+	//LightInject.Xunit
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Xunit\LightInject.Xunit.cs");		
+	dependencies["LightInject.Xunit"] = version;
+	dependencies["LightInject.Xunit.Source"] = version;	
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Xunit\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Xunit\package\LightInject.Xunit.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Xunit.Source\package\LightInject.Xunit.nuspec", version, dependencies);
+
+	Publicizer.Write("NET45", @"..\..\LightInject.Xunit\LightInject.Xunit.cs", @"..\Build\Net45\LightInject.Xunit\LightInject.Xunit.cs");
+
 
 	//LightInject.Mocking
 	
@@ -324,6 +336,7 @@ private void CreateBinaryPackages()
 	CreateLightInjectBinaryPackage();
 	CreateLightInjectAnnotationBinaryPackage();
 	CreateLightInjectInterceptionBinaryPackage();
+	CreateLightInjectXUnitBinaryPackage();
 	CreateLightInjectMockingBinaryPackage();
 	CreateLightInjectMvcBinaryPackage();
 	CreateLightInjectWebBinaryPackage();
@@ -420,6 +433,23 @@ private void CreateLightInjectInterceptionBinaryPackage()
 
 	Console.WriteLine("Finished building the LightInject.Interception(Binary) NuGet package");
 }
+
+private void CreateLightInjectXUnitBinaryPackage()
+{
+	Console.WriteLine("Start building the LightInject.Xunit(Binary) NuGet package");
+
+	DirectoryUtils.Delete(@"..\LightInject.Xunit\package\lib");	
+	Directory.CreateDirectory(@"..\LightInject.Xunit\package\lib\net45");
+
+	File.Copy(@"..\Build\Net45\LightInject.Xunit\bin\release\LightInject.Xunit.dll", @"..\LightInject.Xunit\package\lib\net45\LightInject.Xunit.dll", true);
+	File.Copy(@"..\Build\Net45\LightInject.Xunit\bin\release\LightInject.Xunit.pdb", @"..\LightInject.Xunit\package\lib\net45\LightInject.Xunit.pdb", true);
+	File.Copy(@"..\Build\Net45\LightInject.Xunit\bin\release\LightInject.Xunit.xml", @"..\LightInject.Xunit\package\lib\net45\LightInject.Xunit.xml", true);
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Xunit\package\LightInject.Xunit.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.Xunit(Binary) NuGet package");
+}
+
 
 
 private void CreateLightInjectMockingBinaryPackage()
@@ -676,6 +706,21 @@ private void CreateLightInjectInterceptionSourcePackage()
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Interception.Source\package\LightInject.Interception.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.Interception.Source NuGet package");
+}
+
+private void CreateLightInjectXunitSourcePackage()
+{
+	Console.WriteLine("Start building the LightInject.Xunit.Source NuGet package");
+	
+	DirectoryUtils.Delete(@"..\LightInject.Xunit.Source\package\content");	
+	Directory.CreateDirectory(@"..\LightInject.Xunit.Source\package\content\net45\LightInject\Xunit");
+	
+	SourceWriter.Write("NET45", @"..\..\LightInject.Xunit\LightInject.Xunit.cs",  @"..\LightInject.Xunit.Source\package\content\net45\LightInject\Xunit\LightInject.Xunit.cs.pp", true, true);	
+	SourceWriter.Write("NET45", @"..\..\LightInject.Xunit\LightInject.Xunit.cs",  @"..\Build\TestBuilds\Net45\LightInject\Xunit\LightInject.Xunit.cs", false, true);
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Xunit.Source\package\LightInject.Xunit.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.Xunit.Source NuGet package");
 }
 
 private void CreateLightInjectMockingSourcePackage()
