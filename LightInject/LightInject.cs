@@ -6641,20 +6641,20 @@ namespace LightInject
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
         public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {            
-            Type[] compositionRootTypes = GetCompositionRootTypes(assembly);            
-            if (compositionRootTypes.Length > 0 && !Equals(currentAssembly, assembly))
-            {
-                currentAssembly = assembly;                
-                ExecuteCompositionRoots(compositionRootTypes);
-            }
-            else
-            {
+            //Type[] compositionRootTypes = GetCompositionRootTypes(assembly);            
+            //if (compositionRootTypes.Length > 0 && !Equals(currentAssembly, assembly))
+            //{
+            //    currentAssembly = assembly;                
+            //    ExecuteCompositionRoots(compositionRootTypes);
+            //}
+            //else
+            //{
                 Type[] concreteTypes = GetConcreteTypes(assembly);
                 foreach (Type type in concreteTypes)
                 {
                     BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
                 }
-            }
+            //}
         }
 
         /// <summary>

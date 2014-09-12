@@ -70,9 +70,21 @@
 	        var containerMock = new ContainerMock(new MockContext<IServiceContainer>());
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), new CompositionRootTypeExtractor(), new CompositionRootExecutor(containerMock));
             SampleCompositionRoot.CallCount = 0;
-            assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock, null, (s, t) => true);
+            //assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock, null, (s, t) => true);
+            assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock);
             Assert.AreEqual(1, SampleCompositionRoot.CallCount);
         }
+
+        [TestMethod]
+        public void ScanUsingPredicate_SampleAssemblyWithCompositionRoot_DoesNotCallCompositionRoot()
+        {
+            var containerMock = new ContainerMock(new MockContext<IServiceContainer>());
+            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), new CompositionRootTypeExtractor(), new CompositionRootExecutor(containerMock));
+            SampleCompositionRoot.CallCount = 0;
+            assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock,() => null, (s, t) => true);            
+            Assert.AreEqual(0, SampleCompositionRoot.CallCount);
+        }
+
 
         [TestMethod]
         public void Scan_SampleAssemblyWithCompositionRoot_HandlesRegisterAssemblyWithinCompositionRoot()
