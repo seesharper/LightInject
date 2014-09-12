@@ -1842,7 +1842,12 @@ namespace LightInject
     internal class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE        
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
+#endif
+#if IOS
+        private readonly Func<Type[], IMethodSkeleton> methodSkeletonFactory;
+#endif
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
         private readonly object lockObject = new object();
 
@@ -1881,7 +1886,12 @@ namespace LightInject
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE        
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
+#endif
+#if IOS
+            methodSkeletonFactory = parameterTypes => new DynamicMethodSkeleton(parameterTypes);
+#endif
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
 #if NET || NET45      
             AssemblyLoader = new AssemblyLoader();            
@@ -3010,7 +3020,12 @@ namespace LightInject
         {
             lock (lockObject)
             {
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
                 IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
+#endif
+#if IOS
+                IMethodSkeleton methodSkeleton = methodSkeletonFactory(new[] { typeof(object[]), typeof(object) });
+#endif
                 ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
                 var emitter = methodSkeleton.GetEmitter();
                 emitter.PushArgument(1);
@@ -3078,7 +3093,12 @@ namespace LightInject
 
         private Func<object[], object> CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
         {
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
+#endif
+#if IOS
+            var methodSkeleton = methodSkeletonFactory(new[] { typeof(object[]) });
+#endif
             IEmitter emitter = methodSkeleton.GetEmitter();
             serviceEmitter(emitter);
             if (emitter.StackType.IsValueType())
@@ -3984,14 +4004,22 @@ namespace LightInject
         private class DynamicMethodSkeleton : IMethodSkeleton
         {            
             private IEmitter emitter;
-
             private DynamicMethod dynamicMethod;
 
+#if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
             {         
                 CreateDynamicMethod(returnType, parameterTypes);
             }
 
+#endif
+#if IOS
+            public DynamicMethodSkeleton(Type[] parameterTypes)
+            {
+                CreateDynamicMethod(parameterTypes);
+            }
+
+#endif
             public IEmitter GetEmitter()
             {
                 return emitter;
@@ -4001,18 +4029,29 @@ namespace LightInject
             {                                                                       
                 return dynamicMethod.CreateDelegate(delegateType);
             }
-            
+
+#if IOS
+            private void CreateDynamicMethod(Type[] parameterTypes)
+            {
+                dynamicMethod = new DynamicMethod(parameterTypes);
+                emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
+            }    
+#endif
+#if NET || NET45
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
-#if NET || NET45
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, true);
-#endif
-#if NETFX_CORE || WINDOWS_PHONE || IOS
-                dynamicMethod = new DynamicMethod(returnType, parameterTypes);                    
-#endif
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
+#endif
+#if NETFX_CORE || WINDOWS_PHONE
+            private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
+            {
+                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
+                emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
+            }
+#endif
         }
 
         private class ServiceRegistry<T> : ThreadSafeDictionary<Type, ThreadSafeDictionary<string, T>>
@@ -4818,13 +4857,12 @@ namespace LightInject
 #if IOS
     internal class DynamicMethod
     {
-        private readonly Type returnType;
+        
         private readonly Type[] parameterTypes;
         private readonly ILGenerator generator;
         
-        public DynamicMethod(Type returnType, Type[] parameterTypes)
-        {
-            this.returnType = returnType;
+        public DynamicMethod(Type[] parameterTypes)
+        {            
             this.parameterTypes = parameterTypes;
             generator = new ILGenerator();
         }
@@ -4851,7 +4889,6 @@ namespace LightInject
         {
             return generator;
         }
-
     }
 
     internal class ExecutionContext
@@ -4962,7 +4999,6 @@ namespace LightInject
                 }
                 catch (TargetInvocationException ex)
                 {
-
                     throw ex.InnerException;
                 }
 
@@ -5020,43 +5056,6 @@ namespace LightInject
             }
         }
 
-        //private static void EmitInternal(OpCode code, sbyte arg, ExecutionContext context)
-        //{
-        //    var stack = context.Stack;
-
-        //    if (code == OpCodes.Ldc_I4_S)
-        //    {
-        //        stack.Push(arg);
-        //    }
-        //    else
-        //    {
-        //        throw new NotSupportedException(code.ToString());
-        //    }
-        //}
-
-        //private void EmitInternal(OpCode code, byte arg, object[] args, ExecutionContext context)
-        //{
-        //    var stack = context.Stack;
-        //    var locals = context.Locals;
-
-        //    if (code == OpCodes.Ldloc_S)
-        //    {
-        //        stack.Push(locals[arg].Value);
-        //    }
-        //    else if (code == OpCodes.Ldarg_S)
-        //    {
-        //        stack.Push(args[arg]);
-        //    }
-        //    else if (code == OpCodes.Stloc_S)
-        //    {
-        //        locals[arg].Value = stack.Pop();
-        //    }
-        //    else
-        //    {
-        //        throw new NotSupportedException(code.ToString());
-        //    }
-        //}
-
         internal void EmitInternal(OpCode code, Type type, ExecutionContext context)
         {
             var stack = context.Stack;
@@ -5109,10 +5108,8 @@ namespace LightInject
                     }
                     catch (TargetInvocationException ex)
                     {
-
                         throw ex.InnerException;
                     }
-
                 }
                 else
                 {
@@ -5143,15 +5140,7 @@ namespace LightInject
             else if (code == OpCodes.Ldarg_1)
             {
                 stack.Push(args[1]);
-            }
-            //else if (code == OpCodes.Ldarg_2)
-            //{
-            //    stack.Push(args[2]);
-            //}
-            //else if (code == OpCodes.Ldarg_3)
-            //{
-            //    stack.Push(args[3]);
-            //}
+            }            
             else if (code == OpCodes.Ldloc_0)
             {
                 stack.Push(locals[0].Value);
@@ -6553,7 +6542,6 @@ namespace LightInject
 #endif
 #if IOS
             InternalTypes.Add(typeof(ExecutionContext));    
-
 #endif
         }
 
@@ -6567,7 +6555,7 @@ namespace LightInject
             return assembly.GetTypes().Where(t => t.IsClass()
                                                && !t.IsNestedPrivate()
                                                && !t.IsAbstract() 
-                                               && t.GetAssembly() != typeof(string).GetAssembly()                                          
+                                               && !Equals(t.GetAssembly(), typeof(string).GetAssembly())
                                                && !IsCompilerGenerated(t)).Except(InternalTypes).ToArray();
         }
 
