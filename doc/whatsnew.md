@@ -1,3 +1,10 @@
+## LightInject 3.0.1.8 ##
+
+Fixes [issue #102](https://github.com/seesharper/LightInject/issues/102)
+
+Fixes [issue #103](https://github.com/seesharper/LightInject/issues/103)
+
+
 ## LightInject.WebApi 1.0.0.3 ##
 (September 10, 2014)
 
