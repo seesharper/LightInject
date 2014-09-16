@@ -3178,7 +3178,10 @@ namespace LightInject
                 }
                 finally
                 {
-                    dependencyStack.Pop();
+                    if(dependencyStack.Count > 0)
+                    {
+                        dependencyStack.Pop();
+                    }
                 }
             };
         }
