@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.7
+    LightInject version 3.0.1.8
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3153,6 +3153,7 @@ namespace LightInject
             {
                 emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
             }
+
             return emitMethod;
         }
 
@@ -5827,6 +5828,15 @@ namespace LightInject
             canParse = false;
             return base.VisitNewArray(node);
         }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if (node.Method.DeclaringType != typeof(IServiceFactory))
+            {
+                canParse = false;
+            }
+            return base.VisitMethodCall(node);
+        }
     }
 
 #endif
@@ -6653,20 +6663,11 @@ namespace LightInject
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
         public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {            
-            //Type[] compositionRootTypes = GetCompositionRootTypes(assembly);            
-            //if (compositionRootTypes.Length > 0 && !Equals(currentAssembly, assembly))
-            //{
-            //    currentAssembly = assembly;                
-            //    ExecuteCompositionRoots(compositionRootTypes);
-            //}
-            //else
-            //{
-                Type[] concreteTypes = GetConcreteTypes(assembly);
-                foreach (Type type in concreteTypes)
-                {
-                    BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
-                }
-            //}
+            Type[] concreteTypes = GetConcreteTypes(assembly);
+            foreach (Type type in concreteTypes)
+            {
+                BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
+            }
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
 #load "Common.csx"
 DirectoryUtils.DeleteAllPackages("..");
 BuildCoverageToXml();
-//BuildMainSolution();
+BuildMainSolution();
 //RunUnitTests();
 //RunUnitTestsWithCodeCoverage();
 
@@ -11,7 +11,7 @@ BuildNugetBinaries();
 
 CreateBinaryPackages();
 CreateSourcePackages();
-//BuildTestBuilds();
+BuildTestBuilds();
 
 private void BuildTestBuilds()
 {
@@ -185,16 +185,16 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsRuntime\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\WindowsPhone\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Portable\LightInject.Annotation\Properties\AssemblyInfo.cs", version);
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation\package\LightInject.Annotation.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Annotation.Source\package\LightInject.Annotation.nuspec", version, dependencies);
-
-	
 
 	Publicizer.Write("NETFX_CORE",@"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsRuntime\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net45\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsPhone\LightInject.Annotation\LightInject.Annotation.cs");
+	Publicizer.Write("IOS", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Portable\LightInject.Annotation\LightInject.Annotation.cs");
 
 	//LightInject.Interception
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Interception\LightInject.Interception.cs");		

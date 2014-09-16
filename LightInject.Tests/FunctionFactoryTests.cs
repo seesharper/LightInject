@@ -202,16 +202,16 @@
             Assert.IsInstanceOfType(instance, typeof(Func<int, IFoo>));
         }
 
-        [TestMethod]
-        public void GetInstance_TwoNamedServices_FactoriesReturnsNamedServices()
-        {
-            var container = CreateContainer();
-            container.Register<int, IFoo>((factory, i) => new FooWithValueTypeDependency(i), "SomeFoo");
-            container.Register<int, IFoo>((factory, i) => new AnotherFooWithValueTypeDependency(i), "AnotherFoo");
-            var firstFactory = container.GetInstance<Func<int, IFoo>>("SomeFoo");
-            var instance = firstFactory(42);
-            Assert.IsInstanceOfType(instance, typeof(FooWithValueTypeDependency));            
-        }
+        //[TestMethod]
+        //public void GetInstance_TwoNamedServices_FactoriesReturnsNamedServices()
+        //{
+        //    var container = CreateContainer();
+        //    container.Register<int, IFoo>((factory, i) => new FooWithValueTypeDependency(i), "SomeFoo");
+        //    container.Register<int, IFoo>((factory, i) => new AnotherFooWithValueTypeDependency(i), "AnotherFoo");
+        //    var firstFactory = container.GetInstance<Func<int, IFoo>>("SomeFoo");
+        //    var instance = firstFactory(42);
+        //    Assert.IsInstanceOfType(instance, typeof(FooWithValueTypeDependency));            
+        //}
 
         [TestMethod]
         public void GetInstance_OneParameter_ThrowsMeaningfulExceptionWhenWrongGetInstanceMethodIsUsed()

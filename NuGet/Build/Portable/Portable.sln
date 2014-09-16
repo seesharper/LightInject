@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "LightInject\LightInject.csproj", "{12CA7900-5D76-405A-BB7A-78202444E43E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Annotation", "LightInject.Annotation\LightInject.Annotation.csproj", "{471C4E6D-97F3-404D-913C-77C73867CE56}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{12CA7900-5D76-405A-BB7A-78202444E43E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12CA7900-5D76-405A-BB7A-78202444E43E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12CA7900-5D76-405A-BB7A-78202444E43E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{471C4E6D-97F3-404D-913C-77C73867CE56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{471C4E6D-97F3-404D-913C-77C73867CE56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{471C4E6D-97F3-404D-913C-77C73867CE56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{471C4E6D-97F3-404D-913C-77C73867CE56}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -890,12 +890,20 @@
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();
         }
 #endif
-#if NETFX_CORE || WINDOWS_PHONE || IOS
+#if NETFX_CORE || WINDOWS_PHONE
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new LightInject.DynamicMethod(typeof(object), parameterTypes).GetILGenerator();
         }        
 #endif
+#if IOS
+        private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
+        {
+            return new LightInject.DynamicMethod(parameterTypes).GetILGenerator();
+        }        
+#endif
+
+
         private LocalBuilder[] CreateLocalBuilders(IEmitter emitter, int count)
         {
             var localBuilders = new LocalBuilder[count];

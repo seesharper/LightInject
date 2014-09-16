@@ -13,7 +13,7 @@
         <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP MVC</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.1.7" />
+            <dependency id="LightInject" version="3.0.1.8" />
             <dependency id="LightInject.Web" version="1.0.0.4" />
         </dependencies>
     </metadata>   

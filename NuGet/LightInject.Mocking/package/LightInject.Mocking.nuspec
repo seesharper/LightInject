@@ -13,7 +13,7 @@
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime Mocking UnitTesting</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.1.7" />
+            <dependency id="LightInject" version="3.0.1.8" />
         </dependencies>
     </metadata>    
 </package>

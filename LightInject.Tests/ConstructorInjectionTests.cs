@@ -309,6 +309,25 @@
         }
 
         [TestMethod]
+        public void GetInstance_RecursiveTest()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(factory => CreateRecursive(factory), new PerContainerLifetime());
+            container.Register<IBar>(factory => new BarWithFooDependency(factory.GetInstance<IFoo>()), new PerContainerLifetime());            
+            container.GetInstance<IFoo>();
+        }
+
+        private static FooWithRecursiveDependency CreateRecursive(IServiceFactory factory)
+        {
+            return new FooWithRecursiveDependency(factory.GetInstance<IFoo>());
+        }
+
+        private static BarWithFooDependency Create(IServiceFactory factory)
+        {
+            return new BarWithFooDependency(factory.GetInstance<IFoo>());
+        }
+
+        [TestMethod]
         public void GetInstance_RequestLifeCycle_FirstIEnumerableAndArgumentAreSame()
          {
             var container = CreateContainer();

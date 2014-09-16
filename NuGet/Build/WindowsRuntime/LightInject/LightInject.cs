@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.7
+    LightInject version 3.0.1.8
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2755,22 +2755,35 @@ namespace LightInject
 
             if (emitMethod == null)
             {
+                emitMethod = TryGetFallbackEmitMethod(serviceType, serviceName);
+            }
+
+            if (emitMethod == null)
+            {
                 AssemblyScanner.Scan(serviceType.GetAssembly(), this);                
                 emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);                
             }
 
             if (emitMethod == null)
             {
-                var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
-                if (rule != null)
-                {
-                    emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
-                }
+                emitMethod = TryGetFallbackEmitMethod(serviceType, serviceName);
             }
 
             return CreateEmitMethodWrapper(emitMethod, serviceType, serviceName);
         }
-        
+
+        private Action<IEmitter> TryGetFallbackEmitMethod(Type serviceType, string serviceName)
+        {
+            Action<IEmitter> emitMethod = null;
+            var rule = factoryRules.Items.FirstOrDefault(r => r.CanCreateInstance(serviceType, serviceName));
+            if (rule != null)
+            {
+                emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
+            }
+
+            return emitMethod;
+        }
+
         private Action<IEmitter> CreateEmitMethodWrapper(Action<IEmitter> emitter, Type serviceType, string serviceName)
         {
             if (emitter == null)
@@ -5419,19 +5432,10 @@ namespace LightInject
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
         public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {            
-            Type[] compositionRootTypes = GetCompositionRootTypes(assembly);            
-            if (compositionRootTypes.Length > 0 && !Equals(currentAssembly, assembly))
+            Type[] concreteTypes = GetConcreteTypes(assembly);
+            foreach (Type type in concreteTypes)
             {
-                currentAssembly = assembly;                
-                ExecuteCompositionRoots(compositionRootTypes);
-            }
-            else
-            {
-                Type[] concreteTypes = GetConcreteTypes(assembly);
-                foreach (Type type in concreteTypes)
-                {
-                    BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
-                }
+                BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
             }
         }
 
