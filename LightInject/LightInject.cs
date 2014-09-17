@@ -1068,6 +1068,40 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Extends the <see cref="Expression"/> class.
+    /// </summary>
+    internal static class ExpressionExtensions
+    {
+        /// <summary>
+        /// Flattens the <paramref name="expression"/> into an <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <param name="expression">The target <see cref="Expression"/>.</param>
+        /// <returns>The <see cref="Expression"/> represented as a list of sub expressions.</returns>
+        public static IEnumerable<Expression> AsEnumerable(this Expression expression)
+        {
+            var flattener = new ExpressionTreeFlattener();
+            return flattener.Flatten(expression);
+        }
+
+        private class ExpressionTreeFlattener : ExpressionVisitor
+        {
+            private readonly ICollection<Expression> nodes = new Collection<Expression>();
+
+            public IEnumerable<Expression> Flatten(Expression expression)
+            {
+                Visit(expression);
+                return nodes;
+            }
+
+            public override Expression Visit(Expression node)
+            {
+                nodes.Add(node);
+                return base.Visit(node);
+            }
+        }
+    }
+
+    /// <summary>
     /// Extends the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
     /// </summary>
     internal static class ImmutableHashTreeExtensions
@@ -3513,10 +3547,24 @@ namespace LightInject
 
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
-            var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
-            MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-            emitter.PushConstant(constants.Add(lambda), lambda.GetType());            
-            emitter.Call(methodInfo);            
+            var parameterExpression = (ParameterExpression)dependency.FactoryExpression.AsEnumerable().FirstOrDefault(e => e is ParameterExpression && e.Type == typeof(IServiceFactory));
+
+            if (parameterExpression != null)
+            {
+                var lambda = Expression.Lambda(dependency.FactoryExpression, new[] { parameterExpression }).Compile();
+                MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
+                emitter.PushConstant(constants.Add(lambda), lambda.GetType());
+                emitter.PushConstant(constants.Add(this), typeof(IServiceFactory));
+                emitter.Call(methodInfo);                
+            }
+            else
+            {
+                var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
+                MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
+                emitter.PushConstant(constants.Add(lambda), lambda.GetType());
+                emitter.Call(methodInfo);                
+            }
+            
         }
 #endif
 
@@ -5602,20 +5650,20 @@ namespace LightInject
     /// </summary>
     internal class LambdaConstructionInfoBuilder : ILambdaConstructionInfoBuilder
     {
+        
+        
         /// <summary>
         /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
         /// </summary>
         /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
         /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
         public ConstructionInfo Execute(LambdaExpression lambdaExpression)
-        {
-            var lambdaExpressionValidator = new LambdaExpressionValidator();
-
-            if (!lambdaExpressionValidator.CanParse(lambdaExpression))
+        {            
+            if (!CanParse(lambdaExpression))
             {
                 return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
             }
-
+            
             switch (lambdaExpression.Body.NodeType)
             {
                 case ExpressionType.New:
@@ -5625,6 +5673,11 @@ namespace LightInject
                 default:
                     return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
             }
+        }
+
+        private bool CanParse(LambdaExpression lambdaExpression)
+        {
+            return lambdaExpression.Parameters.Count <= 1;
         }
 
         private static ConstructionInfo CreateConstructionInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
@@ -5762,83 +5815,7 @@ namespace LightInject
             return argument.NodeType == ExpressionType.Constant;
         }
     }
-
-    /// <summary>
-    /// Inspects the body of a <see cref="LambdaExpression"/> and determines if the expression can be parsed.
-    /// </summary>
-    internal class LambdaExpressionValidator : ExpressionVisitor
-    {
-        private bool canParse = true;
-
-        /// <summary>
-        /// Determines if the <paramref name="lambdaExpression"/> can be parsed.
-        /// </summary>
-        /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to validate.</param>
-        /// <returns><b>true</b>, if the expression can be parsed, otherwise <b>false</b>.</returns>
-        public bool CanParse(LambdaExpression lambdaExpression)
-        {
-            if (lambdaExpression.Parameters.Count > 1)
-            {
-                return false;
-            }
-
-            Visit(lambdaExpression.Body);
-            return canParse;
-        }
-
-        /// <summary>
-        /// Visits the children of the <see cref="T:System.Linq.Expressions.Expression`1"/>.
-        /// </summary>
-        /// <returns>
-        /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
-        /// </returns>
-        /// <param name="node">The expression to visit.</param><typeparam name="T">The type of the delegate.</typeparam>
-        protected override Expression VisitLambda<T>(Expression<T> node)
-        {
-            canParse = false;
-            return base.VisitLambda(node);
-        }
-
-        /// <summary>
-        /// Visits the children of the <see cref="T:System.Linq.Expressions.UnaryExpression"/>.
-        /// </summary>
-        /// <returns>
-        /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
-        /// </returns>
-        /// <param name="node">The expression to visit.</param>
-        protected override Expression VisitUnary(UnaryExpression node)
-        {
-            if (node.NodeType == ExpressionType.Convert)
-            {
-                canParse = false;
-            }
-
-            return base.VisitUnary(node);
-        }
-
-        /// <summary>
-        /// Visits the children of the <see cref="T:System.Linq.Expressions.NewArrayExpression"/>.
-        /// </summary>
-        /// <returns>
-        /// The modified expression, if it or any sub-expression was modified; otherwise, returns the original expression.
-        /// </returns>
-        /// <param name="node">The expression to visit.</param>
-        protected override Expression VisitNewArray(NewArrayExpression node)
-        {
-            canParse = false;
-            return base.VisitNewArray(node);
-        }
-
-        protected override Expression VisitMethodCall(MethodCallExpression node)
-        {
-            if (node.Method.DeclaringType != typeof(IServiceFactory))
-            {
-                canParse = false;
-            }
-            return base.VisitMethodCall(node);
-        }
-    }
-
+   
 #endif
     /// <summary>
     /// Contains information about a service request that originates from a rule based service registration.
@@ -6061,7 +6038,7 @@ namespace LightInject
         /// Gets or sets the <see cref="FactoryExpression"/> that represent getting the value of the <see cref="Dependency"/>.
         /// </summary>            
         public Expression FactoryExpression { get; set; }
-
+       
         /// <summary>
         /// Gets the name of the dependency accessor.
         /// </summary>
@@ -6507,8 +6484,7 @@ namespace LightInject
         static ConcreteTypeExtractor()
         {        
 #if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
-            InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
-            InternalTypes.Add(typeof(LambdaExpressionValidator));
+            InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));       
 #endif
             InternalTypes.Add(typeof(ConstructorDependency));
             InternalTypes.Add(typeof(PropertyDependency));
