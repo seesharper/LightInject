@@ -315,7 +315,7 @@
             container.Register<IFoo>(factory => CreateRecursive(factory), new PerContainerLifetime());            
             ExceptionAssert.Throws<InvalidOperationException>(
                 () => container.GetInstance<IFoo>(),
-                ex => ex.StackTrace.Contains("Recursive dependency detected"));            
+                ex => ex.ToString().Contains("Recursive dependency detected"));            
         }
 
         private static FooWithRecursiveDependency CreateRecursive(IServiceFactory factory)
