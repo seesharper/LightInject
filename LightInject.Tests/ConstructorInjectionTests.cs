@@ -309,12 +309,13 @@
         }
 
         [TestMethod]
-        public void GetInstance_RecursiveTest()
+        public void GetInstance_PerContainerLifetimeWithRecursiveDependency_ThrowsException()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(factory => CreateRecursive(factory), new PerContainerLifetime());
-            container.Register<IBar>(factory => new BarWithFooDependency(factory.GetInstance<IFoo>()), new PerContainerLifetime());            
-            container.GetInstance<IFoo>();
+            container.Register<IFoo>(factory => CreateRecursive(factory), new PerContainerLifetime());            
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => container.GetInstance<IFoo>(),
+                ex => ex.StackTrace.Contains("Recursive dependency detected"));            
         }
 
         private static FooWithRecursiveDependency CreateRecursive(IServiceFactory factory)
