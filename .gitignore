@@ -96,6 +96,7 @@ DocProject/Help/*.hhp
 DocProject/Help/Html2
 DocProject/Help/html
 
+
 # Click-Once directory
 publish
 
@@ -162,3 +163,5 @@ pip-log.txt
 .mr.developer.cfg
 
 
+/NuGet/Build/Net/LightInject.Annotation/LightInject.Annotation.cs
+/NuGet/Build/Net45/LightInject/LightInject.cs
