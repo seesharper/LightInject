@@ -68,7 +68,33 @@ Runtime arguments can now be passed to the factory method.
 	var factory = container.GetInstance<IFooFactory>();
 	var foo = factory.GetFoo(42);
 
-## Named Services ##
+
+## Named Services v1 ##
+
+	public interface IFoo {}	
+	
+	public class Foo : IFoo {}	
+
+	public class AnotherFoo : IFoo {}	
+
+	public interface IFooFactory
+	{
+		IFoo GetFoo();
+		IFoo GetAnotherFoo();
+	} 	
+	
+The name of the factory method is used to identify named services.
+
+	container.Register<IFoo, Foo>();	
+	container.Register<IFoo, Foo>("AnotherFoo");	
+	container.RegisterFactory<IFooFactory>();
+	var factory = container.GetInstance<IFooFactory>();
+	var foo = factory.GetFoo();
+	var anotherFoo = factory.GetAnotherFoo(); 
+	   
+If the service is not found based on the method name, **LightInject.AutoFactory** will try to resolve the default service.  
+
+## Named Services v2 ##
 
 	public interface IFoo {}	
 	
@@ -101,9 +127,9 @@ If the factory method contains a string parameter called "serviceName", the stri
 		IFoo<T> GetFoo<T>();	
 	}
 
-The generic type arguments from the factory method are used to resolve the service.
+The generic type arguments from the factory method are used to 
 
 	container.Register(typeof(IFoo<>), typeof(Foo<>));
 	container.RegisterFactory<IFooFactory>();
 	var factory = container.GetInstance<IFooFactory>();
-	var foo = factory.GetFoo<int>();
+	var foo = factory.GetFoo<in>
