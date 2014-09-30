@@ -28,7 +28,7 @@ namespace LightInject.Tests
         [TestMethod]
         public void GetInstance_InsideWebRequest_ReturnsSameInstance()
         {                                                         
-            var mockHttpApplication = new MockHttpApplication();                                    
+            var mockHttpApplication = new MockHttpApplication(new LightInjectHttpModule());                                    
             mockHttpApplication.BeginRequest();
 
             var firstInstance = serviceContainer.GetInstance<IFoo>();
@@ -61,11 +61,20 @@ namespace LightInject.Tests
             LightInjectHttpModuleInitializer.Initialize();
         }
 
+        [TestMethod]
+        public void GetInstance_WithoutBeginRequest_ThrowsMeaningfulException()
+        {
+            var mockHttpApplication = new MockHttpApplication(null);        
+            mockHttpApplication.BeginRequest();            
+            ExceptionAssert.Throws<InvalidOperationException>(
+                () => serviceContainer.GetInstance<IFoo>(),
+                e => e.ToString().Contains("Unable to locate a scope manager for the current HttpRequest."));
+        }
 
         private static IFoo GetInstanceWithinWebRequest()
         {
             serviceContainer.EnablePerWebRequestScope();
-            var mockHttpApplication = new MockHttpApplication();
+            var mockHttpApplication = new MockHttpApplication(new LightInjectHttpModule());
             mockHttpApplication.BeginRequest();
             IFoo firstInstance = serviceContainer.GetInstance<IFoo>();
             mockHttpApplication.EndRequest();
@@ -77,11 +86,17 @@ namespace LightInject.Tests
         {
             private static readonly object EndEventHandlerKey;
             private static readonly object BeginEventHandlerKey;
-            private LightInjectHttpModule module = new LightInjectHttpModule();
+
+            private readonly IHttpModule module;
             
-            public MockHttpApplication()
-            {                
-                module.Init(this);
+            public MockHttpApplication(IHttpModule module)
+            {
+                if (module != null)
+                {
+                    module.Init(this);
+                }
+                this.module = module;
+
             }
 
             static MockHttpApplication()
@@ -93,19 +108,29 @@ namespace LightInject.Tests
             public new void BeginRequest()
             {
                 HttpContext.Current = new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
-                this.Events[BeginEventHandlerKey].DynamicInvoke(null, null);
+                if (module != null)
+                {
+                    this.Events[BeginEventHandlerKey].DynamicInvoke(null, null);
+                }
+                
             }
 
             public new void EndRequest()
             {
-                this.Events[EndEventHandlerKey].DynamicInvoke(null, null);
+                if (module != null)
+                {
+                    this.Events[EndEventHandlerKey].DynamicInvoke(null, null);
+                }                                
                 HttpContext.Current = null;
                 
             }
 
             public override void Dispose()
             {
-                module.Dispose();
+                if (module != null)
+                {
+                    module.Dispose();
+                }               
                 base.Dispose();
             }
         }

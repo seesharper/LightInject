@@ -56,7 +56,8 @@ namespace LightInject
 }
 
 namespace LightInject.Web
-{    
+{
+    using System;
     using System.Web;
     using Microsoft.Web.Infrastructure.DynamicModuleHelper;
 
@@ -130,7 +131,12 @@ namespace LightInject.Web
         /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
         public ScopeManager GetScopeManager()
         {
-            return (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+            var scopeManager = (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+            if (scopeManager == null)
+            {
+                throw new InvalidOperationException("Unable to locate a scope manager for the current HttpRequest. Ensure that the LightInjectHttpModule has been added.");
+            }
+            return scopeManager;
         }
     }
 }
