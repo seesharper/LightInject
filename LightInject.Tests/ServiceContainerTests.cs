@@ -916,19 +916,6 @@ namespace LightInject.Tests
         }      
 
         [TestMethod]
-        public void GetInstance_RegisterAfterGetInstance_ReturnsInstanceOfSecondRegistration()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo, Foo>();
-            container.GetInstance<IFoo>();            
-            container.Register<IFoo, AnotherFoo>();
-
-            var instance = container.GetInstance<IFoo>();
-            
-            Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
-        }
-
-        [TestMethod]
         public void GetInstance_RegisterAfterGetInstance_ReturnsDependencyOfSecondRegistration()
         {
             var container = CreateContainer();
@@ -940,19 +927,6 @@ namespace LightInject.Tests
             //var instance = (FooWithDependency)container.GetInstance<IFoo>();
 
             //Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
-        }
-
-        [TestMethod]
-        public void GetInstance_SingletonRegisterAfterInvalidate_ReturnsInstanceOfSecondRegistration()
-        {
-            var container = CreateContainer();
-            container.Register<IFoo, Foo>(new PerContainerLifetime());
-            container.GetInstance<IFoo>();
-            container.Register<IFoo, AnotherFoo>(new PerContainerLifetime());
-
-            var instance = container.GetInstance<IFoo>();
-            Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
-            
         }
 
         [TestMethod]

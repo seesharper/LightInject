@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.8
+    LightInject version 3.0.1.9
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -42,7 +42,7 @@ namespace LightInject
     using System.Collections.Concurrent;
 #endif
     using System.Collections.Generic;
-#if NET45 || NETFX_CORE || WINDOWS_PHONE
+#if NET45 || NETFX_CORE || WINDOWS_PHONE || NET
     using System.Collections.ObjectModel;
 #endif    
 #if NET || NET45    
@@ -1906,7 +1906,9 @@ namespace LightInject
 
         private ImmutableHashTree<Type, Func<object[], object, object>> propertyInjectionDelegates =
             ImmutableHashTree<Type, Func<object[], object, object>>.Empty;
-                        
+
+        private bool isLocked;
+                
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
@@ -2980,6 +2982,19 @@ namespace LightInject
             }            
         }
 
+        /// <summary>
+        /// Invalidates the container and causes the compiler to "recompile".
+        /// </summary>
+        public void Invalidate()
+        {
+            Interlocked.Exchange(ref delegates, ImmutableHashTree<Type, Func<object[], object>>.Empty);
+            Interlocked.Exchange(ref namedDelegates, ImmutableHashTree<Tuple<Type, string>, Func<object[], object>>.Empty);
+            Interlocked.Exchange(ref propertyInjectionDelegates, ImmutableHashTree<Type, Func<object[], object, object>>.Empty);
+            constants.Clear();
+            constructionInfoProvider.Value.Invalidate();
+            isLocked = false;
+        }
+
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
         {
             LocalBuilder array = emitter.DeclareLocal(elementType.MakeArrayType());
@@ -3075,6 +3090,9 @@ namespace LightInject
                 }
 
                 emitter.Return();
+
+                isLocked = true;
+
                 return (Func<object[], object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object, object>));                                        
             }            
         }
@@ -3148,6 +3166,9 @@ namespace LightInject
             }
 
             emitter.Return();
+
+            isLocked = true;
+
             return (Func<object[], object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object>));                                    
         }
 
@@ -3213,7 +3234,7 @@ namespace LightInject
                 }
                 finally
                 {
-                    if(dependencyStack.Count > 0)
+                    if (dependencyStack.Count > 0)
                     {
                         dependencyStack.Pop();
                     }
@@ -3246,7 +3267,7 @@ namespace LightInject
 
         private ServiceRegistration UpdateServiceRegistration(ServiceRegistration existingRegistration, ServiceRegistration newRegistration)
         {
-            if (existingRegistration.IsReadOnly)
+            if (existingRegistration.IsReadOnly || isLocked)
             {
                 return existingRegistration;
             }
@@ -3566,8 +3587,7 @@ namespace LightInject
                 MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
                 emitter.PushConstant(constants.Add(lambda), lambda.GetType());
                 emitter.Call(methodInfo);                
-            }
-            
+            }            
         }
 #endif
 
@@ -3966,16 +3986,7 @@ namespace LightInject
                 return null;
             }
         }
-    
-        private void Invalidate()
-        {
-            Interlocked.Exchange(ref delegates, ImmutableHashTree<Type, Func<object[], object>>.Empty);
-            Interlocked.Exchange(ref namedDelegates, ImmutableHashTree<Tuple<Type, string>, Func<object[], object>>.Empty);
-            Interlocked.Exchange(ref propertyInjectionDelegates, ImmutableHashTree<Type, Func<object[], object, object>>.Empty);
-            constants.Clear();
-            constructionInfoProvider.Value.Invalidate();
-        }
-        
+                    
         private void RegisterValue(Type serviceType, object value, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Value = value, Lifetime = new PerContainerLifetime() };
@@ -5652,9 +5663,7 @@ namespace LightInject
     /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
     /// </summary>
     internal class LambdaConstructionInfoBuilder : ILambdaConstructionInfoBuilder
-    {
-        
-        
+    {                
         /// <summary>
         /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
         /// </summary>
