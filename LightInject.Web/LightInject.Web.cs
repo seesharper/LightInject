@@ -136,6 +136,7 @@ namespace LightInject.Web
             {
                 throw new InvalidOperationException("Unable to locate a scope manager for the current HttpRequest. Ensure that the LightInjectHttpModule has been added.");
             }
+
             return scopeManager;
         }
     }
