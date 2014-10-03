@@ -1187,7 +1187,8 @@ namespace LightInject
     internal static class ReflectionHelper
     {
         private static readonly Lazy<MethodInfo> LifetimeGetInstanceMethodInfo;
-        private static readonly Lazy<MethodInfo> OpenGenericGetInstanceMethodInfo;        
+        private static readonly Lazy<MethodInfo> OpenGenericGetInstanceMethodInfo;
+        private static readonly Lazy<MethodInfo> OpenGenericGetNamedInstanceMethodInfo;        
         private static readonly Lazy<MethodInfo[]> OpenGenericGetInstanceMethods;
         private static readonly Lazy<MethodInfo> GetCurrentScopeMethodInfo;
         private static readonly Lazy<MethodInfo> GetCurrentScopeManagerMethodInfo;
@@ -1195,34 +1196,29 @@ namespace LightInject
         private static readonly Lazy<ThreadSafeDictionary<Type, Type>> FuncTypes;        
         private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyConstructors;        
         private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceMethods;
+        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetNamedInstanceMethods;
         private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceWithParametersMethods;
-            
+        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetNamedInstanceWithParametersMethods;                       
         private static readonly Lazy<ThreadSafeDictionary<Type, Type>> EnumerableTypes;
 
         static ReflectionHelper()
         {
-            LifetimeGetInstanceMethodInfo = new Lazy<MethodInfo>(() => typeof(ILifetime).GetMethod("GetInstance"));
-            OpenGenericGetInstanceMethods = new Lazy<MethodInfo[]>(
-                () => typeof(IServiceFactory).GetMethods().Where(TypeHelper.IsGenericGetInstanceMethod).ToArray());
-            OpenGenericGetInstanceMethodInfo = new Lazy<MethodInfo>(
-                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => !m.GetParameters().Any()));            
-            GetCurrentScopeMethodInfo = new Lazy<MethodInfo>(
-                () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
-            GetCurrentScopeManagerMethodInfo =
-                new Lazy<MethodInfo>(
-                    () => typeof(IScopeManagerProvider).GetMethod("GetScopeManager"));
-            LazyTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
-            FuncTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());            
-            LazyConstructors = new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
-            GetInstanceMethods = new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());            
-            
-            EnumerableTypes = new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
-            
-            GetInstanceWithParametersMethods =
-                new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
-                    () => new ThreadSafeDictionary<Type, MethodInfo>());            
+            LifetimeGetInstanceMethodInfo = CreateLazyLifetimeGetInstanceMethodInfo();            
+            OpenGenericGetInstanceMethods = CreateLazyOpenGenericGetInstanceMethods();
+            OpenGenericGetInstanceMethodInfo = CreateLazyOpenGenericGetInstanceMethodInfo();
+            OpenGenericGetNamedInstanceMethodInfo = CreateLazyOpenGenericGetNamedInstanceMethodInfo();            
+            GetInstanceMethods = CreateLazyGetInstanceMethods();
+            GetNamedInstanceMethods = CreateLazyGetNamedInstanceMethods();
+            GetCurrentScopeMethodInfo = CreateLazyGetCurrentScopeMethodInfo();
+            GetCurrentScopeManagerMethodInfo = CreateLazyGetCurrentScopeManagerMethodInfo();
+            GetInstanceWithParametersMethods = CreateLazyGetInstanceWithParametersMethods();
+            GetNamedInstanceWithParametersMethods = CreateLazyGetNamedInstanceWithParametersMethods();    
+            LazyTypes = CreateLazyLazyTypes();            
+            LazyConstructors = CreateLazyLazyConstructors();            
+            FuncTypes = CreateLazyFuncTypes();            
+            EnumerableTypes = CreateLazyEnumerableTypes();                            
         }
-
+        
         public static MethodInfo LifetimeGetInstanceMethod
         {
             get
@@ -1246,19 +1242,24 @@ namespace LightInject
                 return GetCurrentScopeManagerMethodInfo.Value;
             }
         }
-       
+
         public static Delegate CreateGetInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
         {
             Type delegateType = GetFuncType(serviceType);
             MethodInfo getInstanceMethod = GetGetInstanceMethod(serviceType);
             return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
         }
-       
+
         public static MethodInfo GetGetInstanceWithParametersMethod(Type serviceType)
         {
-            return GetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateGetInstanceWithParametersMethod);            
+            return GetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateGetInstanceWithParametersMethod);
         }
-      
+
+        public static MethodInfo GetNamedGetInstanceWithParametersMethod(Type serviceType)
+        {
+            return GetNamedInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateNamedGetInstanceWithParametersMethod);
+        }
+
         public static Type GetEnumerableType(Type type)
         {
             return EnumerableTypes.Value.GetOrAdd(type, CreateEnumerableType);
@@ -1268,7 +1269,7 @@ namespace LightInject
         {
             return FuncTypes.Value.GetOrAdd(type, CreateFuncType);
         }
- 
+
         public static Type GetLazyType(Type type)
         {
             return LazyTypes.Value.GetOrAdd(type, CreateLazyType);
@@ -1278,12 +1279,101 @@ namespace LightInject
         {
             return LazyConstructors.Value.GetOrAdd(type, ResolveLazyConstructor);
         }
-       
+
         public static MethodInfo GetGetInstanceMethod(Type type)
         {
             return GetInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetInstanceMethod);
         }
 
+        public static MethodInfo GetGetNamedInstanceMethod(Type type)
+        {
+            return GetNamedInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetNamedInstanceMethod);
+        }
+
+        public static Delegate CreateGetNamedInstanceWithParametersDelegate(IServiceFactory factory, Type delegateType, string serviceName)
+        {
+            Type[] genericTypeArguments = delegateType.GetGenericTypeArguments();
+            var openGenericMethod = typeof(ReflectionHelper).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(m => m.GetGenericArguments().Length == genericTypeArguments.Length && m.Name == "CreateGenericGetNamedParameterizedInstanceDelegate");
+            var closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
+            return (Delegate)closedGenericMethod.Invoke(null, new object[] { factory, serviceName });
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetNamedInstanceWithParametersMethods()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetInstanceWithParametersMethods()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
+                () => new ThreadSafeDictionary<Type, MethodInfo>());
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, Type>> CreateLazyEnumerableTypes()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetNamedInstanceMethods()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetInstanceMethods()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> CreateLazyLazyConstructors()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, Type>> CreateLazyFuncTypes()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, Type>> CreateLazyLazyTypes()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
+        }
+
+        private static Lazy<MethodInfo> CreateLazyGetCurrentScopeManagerMethodInfo()
+        {
+            return new Lazy<MethodInfo>(
+                () => typeof(IScopeManagerProvider).GetMethod("GetScopeManager"));
+        }
+
+        private static Lazy<MethodInfo> CreateLazyGetCurrentScopeMethodInfo()
+        {
+            return new Lazy<MethodInfo>(
+                () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
+        }
+
+        private static Lazy<MethodInfo> CreateLazyLifetimeGetInstanceMethodInfo()
+        {
+            return new Lazy<MethodInfo>(() => typeof(ILifetime).GetMethod("GetInstance"));
+        }
+
+        private static Lazy<MethodInfo> CreateLazyOpenGenericGetNamedInstanceMethodInfo()
+        {
+            return new Lazy<MethodInfo>(
+                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => m.GetParameters().Any()));
+        }
+
+        private static Lazy<MethodInfo> CreateLazyOpenGenericGetInstanceMethodInfo()
+        {
+            return new Lazy<MethodInfo>(
+                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => !m.GetParameters().Any()));
+        }
+
+        private static Lazy<MethodInfo[]> CreateLazyOpenGenericGetInstanceMethods()
+        {
+            return new Lazy<MethodInfo[]>(
+                () => typeof(IServiceFactory).GetMethods().Where(TypeHelper.IsGenericGetInstanceMethod).ToArray());
+        }
+        
         private static MethodInfo CreateGetInstanceWithParametersMethod(Type serviceType)
         {
             Type[] genericTypeArguments = serviceType.GetGenericTypeArguments();
@@ -1292,6 +1382,18 @@ namespace LightInject
                     && m.GetGenericArguments().Length == genericTypeArguments.Length && m.GetParameters().All(p => p.Name != "serviceName"));
 
             MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
+
+            return closedGenericMethod;
+        }
+
+        private static MethodInfo CreateNamedGetInstanceWithParametersMethod(Type serviceType)
+        {
+            Type[] genericArguments = serviceType.GetGenericTypeArguments();
+            MethodInfo openGenericMethod =
+                typeof(IServiceFactory).GetMethods().Single(m => m.Name == "GetInstance"
+                    && m.GetGenericArguments().Length == genericArguments.Length && m.GetParameters().Any(p => p.Name == "serviceName"));
+
+            MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericArguments);
 
             return closedGenericMethod;
         }
@@ -1319,6 +1421,39 @@ namespace LightInject
         private static MethodInfo CreateClosedGenericGetInstanceMethod(Type type)
         {
             return OpenGenericGetInstanceMethodInfo.Value.MakeGenericMethod(type);
+        }
+
+        private static MethodInfo CreateClosedGenericGetNamedInstanceMethod(Type type)
+        {
+            return OpenGenericGetNamedInstanceMethodInfo.Value.MakeGenericMethod(type);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TArg, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg, TService>(IServiceFactory factory, string serviceName)
+        // ReSharper restore UnusedMember.Local
+        {
+            return arg => factory.GetInstance<TArg, TService>(arg, serviceName);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TArg1, TArg2, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TService>(IServiceFactory factory, string serviceName)
+        // ReSharper restore UnusedMember.Local
+        {
+            return (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TArg1, TArg2, TArg3, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TService>(IServiceFactory factory, string serviceName)
+        // ReSharper restore UnusedMember.Local
+        {
+            return (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TArg1, TArg2, TArg3, TArg4, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TArg4, TService>(IServiceFactory factory, string serviceName)
+        // ReSharper restore UnusedMember.Local
+        {
+            return (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
         }
     }
 
@@ -3617,11 +3752,11 @@ namespace LightInject
             }
             else if (serviceType.IsFuncWithParameters())
             {
-                emitter = CreateEmitMethodBasedParameterizedFuncRequest(serviceType);
+                emitter = CreateEmitMethodBasedParameterizedFuncRequest(serviceType, serviceName);
             }
             else if (serviceType.IsFunc())
             {
-                emitter = CreateEmitMethodBasedOnFuncServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnFuncServiceRequest(serviceType, serviceName);
             }
             else if (serviceType.IsEnumerableOfT())
             {
@@ -3659,21 +3794,67 @@ namespace LightInject
             return emitter;
         }
         
-        private Action<IEmitter> CreateEmitMethodBasedOnFuncServiceRequest(Type serviceType)
-        {
-            var returnType = serviceType.GetGenericTypeArguments().Single();
-            MethodInfo getInstanceMethod = ReflectionHelper.GetGetInstanceMethod(returnType);                                    
-            var del = getInstanceMethod.CreateDelegate(serviceType, this);
-            var constantIndex = constants.Add(del);
+        private Action<IEmitter> CreateEmitMethodBasedOnFuncServiceRequest(Type serviceType, string serviceName)
+        {            
+            Delegate getInstanceDelegate;
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                getInstanceDelegate = CreateGetInstanceDelegate(serviceType);
+            }
+            else
+            {
+                getInstanceDelegate = CreateGetNamedInstanceDelegate(serviceType, serviceName);
+            }  
+                      
+            var constantIndex = constants.Add(getInstanceDelegate);
             return e => e.PushConstant(constantIndex, serviceType);            
         }
 
-        private Action<IEmitter> CreateEmitMethodBasedParameterizedFuncRequest(Type serviceType)
+        private Delegate CreateGetInstanceDelegate(Type delegateType)
+        {
+            var returnType = delegateType.GetGenericTypeArguments().Single();
+            MethodInfo getInstanceMethod = ReflectionHelper.GetGetInstanceMethod(returnType);
+            return getInstanceMethod.CreateDelegate(delegateType, this);
+        }
+
+        private Delegate CreateGetNamedInstanceDelegate(Type delegateType, string serviceName)
+        {
+            var returnType = delegateType.GetGenericTypeArguments().Single();            
+            var openGenericMethod = GetType().GetPrivateMethod("CreateGenericGetNamedInstanceDelegate");
+            var closedGenericMethod = openGenericMethod.MakeGenericMethod(returnType);
+            return (Delegate)closedGenericMethod.Invoke(this, new object[] { serviceName });
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private Func<TService> CreateGenericGetNamedInstanceDelegate<TService>(string serviceName)
+        // ReSharper restore UnusedMember.Local
+        {
+            return () => GetInstance<TService>(serviceName);
+        }
+
+        private Action<IEmitter> CreateEmitMethodBasedParameterizedFuncRequest(Type serviceType, string serviceName)
+        {
+            Delegate getInstanceDelegate;
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                getInstanceDelegate = CreateGetInstanceWithParametersDelegate(serviceType);
+            }
+            else
+            {
+                getInstanceDelegate = ReflectionHelper.CreateGetNamedInstanceWithParametersDelegate(
+                    this,
+                    serviceType,
+                    serviceName);
+            }
+
+            var constantIndex = constants.Add(getInstanceDelegate);
+            return e => e.PushConstant(constantIndex, serviceType);
+        }
+        
+        private Delegate CreateGetInstanceWithParametersDelegate(Type serviceType)
         {
             var getInstanceMethod = ReflectionHelper.GetGetInstanceWithParametersMethod(serviceType);
-            var del = getInstanceMethod.CreateDelegate(serviceType, this);
-            var constantIndex = constants.Add(del);
-            return e => e.PushConstant(constantIndex, serviceType);
+            return getInstanceMethod.CreateDelegate(serviceType, this);
         }
 
 #if NET || NET45 || NETFX_CORE || WINDOWS_PHONE

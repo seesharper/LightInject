@@ -40,14 +40,14 @@
         }
 
         [TestMethod]
-        public void GetInstance_TwoServices_FactoriesAreSame()
+        public void GetInstance_TwoServices_FactoriesAreNotSame()
         {
             var container = CreateContainer();
             container.Register<IFoo>(factory => new Foo(), "SomeFoo");
             container.Register<IFoo>(factory => new Foo(), "AnotherFoo");
             var firstInstance = container.GetInstance<Func<IFoo>>("SomeFoo");
             var secondInstance = container.GetInstance<Func<IFoo>>("AnotherFoo");
-            Assert.AreSame(firstInstance, secondInstance);
+            Assert.AreNotSame(firstInstance, secondInstance);
         }
 
         [TestMethod]
@@ -202,16 +202,16 @@
             Assert.IsInstanceOfType(instance, typeof(Func<int, IFoo>));
         }
 
-        //[TestMethod]
-        //public void GetInstance_TwoNamedServices_FactoriesReturnsNamedServices()
-        //{
-        //    var container = CreateContainer();
-        //    container.Register<int, IFoo>((factory, i) => new FooWithValueTypeDependency(i), "SomeFoo");
-        //    container.Register<int, IFoo>((factory, i) => new AnotherFooWithValueTypeDependency(i), "AnotherFoo");
-        //    var firstFactory = container.GetInstance<Func<int, IFoo>>("SomeFoo");
-        //    var instance = firstFactory(42);
-        //    Assert.IsInstanceOfType(instance, typeof(FooWithValueTypeDependency));            
-        //}
+        [TestMethod]
+        public void GetInstance_TwoNamedServices_FactoriesReturnsNamedServices()
+        {
+            var container = CreateContainer();
+            container.Register<int, IFoo>((factory, i) => new FooWithValueTypeDependency(i), "SomeFoo");
+            container.Register<int, IFoo>((factory, i) => new AnotherFooWithValueTypeDependency(i), "AnotherFoo");
+            var firstFactory = container.GetInstance<Func<int, IFoo>>("SomeFoo");
+            var instance = firstFactory(42);
+            Assert.IsInstanceOfType(instance, typeof(FooWithValueTypeDependency));
+        }
 
         [TestMethod]
         public void GetInstance_OneParameter_ThrowsMeaningfulExceptionWhenWrongGetInstanceMethodIsUsed()
@@ -256,6 +256,17 @@
             var instance2 = (AnotherFooWithValueTypeDependency)container.GetInstance(typeof(IFoo), "AnotherFoo", new object[] { 42 });
             Assert.AreEqual(42, instance.Value);
         }
+
+        //[TestMethod]
+        //public void Ex()
+        //{
+        //    var container = CreateContainer();
+        //    container.Register<IFoo, FooWithValueTypeDependency>(new PerContainerLifetime());
+        //    var instance = container.GetInstance<int, IFoo>(42);
+        //    var instance2 = container.GetInstance<int, IFoo>(84);
+        //}
+
+
 
         [TestMethod]
         public void GetInstance_OneParameter_ReturnsInstance()
