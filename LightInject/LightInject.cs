@@ -460,7 +460,7 @@ namespace LightInject
 
 #if NET || NET45
         /// <summary>
-        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
+        /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         void RegisterAssembly(string searchPattern);    
@@ -2204,14 +2204,14 @@ namespace LightInject
 
 #if NET || NET45 
         /// <summary>
-        /// Registers services from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
+        /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         public void RegisterAssembly(string searchPattern)
         {
             foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
-            {
-                RegisterAssembly(assembly);
+            {                
+                AssemblyScanner.Scan(assembly, this);               
             }
         }    
     
@@ -6756,7 +6756,7 @@ namespace LightInject
             {
                 currentAssembly = assembly;
                 ExecuteCompositionRoots(compositionRootTypes);
-            }
+            }            
         }
 
         private static string GetServiceName(Type serviceType, Type implementingType)

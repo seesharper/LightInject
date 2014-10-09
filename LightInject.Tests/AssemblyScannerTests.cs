@@ -70,8 +70,16 @@
 	        var containerMock = new ContainerMock(new MockContext<IServiceContainer>());
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), new CompositionRootTypeExtractor(), new CompositionRootExecutor(containerMock));
             SampleCompositionRoot.CallCount = 0;
-            //assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock, null, (s, t) => true);
             assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock);
+            Assert.AreEqual(1, SampleCompositionRoot.CallCount);
+        }
+
+        [TestMethod]
+        public void Scan_AssemblyFileWithCompositionRoot_CallsComposeMethod()
+        {
+            var container = new ServiceContainer();
+            SampleCompositionRoot.CallCount = 0;
+            container.RegisterAssembly("*SampleLibraryWithCompositionRoot.dll");
             Assert.AreEqual(1, SampleCompositionRoot.CallCount);
         }
 
@@ -155,7 +163,7 @@
             var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock;
             serviceContainer.RegisterAssembly("*SampleLibrary.dll");
-            mockContext.Assert(a => a.Scan(typeof(IFoo).Assembly,The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type,Type, bool>>.IsAnyValue), Invoked.Once);
+            mockContext.Assert(a => a.Scan(typeof(IFoo).Assembly,The<IServiceRegistry>.IsAnyValue), Invoked.Once);
         }
 #endif
         [TestMethod]
@@ -227,7 +235,7 @@
             var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock;
             serviceContainer.RegisterAssembly("LightInject.SampleLibrary.dll");
-            mockContext.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue), Invoked.Once);
+            mockContext.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue), Invoked.Once);
         }
 #endif
 
