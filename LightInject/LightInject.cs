@@ -5809,7 +5809,8 @@ namespace LightInject
             var constructorDependency = new ConstructorDependency
             {
                 Parameter = parameterInfo,
-                ServiceType = parameterInfo.ParameterType
+                ServiceType = parameterInfo.ParameterType,
+                IsRequired = true
             };
             return constructorDependency;
         }

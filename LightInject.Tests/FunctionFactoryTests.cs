@@ -352,6 +352,16 @@
             Assert.AreEqual(4, instance.Arg4);
         }
 
+        [TestMethod]
+        public void GetInstance_MissingConstructorDependency_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(factory => new FooWithDependency(factory.GetInstance<IBar>()));
+            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+        }
+
+
+
         //[TestMethod]
         //public void GetAllInstance_FunctionFactoryWithParameters_DoesNotReturnAnyServices()
         //{
