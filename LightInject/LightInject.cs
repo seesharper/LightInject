@@ -1184,112 +1184,133 @@ namespace LightInject
         }
     }
 
-    internal static class ReflectionHelper
+    internal static class LazyTypeExtensions
     {
-        private static readonly Lazy<MethodInfo> LifetimeGetInstanceMethodInfo;
-        private static readonly Lazy<MethodInfo> OpenGenericGetInstanceMethodInfo;
-        private static readonly Lazy<MethodInfo> OpenGenericGetNamedInstanceMethodInfo;        
-        private static readonly Lazy<MethodInfo[]> OpenGenericGetInstanceMethods;
-        private static readonly Lazy<MethodInfo> GetCurrentScopeMethodInfo;
-        private static readonly Lazy<MethodInfo> GetCurrentScopeManagerMethodInfo;
-        private static readonly Lazy<ThreadSafeDictionary<Type, Type>> LazyTypes;
-        private static readonly Lazy<ThreadSafeDictionary<Type, Type>> FuncTypes;        
-        private static readonly Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> LazyConstructors;        
-        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceMethods;
-        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetNamedInstanceMethods;
-        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceWithParametersMethods;
-        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetNamedInstanceWithParametersMethods;                       
-        private static readonly Lazy<ThreadSafeDictionary<Type, Type>> EnumerableTypes;
+        private static readonly ThreadSafeDictionary<Type, ConstructorInfo> Constructors = new ThreadSafeDictionary<Type, ConstructorInfo>();
 
-        static ReflectionHelper()
+        public static ConstructorInfo GetLazyConstructor(this Type type)
         {
-            LifetimeGetInstanceMethodInfo = CreateLazyLifetimeGetInstanceMethodInfo();            
-            OpenGenericGetInstanceMethods = CreateLazyOpenGenericGetInstanceMethods();
-            OpenGenericGetInstanceMethodInfo = CreateLazyOpenGenericGetInstanceMethodInfo();
-            OpenGenericGetNamedInstanceMethodInfo = CreateLazyOpenGenericGetNamedInstanceMethodInfo();            
-            GetInstanceMethods = CreateLazyGetInstanceMethods();
-            GetNamedInstanceMethods = CreateLazyGetNamedInstanceMethods();
-            GetCurrentScopeMethodInfo = CreateLazyGetCurrentScopeMethodInfo();
-            GetCurrentScopeManagerMethodInfo = CreateLazyGetCurrentScopeManagerMethodInfo();
-            GetInstanceWithParametersMethods = CreateLazyGetInstanceWithParametersMethods();
-            GetNamedInstanceWithParametersMethods = CreateLazyGetNamedInstanceWithParametersMethods();    
-            LazyTypes = CreateLazyLazyTypes();            
-            LazyConstructors = CreateLazyLazyConstructors();            
-            FuncTypes = CreateLazyFuncTypes();            
-            EnumerableTypes = CreateLazyEnumerableTypes();                            
-        }
-        
-        public static MethodInfo LifetimeGetInstanceMethod
-        {
-            get
-            {
-                return LifetimeGetInstanceMethodInfo.Value;
-            }
+            return Constructors.GetOrAdd(type, GetConstructor);
         }
 
-        public static MethodInfo GetCurrentScopeMethod
+        private static ConstructorInfo GetConstructor(Type type)
         {
-            get
-            {
-                return GetCurrentScopeMethodInfo.Value;
-            }
+            Type closedGenericLazyType = typeof(Lazy<>).MakeGenericType(type);
+            return closedGenericLazyType.GetConstructor(new[] { type.GetFuncType() });
+        }
+    }
+
+    internal static class EnumerableTypeExtensions
+    {
+        private static readonly ThreadSafeDictionary<Type, Type> EnumerableTypes = new ThreadSafeDictionary<Type, Type>();
+
+        public static Type GetEnumerableType(this Type returnType)
+        {
+            return EnumerableTypes.GetOrAdd(returnType, CreateEnumerableType);
         }
 
-        public static MethodInfo GetCurrentScopeManagerMethod
+        private static Type CreateEnumerableType(Type type)
         {
-            get
-            {
-                return GetCurrentScopeManagerMethodInfo.Value;
-            }
+            return typeof(IEnumerable<>).MakeGenericType(type);
+        }
+    }
+
+    internal static class FuncTypeExtensions
+    {
+        private static readonly ThreadSafeDictionary<Type, Type> FuncTypes = new ThreadSafeDictionary<Type, Type>();
+            
+        public static Type GetFuncType(this Type returnType)
+        {
+            return FuncTypes.GetOrAdd(returnType, CreateFuncType);
         }
 
-        public static Delegate CreateGetInstanceDelegate(Type serviceType, IServiceFactory serviceFactory)
+        private static Type CreateFuncType(Type type)
         {
-            Type delegateType = GetFuncType(serviceType);
-            MethodInfo getInstanceMethod = GetGetInstanceMethod(serviceType);
+            return typeof(Func<>).MakeGenericType(type);
+        }
+    }
+
+    internal static class LifetimeHelper
+    {        
+        static LifetimeHelper()
+        {
+            GetInstanceMethod = typeof(ILifetime).GetMethod("GetInstance");
+            GetCurrentScopeMethod = typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod();
+            GetScopeManagerMethod = typeof(IScopeManagerProvider).GetMethod("GetScopeManager");
+        }
+
+        public static MethodInfo GetInstanceMethod { get; private set; }
+
+        public static MethodInfo GetCurrentScopeMethod { get; private set; }
+
+        public static MethodInfo GetScopeManagerMethod { get; private set; }
+    }
+
+    internal static class DelegateTypeExtensions
+    {
+        private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
+            typeof(IServiceFactory).GetMethod("GetInstance", Type.EmptyTypes);
+
+        private static readonly ThreadSafeDictionary<Type, MethodInfo> GetInstanceMethods =
+            new ThreadSafeDictionary<Type, MethodInfo>();
+                
+        public static Delegate CreateGetInstanceDelegate(this Type serviceType, IServiceFactory serviceFactory)
+        {
+            Type delegateType = serviceType.GetFuncType();
+            MethodInfo getInstanceMethod = GetInstanceMethods.GetOrAdd(serviceType, CreateGetInstanceMethod);
             return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
         }
 
+        private static MethodInfo CreateGetInstanceMethod(Type type)
+        {
+            return OpenGenericGetInstanceMethodInfo.MakeGenericMethod(type);
+        }
+    }
+
+    internal static class NamedDelegateTypeExtensions
+    {        
+        private static readonly MethodInfo CreateInstanceDelegateMethodInfo =
+            typeof(NamedDelegateTypeExtensions).GetPrivateStaticMethod("CreateInstanceDelegate");
+
+        private static readonly ThreadSafeDictionary<Type, MethodInfo> CreateInstanceDelegateMethods =
+            new ThreadSafeDictionary<Type, MethodInfo>();
+       
+        public static Delegate CreateNamedGetInstanceDelegate(this Type serviceType, string serviceName, IServiceFactory factory)
+        {                        
+            MethodInfo createInstanceDelegateMethodInfo = CreateInstanceDelegateMethods.GetOrAdd(
+                serviceType,
+                CreateClosedGenericCreateInstanceDelegateMethod);
+
+            return (Delegate)createInstanceDelegateMethodInfo.Invoke(null, new object[] { factory, serviceName });                        
+        }
+
+        private static MethodInfo CreateClosedGenericCreateInstanceDelegateMethod(Type type)
+        {
+            return CreateInstanceDelegateMethodInfo.MakeGenericMethod(type);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TService> CreateInstanceDelegate<TService>(IServiceFactory factory, string serviceName)
+        // ReSharper restore UnusedMember.Local
+        {
+            return () => factory.GetInstance<TService>(serviceName);
+        }
+    }
+
+    internal static class ReflectionHelper
+    {                                        
+        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceWithParametersMethods;        
+        
+        static ReflectionHelper()
+        {                                    
+            GetInstanceWithParametersMethods = CreateLazyGetInstanceWithParametersMethods();            
+        }
+                               
         public static MethodInfo GetGetInstanceWithParametersMethod(Type serviceType)
         {
             return GetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateGetInstanceWithParametersMethod);
         }
-
-        public static MethodInfo GetNamedGetInstanceWithParametersMethod(Type serviceType)
-        {
-            return GetNamedInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateNamedGetInstanceWithParametersMethod);
-        }
-
-        public static Type GetEnumerableType(Type type)
-        {
-            return EnumerableTypes.Value.GetOrAdd(type, CreateEnumerableType);
-        }
-
-        public static Type GetFuncType(Type type)
-        {
-            return FuncTypes.Value.GetOrAdd(type, CreateFuncType);
-        }
-
-        public static Type GetLazyType(Type type)
-        {
-            return LazyTypes.Value.GetOrAdd(type, CreateLazyType);
-        }
-
-        public static ConstructorInfo GetLazyConstructor(Type type)
-        {
-            return LazyConstructors.Value.GetOrAdd(type, ResolveLazyConstructor);
-        }
-
-        public static MethodInfo GetGetInstanceMethod(Type type)
-        {
-            return GetInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetInstanceMethod);
-        }
-
-        public static MethodInfo GetGetNamedInstanceMethod(Type type)
-        {
-            return GetNamedInstanceMethods.Value.GetOrAdd(type, CreateClosedGenericGetNamedInstanceMethod);
-        }
-
+                                                     
         public static Delegate CreateGetNamedInstanceWithParametersDelegate(IServiceFactory factory, Type delegateType, string serviceName)
         {
             Type[] genericTypeArguments = delegateType.GetGenericTypeArguments();
@@ -1297,83 +1318,13 @@ namespace LightInject
             var closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
             return (Delegate)closedGenericMethod.Invoke(null, new object[] { factory, serviceName });
         }
-
-        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetNamedInstanceWithParametersMethods()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
-        }
-
+        
         private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetInstanceWithParametersMethods()
         {
             return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
                 () => new ThreadSafeDictionary<Type, MethodInfo>());
         }
-
-        private static Lazy<ThreadSafeDictionary<Type, Type>> CreateLazyEnumerableTypes()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
-        }
-
-        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetNamedInstanceMethods()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
-        }
-
-        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetInstanceMethods()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
-        }
-
-        private static Lazy<ThreadSafeDictionary<Type, ConstructorInfo>> CreateLazyLazyConstructors()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, ConstructorInfo>>(() => new ThreadSafeDictionary<Type, ConstructorInfo>());
-        }
-
-        private static Lazy<ThreadSafeDictionary<Type, Type>> CreateLazyFuncTypes()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
-        }
-
-        private static Lazy<ThreadSafeDictionary<Type, Type>> CreateLazyLazyTypes()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, Type>>(() => new ThreadSafeDictionary<Type, Type>());
-        }
-
-        private static Lazy<MethodInfo> CreateLazyGetCurrentScopeManagerMethodInfo()
-        {
-            return new Lazy<MethodInfo>(
-                () => typeof(IScopeManagerProvider).GetMethod("GetScopeManager"));
-        }
-
-        private static Lazy<MethodInfo> CreateLazyGetCurrentScopeMethodInfo()
-        {
-            return new Lazy<MethodInfo>(
-                () => typeof(ScopeManager).GetProperty("CurrentScope").GetGetMethod());
-        }
-
-        private static Lazy<MethodInfo> CreateLazyLifetimeGetInstanceMethodInfo()
-        {
-            return new Lazy<MethodInfo>(() => typeof(ILifetime).GetMethod("GetInstance"));
-        }
-
-        private static Lazy<MethodInfo> CreateLazyOpenGenericGetNamedInstanceMethodInfo()
-        {
-            return new Lazy<MethodInfo>(
-                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => m.GetParameters().Any()));
-        }
-
-        private static Lazy<MethodInfo> CreateLazyOpenGenericGetInstanceMethodInfo()
-        {
-            return new Lazy<MethodInfo>(
-                () => OpenGenericGetInstanceMethods.Value.FirstOrDefault(m => !m.GetParameters().Any()));
-        }
-
-        private static Lazy<MethodInfo[]> CreateLazyOpenGenericGetInstanceMethods()
-        {
-            return new Lazy<MethodInfo[]>(
-                () => typeof(IServiceFactory).GetMethods().Where(TypeHelper.IsGenericGetInstanceMethod).ToArray());
-        }
-        
+                                         
         private static MethodInfo CreateGetInstanceWithParametersMethod(Type serviceType)
         {
             Type[] genericTypeArguments = serviceType.GetGenericTypeArguments();
@@ -1385,49 +1336,7 @@ namespace LightInject
 
             return closedGenericMethod;
         }
-
-        private static MethodInfo CreateNamedGetInstanceWithParametersMethod(Type serviceType)
-        {
-            Type[] genericArguments = serviceType.GetGenericTypeArguments();
-            MethodInfo openGenericMethod =
-                typeof(IServiceFactory).GetMethods().Single(m => m.Name == "GetInstance"
-                    && m.GetGenericArguments().Length == genericArguments.Length && m.GetParameters().Any(p => p.Name == "serviceName"));
-
-            MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericArguments);
-
-            return closedGenericMethod;
-        }
-
-        private static Type CreateLazyType(Type type)
-        {
-            return typeof(Lazy<>).MakeGenericType(type);
-        }
-
-        private static Type CreateEnumerableType(Type type)
-        {
-            return typeof(IEnumerable<>).MakeGenericType(type);
-        }
-        
-        private static ConstructorInfo ResolveLazyConstructor(Type type)
-        {
-            return GetLazyType(type).GetConstructor(new[] { GetFuncType(type) });
-        }
-        
-        private static Type CreateFuncType(Type type)
-        {
-            return typeof(Func<>).MakeGenericType(type);
-        }
-               
-        private static MethodInfo CreateClosedGenericGetInstanceMethod(Type type)
-        {
-            return OpenGenericGetInstanceMethodInfo.Value.MakeGenericMethod(type);
-        }
-
-        private static MethodInfo CreateClosedGenericGetNamedInstanceMethod(Type type)
-        {
-            return OpenGenericGetNamedInstanceMethodInfo.Value.MakeGenericMethod(type);
-        }
-
+                                                                           
         // ReSharper disable UnusedMember.Local
         private static Func<TArg, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg, TService>(IServiceFactory factory, string serviceName)
         // ReSharper restore UnusedMember.Local
@@ -1644,6 +1553,11 @@ namespace LightInject
             return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
+        public static MethodInfo GetPrivateStaticMethod(this Type type, string name)
+        {
+            return type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic);
+        }
+
         public static IEnumerable<Attribute> GetCustomAttributes(this Assembly assembly, Type attributeType)
         {
             return assembly.GetCustomAttributes(attributeType, false).Cast<Attribute>();
@@ -1704,12 +1618,7 @@ namespace LightInject
         {
             return serviceType.IsGenericType() && !serviceType.IsGenericTypeDefinition();
         }
-
-        public static bool IsGenericGetInstanceMethod(MethodInfo m)
-        {
-            return m.Name == "GetInstance" && m.IsGenericMethodDefinition;
-        }
-
+      
         public static Type GetElementType(Type type)
         {
             if (type.IsGenericType() && type.GetGenericTypeArguments().Count() == 1)
@@ -3089,7 +2998,7 @@ namespace LightInject
         /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
         public IEnumerable<object> GetAllInstances(Type serviceType)
         {
-            return (IEnumerable<object>)GetInstance(ReflectionHelper.GetEnumerableType(serviceType));
+            return (IEnumerable<object>)GetInstance(serviceType.GetEnumerableType());
         }
 
         /// <summary>
@@ -3747,8 +3656,8 @@ namespace LightInject
         {
             Action<IEmitter> emitter = null;
             if (serviceType.IsLazy())
-            {
-                emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType, t => ReflectionHelper.CreateGetInstanceDelegate(t, this));
+            {                
+                emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType, t => t.CreateGetInstanceDelegate(this));
             }
             else if (serviceType.IsFuncWithParameters())
             {
@@ -3797,41 +3706,20 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodBasedOnFuncServiceRequest(Type serviceType, string serviceName)
         {            
             Delegate getInstanceDelegate;
+            var returnType = serviceType.GetGenericTypeArguments().Single();
             if (string.IsNullOrEmpty(serviceName))
             {
-                getInstanceDelegate = CreateGetInstanceDelegate(serviceType);
+                getInstanceDelegate = returnType.CreateGetInstanceDelegate(this);
             }
             else
-            {
-                getInstanceDelegate = CreateGetNamedInstanceDelegate(serviceType, serviceName);
+            {                
+                getInstanceDelegate = returnType.CreateNamedGetInstanceDelegate(serviceName, this);
             }  
                       
             var constantIndex = constants.Add(getInstanceDelegate);
             return e => e.PushConstant(constantIndex, serviceType);            
         }
-
-        private Delegate CreateGetInstanceDelegate(Type delegateType)
-        {
-            var returnType = delegateType.GetGenericTypeArguments().Single();
-            MethodInfo getInstanceMethod = ReflectionHelper.GetGetInstanceMethod(returnType);
-            return getInstanceMethod.CreateDelegate(delegateType, this);
-        }
-
-        private Delegate CreateGetNamedInstanceDelegate(Type delegateType, string serviceName)
-        {
-            var returnType = delegateType.GetGenericTypeArguments().Single();            
-            var openGenericMethod = GetType().GetPrivateMethod("CreateGenericGetNamedInstanceDelegate");
-            var closedGenericMethod = openGenericMethod.MakeGenericMethod(returnType);
-            return (Delegate)closedGenericMethod.Invoke(this, new object[] { serviceName });
-        }
-
-        // ReSharper disable UnusedMember.Local
-        private Func<TService> CreateGenericGetNamedInstanceDelegate<TService>(string serviceName)
-        // ReSharper restore UnusedMember.Local
-        {
-            return () => GetInstance<TService>(serviceName);
-        }
-
+                      
         private Action<IEmitter> CreateEmitMethodBasedParameterizedFuncRequest(Type serviceType, string serviceName)
         {
             Delegate getInstanceDelegate;
@@ -3948,8 +3836,8 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodBasedOnLazyServiceRequest(Type serviceType, Func<Type, Delegate> valueFactoryDelegate)
         {            
             Type actualServiceType = serviceType.GetGenericTypeArguments()[0];
-            Type funcType = ReflectionHelper.GetFuncType(actualServiceType);            
-            ConstructorInfo lazyConstructor = ReflectionHelper.GetLazyConstructor(actualServiceType);
+            Type funcType = actualServiceType.GetFuncType();
+            ConstructorInfo lazyConstructor = actualServiceType.GetLazyConstructor();
             Delegate getInstanceDelegate = valueFactoryDelegate(actualServiceType);
             var constantIndex = constants.Add(getInstanceDelegate);
 
@@ -4089,12 +3977,12 @@ namespace LightInject
                 int instanceDelegateIndex = CreateInstanceDelegateIndex(emitMethod);
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
                 int scopeManagerProviderIndex = CreateScopeManagerProviderIndex();
-                var getInstanceMethod = ReflectionHelper.LifetimeGetInstanceMethod;
+                var getInstanceMethod = LifetimeHelper.GetInstanceMethod;
                 emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
                 emitter.PushConstant(instanceDelegateIndex, typeof(Func<object>));
                 emitter.PushConstant(scopeManagerProviderIndex, typeof(IScopeManagerProvider));
-                emitter.Call(ReflectionHelper.GetCurrentScopeManagerMethod);
-                emitter.Call(ReflectionHelper.GetCurrentScopeMethod);
+                emitter.Call(LifetimeHelper.GetScopeManagerMethod);
+                emitter.Call(LifetimeHelper.GetCurrentScopeMethod);
                 emitter.Call(getInstanceMethod);
             }
         }

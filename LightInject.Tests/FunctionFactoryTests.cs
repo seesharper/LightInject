@@ -372,6 +372,6 @@
         //    var container = CreateContainer();
         //    container.Register<int, int, IFoo>((factory, arg1, arg2) => new FooWithTwoParameters(arg1, arg2), "SomeFoo");
         //    ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo), new object[] { 42 }));
-        //}
+        //}       
     }
 }
