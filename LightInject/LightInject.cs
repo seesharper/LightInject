@@ -887,11 +887,11 @@ namespace LightInject
     internal interface ITypeConstructionInfoBuilder
     {
         /// <summary>
-        /// Analyzes the <paramref name="implementingType"/> and returns a <see cref="ConstructionInfo"/> instance.
+        /// Analyzes the <paramref name="registration"/> and returns a <see cref="ConstructionInfo"/> instance.
         /// </summary>
-        /// <param name="implementingType">The <see cref="Type"/> to analyze.</param>
+        /// <param name="registration">The <see cref="Registration"/> that represents the implementing type to analyze.</param>
         /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
-        ConstructionInfo Execute(Type implementingType);
+        ConstructionInfo Execute(Registration registration);
     }
 
     /// <summary>
@@ -1314,7 +1314,12 @@ namespace LightInject
         public static Delegate CreateGetNamedInstanceWithParametersDelegate(IServiceFactory factory, Type delegateType, string serviceName)
         {
             Type[] genericTypeArguments = delegateType.GetGenericTypeArguments();
-            var openGenericMethod = typeof(ReflectionHelper).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(m => m.GetGenericArguments().Length == genericTypeArguments.Length && m.Name == "CreateGenericGetNamedParameterizedInstanceDelegate");
+            var openGenericMethod =
+                typeof(ReflectionHelper).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                    .Single(
+                        m =>
+                        m.GetGenericArguments().Length == genericTypeArguments.Length
+                        && m.Name == "CreateGenericGetNamedParameterizedInstanceDelegate");
             var closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
             return (Delegate)closedGenericMethod.Invoke(null, new object[] { factory, serviceName });
         }
@@ -3119,7 +3124,7 @@ namespace LightInject
 #if IOS
                 IMethodSkeleton methodSkeleton = methodSkeletonFactory(new[] { typeof(object[]), typeof(object) });
 #endif
-                ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
+                ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);                
                 var emitter = methodSkeleton.GetEmitter();
                 emitter.PushArgument(1);
                 emitter.Cast(concreteType);                
@@ -3143,7 +3148,7 @@ namespace LightInject
 
         private ConstructionInfo GetContructionInfoForConcreteType(Type concreteType)
         {
-            var serviceRegistration = GetServiceRegistrationForConcreteType(concreteType);
+            var serviceRegistration = GetServiceRegistrationForConcreteType(concreteType);                        
             return GetConstructionInfo(serviceRegistration);
         }
 
@@ -3159,7 +3164,8 @@ namespace LightInject
             {
                 ServiceType = type,
                 ImplementingType = type,
-                ServiceName = string.Empty
+                ServiceName = string.Empty,
+                IgnoreConstructorDependencies = true
             };
             return serviceRegistration;
         }
@@ -5591,17 +5597,22 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Analyzes the <paramref name="implementingType"/> and returns a <see cref="ConstructionInfo"/> instance.
+        /// Analyzes the <paramref name="registration"/> and returns a <see cref="ConstructionInfo"/> instance.
         /// </summary>
-        /// <param name="implementingType">The <see cref="Type"/> to analyze.</param>
+        /// <param name="registration">The <see cref="Registration"/> that represents the implementing type to analyze.</param>
         /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
-        public ConstructionInfo Execute(Type implementingType)
+        public ConstructionInfo Execute(Registration registration)
         {
-            var constructionInfo = new ConstructionInfo();
-            constructionInfo.Constructor = constructorSelector.Execute(implementingType);
+            var implementingType = registration.ImplementingType;
+            var constructionInfo = new ConstructionInfo();            
             constructionInfo.ImplementingType = implementingType;
             constructionInfo.PropertyDependencies.AddRange(propertyDependencySelector.Execute(implementingType));
-            constructionInfo.ConstructorDependencies.AddRange(constructorDependencySelector.Execute(constructionInfo.Constructor));
+            if (!registration.IgnoreConstructorDependencies)
+            {
+                constructionInfo.Constructor = constructorSelector.Execute(implementingType);
+                constructionInfo.ConstructorDependencies.AddRange(constructorDependencySelector.Execute(constructionInfo.Constructor));    
+            }          
+  
             return constructionInfo;
         }
     }
@@ -5698,7 +5709,7 @@ namespace LightInject
 #if NET || NET45 || NETFX_CORE || WINDOWS_PHONE
             return registration.FactoryExpression != null
                 ? CreateConstructionInfoFromLambdaExpression(registration.FactoryExpression)
-                : CreateConstructionInfoFromImplementingType(registration.ImplementingType);
+                : CreateConstructionInfoFromImplementingType(registration);
 #endif
 #if IOS
             return registration.FactoryDelegate != null
@@ -5721,9 +5732,9 @@ namespace LightInject
         }
 #endif
         
-        private ConstructionInfo CreateConstructionInfoFromImplementingType(Type implementingType)
+        private ConstructionInfo CreateConstructionInfoFromImplementingType(Registration registration)
         {
-            return typeConstructionInfoBuilder.Value.Execute(implementingType);
+            return typeConstructionInfoBuilder.Value.Execute(registration);
         }
     }
 
@@ -5942,6 +5953,11 @@ namespace LightInject
         /// Gets or sets the service <see cref="Type"/>.
         /// </summary>
         public Type ServiceType { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether constructor dependencies should be ignored.
+        /// </summary>
+        public bool IgnoreConstructorDependencies { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="Type"/> that implements the <see cref="Registration.ServiceType"/>.

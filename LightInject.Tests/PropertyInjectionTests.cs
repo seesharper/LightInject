@@ -290,5 +290,13 @@
                 () => container.InjectProperties(barWithPropertyDependency), ErrorMessages.RecursivePropertyDependency);
 
         }
+
+        [TestMethod]
+        public void InjectProperties_InstanceWithUnknownConstructorDependencyAndMultipleConstructors_ReturnsInstance()
+        {
+            var container = new ServiceContainer();
+            var fooWithDependency = new FooWithTwoConstructors(42);
+            var result = container.InjectProperties(fooWithDependency);
+        }
     }
 }

@@ -558,7 +558,16 @@ namespace LightInject.SampleLibrary
         public Lazy<IBar> LazyService { get; private set; }
     }
 
+    public class FooWithTwoConstructors : IFoo
+    {
+        public FooWithTwoConstructors(int value)
+        {
+        }
 
+        public FooWithTwoConstructors(string value)
+        {
+        }
+    }
 
 
 
