@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.1.9
+    LightInject version 3.0.2.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -1249,7 +1249,7 @@ namespace LightInject
     internal static class DelegateTypeExtensions
     {
         private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
-            typeof(IServiceFactory).GetMethod("GetInstance", Type.EmptyTypes);
+            typeof(IServiceFactory).GetMethod("GetInstance", new Type[] { });
 
         private static readonly ThreadSafeDictionary<Type, MethodInfo> GetInstanceMethods =
             new ThreadSafeDictionary<Type, MethodInfo>();
@@ -1315,7 +1315,7 @@ namespace LightInject
         {
             Type[] genericTypeArguments = delegateType.GetGenericTypeArguments();
             var openGenericMethod =
-                typeof(ReflectionHelper).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                typeof(ReflectionHelper).GetPrivateStaticMethods()
                     .Single(
                         m =>
                         m.GetGenericArguments().Length == genericTypeArguments.Length
@@ -1403,10 +1403,25 @@ namespace LightInject
         {            
             return GetMethod(type, name);
         }
+        
+        public static MethodInfo GetPrivateStaticMethod(this Type type, string name)
+        {
+            return GetMethod(type, name);
+        }
+        
+        public static MethodInfo[] GetPrivateStaticMethods(this Type type)
+        {
+            return type.GetRuntimeMethods().Where(m => m.IsPrivate && m.IsStatic).ToArray();
+        }
 
         public static MethodInfo GetMethod(this Type type, string name)
         {
             return type.GetTypeInfo().GetDeclaredMethod(name);
+        }
+
+        public static MethodInfo GetMethod(this Type type, string name, Type[] types)
+        {
+            return type.GetRuntimeMethod(name, types);
         }
 
         public static bool IsAssignableFrom(this Type type, Type fromType)
@@ -1497,7 +1512,7 @@ namespace LightInject
         }
 
 #endif
-#if NET || NET45         
+#if NET || NET45
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetGenericArguments();
@@ -1563,12 +1578,17 @@ namespace LightInject
             return type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic);
         }
 
+        public static MethodInfo[] GetPrivateStaticMethods(this Type type)
+        {
+            return type.GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
+        }
+
         public static IEnumerable<Attribute> GetCustomAttributes(this Assembly assembly, Type attributeType)
         {
             return assembly.GetCustomAttributes(attributeType, false).Cast<Attribute>();
         }
 #endif
-
+        
         public static bool IsEnumerableOfT(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
@@ -7106,7 +7126,7 @@ namespace LightInject
 
             Duplicates = ImmutableList<KeyValue<TKey, TValue>>.Empty;
 
-            HashCode = key.GetHashCode();
+            HashCode = Key.GetHashCode();
         }
 
         private ImmutableHashTree()

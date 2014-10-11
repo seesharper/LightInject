@@ -173,5 +173,45 @@
 
             Assert.AreEqual(0, result);
         }
+
+        [TestMethod]
+        public void Search_AfterRightRotation_ReturnsNodes()
+        {
+            var root = ImmutableHashTree<int, int>.Empty;
+            var node = root.Add(30, 30).Add(20, 20).Add(10, 10);
+            Assert.AreEqual(10, node.Search(10));
+            Assert.AreEqual(20, node.Search(20));
+            Assert.AreEqual(30, node.Search(30));
+        }
+
+        [TestMethod]
+        public void Search_AfterLeftRotation_ReturnsNodes()
+        {
+            var root = ImmutableHashTree<int, int>.Empty;
+            var node = root.Add(10, 10).Add(20, 20).Add(30, 30);
+            Assert.AreEqual(10, node.Search(10));
+            Assert.AreEqual(20, node.Search(20));
+            Assert.AreEqual(30, node.Search(30));
+        }
+
+        [TestMethod]
+        public void Search_AfterRightLeftRotation_ReturnsNodes()
+        {
+            var root = ImmutableHashTree<int, int>.Empty;
+            var node = root.Add(30, 30).Add(10, 10).Add(20, 20);
+            Assert.AreEqual(10, node.Search(10));
+            Assert.AreEqual(20, node.Search(20));
+            Assert.AreEqual(30, node.Search(30));
+        }
+
+        [TestMethod]
+        public void Search_AfterLeftRightRotation_ReturnsNodes()
+        {
+            var root = ImmutableHashTree<int, int>.Empty;
+            var node = root.Add(10, 10).Add(30, 30).Add(20, 20);
+            Assert.AreEqual(10, node.Search(10));
+            Assert.AreEqual(20, node.Search(20));
+            Assert.AreEqual(30, node.Search(30));
+        }
     }
 }

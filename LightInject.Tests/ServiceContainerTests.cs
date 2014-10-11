@@ -1211,7 +1211,7 @@ namespace LightInject.Tests
             
             Assert.AreEqual(1, instances.Count());
         }
-
+       
         [TestMethod]
         public void GetAllInstances_ServiceWithGenericConstraint_ReturnsAllMatchingInstances()
         {
@@ -1284,5 +1284,5 @@ namespace LightInject.Tests
         IFoo CreateFoo(int value);
     }
 
- 
+    
 }
