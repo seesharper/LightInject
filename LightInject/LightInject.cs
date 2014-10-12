@@ -42,7 +42,7 @@ namespace LightInject
     using System.Collections.Concurrent;
 #endif
     using System.Collections.Generic;
-#if NET45 || NETFX_CORE || WINDOWS_PHONE || NET
+#if NET45 || NETFX_CORE || WINDOWS_PHONE || NET || IOS
     using System.Collections.ObjectModel;
 #endif    
 #if NET || NET45    
@@ -5734,7 +5734,7 @@ namespace LightInject
 #if IOS
             return registration.FactoryDelegate != null
                 ? CreateConstructionInfoFromFactoryDelegate(registration.FactoryDelegate)
-                : CreateConstructionInfoFromImplementingType(registration.ImplementingType);
+                : CreateConstructionInfoFromImplementingType(registration);
 #endif
         }
 #if IOS
