@@ -197,6 +197,15 @@
 
         }
 
+        [TestMethod, ExpectedException(typeof(InvalidOperationException))]
+        public void GetInstance_InterceptedClassRegisteredAsInstance_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            container.RegisterInstance(new ClassWithVirtualMethod());
+            container.Intercept(sr => sr.ServiceType == typeof(ClassWithVirtualMethod), factory => new SampleInterceptor());
+            container.GetInstance<ClassWithVirtualMethod>();
+        }
+
         private IFoo f;
 
         [TestMethod]

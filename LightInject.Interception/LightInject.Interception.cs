@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Interception version 1.0.0.5 
+    LightInject.Interception version 1.0.0.6 
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -163,6 +163,11 @@ namespace LightInject
             }
             else
             {
+                if (registration.ImplementingType == null)
+                {
+                    throw new InvalidOperationException("Unable to determine the implementing type.");                    
+                }
+
                 var proxyType = CreateProxyType(registration.ImplementingType, additionalInterfaces, serviceFactory, defineProxyType, registration);
                 registration.ImplementingType = proxyType;
                 return registration;
