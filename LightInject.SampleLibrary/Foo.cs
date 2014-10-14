@@ -569,7 +569,25 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class FooWithIndexer
+    {
+        public object this[int index]
+        {
+            get
+            {
+                return null;
+            }
+            set
+            {
+                
+            }
+        }
+    }
 
+    public class FooWithObjectProperty
+    {
+        public object Property { get; set; }
+    }
 
 
     public class FooWithMultipleConstructors : IFoo

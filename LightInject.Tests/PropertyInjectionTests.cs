@@ -298,5 +298,25 @@
             var fooWithDependency = new FooWithTwoConstructors(42);
             var result = container.InjectProperties(fooWithDependency);
         }
+
+        [TestMethod]
+        public void GetInstance_ClassWithIndexer_CanGetInstance()
+        {
+            var container = new ServiceContainer();
+            container.Register<object, Foo>();
+            container.Register<FooWithIndexer>();
+            var instance = container.GetInstance<FooWithIndexer>();
+            Assert.IsNotNull(instance);
+        }
+
+        [TestMethod]
+        public void GetInstance_ClassWithObjectPropertyCanGetInstance()
+        {
+            var container = new ServiceContainer();
+            container.Register<object, Foo>();
+            container.Register<FooWithObjectProperty>();
+            var instance = container.GetInstance<FooWithObjectProperty>();
+            Assert.IsNotNull(instance.Property);
+        }
     }
 }
