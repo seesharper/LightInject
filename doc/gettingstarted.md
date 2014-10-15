@@ -372,7 +372,7 @@ We can also do a combination of supplied values and dependencies.
 ---
 
     container.Register<IBar, Bar>();
-    container.RegisterFactory<int, IFoo>((factory, value) => new Foo(value, factory.GetInstance<IBar>()));
+    container.Register<int, IFoo>((factory, value) => new Foo(value, factory.GetInstance<IBar>()));
     var foo = (Foo)container.GetInstance<int, IFoo>();
     Assert.AreEqual(42, foo.Value);
     Assert.IsNotNull(foo.Bar);
@@ -647,7 +647,7 @@ Types factories can also wrap a parameterized function factory and allows us to 
 
 ---
 
-    container.RegisterFactory<int, IFoo>((factory, value) => new Foo(value));
+    container.Register<int, IFoo>((factory, value) => new Foo(value));
     container.Register<IFooFactory, FooFactory>(new PerContainerLifetime());
     var typedFooFactory = container.GetInstance<IFooFactory>();
     var foo = typedFooFactory.GetFoo(42);
