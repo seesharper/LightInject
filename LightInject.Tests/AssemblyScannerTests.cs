@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Reflection;
     using System.Runtime.CompilerServices;
 
     using LightInject;
@@ -73,16 +72,7 @@
             assemblyScanner.Scan(typeof(SampleCompositionRoot).Assembly, containerMock);
             Assert.AreEqual(1, SampleCompositionRoot.CallCount);
         }
-
-        [TestMethod]
-        public void Scan_AssemblyFileWithCompositionRoot_CallsComposeMethod()
-        {
-            var container = new ServiceContainer();
-            SampleCompositionRoot.CallCount = 0;
-            container.RegisterAssembly("*SampleLibraryWithCompositionRoot.dll");
-            Assert.AreEqual(1, SampleCompositionRoot.CallCount);
-        }
-
+       
         [TestMethod]
         public void ScanUsingPredicate_SampleAssemblyWithCompositionRoot_DoesNotCallCompositionRoot()
         {
@@ -164,6 +154,15 @@
             serviceContainer.AssemblyScanner = scannerMock;
             serviceContainer.RegisterAssembly("*SampleLibrary.dll");
             mockContext.Assert(a => a.Scan(typeof(IFoo).Assembly,The<IServiceRegistry>.IsAnyValue), Invoked.Once);
+        }
+
+        [TestMethod]
+        public void Scan_AssemblyFileWithCompositionRoot_CallsComposeMethod()
+        {
+            var container = new ServiceContainer();
+            SampleCompositionRoot.CallCount = 0;
+            container.RegisterAssembly("*SampleLibraryWithCompositionRoot.dll");
+            Assert.AreEqual(1, SampleCompositionRoot.CallCount);
         }
 #endif
         [TestMethod]

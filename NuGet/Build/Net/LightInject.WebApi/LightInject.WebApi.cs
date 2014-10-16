@@ -158,27 +158,48 @@ namespace LightInject.WebApi
         }
     }
 
+    /// <summary>
+    /// An <see cref="IDependencyScope"/> implementation that wraps a <see cref="Scope"/>.
+    /// </summary>
     public class LightInjectWebApiDependencyScope : IDependencyScope
     {
         private readonly IServiceContainer serviceContainer;
         private readonly Scope scope;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LightInjectWebApiDependencyScope"/> class.
+        /// </summary>
+        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
+        /// <param name="scope">The wrapped <see cref="Scope"/>.</param>
         public LightInjectWebApiDependencyScope(IServiceContainer serviceContainer, Scope scope)
         {
             this.serviceContainer = serviceContainer;
             this.scope = scope;
         }
 
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise null.</returns>                
         public object GetService(Type serviceType)
         {
             return serviceContainer.GetInstance(serviceType);
         }
 
+        /// <summary>
+        /// Gets all instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of services to resolve.</param>
+        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>                
         public IEnumerable<object> GetServices(Type serviceType)
         {
             return serviceContainer.GetAllInstances(serviceType);
         }
 
+        /// <summary>
+        /// Disposes the <see cref="Scope"/>.
+        /// </summary>
         public void Dispose()
         {
             scope.Dispose();

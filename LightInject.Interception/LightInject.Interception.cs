@@ -1622,6 +1622,7 @@ namespace LightInject.Interception
             {
                 return;
             }
+
             var targetEvents = GetTargetEvents();
 
             foreach (var targetEvent in targetEvents)
@@ -1738,28 +1739,7 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Stsfld, fieldBuilder);
             return fieldBuilder;
         }
-
-        private void ImplementLazyMethodInterceptorInitialization_old(FieldInfo interceptorField, int[] interceptorIndicies)
-        {
-            var il = initializerMethodBuilder.GetILGenerator();
-            var interceptorArray = il.DeclareLocal(typeof(Lazy<IInterceptor>[]));
-            for (int i = 0; i < interceptorIndicies.Length; i++)
-            {
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldc_I4, interceptorIndicies.Length);
-                il.Emit(OpCodes.Newarr, typeof(Lazy<IInterceptor>));
-                il.Emit(OpCodes.Stloc, interceptorArray);
-                il.Emit(OpCodes.Ldloc, interceptorArray);
-                il.Emit(OpCodes.Ldc_I4, i);
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldfld, lazyInterceptorFields[interceptorIndicies[i]]);
-                il.Emit(OpCodes.Stelem_Ref);
-                il.Emit(OpCodes.Ldloc, interceptorArray);
-                il.Emit(OpCodes.Call, CreateMethodInterceptorMethod);
-                il.Emit(OpCodes.Stfld, interceptorField);
-            }
-        }
-
+       
         private void ImplementLazyMethodInterceptorInitialization(FieldInfo interceptorField, int[] interceptorIndicies)
         {
             var il = initializerMethodBuilder.GetILGenerator();
@@ -1769,15 +1749,14 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Stloc, interceptorArray);
             
             for (int i = 0; i < interceptorIndicies.Length; i++)
-            {
-                
+            {                
                 il.Emit(OpCodes.Ldloc, interceptorArray);    
                 il.Emit(OpCodes.Ldc_I4, i);
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldfld, lazyInterceptorFields[interceptorIndicies[i]]);
-                il.Emit(OpCodes.Stelem_Ref);
-                
+                il.Emit(OpCodes.Stelem_Ref);                
             }
+
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldloc, interceptorArray);
             il.Emit(OpCodes.Call, CreateMethodInterceptorMethod);

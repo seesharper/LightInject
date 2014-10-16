@@ -13,8 +13,8 @@
         <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET WCF Windows-Communication-Foundation</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.1.8" />
-            <dependency id="LightInject.Interception" version="1.0.0.5" />
+            <dependency id="LightInject" version="3.0.2.0" />
+            <dependency id="LightInject.Interception" version="1.0.0.6" />
         </dependencies>
         <frameworkAssemblies>
             <frameworkAssembly assemblyName="System.ServiceModel"/>            

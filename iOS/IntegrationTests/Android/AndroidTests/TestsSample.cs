@@ -11,7 +11,7 @@ namespace AndroidTests
 		public void Setup ()
 		{
 			ServiceContainer container = new ServiceContainer();
-			container.GetInstance2<string> ();
+			container.GetInstance<string> ();
 		}
 
 		

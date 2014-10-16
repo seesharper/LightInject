@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject.Mocking</id>
-        <version>1.0.0.4</version>
+        <version>1.0.0.5</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
@@ -13,7 +13,7 @@
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime Mocking UnitTesting</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.1.8" />
+            <dependency id="LightInject" version="3.0.2.0" />
         </dependencies>
     </metadata>    
 </package>

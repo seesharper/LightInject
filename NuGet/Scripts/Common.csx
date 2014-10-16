@@ -476,7 +476,13 @@ public class Publicizer
        
 
         Exceptions.Add("TypeHelper");
-        Exceptions.Add("ReflectionHelper");        
+        Exceptions.Add("ReflectionHelper"); 
+        Exceptions.Add("LifetimeHelper"); 
+        Exceptions.Add("NamedDelegateTypeExtensions"); 
+        Exceptions.Add("DelegateTypeExtensions"); 
+        Exceptions.Add("LazyTypeExtensions");
+        Exceptions.Add("EnumerableTypeExtensions");
+        Exceptions.Add("FuncTypeExtensions");
         //Exceptions.Add("OpCodes");
         //Exceptions.Add("OpCode");
         //Exceptions.Add("ILGenerator");        

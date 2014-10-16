@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Mocking version 1.0.0.4
+    LightInject.Mocking version 1.0.0.5
     http://seesharper.github.io/LightInject/
     http://twitter.com/bernhardrichter       
 ******************************************************************************/
@@ -77,6 +77,7 @@ namespace LightInject.Mocking
             }
 
             var mockServiceRegistration = CreateTypeBasedMockServiceRegistration(serviceType, serviceName, implementingType, lifeTime);
+            ((ServiceContainer)serviceRegistry).Invalidate();
             serviceRegistry.Register(mockServiceRegistration);
             ServicesMocks.TryAdd(key, mockServiceRegistration);
         }
@@ -89,7 +90,7 @@ namespace LightInject.Mocking
         /// <param name="mockFactory">The factory delegate that creates the mock instance.</param>
         /// <param name="serviceName">The name of the service to mock.</param>
         public static void StartMocking<TService>(this IServiceRegistry serviceRegistry, Func<TService> mockFactory, string serviceName) where TService : class
-        {            
+        {                                    
             Tuple<IServiceRegistry, Type, string> key = CreateServiceKey(serviceRegistry, typeof(TService), serviceName);
             ILifetime lifeTime = null;
             var serviceRegistration = GetExistingServiceRegistration(serviceRegistry, typeof(TService), serviceName);
@@ -100,7 +101,8 @@ namespace LightInject.Mocking
                 lifeTime = CreateLifeTimeBasedOnExistingServiceRegistration(serviceRegistration);
             }
 
-            var mockServiceRegistration = CreateFactoryBasedMockServiceRegistration(mockFactory, serviceName, lifeTime);
+            var mockServiceRegistration = CreateFactoryBasedMockServiceRegistration(mockFactory, serviceName, lifeTime);            
+            ((ServiceContainer)serviceRegistry).Invalidate();
             serviceRegistry.Register(mockServiceRegistration);
             ServicesMocks.TryAdd(key, mockServiceRegistration);
         }
@@ -161,6 +163,7 @@ namespace LightInject.Mocking
 
             if (MockedServices.TryRemove(key, out serviceRegistration))
             {
+                ((ServiceContainer)serviceRegistry).Invalidate();
                 serviceRegistry.Register(serviceRegistration);
             }           
         }
