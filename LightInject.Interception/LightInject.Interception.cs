@@ -1624,9 +1624,19 @@ namespace LightInject.Interception
             {
                 var eventBuilder = GetEventBuilder(targetEvent);
                 MethodInfo addMethod = targetEvent.GetAddMethod();
-                eventBuilder.SetAddOnMethod(ImplementMethod(addMethod));
+                MethodBuilder addMethodBuilder = ImplementMethod(addMethod);
+                if (addMethodBuilder != null)
+                {
+                    eventBuilder.SetAddOnMethod(addMethodBuilder);    
+                }
+
                 MethodInfo removeMethod = targetEvent.GetRemoveMethod();
-                eventBuilder.SetRemoveOnMethod(ImplementMethod(removeMethod));
+                MethodBuilder removeMethodBuilder = ImplementMethod(removeMethod);
+                if (removeMethodBuilder != null)
+                {
+                    eventBuilder.SetRemoveOnMethod(removeMethodBuilder);    
+                }                
+
             }
         }
 

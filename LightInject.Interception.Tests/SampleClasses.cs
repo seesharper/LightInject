@@ -1,7 +1,8 @@
 ﻿namespace LightInject.Interception.Tests
 {
     using System;
-
+    using System.ComponentModel;
+    using System.Runtime.CompilerServices;
 
     public class ClassWithNoMethods
     {
@@ -107,5 +108,18 @@
         }
     }
 
-    
+    public class ClassWithEvent 
+    {
+        public event PropertyChangedEventHandler PropertyChanged
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+    }
 }

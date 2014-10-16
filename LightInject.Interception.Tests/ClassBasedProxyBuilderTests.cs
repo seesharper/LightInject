@@ -126,7 +126,18 @@ namespace LightInject.Interception.Tests
 
             Assert.AreEqual("SomeValue", proxy.value);
         }
-       
+
+        [TestMethod]
+        public void Create_TargetWithEventWithoutInterceptingAddRemove_CanCreateProxyType()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithEvent));
+            proxyDefinition.Implement(() => new SampleInterceptor(), method => method.Name == "ToString");
+            Type proxyType = CreateProxyType(proxyDefinition);
+            Assert.IsTrue(typeof(ClassWithEvent).IsAssignableFrom(proxyType));
+
+        }
+
+
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
         {
             return CreateProxyBuilder().GetProxyType(proxyDefinition);

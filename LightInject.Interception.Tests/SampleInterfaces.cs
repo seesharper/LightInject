@@ -64,20 +64,20 @@
         event EventHandler<EventArgs> SomeEvent;
     }
 
-    public class ClassWithEvent : IClassWithEvent
-    {
-        event EventHandler<EventArgs> IClassWithEvent.SomeEvent
-        {
-            add
-            {                                
-                throw new NotImplementedException();
-            }
-            remove
-            {
-                throw new NotImplementedException();
-            }
-        }
-    }
+    //public class ClassWithEvent : IClassWithEvent
+    //{
+    //    event EventHandler<EventArgs> IClassWithEvent.SomeEvent
+    //    {
+    //        add
+    //        {                                
+    //            throw new NotImplementedException();
+    //        }
+    //        remove
+    //        {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
+    //}
 
     public interface IMethodWithGenericConstraint
     {
