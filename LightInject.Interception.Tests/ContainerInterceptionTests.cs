@@ -206,33 +206,6 @@
             container.GetInstance<ClassWithVirtualMethod>();
         }
 
-        private IFoo f;
-
-        [TestMethod]
-        public void GetInstance_MultipleInterceptors_CanCreateInstance()
-        {
-            var container = new ServiceContainer();
-            container.Register<IClassWithTwoMethods, ClassWithTwoMethods>();
-            container.Intercept(
-                sr => typeof(IFoo).IsAssignableFrom(sr.ServiceType),
-                DefineProxyType);
-
-            var instance = container.GetInstance<IClassWithTwoMethods>();
-
-            instance.FirstMethod();
-        }
-
-
-
-
-        private static void DefineProxyType(IServiceFactory serviceFactory, ProxyDefinition proxyDefinition)
-        {
-            proxyDefinition.Implement(() => new FirstInterceptor());
-            proxyDefinition.Implement(() => new SecondInterceptor());
-        }
-
-
-
         private static ClassWithVirtualMethod CreateClassWithVirtualMethod()
         {
             return new ClassWithVirtualMethod();

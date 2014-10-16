@@ -371,13 +371,10 @@
     {
 
     }
- 
-
 
     public interface IClassWithTwoMethods
     {
         void FirstMethod();
-
         void SecondMethod();
     }
 
@@ -394,6 +391,19 @@
         }
     }
 
+    public interface IClassWithOneMethod
+    {
+        void FirstMethod();        
+    }
+
+    public class ClassWithOneMethod : IClassWithOneMethod
+    {
+        public void FirstMethod()
+        {
+            
+        }        
+    }
+
 
     public class ClassWithConstructorArguments : IMethodWithValueTypeReturnValue
     {
@@ -401,5 +411,12 @@
         {
             return 42;
         }
+    }
+
+    public interface IClassWithThreeMethods
+    {
+        void A();
+        void B();
+        void C();
     }
 }

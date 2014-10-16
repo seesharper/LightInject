@@ -1618,25 +1618,19 @@ namespace LightInject.Interception
 
         private void ImplementEvents()
         {
+            if (proxyDefinition.TargetType.IsClass)
+            {
+                return;
+            }
             var targetEvents = GetTargetEvents();
 
             foreach (var targetEvent in targetEvents)
             {
                 var eventBuilder = GetEventBuilder(targetEvent);
                 MethodInfo addMethod = targetEvent.GetAddMethod();
-                MethodBuilder addMethodBuilder = ImplementMethod(addMethod);
-                if (addMethodBuilder != null)
-                {
-                    eventBuilder.SetAddOnMethod(addMethodBuilder);    
-                }
-
+                eventBuilder.SetAddOnMethod(ImplementMethod(addMethod));
                 MethodInfo removeMethod = targetEvent.GetRemoveMethod();
-                MethodBuilder removeMethodBuilder = ImplementMethod(removeMethod);
-                if (removeMethodBuilder != null)
-                {
-                    eventBuilder.SetRemoveOnMethod(removeMethodBuilder);    
-                }                
-
+                eventBuilder.SetRemoveOnMethod(ImplementMethod(removeMethod));
             }
         }
 
@@ -1745,7 +1739,7 @@ namespace LightInject.Interception
             return fieldBuilder;
         }
 
-        private void ImplementLazyMethodInterceptorInitialization(FieldInfo interceptorField, int[] interceptorIndicies)
+        private void ImplementLazyMethodInterceptorInitialization_old(FieldInfo interceptorField, int[] interceptorIndicies)
         {
             var il = initializerMethodBuilder.GetILGenerator();
             var interceptorArray = il.DeclareLocal(typeof(Lazy<IInterceptor>[]));
@@ -1764,6 +1758,30 @@ namespace LightInject.Interception
                 il.Emit(OpCodes.Call, CreateMethodInterceptorMethod);
                 il.Emit(OpCodes.Stfld, interceptorField);
             }
+        }
+
+        private void ImplementLazyMethodInterceptorInitialization(FieldInfo interceptorField, int[] interceptorIndicies)
+        {
+            var il = initializerMethodBuilder.GetILGenerator();
+            var interceptorArray = il.DeclareLocal(typeof(Lazy<IInterceptor>[]));
+            il.Emit(OpCodes.Ldc_I4, interceptorIndicies.Length);
+            il.Emit(OpCodes.Newarr, typeof(Lazy<IInterceptor>));
+            il.Emit(OpCodes.Stloc, interceptorArray);
+            
+            for (int i = 0; i < interceptorIndicies.Length; i++)
+            {
+                
+                il.Emit(OpCodes.Ldloc, interceptorArray);    
+                il.Emit(OpCodes.Ldc_I4, i);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, lazyInterceptorFields[interceptorIndicies[i]]);
+                il.Emit(OpCodes.Stelem_Ref);
+                
+            }
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldloc, interceptorArray);
+            il.Emit(OpCodes.Call, CreateMethodInterceptorMethod);
+            il.Emit(OpCodes.Stfld, interceptorField);
         }
 
         private FieldBuilder DeclareLazyMethodInterceptorField(MethodInfo targetMethod)

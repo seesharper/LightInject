@@ -6,6 +6,7 @@ namespace LightInject.Interception.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
 
     using Moq;
 
@@ -663,8 +664,40 @@ namespace LightInject.Interception.Tests
             Assert.AreEqual(0, callCount);
         }
 
-     
+        [TestMethod]
+        public void Execute_MultipleInterceptors_InvokesInterceptorInSequenceAccordingToMethodSelectors()
+        {
+            // Arrange
+            var targetMock = new Mock<IClassWithThreeMethods>();
+            var result = new StringBuilder();
+            targetMock.Setup(t => t.A()).Callback(() => result.Append("A"));
+            targetMock.Setup(t => t.B()).Callback(() => result.Append("B"));
+            targetMock.Setup(t => t.C()).Callback(() => result.Append("C"));
 
+            var firstInterceptorMock = new Mock<IInterceptor>();
+            firstInterceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Callback(() => result.Append("1")).Returns<IInvocationInfo>(ii => ii.Proceed());
+            var secondInterceptorMock = new Mock<IInterceptor>();
+            secondInterceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Callback(() => result.Append("2")).Returns<IInvocationInfo>(ii => ii.Proceed());
+            var thirdInterceptorMock = new Mock<IInterceptor>();
+            thirdInterceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Callback(() => result.Append("3")).Returns<IInvocationInfo>(ii => ii.Proceed());
+            
+            var proxyDefinition = new ProxyDefinition(typeof(IClassWithThreeMethods), () => targetMock.Object);
+            proxyDefinition.Implement(() => firstInterceptorMock.Object, m => m.Name == "A");
+            proxyDefinition.Implement(() => secondInterceptorMock.Object, m => m.Name == "B");   
+            proxyDefinition.Implement(() => thirdInterceptorMock.Object, m => m.Name == "A" || m.Name == "B" || m.Name == "C");         
+            var proxyBuilder = CreateProxyBuilder();
+            var type = proxyBuilder.GetProxyType(proxyDefinition);
+            var instance = (IClassWithThreeMethods)Activator.CreateInstance(type);
+                        
+            instance.A();  
+            Assert.AreEqual("13A", result.ToString());
+            result.Clear();
+            instance.B();
+            Assert.AreEqual("23B", result.ToString());
+            result.Clear();
+            instance.C();
+            Assert.AreEqual("3C", result.ToString());
+        }
         
 
         #endregion

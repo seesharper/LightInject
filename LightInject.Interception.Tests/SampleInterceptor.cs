@@ -20,6 +20,14 @@
         }
     }
 
+    public class ThirdInterceptor : IInterceptor
+    {
+        public object Invoke(IInvocationInfo invocationInfo)
+        {
+            return invocationInfo.Proceed();
+        }
+    }
+
     public  class SampleInterceptor : IInterceptor
     {        
         public object Invoke(IInvocationInfo invocationInfo)

@@ -131,7 +131,7 @@ namespace LightInject.Interception.Tests
         public void Create_TargetWithEventWithoutInterceptingAddRemove_CanCreateProxyType()
         {
             var proxyDefinition = new ProxyDefinition(typeof(ClassWithEvent));
-            proxyDefinition.Implement(() => new SampleInterceptor(), method => method.Name == "ToString");
+            proxyDefinition.Implement(() => new SampleInterceptor(), method => method.Name == "ToString");            
             Type proxyType = CreateProxyType(proxyDefinition);
             Assert.IsTrue(typeof(ClassWithEvent).IsAssignableFrom(proxyType));
 
