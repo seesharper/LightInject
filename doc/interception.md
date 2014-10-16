@@ -182,8 +182,8 @@ The following example shows how we can control the call sequence for each method
     private void DefineProxyType(ProxyDefinition proxyDefinition)
     {
         proxyDefinition.Implement(() => new FirstInterceptor(), m => m.Name == "A");
-        proxyDefinition.Implement(() => new SecondInterceptor, m => m.Name == "B");   
-        proxyDefinition.Implement(() => new ThirdInterceptor(), m => m.Name == "A" || m.MethodName == "B" || m.Name == "C");
+        proxyDefinition.Implement(() => new SecondInterceptor(), m => m.Name == "B");   
+        proxyDefinition.Implement(() => new ThirdInterceptor(), m => m.Name == "A" || m.Name == "B" || m.Name == "C");
     }
 
 **Method A call sequence**
