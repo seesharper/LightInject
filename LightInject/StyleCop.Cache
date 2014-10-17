@@ -113,8 +113,8 @@
   <sourcecode name="LightInject.cs" parser="StyleCop.CSharp.CsParser">
     <timestamps>
       <styleCop>2014.04.01 10:18:24.000</styleCop>
-      <settingsFile>2014.09.12 15:03:34.349</settingsFile>
-      <sourceFile>2014.10.14 15:20:52.915</sourceFile>
+      <settingsFile>2014.10.17 13:07:03.363</settingsFile>
+      <sourceFile>2014.10.17 13:07:00.491</sourceFile>
       <parser>2014.04.01 10:18:24.000</parser>
       <StyleCop.CSharp.DocumentationRules>2014.04.01 10:18:24.000</StyleCop.CSharp.DocumentationRules>
       <StyleCop.CSharp.DocumentationRules.FilesHashCode>-1945363787</StyleCop.CSharp.DocumentationRules.FilesHashCode>
@@ -136,8 +136,8 @@
   <sourcecode name="AssemblyInfo.cs" parser="StyleCop.CSharp.CsParser">
     <timestamps>
       <styleCop>2014.04.01 10:18:24.000</styleCop>
-      <settingsFile>2014.09.12 15:03:34.349</settingsFile>
-      <sourceFile>2014.09.12 15:03:33.046</sourceFile>
+      <settingsFile>2014.10.17 13:07:03.363</settingsFile>
+      <sourceFile>2014.10.17 13:07:00.506</sourceFile>
       <parser>2014.04.01 10:18:24.000</parser>
       <StyleCop.CSharp.DocumentationRules>2014.04.01 10:18:24.000</StyleCop.CSharp.DocumentationRules>
       <StyleCop.CSharp.DocumentationRules.FilesHashCode>-1945363787</StyleCop.CSharp.DocumentationRules.FilesHashCode>
@@ -159,7 +159,7 @@
   <sourcecode name=".NETFramework,Version=v4.5.AssemblyAttributes.cs" parser="StyleCop.CSharp.CsParser">
     <timestamps>
       <styleCop>2014.04.01 10:18:24.000</styleCop>
-      <settingsFile>2014.09.12 15:03:34.349</settingsFile>
+      <settingsFile>2014.10.17 13:07:03.363</settingsFile>
       <sourceFile>2013.11.13 00:03:08.489</sourceFile>
       <parser>2014.04.01 10:18:24.000</parser>
       <StyleCop.CSharp.DocumentationRules>2014.04.01 10:18:24.000</StyleCop.CSharp.DocumentationRules>
