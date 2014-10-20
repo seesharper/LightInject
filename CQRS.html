@@ -3,6 +3,7 @@
   <head>
     <title>Title</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
     <style type="text/css">
       @import url(http://fonts.googleapis.com/css?family=Open+Sans);
       @import url(http://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
@@ -19,7 +20,7 @@
         font-family: 'Open Sans';
         font-weight: normal;
       }
-      .remark-code, .remark-inline-code { font-family: 'Consolas'; }
+      .remark-code, .remark-inline-code { font-family: 'Droid Sans Mono', font-weight : normal; }
     </style>
   </head>
   <body>
@@ -29,11 +30,33 @@ class: center, middle
 
 # CQRS
 ---
-# Query    
+
+# Repository Pattern 
+
+```cs
+public interface IRepository<T>
+{
+    void Add<T>(T instance);
+    IEnumerable<T> Find(int id);
+    void Save(T instance);
+    void Delete(T instance);
+}
+```
+
+Your "all-in-one" CRUD interface.
+
+  * No true segregation of methods
+  * Requires implementation of all methods 
+  * Less fine grained data access 
+  * UPDATE is not the same as INSERT
+
+---
+
+# Command/Query pattern    
 ```cs
 public interface IQueryHandler<in TQuery, TResult>
 {
-    Task<TResult> HandleAsync(TQuery query);
+    Task<TResult> HandleAsync(TQuery queryf);
 }
 ```
 # Command
@@ -43,9 +66,127 @@ public interface ICommandHandler<in TCommand>
     Task HandleAsync(TCommand command);
 }
 ```    
+  * Clear separation of query and command.
+  * Implement only what we need.
+  * Fine grained data access
 ---
-# Introduction
-    public class Whatever
+
+# Scenario 
+
+    public class Customer
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Address { get; set; }
+        public string Phone { get; set; }
+    }
+
+### What?
+
+Update the customers address
+
+---
+# Repository 
+```cs
+    public class CustomerRepository : 
+        IRepository<Customer>
+    {
+        // ..other methods omitted for brevity
+
+        public void Update(Customer instance)
+        {
+            // Step 1 - Load the customer from the database.      
+            // Step 2 - Compare properties to determine what to update
+            // Step 3 - Perform the update (Address)
+        }   
+    }
+```
+  * Requires an extra roundtrip to the database.
+  * Assumes operation on the whole customer class.
+  * Intent must be inferred (Update address)
+  * Vasted CPU in comparing properties.
+
+---
+
+# Command 
+```cs
+public class UpdateAddressCommandHandler : 
+    ICommandHandler<UpdateAddressCommand>
+{
+    public void Handle(UpdateAddressCommand command)
+    {
+        // UPDATE Customer SET Address = command.Address 
+        // WHERE id = command.Id
+    }
+}
+```
+  * Clear intent (Update address)     
+  * Optimized SQL
+
+---
+
+# Scenario
+
+## Return a list that consists of the "Id" and the "Name"
+
+---
+
+# Repository
+
+```cs
+public class CustomerRepository : 
+    IRepository<Customer>
+{
+    // ..other methods omitted for brevity
+
+    public Customer Find(int id)
+    {
+        //SELECT * from Customer Where id = id
+    }
+}
+```
+  * Loads the complete customer rather than just the requested fields.
+---
+
+# Query
+
+```cs
+public class CustomerQueryHandler : 
+    IQueryHandler<int, CustomerResult>
+{
+    public CustomerResult Handle(int id)
+    {
+       // SELECT id, name FROM Customer Where id = id 
+    }
+}
+```
+  * Optimized SQL for this scenario.
+
+---
+
+
+
+# Look ma, no AOP
+
+```cs
+public class CachedQueryHandler<TQuery, TResult> 
+    : IQueryHandler<TQuery, TResult>
+{
+    private readonly IQueryHandler<TQuery, TResult> target;
+    private readonly ConcurrentDictionary<TQuery, TResult> cache; 
+
+    public CachedQueryHandler(IQueryHandler<TQuery, TResult> target)       
+    {
+        this.targetHandler = targetHandler;
+        cache = new ConcurrentDictionary<TQuery, TResult>();
+    }
+
+    public TResult Handle(TQuery query)
+    {
+        return cache.GetOrAdd(query, q => target.Handle(q));
+    }  
+}
+```
     </textarea>
     <script src="http://gnab.github.io/remark/downloads/remark-latest.min.js" type="text/javascript">
 
