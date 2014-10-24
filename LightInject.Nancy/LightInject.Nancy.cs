@@ -39,6 +39,9 @@ namespace LightInject.Nancy
     using global::Nancy.Bootstrapper;
     using global::Nancy.Diagnostics;
 
+    /// <summary>
+    /// Enables LightInject to be used as the IoC container with the Nancy web framework.
+    /// </summary>
     internal abstract class LightInjectNancyBootstrapper : NancyBootstrapperWithRequestContainerBase<Scope>
     {
         private IServiceContainer container;
@@ -109,11 +112,20 @@ namespace LightInject.Nancy
         /// <returns>The return value from this method is always null.</returns>
         protected override Scope GetApplicationContainer()
         {
-            container = new ServiceContainer();
+            container = GetServiceContainer();
             Configure(container);
             return null;
         }
-        
+
+        /// <summary>
+        /// Returns the <see cref="IServiceContainer"/> instance.
+        /// </summary>
+        /// <returns><see cref="IServiceContainer"/>.</returns>
+        protected virtual IServiceContainer GetServiceContainer()
+        {
+            return new ServiceContainer();
+        }
+
         /// <summary>
         /// Registers the <see cref="INancyModuleCatalog"/> into the underlying <see cref="IServiceContainer"/> instance.
         /// </summary>
