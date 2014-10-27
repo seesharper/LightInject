@@ -110,11 +110,14 @@
       </violation>
     </violations>
   </sourcecode>
+  <project key="60861655">
+    <configuration>TRACE;DEBUG;TEST,NET45</configuration>
+  </project>
   <sourcecode name="LightInject.cs" parser="StyleCop.CSharp.CsParser">
     <timestamps>
       <styleCop>2014.04.01 10:18:24.000</styleCop>
       <settingsFile>2014.10.17 13:07:03.363</settingsFile>
-      <sourceFile>2014.10.17 13:07:00.491</sourceFile>
+      <sourceFile>2014.10.17 20:34:19.852</sourceFile>
       <parser>2014.04.01 10:18:24.000</parser>
       <StyleCop.CSharp.DocumentationRules>2014.04.01 10:18:24.000</StyleCop.CSharp.DocumentationRules>
       <StyleCop.CSharp.DocumentationRules.FilesHashCode>-1945363787</StyleCop.CSharp.DocumentationRules.FilesHashCode>
@@ -179,7 +182,4 @@
     </timestamps>
     <violations />
   </sourcecode>
-  <project key="60861655">
-    <configuration>TRACE;TEST,NET45</configuration>
-  </project>
 </stylecopresultscache>

@@ -49,9 +49,7 @@ namespace LightInject.Nancy
         /// <summary>
         /// Gets the diagnostics for initialization.
         /// </summary>
-        /// <returns>
-        /// IDiagnostics implementation
-        /// </returns>
+        /// <returns>An <see cref="IDiagnostics"/> instance.</returns>                
         protected override IDiagnostics GetDiagnostics()
         {
             return container.GetInstance<IDiagnostics>();
@@ -61,7 +59,7 @@ namespace LightInject.Nancy
         /// Gets all registered application startup tasks
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Collections.Generic.IEnumerable`1"/> instance containing <see cref="T:Nancy.Bootstrapper.IApplicationStartup"/> instances.
+        /// An <see cref="IEnumerable{T}"/> instance containing <see cref="IApplicationStartup"/> instances.
         /// </returns>
         protected override IEnumerable<IApplicationStartup> GetApplicationStartupTasks()
         {
@@ -252,7 +250,11 @@ namespace LightInject.Nancy
             return container.GetInstance<INancyModule>(moduleType.FullName);            
         }
 
-        protected virtual void Configure(IServiceContainer serviceRegistry)
+        /// <summary>
+        /// Allows the <paramref name="serviceContainer"/> to be configured.
+        /// </summary>
+        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/> instance.</param>
+        protected virtual void Configure(IServiceContainer serviceContainer)
         {
         }
 
