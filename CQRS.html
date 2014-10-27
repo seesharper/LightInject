@@ -29,6 +29,8 @@
 class: center, middle
 
 # CQRS
+
+Command Query Responsibility Segregation
 ---
 
 # Repository Pattern 
@@ -52,7 +54,7 @@ Your "all-in-one" CRUD interface.
 
 ---
 
-# Command/Query pattern    
+# Query
 ```cs
 public interface IQueryHandler<in TQuery, TResult>
 {
@@ -72,15 +74,15 @@ public interface ICommandHandler<in TCommand>
 ---
 
 # Scenario 
-
-    public class Customer
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Address { get; set; }
-        public string Phone { get; set; }
-    }
-
+```cs
+public class Customer
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Address { get; set; }
+    public string Phone { get; set; }
+}
+```
 ### What?
 
 Update the customers address
@@ -88,18 +90,18 @@ Update the customers address
 ---
 # Repository 
 ```cs
-    public class CustomerRepository : 
-        IRepository<Customer>
-    {
-        // ..other methods omitted for brevity
+public class CustomerRepository : 
+    IRepository<Customer>
+{
+    // ..other methods omitted for brevity
 
-        public void Update(Customer instance)
-        {
-            // Step 1 - Load the customer from the database.      
-            // Step 2 - Compare properties to determine what to update
-            // Step 3 - Perform the update (Address)
-        }   
-    }
+    public void Update(Customer instance)
+    {
+        // Step 1 - Load the customer from the database.      
+        // Step 2 - Compare properties to determine what to update
+        // Step 3 - Perform the update (Address)
+    }   
+}
 ```
   * Requires an extra roundtrip to the database.
   * Assumes operation on the whole customer class.
@@ -197,7 +199,8 @@ public class CachedQueryHandler<TQuery, TResult>
      <script type="text/javascript">
       var slideshow = remark.create({
           highlightStyle: 'monokai',
-          highlightLanguage: 'cs'
+          highlightLanguage: 'cs',
+          ratio : '16:9'
         }) ;
     </script>
   </body>
