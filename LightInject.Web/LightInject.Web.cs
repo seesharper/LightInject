@@ -108,7 +108,10 @@ namespace LightInject.Web
         private static void EndRequest()
         {
             var scopeManager = (ScopeManager)HttpContext.Current.Items["ScopeManager"];
-            scopeManager.CurrentScope.Dispose();            
+            if (scopeManager != null)
+            {
+                scopeManager.CurrentScope.Dispose();
+            }
         }
 
         private static void BeginRequest()
