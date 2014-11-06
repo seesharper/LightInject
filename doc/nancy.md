@@ -4,10 +4,6 @@
 
 ## Installing ##
 
-**LightInject.Nancy** provides two distribution models via NuGet
-
-### Binary ###
-
 <div class="nuget-badge" >
    <p>
          <code>PM&gt; Install-Package LightInject.Nancy </code>
@@ -16,18 +12,39 @@
 
 This adds a reference to the **LightInject.Nancy.dll** in the target project.
 
-### Source ###
 
-<div class="nuget-badge" >
-   <p>
-         <code>PM&gt; Install-Package LightInject.Nancy.Source </code>
-   </p>
-</div>
+## Dependencies ##
 
-This will install a single file, **LightInject.Nancy.cs** in the target project.
 
-## Bootstrapper ##
 
+	public interface IFoo {}
+	public class Foo : IFoo {}
+
+	public class SampleModule : NancyModule
+	{
+		public SampleModule(IFoo foo)
+		{
+			Get["/"] = parameters => "Hello World";
+		}
+	}
+
+
+Configuring additional services/dependencies is done by implementing the **ICompositionRoot** interface.
+
+    public class CompositionRoot : ICompositionRoot
+    {
+        void ICompositionRoot.Compose(IServiceRegistry serviceRegistry)
+        {
+            serviceRegistry.Register<IFoo, Foo>();
+        }
+    }
+
+
+> *Note: **LightInject** will look for an **ICompositionRoot** implementation in the same assembly as the requested service.*
+
+## Custom Bootstrapper ##
+
+If we need to use an existing container instance or perform some other configuration, this can be done by inheriting from the **LightInjectNancyBootstrapper** class. 
 
     public class Bootstrapper : LightInjectNancyBootstrapper
     {
@@ -36,11 +53,9 @@ This will install a single file, **LightInject.Nancy.cs** in the target project.
             // Alteratively provide an existing container instance.
             return base.GetServiceContainer();
         }
-
-        protected override void Configure(IServiceContainer serviceContainer)
-        {
-            // Configure additonal services.
-            base.Configure(serviceRegistry);
-        }
     }
+
+## Lifetime ##
+
+Services registered with the **PerScopeLifetime** are scoped per web request while services registered with the **PerContainerLifetime** are as scoped per application. 
 
