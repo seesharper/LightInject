@@ -35,24 +35,103 @@ namespace LightInject.Nancy
 {
     using System;
     using System.Collections.Generic;
+
     using global::Nancy;
     using global::Nancy.Bootstrapper;
     using global::Nancy.Diagnostics;
 
-    /// <summary>
-    /// Enables LightInject to be used as the IoC container with the Nancy web framework.
-    /// </summary>
-    internal abstract class LightInjectNancyBootstrapper : NancyBootstrapperWithRequestContainerBase<Scope>
+    internal class LightInjectNancyBootstrapper : NancyBootstrapperBase<IServiceContainer>
     {
-        private IServiceContainer container;
+        private IServiceContainer serviceContainer;
+
+        /// <summary>
+        /// Gets an <see cref="INancyModule"/> instance.
+        /// </summary>
+        /// <param name="moduleType">The type of <see cref="INancyModule"/> to get.</param>
+        /// <param name="context">The current <see cref="NancyContext"/>.</param>
+        /// <returns>An <see cref="INancyModule"/> instance.</returns>
+        public override INancyModule GetModule(Type moduleType, NancyContext context)
+        {
+            EnsureScopeIsStarted(context);
+            return serviceContainer.GetInstance<INancyModule>(moduleType.FullName);
+        }
+
+        /// <summary>
+        /// Gets all <see cref="INancyModule"/> instances.
+        /// </summary>
+        /// <param name="context">The current <see cref="NancyContext"/>.</param>
+        /// <returns>All <see cref="INancyModule"/> instances.</returns>
+        public override IEnumerable<INancyModule> GetAllModules(NancyContext context)
+        {
+            EnsureScopeIsStarted(context);
+            return serviceContainer.GetAllInstances<INancyModule>();
+        }
 
         /// <summary>
         /// Gets the diagnostics for initialization.
         /// </summary>
-        /// <returns>An <see cref="IDiagnostics"/> instance.</returns>                
+        /// <returns>An <see cref="IDiagnostics"/> instance.</returns>      
         protected override IDiagnostics GetDiagnostics()
         {
-            return container.GetInstance<IDiagnostics>();
+            return serviceContainer.GetInstance<IDiagnostics>();
+        }
+
+        /// <summary>
+        /// Gets the <see cref="INancyEngine"/> instance.
+        /// </summary>
+        /// <returns><see cref="INancyEngine"/></returns>
+        protected override INancyEngine GetEngineInternal()
+        {
+            return serviceContainer.GetInstance<INancyEngine>();
+        }
+
+        /// <summary>
+        /// Initializes the <see cref="IServiceContainer"/> instance.
+        /// </summary>
+        /// <returns><see cref="IServiceContainer"/>.</returns>
+        protected override IServiceContainer GetApplicationContainer()
+        {
+            serviceContainer = GetServiceContainer();
+            foreach (var requestStartupType in RequestStartupTasks)
+            {
+                serviceContainer.Register(typeof(IRequestStartup), requestStartupType, requestStartupType.FullName);
+            }
+
+            return serviceContainer;
+        }
+
+        /// <summary>
+        /// Registers the <see cref="INancyModuleCatalog"/> into the underlying <see cref="IServiceContainer"/> instance.
+        /// </summary>
+        /// <param name="container">The <see cref="IServiceContainer"/> to register into.</param>
+        protected override void RegisterBootstrapperTypes(IServiceContainer container)
+        {
+            container.RegisterInstance<INancyModuleCatalog>(this);
+        }
+
+        /// <summary>
+        /// Registers the <paramref name="typeRegistrations"/> into the underlying <see cref="IServiceContainer"/>.
+        /// </summary>
+        /// <param name="container">The <see cref="IServiceContainer"/> to register into.</param>
+        /// <param name="typeRegistrations">Each <see cref="TypeRegistration"/> represents a service 
+        /// to be registered.</param>
+        protected override void RegisterTypes(IServiceContainer container, IEnumerable<TypeRegistration> typeRegistrations)
+        {
+            foreach (var typeRegistration in typeRegistrations)
+            {
+                switch (typeRegistration.Lifetime)
+                {
+                    case Lifetime.Transient:
+                        RegisterTransient(typeRegistration.RegistrationType, typeRegistration.ImplementationType, string.Empty);
+                        break;
+                    case Lifetime.Singleton:
+                        RegisterSingleton(typeRegistration.RegistrationType, typeRegistration.ImplementationType, string.Empty);
+                        break;
+                    case Lifetime.PerRequest:
+                        RegisterPerRequest(typeRegistration.RegistrationType, typeRegistration.ImplementationType, string.Empty);
+                        break;
+                }
+            }
         }
 
         /// <summary>
@@ -63,108 +142,36 @@ namespace LightInject.Nancy
         /// </returns>
         protected override IEnumerable<IApplicationStartup> GetApplicationStartupTasks()
         {
-            var result = container.GetAllInstances<IApplicationStartup>();
-            return result;
+            return serviceContainer.GetAllInstances<IApplicationStartup>();
         }
 
         /// <summary>
-        /// Registers and resolves all request startup tasks
+        /// Gets all <see cref="IRequestStartup"/> instances.
         /// </summary>
-        /// <param name="scope">Not used in this method. The value is always null.</param>
-        /// <param name="requestStartupTypes">Types to register</param>
-        /// <returns>
-        /// An <see cref="IEnumerable{T}"/> instance containing <see cref="IRequestStartup"/> instances.
-        /// </returns>
-        protected override IEnumerable<IRequestStartup> RegisterAndGetRequestStartupTasks(Scope scope, Type[] requestStartupTypes)
+        /// <param name="container">The target <see cref="IServiceContainer"/>.</param>
+        /// <param name="requestStartupTypes">Not used in this method.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> instance containing <see cref="IRequestStartup"/> instances.</returns>
+        protected override IEnumerable<IRequestStartup> RegisterAndGetRequestStartupTasks(IServiceContainer container, Type[] requestStartupTypes)
         {
-            foreach (var requestStartupType in requestStartupTypes)
-            {
-                container.Register(typeof(IRequestStartup), requestStartupType, requestStartupType.FullName);
-            }
-
             return container.GetAllInstances<IRequestStartup>();
         }
 
         /// <summary>
-        /// Gets all registered application registration tasks
+        /// Gets all <see cref="IRegistrations"/> instances.
         /// </summary>
         /// <returns>An <see cref="IEnumerable{T}"/> instance containing <see cref="IRegistrations"/> instances.</returns>
         protected override IEnumerable<IRegistrations> GetRegistrationTasks()
         {
-            var result = container.GetAllInstances<IRegistrations>();
-            return result;
+            return serviceContainer.GetAllInstances<IRegistrations>();
         }
 
         /// <summary>
-        /// Gets the <see cref="INancyEngine"/> instance.
+        /// Registers multiple implementations of a given interface.
         /// </summary>
-        /// <returns><see cref="INancyEngine"/></returns>
-        protected override INancyEngine GetEngineInternal()
-        {
-            return container.GetInstance<INancyEngine>();
-        }
-
-        /// <summary>
-        /// Initializes the <see cref="IServiceContainer"/> instance.
-        /// </summary>
-        /// <returns>The return value from this method is always null.</returns>
-        protected override Scope GetApplicationContainer()
-        {
-            container = GetServiceContainer();
-            Configure(container);
-            return null;
-        }
-
-        /// <summary>
-        /// Returns the <see cref="IServiceContainer"/> instance.
-        /// </summary>
-        /// <returns><see cref="IServiceContainer"/>.</returns>
-        protected virtual IServiceContainer GetServiceContainer()
-        {
-            return new ServiceContainer();
-        }
-
-        /// <summary>
-        /// Registers the <see cref="INancyModuleCatalog"/> into the underlying <see cref="IServiceContainer"/> instance.
-        /// </summary>
-        /// <param name="scope">This value is always null.</param>
-        protected override void RegisterBootstrapperTypes(Scope scope)
-        {
-            container.RegisterInstance<INancyModuleCatalog>(this);
-        }
-
-        /// <summary>
-        /// Registers the <paramref name="typeRegistrations"/> into the underlying <see cref="IServiceContainer"/>.
-        /// </summary>
-        /// <param name="scope">Not used in this method. The value is always null.</param>
-        /// <param name="typeRegistrations">Each <see cref="TypeRegistration"/> represents a service 
-        /// to be registered.</param>
-        protected override void RegisterTypes(Scope scope, IEnumerable<TypeRegistration> typeRegistrations)
-        {
-            foreach (var typeRegistration in typeRegistrations)
-            {
-                switch (typeRegistration.Lifetime)
-                {
-                    case Lifetime.Transient:
-                        RegisterTransient(typeRegistration.RegistrationType, typeRegistration.ImplementationType);
-                        break;
-                    case Lifetime.Singleton:
-                        RegisterSingleton(typeRegistration.RegistrationType, typeRegistration.ImplementationType);
-                        break;
-                    case Lifetime.PerRequest:
-                        RegisterPerRequest(typeRegistration.RegistrationType, typeRegistration.ImplementationType);
-                        break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Register the various collections into the container as singletons to later be resolved
-        /// by IEnumerable{Type} constructor dependencies.
-        /// </summary>
-        /// <param name="scope">Not used in this method. The value is always null.</param>
-        /// <param name="collectionTypeRegistrations">Collection type registrations to register</param>
-        protected override void RegisterCollectionTypes(Scope scope, IEnumerable<CollectionTypeRegistration> collectionTypeRegistrations)
+        /// <param name="container">The <see cref="IServiceContainer"/> to register into.</param>
+        /// <param name="collectionTypeRegistrations">A list of <see cref="CollectionTypeRegistration"/> instances
+        /// where each instance represents an abstraction and its implementations.</param>
+        protected override void RegisterCollectionTypes(IServiceContainer container, IEnumerable<CollectionTypeRegistration> collectionTypeRegistrations)
         {
             foreach (var collectionTypeRegistration in collectionTypeRegistrations)
             {
@@ -173,49 +180,26 @@ namespace LightInject.Nancy
                     switch (collectionTypeRegistration.Lifetime)
                     {
                         case Lifetime.Transient:
-                            RegisterTransient(collectionTypeRegistration.RegistrationType, implementingType);
+                            RegisterTransient(collectionTypeRegistration.RegistrationType, implementingType, implementingType.FullName);
                             break;
                         case Lifetime.Singleton:
-                            RegisterSingleton(collectionTypeRegistration.RegistrationType, implementingType);
+                            RegisterSingleton(collectionTypeRegistration.RegistrationType, implementingType, implementingType.FullName);
                             break;
                         case Lifetime.PerRequest:
-                            RegisterPerRequest(collectionTypeRegistration.RegistrationType, implementingType);
+                            RegisterPerRequest(collectionTypeRegistration.RegistrationType, implementingType, implementingType.FullName);
                             break;
-                    }                    
+                    }
                 }
             }
         }
-        
-        /// <summary>
-        /// Register the given instances into the container
-        /// </summary>
-        /// <param name="scope">Not used in this method.</param>
-        /// <param name="instanceRegistrations">Instance registration types</param>
-        protected override void RegisterInstances(Scope scope, IEnumerable<InstanceRegistration> instanceRegistrations)
-        {
-            foreach (var instanceRegistration in instanceRegistrations)
-            {
-                container.RegisterInstance(
-                    instanceRegistration.RegistrationType,
-                    instanceRegistration.Implementation);
-            }
-        }
 
         /// <summary>
-        /// Creates a new <see cref="Scope"/>.
+        /// Register the given <paramref name="moduleRegistrationTypes"/> into the <param name="container">.</param>
         /// </summary>
-        /// <returns><see cref="Scope"/>.</returns>
-        protected override Scope CreateRequestContainer()
-        {
-            return container.BeginScope();
-        }
-
-        /// <summary>
-        /// Register the given module types into the request container
-        /// </summary>
-        /// <param name="scope">Not used in this method.</param>
-        /// <param name="moduleRegistrationTypes">NancyModule types</param>
-        protected override void RegisterRequestContainerModules(Scope scope, IEnumerable<ModuleRegistration> moduleRegistrationTypes)
+        /// <param name="container">The <see cref="IServiceContainer"/> to register into.</param>
+        /// <param name="moduleRegistrationTypes">The list of <see cref="ModuleRegistration"/> that 
+        /// represents an <see cref="INancyModule"/> registration.</param>
+        protected override void RegisterModules(IServiceContainer container, IEnumerable<ModuleRegistration> moduleRegistrationTypes)
         {
             foreach (var moduleRegistrationType in moduleRegistrationTypes)
             {
@@ -228,52 +212,78 @@ namespace LightInject.Nancy
         }
 
         /// <summary>
-        /// Retrieve all <see cref="INancyModule"/> instances from the container
+        /// Register the given instances into the container
         /// </summary>
-        /// <param name="scope">Not used in this method</param>
-        /// <returns>
-        /// A list of <see cref="INancyModule"/> instances.
-        /// </returns>
-        protected override IEnumerable<INancyModule> GetAllModules(Scope scope)
+        /// <param name="container">The <see cref="IServiceContainer"/> to register into.</param>
+        /// <param name="instanceRegistrations">Instance registration types</param>
+        protected override void RegisterInstances(IServiceContainer container, IEnumerable<InstanceRegistration> instanceRegistrations)
         {
-            return container.GetAllInstances<INancyModule>();
-        }
-
-        /// <summary>
-        /// Retrieve a specific <see cref="INancyModule"/> instance from the container
-        /// </summary>
-        /// <param name="scope">Not used in this method</param>
-        /// <param name="moduleType">Type of the module</param>
-        /// <returns>A <see cref="INancyModule"/> instance.</returns>
-        protected override INancyModule GetModule(Scope scope, Type moduleType)
-        {
-            return container.GetInstance<INancyModule>(moduleType.FullName);            
-        }
-
-        /// <summary>
-        /// Allows the <paramref name="serviceContainer"/> to be configured.
-        /// </summary>
-        /// <param name="serviceContainer">The target <see cref="IServiceContainer"/> instance.</param>
-        protected virtual void Configure(IServiceContainer serviceContainer)
-        {
-        }
-
-        private void RegisterTransient(Type serviceType, Type implementingType)
-        {
-            if (typeof(IDisposable).IsAssignableFrom(implementingType))
+            foreach (var instanceRegistration in instanceRegistrations)
             {
-                container.Register(serviceType, implementingType, new PerRequestLifeTime());
+                container.RegisterInstance(
+                    instanceRegistration.RegistrationType,
+                    instanceRegistration.Implementation);
             }
         }
 
-        private void RegisterPerRequest(Type serviceType, Type implementingType)
+        protected override IPipelines InitializeRequestPipelines(NancyContext context)
         {
-            container.Register(serviceType, implementingType, new PerScopeLifetime());
+            var pipelines = new Pipelines(ApplicationPipelines);
+            EnsureScopeIsStarted(context);
+
+            var requestStartupTasks = serviceContainer.GetAllInstances<IRequestStartup>();
+            foreach (var requestStartupTask in requestStartupTasks)
+            {
+                requestStartupTask.Initialize(pipelines, context);
+            }
+
+            return pipelines;
         }
 
-        private void RegisterSingleton(Type serviceType, Type implementingType)
+        /// <summary>
+        /// Returns the <see cref="IServiceContainer"/> instance.
+        /// </summary>
+        /// <returns><see cref="IServiceContainer"/>.</returns>
+        protected virtual IServiceContainer GetServiceContainer()
         {
-            container.Register(serviceType, implementingType, new PerContainerLifetime());
+            var container = new ServiceContainer();
+            container.ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
+            return container;
         }
-    }  
+
+        private void EnsureScopeIsStarted(NancyContext context)
+        {
+            object contextObject;
+            context.Items.TryGetValue("LightInjectScope", out contextObject);
+            var scope = contextObject as Scope;
+
+            if (scope == null)
+            {
+                scope = serviceContainer.BeginScope();
+                context.Items["LightInjectScope"] = scope;
+            }
+        }
+
+        private void RegisterTransient(Type serviceType, Type implementingType, string serviceName)
+        {
+            if (typeof(IDisposable).IsAssignableFrom(implementingType))
+            {
+                serviceContainer.Register(serviceType, implementingType, serviceName, new PerRequestLifeTime());
+            }
+            else
+            {
+                serviceContainer.Register(serviceType, implementingType, serviceName);
+            }
+        }
+
+        private void RegisterPerRequest(Type serviceType, Type implementingType, string serviceName)
+        {
+            serviceContainer.Register(serviceType, implementingType, serviceName, new PerScopeLifetime());
+        }
+
+        private void RegisterSingleton(Type serviceType, Type implementingType, string serviceName)
+        {
+            serviceContainer.Register(serviceType, implementingType, serviceName, new PerContainerLifetime());
+        }
+    }
 }
