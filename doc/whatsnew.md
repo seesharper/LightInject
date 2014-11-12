@@ -7,12 +7,12 @@ Fixes [issue #101](https://github.com/seesharper/LightInject/issues/101)
 ## LightInject 3.0.2.0 ##
 (October 15, 2014)
 
-Fixes [issue #116](https://github.com/seesharper/LightInject/issues/113)
-Fixes [issue #117](https://github.com/seesharper/LightInject/issues/113)
-Fixes [issue #118](https://github.com/seesharper/LightInject/issues/113)
-Fixes [issue #119](https://github.com/seesharper/LightInject/issues/113)
-Fixes [issue #120](https://github.com/seesharper/LightInject/issues/113)
-Fixes [issue #124](https://github.com/seesharper/LightInject/issues/113)
+Fixes [issue #116](https://github.com/seesharper/LightInject/issues/116)
+Fixes [issue #117](https://github.com/seesharper/LightInject/issues/117)
+Fixes [issue #118](https://github.com/seesharper/LightInject/issues/118)
+Fixes [issue #119](https://github.com/seesharper/LightInject/issues/119)
+Fixes [issue #120](https://github.com/seesharper/LightInject/issues/120)
+Fixes [issue #124](https://github.com/seesharper/LightInject/issues/124)
 
 ## LightInject.Web 1.0.0.5 ##
 (October 2, 2014)
