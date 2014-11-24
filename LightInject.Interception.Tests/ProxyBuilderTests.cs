@@ -640,6 +640,29 @@ namespace LightInject.Interception.Tests
             Assert.AreEqual(42, result);
         }
 
+        [TestMethod]
+        public void Execute_MethodWithGenericValueType_ReturnsValueFromInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            interceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Returns(42);
+            var instance = CreateProxy<IMethodWithGenericReturnValue>(interceptorMock.Object);
+            var result = instance.Execute<int>();
+
+            Assert.AreEqual(42, result);
+        }
+
+        [TestMethod]
+        public void Execute_MethodWithGenericReferenceType_ReturnsValueFromInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            interceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Returns("SomeValue");
+            var instance = CreateProxy<IMethodWithGenericReturnValue>(interceptorMock.Object);
+            var result = instance.Execute<string>();
+
+            Assert.AreEqual("SomeValue", result);
+        }
+
+
 
         #endregion
 

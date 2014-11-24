@@ -207,6 +207,11 @@
         int Execute();
     }
 
+    public interface IMethodWithGenericReturnValue
+    {
+        T Execute<T>();
+    }
+
     public interface IMethodWithGenericParameter
     {
         void Execute<T>(T value);
@@ -221,7 +226,7 @@
     {
         void Execute<T>(T value) where T : struct;
     }
-
+    
     public interface IMethodWithCovariantTypeParameter<out T>
     {
         T Execute();
