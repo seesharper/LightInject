@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Interception version 1.0.0.6 
+    LightInject.Interception version 1.0.0.7 
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -1511,8 +1511,8 @@ namespace LightInject.Interception
                 {
                     PushProxyInstanceIfReturnValueEqualsTargetInstance(il, typeof(object));
                 }
-
-                il.Emit(returnType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, returnType);
+                
+                il.Emit(OpCodes.Unbox_Any, returnType);                
             }
 
             Return(il);

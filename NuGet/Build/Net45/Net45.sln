@@ -52,6 +52,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SignalR.Tests",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Xunit", "LightInject.Xunit\LightInject.Xunit.csproj", "{0D97A49C-E10B-4913-A1AA-81DD60004370}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Nancy", "LightInject.Nancy\LightInject.Nancy.csproj", "{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -274,6 +276,16 @@ Global
 		{0D97A49C-E10B-4913-A1AA-81DD60004370}.Release|ARM.ActiveCfg = Release|Any CPU
 		{0D97A49C-E10B-4913-A1AA-81DD60004370}.Release|x64.ActiveCfg = Release|Any CPU
 		{0D97A49C-E10B-4913-A1AA-81DD60004370}.Release|x86.ActiveCfg = Release|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Release|ARM.ActiveCfg = Release|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Release|x64.ActiveCfg = Release|Any CPU
+		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

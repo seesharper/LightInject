@@ -14,7 +14,7 @@
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP AspNet SignalR AspNetSignalR</tags>
         <dependencies>
             <dependency id="LightInject.Source" version="3.0.2.0" />
-            <dependency id="LightInject.Interception.Source" version="1.0.0.6" />
+            <dependency id="LightInject.Interception.Source" version="1.0.0.7" />
         </dependencies>        
     </metadata>
     <files>        

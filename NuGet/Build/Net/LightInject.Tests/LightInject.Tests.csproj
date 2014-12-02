@@ -43,7 +43,6 @@
     <Reference Include="LightMock">
       <HintPath>..\packages\LightMock.1.0.0.3\lib\portable-net4+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1\LightMock.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Build.Utilities.v4.0" />
     <Reference Include="Microsoft.Practices.ServiceLocation">
       <HintPath>..\packages\CommonServiceLocator.1.0\lib\NET35\Microsoft.Practices.ServiceLocation.dll</HintPath>
     </Reference>
@@ -55,8 +54,8 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Web" />
-    <Reference Include="System.Web.Mvc, Version=4.0.0.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="System.Web.Mvc">
+      <HintPath>..\packages\Microsoft.AspNet.Mvc.4.0.40804.0\lib\net40\System.Web.Mvc.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Choose>
@@ -215,10 +214,6 @@
     <ProjectReference Include="..\LightInject.Annotation\LightInject.Annotation.csproj">
       <Project>{56d23f67-fde0-48d1-8649-fb8f45952a3e}</Project>
       <Name>LightInject.Annotation</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
-      <Project>{201db42a-3bfb-4d0f-bd68-860cfbe889b7}</Project>
-      <Name>LightInject.Interception</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.Mocking\LightInject.Mocking.csproj">
       <Project>{321a4f05-65b5-40a0-899f-8a8aa62ce1ae}</Project>

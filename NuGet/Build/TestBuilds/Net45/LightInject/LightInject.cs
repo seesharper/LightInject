@@ -326,7 +326,7 @@ namespace LightInject
         void Register(ServiceRegistration serviceRegistration);
         
         /// <summary>
-        /// Registers services from the given <paramref name="assembly"/>.
+        /// Registers composition roots from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>        
         /// <remarks>
@@ -1738,6 +1738,7 @@ namespace LightInject
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
         private readonly ICompositionRootExecutor compositionRootExecutor;
 
+        private readonly ITypeExtractor compositionRootTypeExtractor;
         private ImmutableHashTree<Type, Func<object[], object>> delegates =
             ImmutableHashTree<Type, Func<object[], object>>.Empty;        
         
@@ -1755,7 +1756,7 @@ namespace LightInject
         public ServiceContainer()
         {            
             var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
-            var compositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor());
+            compositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor());
             compositionRootExecutor = new CompositionRootExecutor(this);
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, compositionRootTypeExtractor, compositionRootExecutor);
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
@@ -1910,7 +1911,7 @@ namespace LightInject
         }
       
         /// <summary>
-        /// Registers services from the given <paramref name="assembly"/>.
+        /// Registers composition roots from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>        
         /// <remarks>
@@ -1919,7 +1920,15 @@ namespace LightInject
         /// </remarks>             
         public void RegisterAssembly(Assembly assembly)
         {
-            RegisterAssembly(assembly, (serviceType, implementingType) => true);
+            Type[] compositionRootTypes = compositionRootTypeExtractor.Execute(assembly);
+            if (compositionRootTypes.Length == 0)
+            {
+                RegisterAssembly(assembly, (serviceType, implementingType) => true);
+            }
+            else
+            {
+                AssemblyScanner.Scan(assembly, this);
+            }    
         }
 
         /// <summary>
@@ -1982,7 +1991,7 @@ namespace LightInject
         {
             foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
             {                
-                AssemblyScanner.Scan(assembly, this);               
+                RegisterAssembly(assembly);               
             }
         }    
     

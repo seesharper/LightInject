@@ -2,11 +2,11 @@
 DirectoryUtils.DeleteAllPackages("..");
 BuildCoverageToXml();
 BuildMainSolution();
-RunUnitTests();
+//RunUnitTests();
 //RunUnitTestsWithCodeCoverage();
 
 BuildNugetBinaries();
-RunUnitTestsForNuGetBinaries();
+//RunUnitTestsForNuGetBinaries();
 
 
 CreateBinaryPackages();
@@ -146,7 +146,7 @@ private void CreateSourcePackages()
 	CreateLightInjectWcfSourcePackage();
 	CreateLightInjectWebApiSourcePackage();
 	CreateLightInjectSignalRSourcePackage();
-
+	CreateLightInjectNancySourcePackage();
 }
 
 private void BuildNugetBinaries()
@@ -318,6 +318,15 @@ private void UpdateNuGetBuildProjects()
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR\package\LightInject.SignalR.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR.Source\package\LightInject.SignalR.nuspec", version, dependencies);
+
+	//LightInject.Nancy
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Nancy\LightInject.Nancy.cs");			
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Nancy\Properties\AssemblyInfo.cs", version);
+		
+	Publicizer.Write("NET45", @"..\..\LightInject.Nancy\LightInject.Nancy.cs", @"..\Build\Net45\LightInject.Nancy\LightInject.Nancy.cs");
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Nancy\package\LightInject.Nancy.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Nancy.Source\package\LightInject.Nancy.nuspec", version, dependencies);
 }
 
 
@@ -344,6 +353,7 @@ private void CreateBinaryPackages()
 	CreateLightInjectWcfBinaryPackage();
 	CreateLightInjectWebApiBinaryPackage();
 	CreateLightInjectSignalRBinaryPackage();
+	CreateLightInjectNancyBinaryPackage();
 }
 
 private void CreateLightInjectBinaryPackage()
@@ -355,7 +365,7 @@ private void CreateLightInjectBinaryPackage()
 	Directory.CreateDirectory(@"..\LightInject\package\lib\net45");
 	Directory.CreateDirectory(@"..\LightInject\package\lib\netcore45");
 	Directory.CreateDirectory(@"..\LightInject\package\lib\windowsphone8");
-
+	Directory.CreateDirectory(@"..\LightInject\package\lib\wpa");
 
 	File.Copy(@"..\Build\Net\LightInject\bin\release\LightInject.dll", @"..\LightInject\package\lib\net40\LightInject.dll", true);
 	File.Copy(@"..\Build\Net\LightInject\bin\release\LightInject.pdb", @"..\LightInject\package\lib\net40\LightInject.pdb", true);
@@ -373,6 +383,10 @@ private void CreateLightInjectBinaryPackage()
 	File.Copy(@"..\Build\WindowsPhone\LightInject\bin\release\LightInject.pdb", @"..\LightInject\package\lib\windowsphone8\LightInject.pdb", true);
 	File.Copy(@"..\Build\WindowsPhone\LightInject\bin\release\LightInject.xml", @"..\LightInject\package\lib\windowsphone8\LightInject.xml", true);
 
+	File.Copy(@"..\Build\WindowsPhone\LightInject\bin\release\LightInject.dll", @"..\LightInject\package\lib\wpa\LightInject.dll", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject\bin\release\LightInject.pdb", @"..\LightInject\package\lib\wpa\LightInject.pdb", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject\bin\release\LightInject.xml", @"..\LightInject\package\lib\wpa\LightInject.xml", true);
+
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject\package\LightInject.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject(Binary) NuGet package");
@@ -388,6 +402,7 @@ private void CreateLightInjectAnnotationBinaryPackage()
 	Directory.CreateDirectory(@"..\LightInject.Annotation\package\lib\net45");
 	Directory.CreateDirectory(@"..\LightInject.Annotation\package\lib\netcore45");
 	Directory.CreateDirectory(@"..\LightInject.Annotation\package\lib\windowsphone8");
+	Directory.CreateDirectory(@"..\LightInject.Annotation\package\lib\wpa");
 
 	File.Copy(@"..\Build\Net\LightInject.Annotation\bin\release\LightInject.Annotation.dll", @"..\LightInject.Annotation\package\lib\net40\LightInject.Annotation.dll", true);
 	File.Copy(@"..\Build\Net\LightInject.Annotation\bin\release\LightInject.Annotation.pdb", @"..\LightInject.Annotation\package\lib\net40\LightInject.Annotation.pdb", true);
@@ -404,6 +419,10 @@ private void CreateLightInjectAnnotationBinaryPackage()
 	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.dll", @"..\LightInject.Annotation\package\lib\windowsphone8\LightInject.Annotation.dll", true);
 	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.pdb", @"..\LightInject.Annotation\package\lib\windowsphone8\LightInject.Annotation.pdb", true);
 	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.xml", @"..\LightInject.Annotation\package\lib\windowsphone8\LightInject.Annotation.xml", true);
+
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.dll", @"..\LightInject.Annotation\package\lib\wpa\LightInject.Annotation.dll", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.pdb", @"..\LightInject.Annotation\package\lib\wpa\LightInject.Annotation.pdb", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Annotation\bin\release\LightInject.Annotation.xml", @"..\LightInject.Annotation\package\lib\wpa\LightInject.Annotation.xml", true);
 
 
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Annotation\package\LightInject.Annotation.nuspec", @"..");
@@ -461,6 +480,7 @@ private void CreateLightInjectMockingBinaryPackage()
 	Directory.CreateDirectory(@"..\LightInject.Mocking\package\lib\net45");
 	Directory.CreateDirectory(@"..\LightInject.Mocking\package\lib\netcore45");
 	Directory.CreateDirectory(@"..\LightInject.Mocking\package\lib\windowsphone8");
+	Directory.CreateDirectory(@"..\LightInject.Mocking\package\lib\wpa");
 
 
 	File.Copy(@"..\Build\Net\LightInject.Mocking\bin\release\LightInject.Mocking.dll", @"..\LightInject.Mocking\package\lib\net40\LightInject.Mocking.dll", true);
@@ -478,6 +498,11 @@ private void CreateLightInjectMockingBinaryPackage()
 	File.Copy(@"..\Build\WindowsPhone\LightInject.Mocking\bin\release\LightInject.Mocking.dll", @"..\LightInject.Mocking\package\lib\windowsphone8\LightInject.Mocking.dll", true);
 	File.Copy(@"..\Build\WindowsPhone\LightInject.Mocking\bin\release\LightInject.Mocking.pdb", @"..\LightInject.Mocking\package\lib\windowsphone8\LightInject.Mocking.pdb", true);
 	File.Copy(@"..\Build\WindowsPhone\LightInject.Mocking\bin\release\LightInject.Mocking.xml", @"..\LightInject.Mocking\package\lib\windowsphone8\LightInject.Mocking.xml", true);
+
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Mocking\bin\release\LightInject.Mocking.dll", @"..\LightInject.Mocking\package\lib\wpa\LightInject.Mocking.dll", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Mocking\bin\release\LightInject.Mocking.pdb", @"..\LightInject.Mocking\package\lib\wpa\LightInject.Mocking.pdb", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject.Mocking\bin\release\LightInject.Mocking.xml", @"..\LightInject.Mocking\package\lib\wpa\LightInject.Mocking.xml", true);
+
 
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Mocking\package\LightInject.Mocking.nuspec", @"..");
 
@@ -589,6 +614,21 @@ private void CreateLightInjectSignalRBinaryPackage()
 	Console.WriteLine("Finished building the LightInject.SignalR(Binary) NuGet package");
 }
 
+private void CreateLightInjectNancyBinaryPackage()
+{
+	Console.WriteLine("Start building the LightInject.Nancy(Binary) NuGet package");
+
+	DirectoryUtils.Delete(@"..\LightInject.Nancy\package\lib");	
+	Directory.CreateDirectory(@"..\LightInject.Nancy\package\lib\net45");
+
+	File.Copy(@"..\Build\Net45\LightInject.Nancy\bin\release\LightInject.Nancy.dll", @"..\LightInject.Nancy\package\lib\net45\LightInject.Nancy.dll", true);
+	File.Copy(@"..\Build\Net45\LightInject.Nancy\bin\release\LightInject.Nancy.pdb", @"..\LightInject.Nancy\package\lib\net45\LightInject.Nancy.pdb", true);
+	File.Copy(@"..\Build\Net45\LightInject.Nancy\bin\release\LightInject.Nancy.xml", @"..\LightInject.Nancy\package\lib\net45\LightInject.Nancy.xml", true);
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Nancy\package\LightInject.Nancy.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.Nancy(Binary) NuGet package");
+}
 
 private void CreateLightInjectServiceLocationBinaryPackage()
 {
@@ -599,7 +639,7 @@ private void CreateLightInjectServiceLocationBinaryPackage()
 	Directory.CreateDirectory(@"..\LightInject.ServiceLocation\package\lib\net45");
 	Directory.CreateDirectory(@"..\LightInject.ServiceLocation\package\lib\netcore45");
 	Directory.CreateDirectory(@"..\LightInject.ServiceLocation\package\lib\windowsphone8");
-
+	Directory.CreateDirectory(@"..\LightInject.ServiceLocation\package\lib\wpa");
 
 	File.Copy(@"..\Build\Net\LightInject.ServiceLocation\bin\release\LightInject.ServiceLocation.dll", @"..\LightInject.ServiceLocation\package\lib\net40\LightInject.ServiceLocation.dll", true);
 	File.Copy(@"..\Build\Net\LightInject.ServiceLocation\bin\release\LightInject.ServiceLocation.pdb", @"..\LightInject.ServiceLocation\package\lib\net40\LightInject.ServiceLocation.pdb", true);
@@ -616,6 +656,11 @@ private void CreateLightInjectServiceLocationBinaryPackage()
 	File.Copy(@"..\Build\WindowsPhone\LightInject.ServiceLocation\bin\release\LightInject.ServiceLocation.dll", @"..\LightInject.ServiceLocation\package\lib\windowsphone8\LightInject.ServiceLocation.dll", true);
 	File.Copy(@"..\Build\WindowsPhone\LightInject.ServiceLocation\bin\release\LightInject.ServiceLocation.pdb", @"..\LightInject.ServiceLocation\package\lib\windowsphone8\LightInject.ServiceLocation.pdb", true);
 	File.Copy(@"..\Build\WindowsPhone\LightInject.ServiceLocation\bin\release\LightInject.ServiceLocation.xml", @"..\LightInject.ServiceLocation\package\lib\windowsphone8\LightInject.ServiceLocation.xml", true);
+
+	File.Copy(@"..\Build\WindowsPhone\LightInject.ServiceLocation\bin\release\LightInject.ServiceLocation.dll", @"..\LightInject.ServiceLocation\package\lib\wpa\LightInject.ServiceLocation.dll", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject.ServiceLocation\bin\release\LightInject.ServiceLocation.pdb", @"..\LightInject.ServiceLocation\package\lib\wpa\LightInject.ServiceLocation.pdb", true);
+	File.Copy(@"..\Build\WindowsPhone\LightInject.ServiceLocation\bin\release\LightInject.ServiceLocation.xml", @"..\LightInject.ServiceLocation\package\lib\wpa\LightInject.ServiceLocation.xml", true);
+
 
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.ServiceLocation\package\LightInject.ServiceLocation.nuspec", @"..");
 
@@ -828,6 +873,23 @@ private void CreateLightInjectSignalRSourcePackage()
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.SignalR.Source\package\LightInject.SignalR.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.SignalR.Source NuGet package");
+}
+
+private void CreateLightInjectNancySourcePackage()
+{
+	Console.WriteLine("Start building the LightInject.Nancy.Source NuGet package");
+	
+	DirectoryUtils.Delete(@"..\LightInject.Nancy.Source\package\content");
+	Directory.CreateDirectory(@"..\LightInject.Nancy.Source\package\content\net40\LightInject\Nancy");
+	Directory.CreateDirectory(@"..\LightInject.Nancy.Source\package\content\net45\LightInject\Nancy");
+	
+	SourceWriter.Write("NET45", @"..\..\LightInject.Nancy\LightInject.Nancy.cs",  @"..\LightInject.Nancy.Source\package\content\net45\LightInject\Nancy\LightInject.Nancy.cs.pp", true, true);
+	
+	SourceWriter.Write("NET45", @"..\..\LightInject.Nancy\LightInject.Nancy.cs",  @"..\Build\TestBuilds\Net45\LightInject\Nancy\LightInject.Nancy.cs", false, true);
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Nancy.Source\package\LightInject.Nancy.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.Nancy.Source NuGet package");
 }
 
 private void CreateLightInjectMvcSourcePackage()
