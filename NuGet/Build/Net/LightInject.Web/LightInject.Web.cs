@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Web version 1.0.0.5
+    LightInject.Web version 1.0.0.6
     http://seesharper.github.io/LightInject/
     http://twitter.com/bernhardrichter    
 ******************************************************************************/
@@ -108,7 +108,10 @@ namespace LightInject.Web
         private static void EndRequest()
         {
             var scopeManager = (ScopeManager)HttpContext.Current.Items["ScopeManager"];
-            scopeManager.CurrentScope.Dispose();            
+            if (scopeManager != null)
+            {
+                scopeManager.CurrentScope.Dispose();
+            }
         }
 
         private static void BeginRequest()

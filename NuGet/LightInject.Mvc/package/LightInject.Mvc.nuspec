@@ -14,7 +14,7 @@
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP MVC</tags>
         <dependencies>
             <dependency id="LightInject" version="3.0.2.0" />
-            <dependency id="LightInject.Web" version="1.0.0.5" />
+            <dependency id="LightInject.Web" version="1.0.0.6" />
         </dependencies>
     </metadata>   
 </package>
