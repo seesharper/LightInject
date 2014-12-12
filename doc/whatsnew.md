@@ -1,3 +1,9 @@
+## LightInject 3.0.2.1 ##
+(December 12, 2014)
+
+Fixes [issue #142](https://github.com/seesharper/LightInject/issues/142)
+Fixes [issue #139](https://github.com/seesharper/LightInject/issues/139)
+
 ## LightInject.Interception 1.0.0.7 ##
 (November 24, 2014)
 
