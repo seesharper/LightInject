@@ -896,6 +896,19 @@ namespace LightInject.Tests
             Assert.IsInstanceOfType(bar, typeof(Bar));
         }
 
+        [TestMethod]
+        public void GetInstance_UsingFallbackForDependency_ReturnsSingleInstance()
+        {
+            var container = CreateContainer();
+            container.RegisterFallback((type, s) => true, request => new Bar(), new PerContainerLifetime());
+            container.Register<IFoo, FooWithDependency>();
+            var bar = container.GetInstance<IBar>();
+            var foo = (FooWithDependency)container.GetInstance<IFoo>();
+            var foo2 = (FooWithDependency)container.GetInstance<IFoo>();
+            //Assert.AreSame(foo.Bar, foo2.Bar);
+            Assert.AreSame(bar, foo.Bar);
+
+        }
 
         [TestMethod]
         public void CanGetInstance_KnownService_ReturnsTrue()
@@ -1222,7 +1235,26 @@ namespace LightInject.Tests
 
             Assert.AreEqual(2, instances.Count());
         }
-       
+
+        [TestMethod]
+        public void CreateGeneric_ConcreteClass_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            var instance = container.Create<Foo>();
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+        [TestMethod]
+        public void Create_ConcreteClass_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            var instance = container.Create(typeof(Foo));
+            Assert.IsInstanceOfType(instance, typeof(Foo));
+        }
+
+
+
+
         [TestMethod]
         public void RegisterFrom_CompositionRoot_RegistersService()
         {

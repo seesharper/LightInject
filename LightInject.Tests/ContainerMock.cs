@@ -342,6 +342,16 @@
             throw new NotImplementedException();
         }
 
+        public TService Create<TService>() where TService : class
+        {
+            throw new NotImplementedException();
+        }
+
+        public object Create(Type serviceType)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Dispose()
         {
             throw new NotImplementedException();
