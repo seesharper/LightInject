@@ -94,8 +94,8 @@ namespace LightInject.Web
         /// <param name="context">An <see cref="HttpApplication"/> that provides access to the methods, properties, and events common to all application objects within an ASP.NET application </param>
         public void Init(HttpApplication context)
         {
-            context.BeginRequest += (s, a) => BeginRequest();
-            context.EndRequest += (s, a) => EndRequest();               
+            context.BeginRequest += BeginRequest;
+            context.EndRequest += EndRequest;
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace LightInject.Web
         {            
         }
        
-        private static void EndRequest()
+        private static void EndRequest(object sender, System.EventArgs e)
         {
             var scopeManager = (ScopeManager)HttpContext.Current.Items["ScopeManager"];
             if (scopeManager != null)
@@ -114,7 +114,7 @@ namespace LightInject.Web
             }
         }
 
-        private static void BeginRequest()
+        private static void BeginRequest(object sender, System.EventArgs e)
         {
             var scopeManager = new ScopeManager();
             scopeManager.BeginScope();
