@@ -36,7 +36,7 @@ An interceptor sits between the call site and the target instance and intercepts
         public object Invoke(IInvocationInfo invocationInfo)
         {
             // Perform logic before invoking the target method
-            var returnValue = invovationInfo.Proceed();
+            var returnValue = invocationInfo.Proceed();
             // Perform logic after invoking the target method
             return returnValue;           
         }        
