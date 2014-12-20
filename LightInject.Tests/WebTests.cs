@@ -7,6 +7,7 @@ namespace LightInject.Tests
 {
     using System.Reflection;
     using System.Web;
+    using System.Web.Mvc;
 
     using LightInject.SampleLibrary;
     using LightInject.Web;
@@ -87,42 +88,52 @@ namespace LightInject.Tests
             private static readonly object EndEventHandlerKey;
             private static readonly object BeginEventHandlerKey;
 
+            private static readonly FieldInfo ContextField;
             private readonly IHttpModule module;
             
-            public MockHttpApplication(IHttpModule module)
+            public MockHttpApplication(IHttpModule module) 
             {
                 if (module != null)
                 {
                     module.Init(this);
                 }
                 this.module = module;
-
+                
             }
-
+           
             static MockHttpApplication()
             {                
                 EndEventHandlerKey = typeof(HttpApplication).GetField("EventEndRequest", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
                 BeginEventHandlerKey = typeof(HttpApplication).GetField("EventBeginRequest", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+                ContextField = typeof(HttpApplication).GetField(
+                    "_context",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
             }
            
             public new void BeginRequest()
             {
                 HttpContext.Current = new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
+                SetContext(HttpContext.Current);
                 if (module != null)
                 {
-                    this.Events[BeginEventHandlerKey].DynamicInvoke(null, null);
+                    this.Events[BeginEventHandlerKey].DynamicInvoke(this, null);
                 }
-                
             }
+
+            private void SetContext(HttpContext context)
+            {
+                ContextField.SetValue(this, context);
+            }
+
 
             public new void EndRequest()
             {
                 if (module != null)
                 {
-                    this.Events[EndEventHandlerKey].DynamicInvoke(null, null);
+                    this.Events[EndEventHandlerKey].DynamicInvoke(this, null);
                 }                                
                 HttpContext.Current = null;
-                
+                SetContext(null);
             }
 
             public override void Dispose()

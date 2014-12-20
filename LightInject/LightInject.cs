@@ -739,7 +739,7 @@ namespace LightInject
         /// Creates an instance of a concrete class.
         /// </summary>
         /// <param name="serviceType">The type of class for which to create an instance.</param>
-        /// <returns></returns>
+        /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
         object Create(Type serviceType);
     }
 
@@ -3076,7 +3076,7 @@ namespace LightInject
         /// Creates an instance of a concrete class.
         /// </summary>
         /// <param name="serviceType">The type of class for which to create an instance.</param>
-        /// <returns></returns>
+        /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
         public object Create(Type serviceType)
         {
             Register(serviceType);

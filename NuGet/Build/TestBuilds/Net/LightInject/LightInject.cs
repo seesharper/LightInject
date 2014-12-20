@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.0
+    LightInject version 3.0.2.1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -634,6 +634,21 @@ namespace LightInject
         /// <typeparam name="TService">The type of services to resolve.</typeparam>
         /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
         IEnumerable<TService> GetAllInstances<TService>();
+
+        /// <summary>
+        /// Creates an instance of a concrete class.
+        /// </summary>
+        /// <typeparam name="TService">The type of class for which to create an instance.</typeparam>
+        /// <returns>An instance of <typeparamref name="TService"/>.</returns>
+        /// <remarks>The concrete type will be registered if not already registered with the container.</remarks>
+        TService Create<TService>() where TService : class;
+
+        /// <summary>
+        /// Creates an instance of a concrete class.
+        /// </summary>
+        /// <param name="serviceType">The type of class for which to create an instance.</param>
+        /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
+        object Create(Type serviceType);
     }
 
     /// <summary>
@@ -2670,6 +2685,29 @@ namespace LightInject
         }
 
         /// <summary>
+        /// Creates an instance of a concrete class.
+        /// </summary>
+        /// <typeparam name="TService">The type of class for which to create an instance.</typeparam>
+        /// <returns>An instance of <typeparamref name="TService"/>.</returns>
+        /// <remarks>The concrete type will be registered if not already registered with the container.</remarks>
+        public TService Create<TService>() where TService : class
+        {
+            Register(typeof(TService));
+            return GetInstance<TService>();
+        }
+
+        /// <summary>
+        /// Creates an instance of a concrete class.
+        /// </summary>
+        /// <param name="serviceType">The type of class for which to create an instance.</param>
+        /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
+        public object Create(Type serviceType)
+        {
+            Register(serviceType);
+            return GetInstance(serviceType);
+        }
+
+        /// <summary>
         /// Disposes any services registered using the <see cref="PerContainerLifetime"/>.
         /// </summary>
         public void Dispose()
@@ -2892,6 +2930,7 @@ namespace LightInject
             if (rule != null)
             {
                 emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
+                UpdateEmitMethod(serviceType, serviceName, emitMethod);
             }
 
             return emitMethod;
