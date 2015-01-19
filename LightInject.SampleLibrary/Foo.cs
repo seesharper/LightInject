@@ -58,6 +58,12 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class DerivedFoo : Foo
+    {
+        
+    }
+
+
     public class FooWithStaticDependency : IFoo
     {
         public static IBar Bar { get; set; }

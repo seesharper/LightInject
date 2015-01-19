@@ -867,6 +867,17 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
+        public void GetAllInstances_Inheritance_ReturnsDerivedInstance()
+        {
+            var container = CreateContainer();
+            container.Register<Foo>();
+            container.Register<DerivedFoo>();
+            var instances = container.GetAllInstances<Foo>();
+            Assert.AreEqual(2, instances.Count());
+        }
+
+
+        [TestMethod]
         public void GetInstance_UsingServicePredicate_ReturnsInstance()
         {
             var container = CreateContainer();
