@@ -94,6 +94,14 @@ In addition, **LightInject** supports the following [IEnumerable&lt;T&gt;](http:
 * IReadOnlyCollection&lt;T&gt; (Net 4.5 and Windows Runtime);
 * IReadOnlyList&lt;T&gt; (Net 4.5 and Windows Runtime)
 
+**LightInject** will resolve all services that are compatible with the requested element type.
+
+	container.Register<Foo>();
+	container.Register<DerivedFoo>();
+	var instances = container.GetAllInstances<Foo>();
+	Assert.AreEqual(2, instances.Count());
+
+
 ### Values ###
 
 Registers the value as a constant.
