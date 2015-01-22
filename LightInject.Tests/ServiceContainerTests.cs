@@ -6,7 +6,6 @@ namespace LightInject.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection.Emit;
-    using System.Runtime.Serialization.Formatters;
     using System.Security;
     
     using System.Text;
@@ -15,8 +14,11 @@ namespace LightInject.Tests
     using LightInject;
     using LightInject.SampleLibrary;
     using LightInject.SampleLibraryWithCompositionRootTypeAttribute;
-
-    using Microsoft.VisualStudio.TestTools.UnitTesting;    
+#if NET || NET45 || NET45TEST
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+#else
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#endif
     using Foo = LightInject.SampleLibrary.Foo;
     using IFoo = LightInject.SampleLibrary.IFoo;
     using IBar = LightInject.SampleLibrary.IBar;
@@ -1265,7 +1267,7 @@ namespace LightInject.Tests
 
 
 
-
+#if NET45 || NET 
         [TestMethod]
         public void RegisterFrom_CompositionRoot_RegistersService()
         {
@@ -1273,7 +1275,7 @@ namespace LightInject.Tests
             container.RegisterFrom<CompositionRoot>();
             Assert.AreEqual(1, container.AvailableServices.Count());
         }
-        
+#endif        
         [TestMethod]
         public void GetInstance_SingletonInstance_EmitterIsProperlyPoppedOnConstructorException()
         {

@@ -1,8 +1,12 @@
 ﻿namespace LightInject.Tests
 {
     using System;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+#if NET || NET45 || NET45TEST
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+#else
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#endif
 
     public static class ExceptionAssert
     {

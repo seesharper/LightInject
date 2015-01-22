@@ -4,8 +4,12 @@
     using System.Text;    
     using LightInject;
     using LightInject.SampleLibrary;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+#if NET || NET45 || NET45TEST
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+#else
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#endif
     [TestClass]
     public class PropertyInjectionTests : TestBase
     {

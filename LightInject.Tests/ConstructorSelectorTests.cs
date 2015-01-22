@@ -8,7 +8,11 @@ namespace LightInject.Tests
 {
     using LightInject.SampleLibrary;
 
+#if NET || NET45 || NET45TEST
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+#else
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#endif
 
     [TestClass]
     public class ConstructorSelectorTests : TestBase

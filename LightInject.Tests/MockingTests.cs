@@ -4,7 +4,11 @@
 
     using LightInject.SampleLibrary;  
     using LightInject.Mocking;
+#if NET || NET45 || NET45TEST
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+#else
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#endif
 
 
     [TestClass]

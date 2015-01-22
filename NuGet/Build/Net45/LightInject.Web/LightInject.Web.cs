@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Web version 1.0.0.6
+    LightInject.Web version 1.0.0.7
     http://seesharper.github.io/LightInject/
     http://twitter.com/bernhardrichter    
 ******************************************************************************/
@@ -35,7 +35,7 @@
 
 namespace LightInject
 {
-    using LightInject.Web;
+    using Web;
     
     /// <summary>
     /// Extends the <see cref="IServiceContainer"/> interface with a method
@@ -94,8 +94,8 @@ namespace LightInject.Web
         /// <param name="context">An <see cref="HttpApplication"/> that provides access to the methods, properties, and events common to all application objects within an ASP.NET application </param>
         public void Init(HttpApplication context)
         {
-            context.BeginRequest += (s, a) => BeginRequest();
-            context.EndRequest += (s, a) => EndRequest();               
+            context.BeginRequest += BeginRequest;
+            context.EndRequest += EndRequest;
         }
 
         /// <summary>
@@ -105,20 +105,32 @@ namespace LightInject.Web
         {            
         }
        
-        private static void EndRequest()
+        private static void EndRequest(object sender, EventArgs eventArgs)
         {
-            var scopeManager = (ScopeManager)HttpContext.Current.Items["ScopeManager"];
+            var application = sender as HttpApplication;
+            if (application == null)
+            {
+                return;
+            }
+
+            var scopeManager = (ScopeManager)application.Context.Items["ScopeManager"];
             if (scopeManager != null)
             {
                 scopeManager.CurrentScope.Dispose();
             }
         }
 
-        private static void BeginRequest()
+        private static void BeginRequest(object sender, EventArgs eventArgs)
         {
+            var application = sender as HttpApplication;
+            if (application == null)
+            {
+                return;
+            }
+
             var scopeManager = new ScopeManager();
             scopeManager.BeginScope();
-            HttpContext.Current.Items["ScopeManager"] = scopeManager;
+            application.Context.Items["ScopeManager"] = scopeManager;
         }         
     }
 

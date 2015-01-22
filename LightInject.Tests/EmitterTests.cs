@@ -4,7 +4,11 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
+#if NET || NET45 || NET45TEST
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+#else
+    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
+#endif
 #if NETFX_CORE || WINDOWS_PHONE || IOS
     using LocalBuilder = LightInject.LocalBuilder;
     using ILGenerator = LightInject.ILGenerator;

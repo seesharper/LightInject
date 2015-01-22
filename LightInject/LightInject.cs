@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.2
+    LightInject version 3.0.2.3
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -4756,7 +4756,12 @@ namespace LightInject
             }
             else if (code == OpCodes.Ldelem_Ref)
             {
-                Expression[] indexes = new[] { stack.Pop() };
+                Expression[] indexes = { stack.Pop() };
+                for (int i = 0; i < indexes.Length; i++)
+                {
+                    indexes[0] = Expression.Convert(indexes[i], typeof(int));
+                }
+
                 Expression array = stack.Pop();
                 stack.Push(Expression.ArrayAccess(array, indexes));
             }

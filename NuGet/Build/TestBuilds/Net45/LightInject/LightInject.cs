@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.1
+    LightInject version 3.0.2.3
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3535,8 +3535,8 @@ namespace LightInject
                 EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
             }
 
-            IList<Action<IEmitter>> emitMethods = GetEmitMethods(actualServiceType).Values.ToList();
-
+            var emitMethods = emitters.Where(kv => actualServiceType.IsAssignableFrom(kv.Key)).SelectMany(kv => kv.Value.Values).ToList();
+            
             if (dependencyStack.Count > 0 && emitMethods.Contains(dependencyStack.Peek()))
             {
                 emitMethods.Remove(dependencyStack.Peek());
