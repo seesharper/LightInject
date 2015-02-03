@@ -6371,7 +6371,7 @@ namespace LightInject
         {
             if (scope == null)
             {
-                throw new InvalidOperationException("Attempt to create a disposable instance without a current scope.");
+                throw new InvalidOperationException("Attempt to create a disposable instance without a current scope. Put your GetInstance call in a 'using (var scope = container.BeginScope())' { ... } block.");
             }
 
             scope.TrackInstance(disposable);
