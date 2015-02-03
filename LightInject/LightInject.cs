@@ -6958,9 +6958,19 @@ namespace LightInject
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');
-                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
+                foreach (string pattern in searchPatterns)
                 {
-                    yield return Assembly.LoadFrom(file);
+                    if(File.Exists(pattern))
+                    {
+                        yield return Assembly.LoadFrom(pattern);
+                    }
+                    else
+                    {
+                        foreach(string file in searchPattern.SelectMany(sp => Directory.GetFiles(directory, pattern)).Where(CanLoad))
+                        {
+                            yield return Assembly.LoadFrom(file);
+                        }
+                    }
                 }
             }
         }
