@@ -1,0 +1,8 @@
+<StyleCopSettings Version="105">
+  <GlobalSettings>
+    <CollectionProperty Name="RecognizedWords">
+      <Value>bootstrapper</Value>
+      <Value>Fixie</Value>
+    </CollectionProperty>
+  </GlobalSettings>
+</StyleCopSettings>
