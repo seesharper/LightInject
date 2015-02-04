@@ -742,7 +742,7 @@ namespace LightInject.Tests
 
         [TestMethod]
         public void GetInstance_FuncFactoryWithParamsArrayInitializer_ReturnsInstanceWithDependency()
-        {
+            {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
 
@@ -1262,9 +1262,28 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             var instance = container.Create(typeof(Foo));
-            Assert.IsInstanceOfType(instance, typeof(Foo));
+            Assert.IsInstanceOfType(instance, typeof(Foo));            
         }
 
+        [TestMethod]
+        public void GetInstance_RegisteredConstructorDependency_ReturnsInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.RegisterConstructorDependency<IBar>((factory, info) => new Bar());
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+        }
+
+        [TestMethod]
+        public void GetInstance_RegisteredPropertyDependency_ReturnsInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithProperyDependency>();
+            container.RegisterPropertyDependency<IBar>((factory, info) => new Bar());
+            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+        }
 
 
 #if NET45 || NET 

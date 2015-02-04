@@ -382,7 +382,7 @@
             var instance = (FooWithCustomFuncDependency)container.GetInstance<IFoo>();
             Assert.IsNotNull(instance.StringFunc);
         }
-
+      
         [TestMethod]
         public void GetInstance_MethodGroupWithFactoryParameter_InjectsDependency()
         {

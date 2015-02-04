@@ -37,7 +37,7 @@ namespace LightInject
     using System;    
 #if WINDOWS_PHONE || IOS
     using System.Collections;
-#endif
+#endif    
 #if NET || NET45 || NETFX_CORE 
     using System.Collections.Concurrent;
 #endif
@@ -457,6 +457,24 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
         void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new();
+
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for 
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        void RegisterConstructorDependency<TDependency>(
+            Expression<Func<IServiceFactory, ParameterInfo, TDependency>> factory);
+        
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for 
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        void RegisterPropertyDependency<TDependency>(
+            Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory);
 
 #if NET || NET45
         /// <summary>
@@ -1967,22 +1985,23 @@ namespace LightInject
         private readonly Func<Type[], IMethodSkeleton> methodSkeletonFactory;
 #endif
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
+        private readonly ServiceRegistry<Expression> constructorDependencyFactories = new ServiceRegistry<Expression>();
+        private readonly ServiceRegistry<Expression> propertyDependencyFactories = new ServiceRegistry<Expression>();
+        private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
+        
         private readonly object lockObject = new object();
 
         private readonly Storage<object> constants = new Storage<object>();
-        
-        private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
-        private readonly Stack<Action<IEmitter>> dependencyStack = new Stack<Action<IEmitter>>();
-
-        private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
-
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
         private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
-
+        private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
+        
+        private readonly Stack<Action<IEmitter>> dependencyStack = new Stack<Action<IEmitter>>();
+                        
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
         private readonly ICompositionRootExecutor compositionRootExecutor;
-
         private readonly ITypeExtractor compositionRootTypeExtractor;
+        
         private ImmutableHashTree<Type, Func<object[], object>> delegates =
             ImmutableHashTree<Type, Func<object[], object>>.Empty;        
         
@@ -2244,6 +2263,34 @@ namespace LightInject
         public void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new()
         {
             compositionRootExecutor.Execute(typeof(TCompositionRoot));
+        }
+
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for 
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        public void RegisterConstructorDependency<TDependency>(Expression<Func<IServiceFactory, ParameterInfo, TDependency>> factory)
+        {
+            GetConstructorDependencyFactories(typeof(TDependency)).AddOrUpdate(
+                string.Empty,
+                s => factory,
+                (s, e) => isLocked ? e : factory);
+        }
+
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for 
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        public void RegisterPropertyDependency<TDependency>(Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory)
+        {
+            GetPropertyDependencyFactories(typeof(TDependency)).AddOrUpdate(
+                string.Empty,
+                s => factory,
+                (s, e) => isLocked ? e : factory);
         }
 
 #if NET || NET45 
@@ -3257,7 +3304,26 @@ namespace LightInject
 
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
-            return new TypeConstructionInfoBuilder(ConstructorSelector, ConstructorDependencySelector, PropertyDependencySelector);
+            return new TypeConstructionInfoBuilder(
+                ConstructorSelector,
+                ConstructorDependencySelector,
+                PropertyDependencySelector,
+                GetConstructorDependencyExpression,
+                GetPropertyDependencyExpression);
+        }
+
+        private Expression GetConstructorDependencyExpression(Type type, string serviceName)
+        {
+            Expression expression;
+            GetConstructorDependencyFactories(type).TryGetValue(serviceName, out expression);
+            return expression;
+        }
+
+        private Expression GetPropertyDependencyExpression(Type type, string serviceName)
+        {
+            Expression expression;
+            GetPropertyDependencyFactories(type).TryGetValue(serviceName, out expression);
+            return expression;
         }
 
         private Func<object[], object> CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
@@ -3689,24 +3755,46 @@ namespace LightInject
 
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
-            var parameterExpression = (ParameterExpression)dependency.FactoryExpression.AsEnumerable().FirstOrDefault(e => e is ParameterExpression && e.Type == typeof(IServiceFactory));
+            var actions = new List<Action<IEmitter>>();
+            var parameterExpressions = dependency.FactoryExpression.AsEnumerable().Where(e => e is ParameterExpression).Cast<ParameterExpression>().ToList();
+           
+            Expression factoryExpression = dependency.FactoryExpression;
 
-            if (parameterExpression != null)
+            if (dependency.FactoryExpression.NodeType == ExpressionType.Lambda)
             {
-                var lambda = Expression.Lambda(dependency.FactoryExpression, new[] { parameterExpression }).Compile();
-                MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                emitter.PushConstant(constants.Add(lambda), lambda.GetType());
-                emitter.PushConstant(constants.Add(this), typeof(IServiceFactory));
-                emitter.Call(methodInfo);                
+                factoryExpression = ((LambdaExpression)factoryExpression).Body;
             }
-            else
+           
+            foreach (var parametersExpression in parameterExpressions)
             {
-                var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
-                MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                emitter.PushConstant(constants.Add(lambda), lambda.GetType());
-                emitter.Call(methodInfo);                
-            }            
+                if (parametersExpression.Type == typeof(IServiceFactory))
+                {
+                    actions.Add(e => e.PushConstant(constants.Add(this), typeof(IServiceFactory)));
+                }
+
+                if (parametersExpression.Type == typeof(ParameterInfo))
+                {
+                    actions.Add(e => e.PushConstant(constants.Add(((ConstructorDependency)dependency).Parameter), typeof(ParameterInfo)));
+                }
+
+                if (parametersExpression.Type == typeof(PropertyInfo))
+                {
+                    actions.Add(e => e.PushConstant(constants.Add(((PropertyDependency)dependency).Property), typeof(PropertyInfo)));
+                }
+            }
+            
+            var lambda = Expression.Lambda(factoryExpression, parameterExpressions.ToArray()).Compile();
+
+            MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
+            emitter.PushConstant(constants.Add(lambda), lambda.GetType());
+            foreach (var action in actions)
+            {
+                action(emitter);
+            }
+
+            emitter.Call(methodInfo);
         }
+        
 #endif
 
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IEmitter emitter)
@@ -4018,6 +4106,20 @@ namespace LightInject
         private ThreadSafeDictionary<string, ServiceRegistration> GetAvailableServices(Type serviceType)
         {
             return availableServices.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, ServiceRegistration>(StringComparer.CurrentCultureIgnoreCase));
+        }
+
+        private ThreadSafeDictionary<string, Expression> GetConstructorDependencyFactories(Type dependencyType)
+        {
+            return constructorDependencyFactories.GetOrAdd(
+                dependencyType,
+                d => new ThreadSafeDictionary<string, Expression>(StringComparer.CurrentCultureIgnoreCase));
+        }
+
+        private ThreadSafeDictionary<string, Expression> GetPropertyDependencyFactories(Type dependencyType)
+        {
+            return propertyDependencyFactories.GetOrAdd(
+                dependencyType,
+                d => new ThreadSafeDictionary<string, Expression>(StringComparer.CurrentCultureIgnoreCase));
         }
 
         private void RegisterService(Type serviceType, Type implementingType, ILifetime lifetime, string serviceName)
@@ -5649,6 +5751,9 @@ namespace LightInject
         private readonly IConstructorSelector constructorSelector;
         private readonly IConstructorDependencySelector constructorDependencySelector;
         private readonly IPropertyDependencySelector propertyDependencySelector;
+        private readonly Func<Type, string, Expression> getConstructorDependencyExpression;
+
+        private readonly Func<Type, string, Expression> getPropertyDependencyExpression;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeConstructionInfoBuilder"/> class.
@@ -5659,14 +5764,20 @@ namespace LightInject
         /// responsible for selecting the constructor dependencies for a given <see cref="ConstructionInfo"/>.</param>
         /// <param name="propertyDependencySelector">The <see cref="IPropertyDependencySelector"/> that is responsible
         /// for selecting the property dependencies for a given <see cref="Type"/>.</param>
+        /// <param name="getConstructorDependencyExpression">A function delegate that returns the registered constructor dependency expression, if any.</param>
+        /// <param name="getPropertyDependencyExpression">A function delegate that returns the registered property dependency expression, if any.</param>
         public TypeConstructionInfoBuilder(
             IConstructorSelector constructorSelector,
             IConstructorDependencySelector constructorDependencySelector,
-            IPropertyDependencySelector propertyDependencySelector)
+            IPropertyDependencySelector propertyDependencySelector,
+            Func<Type, string, Expression> getConstructorDependencyExpression,
+            Func<Type, string, Expression> getPropertyDependencyExpression)
         {
             this.constructorSelector = constructorSelector;
             this.constructorDependencySelector = constructorDependencySelector;
             this.propertyDependencySelector = propertyDependencySelector;
+            this.getConstructorDependencyExpression = getConstructorDependencyExpression;
+            this.getPropertyDependencyExpression = getPropertyDependencyExpression;
         }
 
         /// <summary>
@@ -5679,14 +5790,42 @@ namespace LightInject
             var implementingType = registration.ImplementingType;
             var constructionInfo = new ConstructionInfo();            
             constructionInfo.ImplementingType = implementingType;
-            constructionInfo.PropertyDependencies.AddRange(propertyDependencySelector.Execute(implementingType));
+            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
             if (!registration.IgnoreConstructorDependencies)
-            {
+            {                
                 constructionInfo.Constructor = constructorSelector.Execute(implementingType);
-                constructionInfo.ConstructorDependencies.AddRange(constructorDependencySelector.Execute(constructionInfo.Constructor));    
+                constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructionInfo.Constructor));    
             }          
   
             return constructionInfo;
+        }
+
+        private IEnumerable<ConstructorDependency> GetConstructorDependencies(ConstructorInfo constructorInfo)
+        {
+            var constructorDependencies = constructorDependencySelector.Execute(constructorInfo).ToArray();
+            foreach (var constructorDependency in constructorDependencies)
+            {
+                constructorDependency.FactoryExpression =
+                    getConstructorDependencyExpression(
+                        constructorDependency.ServiceType,
+                        constructorDependency.ServiceName);
+            }
+
+            return constructorDependencies;
+        }
+
+        private IEnumerable<PropertyDependency> GetPropertyDependencies(Type implementingType)
+        {
+            var propertyDependencies = propertyDependencySelector.Execute(implementingType).ToArray();
+            foreach (var property in propertyDependencies)
+            {
+                property.FactoryExpression =
+                    getPropertyDependencyExpression(
+                        property.ServiceType,
+                        property.ServiceName);
+            }
+
+            return propertyDependencies;
         }
     }
 
@@ -5840,9 +5979,9 @@ namespace LightInject
             }
         }
 
-        private bool CanParse(LambdaExpression lambdaExpression)
+        private static bool CanParse(LambdaExpression lambdaExpression)
         {
-            return lambdaExpression.Parameters.Count <= 1;
+            return lambdaExpression.Body.AsEnumerable().All(e => e != null && e.NodeType != ExpressionType.Lambda) && lambdaExpression.Parameters.Count <= 1;            
         }
 
         private static ConstructionInfo CreateConstructionInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)

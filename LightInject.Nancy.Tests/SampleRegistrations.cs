@@ -32,4 +32,6 @@ namespace LightInject.Nancy.Tests
 
         public IEnumerable<InstanceRegistration> InstanceRegistrations { get; private set; }
     }
+
+    
 }

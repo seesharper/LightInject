@@ -136,6 +136,11 @@ namespace LightInject.Nancy.Tests
         {
             return container;
         }
+
+        protected override void RegisterTypes(IServiceContainer container, IEnumerable<TypeRegistration> typeRegistrations)
+        {
+            base.RegisterTypes(container, typeRegistrations);
+        }
     }
 
     

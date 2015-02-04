@@ -161,7 +161,15 @@ namespace LightInject.Xunit
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     internal class ScopedTheoryAttribute : TheoryAttribute
-    {        
+    {
+        /// <summary>
+        /// Creates instances of <see cref="T:Xunit.Extensions.TheoryCommand"/> which represent individual intended
+        ///             invocations of the test method, one per data row in the data source.
+        /// </summary>
+        /// <param name="method">The method under test</param>
+        /// <returns>
+        /// An enumerator through the desired test method invocations
+        /// </returns>
         protected override IEnumerable<ITestCommand> EnumerateTestCommands(IMethodInfo method)
         {
             var commands = base.EnumerateTestCommands(method);

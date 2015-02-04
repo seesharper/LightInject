@@ -147,6 +147,7 @@ private void CreateSourcePackages()
 	CreateLightInjectWebApiSourcePackage();
 	CreateLightInjectSignalRSourcePackage();
 	CreateLightInjectNancySourcePackage();
+	CreateLightInjectFixieSourcePackage();
 }
 
 private void BuildNugetBinaries()
@@ -327,6 +328,16 @@ private void UpdateNuGetBuildProjects()
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Nancy\package\LightInject.Nancy.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Nancy.Source\package\LightInject.Nancy.nuspec", version, dependencies);
+
+	//LightInject.Fixie
+	version = VersionUtils.GetVersionString(@"..\..\LightInject.Fixie\LightInject.Fixie.cs");			
+	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Fixie\Properties\AssemblyInfo.cs", version);
+		
+	Publicizer.Write("NET45", @"..\..\LightInject.Fixie\LightInject.Fixie.cs", @"..\Build\Net45\LightInject.Fixie\LightInject.Fixie.cs");
+
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Fixie\package\LightInject.Fixie.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Fixie.Source\package\LightInject.Fixie.nuspec", version, dependencies);
+
 }
 
 
@@ -354,6 +365,7 @@ private void CreateBinaryPackages()
 	CreateLightInjectWebApiBinaryPackage();
 	CreateLightInjectSignalRBinaryPackage();
 	CreateLightInjectNancyBinaryPackage();
+	CreateLightInjectFixieBinaryPackage();
 }
 
 private void CreateLightInjectBinaryPackage()
@@ -630,6 +642,22 @@ private void CreateLightInjectNancyBinaryPackage()
 	Console.WriteLine("Finished building the LightInject.Nancy(Binary) NuGet package");
 }
 
+private void CreateLightInjectFixieBinaryPackage()
+{
+	Console.WriteLine("Start building the LightInject.Fixie(Binary) NuGet package");
+
+	DirectoryUtils.Delete(@"..\LightInject.Fixie\package\lib");	
+	Directory.CreateDirectory(@"..\LightInject.Fixie\package\lib\net45");
+
+	File.Copy(@"..\Build\Net45\LightInject.Fixie\bin\release\LightInject.Fixie.dll", @"..\LightInject.Fixie\package\lib\net45\LightInject.Fixie.dll", true);
+	File.Copy(@"..\Build\Net45\LightInject.Fixie\bin\release\LightInject.Fixie.pdb", @"..\LightInject.Fixie\package\lib\net45\LightInject.Fixie.pdb", true);
+	File.Copy(@"..\Build\Net45\LightInject.Fixie\bin\release\LightInject.Fixie.xml", @"..\LightInject.Fixie\package\lib\net45\LightInject.Fixie.xml", true);
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Fixie\package\LightInject.Fixie.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.Fixie(Binary) NuGet package");
+}
+
 private void CreateLightInjectServiceLocationBinaryPackage()
 {
 	Console.WriteLine("Start building the LightInject.ServiceLocation(Binary) NuGet package");
@@ -890,6 +918,23 @@ private void CreateLightInjectNancySourcePackage()
 	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Nancy.Source\package\LightInject.Nancy.nuspec", @"..");
 
 	Console.WriteLine("Finished building the LightInject.Nancy.Source NuGet package");
+}
+
+private void CreateLightInjectFixieSourcePackage()
+{
+	Console.WriteLine("Start building the LightInject.Fixie.Source NuGet package");
+	
+	DirectoryUtils.Delete(@"..\LightInject.Fixie.Source\package\content");
+	Directory.CreateDirectory(@"..\LightInject.Fixie.Source\package\content\net40\LightInject\Fixie");
+	Directory.CreateDirectory(@"..\LightInject.Fixie.Source\package\content\net45\LightInject\Fixie");
+	
+	SourceWriter.Write("NET45", @"..\..\LightInject.Fixie\LightInject.Fixie.cs",  @"..\LightInject.Fixie.Source\package\content\net45\LightInject\Fixie\LightInject.Fixie.cs.pp", true, true);
+	
+	SourceWriter.Write("NET45", @"..\..\LightInject.Fixie\LightInject.Fixie.cs",  @"..\Build\TestBuilds\Net45\LightInject\Fixie\LightInject.Fixie.cs", false, true);
+	
+	NuGet.CreatePackage(@"..\NuGet.exe", @"..\LightInject.Fixie.Source\package\LightInject.Fixie.nuspec", @"..");
+
+	Console.WriteLine("Finished building the LightInject.Fixie.Source NuGet package");
 }
 
 private void CreateLightInjectMvcSourcePackage()

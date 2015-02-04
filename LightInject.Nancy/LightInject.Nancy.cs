@@ -40,6 +40,9 @@ namespace LightInject.Nancy
     using global::Nancy.Bootstrapper;
     using global::Nancy.Diagnostics;
 
+    /// <summary>
+    /// A Nancy bootstrapper for LightInject.
+    /// </summary>
     internal class LightInjectNancyBootstrapper : NancyBootstrapperBase<IServiceContainer>
     {
         private IServiceContainer serviceContainer;
@@ -194,7 +197,7 @@ namespace LightInject.Nancy
         }
 
         /// <summary>
-        /// Register the given <paramref name="moduleRegistrationTypes"/> into the <param name="container">.</param>
+        /// Register the given <paramref name="moduleRegistrationTypes"/> into the <paramref name="container"/>.
         /// </summary>
         /// <param name="container">The <see cref="IServiceContainer"/> to register into.</param>
         /// <param name="moduleRegistrationTypes">The list of <see cref="ModuleRegistration"/> that 
@@ -226,6 +229,12 @@ namespace LightInject.Nancy
             }
         }
 
+        /// <summary>
+        /// Gets all <see cref="IRequestStartup"/> instances from the <see cref="IServiceContainer"/>
+        /// and calls the <see cref="IRequestStartup.Initialize"/> method.
+        /// </summary>
+        /// <param name="context">The current <see cref="NancyContext"/>.</param>
+        /// <returns><see cref="IPipelines"/>.</returns>
         protected override IPipelines InitializeRequestPipelines(NancyContext context)
         {
             var pipelines = new Pipelines(ApplicationPipelines);

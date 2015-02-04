@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "LightInject\LightInject.csproj", "{E0840582-8930-4663-921D-4365F1469F91}"
 EndProject
@@ -53,6 +53,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Xunit", "LightInject.Xunit\LightInject.Xunit.csproj", "{0D97A49C-E10B-4913-A1AA-81DD60004370}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Nancy", "LightInject.Nancy\LightInject.Nancy.csproj", "{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Fixie", "LightInject.Fixie\LightInject.Fixie.csproj", "{6247CA6C-94AE-4962-8993-F95C863675DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -286,6 +288,16 @@ Global
 		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Release|ARM.ActiveCfg = Release|Any CPU
 		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Release|x64.ActiveCfg = Release|Any CPU
 		{236EA29B-A74E-41BB-92EF-CD2FC5509AFA}.Release|x86.ActiveCfg = Release|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Release|ARM.ActiveCfg = Release|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Release|x64.ActiveCfg = Release|Any CPU
+		{6247CA6C-94AE-4962-8993-F95C863675DD}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

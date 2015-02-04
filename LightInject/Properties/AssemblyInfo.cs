@@ -59,4 +59,5 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("LightInject.Xunit")]
 [assembly: InternalsVisibleTo("LightInject.Nancy")]
 [assembly: InternalsVisibleTo("LightInject.Nancy.Tests")]
+[assembly: InternalsVisibleTo("LightInject.Fixie")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]

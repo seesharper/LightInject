@@ -375,6 +375,24 @@ namespace LightInject
         void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new();
 
         /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for 
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        void RegisterConstructorDependency<TDependency>(
+            Expression<Func<IServiceFactory, ParameterInfo, TDependency>> factory);
+        
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for 
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        void RegisterPropertyDependency<TDependency>(
+            Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory);
+
+        /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
@@ -1732,22 +1750,23 @@ namespace LightInject
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
+        private readonly ServiceRegistry<Expression> constructorDependencyFactories = new ServiceRegistry<Expression>();
+        private readonly ServiceRegistry<Expression> propertyDependencyFactories = new ServiceRegistry<Expression>();
+        private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
+        
         private readonly object lockObject = new object();
 
         private readonly Storage<object> constants = new Storage<object>();
-        
-        private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
-        private readonly Stack<Action<IEmitter>> dependencyStack = new Stack<Action<IEmitter>>();
-
-        private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
-
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
         private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
-
+        private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
+        
+        private readonly Stack<Action<IEmitter>> dependencyStack = new Stack<Action<IEmitter>>();
+                        
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
         private readonly ICompositionRootExecutor compositionRootExecutor;
-
         private readonly ITypeExtractor compositionRootTypeExtractor;
+        
         private ImmutableHashTree<Type, Func<object[], object>> delegates =
             ImmutableHashTree<Type, Func<object[], object>>.Empty;        
         
@@ -1990,6 +2009,34 @@ namespace LightInject
         public void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new()
         {
             compositionRootExecutor.Execute(typeof(TCompositionRoot));
+        }
+
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for 
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        public void RegisterConstructorDependency<TDependency>(Expression<Func<IServiceFactory, ParameterInfo, TDependency>> factory)
+        {
+            GetConstructorDependencyFactories(typeof(TDependency)).AddOrUpdate(
+                string.Empty,
+                s => factory,
+                (s, e) => isLocked ? e : factory);
+        }
+
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for 
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        public void RegisterPropertyDependency<TDependency>(Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory)
+        {
+            GetPropertyDependencyFactories(typeof(TDependency)).AddOrUpdate(
+                string.Empty,
+                s => factory,
+                (s, e) => isLocked ? e : factory);
         }
 
         /// <summary>
@@ -3543,6 +3590,20 @@ namespace LightInject
         private ThreadSafeDictionary<string, ServiceRegistration> GetAvailableServices(Type serviceType)
         {
             return availableServices.GetOrAdd(serviceType, s => new ThreadSafeDictionary<string, ServiceRegistration>(StringComparer.CurrentCultureIgnoreCase));
+        }
+
+        private ThreadSafeDictionary<string, Expression> GetConstructorDependencyFactories(Type dependencyType)
+        {
+            return constructorDependencyFactories.GetOrAdd(
+                dependencyType,
+                d => new ThreadSafeDictionary<string, Expression>(StringComparer.CurrentCultureIgnoreCase));
+        }
+
+        private ThreadSafeDictionary<string, Expression> GetPropertyDependencyFactories(Type dependencyType)
+        {
+            return propertyDependencyFactories.GetOrAdd(
+                dependencyType,
+                d => new ThreadSafeDictionary<string, Expression>(StringComparer.CurrentCultureIgnoreCase));
         }
 
         private void RegisterService(Type serviceType, Type implementingType, ILifetime lifetime, string serviceName)

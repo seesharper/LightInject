@@ -197,6 +197,16 @@
             throw new NotImplementedException();
         }
 
+        public void RegisterConstructorDependency<TDependency>(Expression<Func<IServiceFactory, ParameterInfo, TDependency>> factory)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RegisterPropertyDependency<TDependency>(Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory)
+        {
+            throw new NotImplementedException();
+        }
+
         public void RegisterAssembly(string searchPattern)
         {
             throw new NotImplementedException();

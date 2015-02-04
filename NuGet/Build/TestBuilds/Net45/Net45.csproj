@@ -35,6 +35,9 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Fixie">
+      <HintPath>packages\Fixie.1.0.0.3\lib\net45\Fixie.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core">
       <HintPath>packages\Microsoft.AspNet.SignalR.Core.2.0.3\lib\net45\Microsoft.AspNet.SignalR.Core.dll</HintPath>
     </Reference>
@@ -126,6 +129,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LightInject\Fixie\LightInject.Fixie.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />

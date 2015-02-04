@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9D3C97D2-A1C7-487E-85B1-FCBD93057BA4}"
 EndProject
@@ -48,6 +48,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Nancy", "LightInject.Nancy\LightInject.Nancy.csproj", "{5BEC8047-7BCE-428A-8026-F51DF13DFF63}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Nancy.Tests", "LightInject.Nancy.Tests\LightInject.Nancy.Tests.csproj", "{911ACC17-3583-49BF-881A-DCE3C71ACCAE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Fixie", "LightInject.Fixie\LightInject.Fixie.csproj", "{F6C2AD0C-6ADD-4D6B-9888-A5416638E741}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -127,6 +129,10 @@ Global
 		{911ACC17-3583-49BF-881A-DCE3C71ACCAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{911ACC17-3583-49BF-881A-DCE3C71ACCAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{911ACC17-3583-49BF-881A-DCE3C71ACCAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6C2AD0C-6ADD-4D6B-9888-A5416638E741}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6C2AD0C-6ADD-4D6B-9888-A5416638E741}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6C2AD0C-6ADD-4D6B-9888-A5416638E741}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6C2AD0C-6ADD-4D6B-9888-A5416638E741}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
