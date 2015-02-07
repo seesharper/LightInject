@@ -335,6 +335,13 @@ Registers a service without specifying any information about how to resolve the 
      
 > Note: In the case where the implementing type(Foo) has more than one constructor, **LightInject** will choose the constructor with the most parameters. 
 
+For fine grained control of the injected constructor dependencies, we can provide a factory that makes it possible to create an instance of a given constructor dependency.
+
+	container.RegisterConstructorDependency<IBar>((factory, parameterInfo) => new Bar());
+
+This tells the container to inject a new **Bar** instance whenever it sees an **IBar** constructor dependency.
+
+
 #### Explicit service registration ####
 
 Registers a service by providing explicit information about how to create the service instance and how to resolve the constructor dependencies.
@@ -408,6 +415,13 @@ Registers the service without specifying any information about how to resolve th
     Assert.IsNotNull(foo.bar);
 
 >**Note:** ***LightInject** considers all read/write properties a dependency, but implements a loose strategy around property dependencies, meaning that it will **NOT** throw an exception in the case of an unresolved property dependency.*          
+
+For fine grained control of the injected property dependencies, we can provide a factory that makes it possible to create an instance of a given property dependency.
+
+	container.RegisterPropertyDependency<IBar>((factory, propertyInfo) => new Bar());
+
+This tells the container to inject a new **Bar** instance whenever it sees an **IBar** property dependency.
+
 
 ####Explicit service registration####
 
