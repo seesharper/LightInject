@@ -1,3 +1,14 @@
+## LightInject 3.0.2.4 ##
+(February 7, 2015)
+
+Fixes [issue #163](https://github.com/seesharper/LightInject/issues/163)
+
+
+## LightInject 3.0.2.3 ##
+(January 22, 2015)
+
+Fixes [issue #158](https://github.com/seesharper/LightInject/issues/158)
+
 ## LightInject 3.0.2.2 ##
 (January 19, 2015)
 
