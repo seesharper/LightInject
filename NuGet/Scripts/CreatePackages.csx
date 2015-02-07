@@ -2,11 +2,11 @@
 DirectoryUtils.DeleteAllPackages("..");
 BuildCoverageToXml();
 BuildMainSolution();
-//RunUnitTests();
-//RunUnitTestsWithCodeCoverage();
+RunUnitTests();
+RunUnitTestsWithCodeCoverage();
 
 BuildNugetBinaries();
-//RunUnitTestsForNuGetBinaries();
+RunUnitTestsForNuGetBinaries();
 
 
 CreateBinaryPackages();

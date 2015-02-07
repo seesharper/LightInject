@@ -36,6 +36,7 @@ namespace LightInject.Fixie
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Reflection;
 
     using global::Fixie;
@@ -43,7 +44,7 @@ namespace LightInject.Fixie
     using LightInject;
 
     /// <summary>
-    /// Enables LightInject top be used as the IoC container in the Fixie unit test framework.
+    /// Enables LightInject to be used as the IoC container in the Fixie unit test framework.
     /// </summary>
     public class LightInjectConvention : DefaultConvention
     {
@@ -126,6 +127,11 @@ namespace LightInject.Fixie
 
         private void WrapCaseExecution(Case context, Action next)
         {
+            if (Config.ParameterSources.Any())
+            {
+                return;
+            }
+            
             var container = containers[context.Class];
             using (container.BeginScope())
             {

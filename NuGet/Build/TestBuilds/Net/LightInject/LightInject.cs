@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.3
+    LightInject version 3.0.2.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2915,7 +2915,26 @@ namespace LightInject
 
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
-            return new TypeConstructionInfoBuilder(ConstructorSelector, ConstructorDependencySelector, PropertyDependencySelector);
+            return new TypeConstructionInfoBuilder(
+                ConstructorSelector,
+                ConstructorDependencySelector,
+                PropertyDependencySelector,
+                GetConstructorDependencyExpression,
+                GetPropertyDependencyExpression);
+        }
+
+        private Expression GetConstructorDependencyExpression(Type type, string serviceName)
+        {
+            Expression expression;
+            GetConstructorDependencyFactories(type).TryGetValue(serviceName, out expression);
+            return expression;
+        }
+
+        private Expression GetPropertyDependencyExpression(Type type, string serviceName)
+        {
+            Expression expression;
+            GetPropertyDependencyFactories(type).TryGetValue(serviceName, out expression);
+            return expression;
         }
 
         private Func<object[], object> CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
@@ -3305,24 +3324,45 @@ namespace LightInject
 
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
-            var parameterExpression = (ParameterExpression)dependency.FactoryExpression.AsEnumerable().FirstOrDefault(e => e is ParameterExpression && e.Type == typeof(IServiceFactory));
+            var actions = new List<Action<IEmitter>>();
+            var parameterExpressions = dependency.FactoryExpression.AsEnumerable().Where(e => e is ParameterExpression).Cast<ParameterExpression>().ToList();
+           
+            Expression factoryExpression = dependency.FactoryExpression;
 
-            if (parameterExpression != null)
+            if (dependency.FactoryExpression.NodeType == ExpressionType.Lambda)
             {
-                var lambda = Expression.Lambda(dependency.FactoryExpression, new[] { parameterExpression }).Compile();
-                MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                emitter.PushConstant(constants.Add(lambda), lambda.GetType());
-                emitter.PushConstant(constants.Add(this), typeof(IServiceFactory));
-                emitter.Call(methodInfo);                
+                factoryExpression = ((LambdaExpression)factoryExpression).Body;
             }
-            else
+           
+            foreach (var parametersExpression in parameterExpressions)
             {
-                var lambda = Expression.Lambda(dependency.FactoryExpression, new ParameterExpression[] { }).Compile();
-                MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-                emitter.PushConstant(constants.Add(lambda), lambda.GetType());
-                emitter.Call(methodInfo);                
-            }            
-        }
+                if (parametersExpression.Type == typeof(IServiceFactory))
+                {
+                    actions.Add(e => e.PushConstant(constants.Add(this), typeof(IServiceFactory)));
+                }
+
+                if (parametersExpression.Type == typeof(ParameterInfo))
+                {
+                    actions.Add(e => e.PushConstant(constants.Add(((ConstructorDependency)dependency).Parameter), typeof(ParameterInfo)));
+                }
+
+                if (parametersExpression.Type == typeof(PropertyInfo))
+                {
+                    actions.Add(e => e.PushConstant(constants.Add(((PropertyDependency)dependency).Property), typeof(PropertyInfo)));
+                }
+            }
+            
+            var lambda = Expression.Lambda(factoryExpression, parameterExpressions.ToArray()).Compile();
+
+            MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
+            emitter.PushConstant(constants.Add(lambda), lambda.GetType());
+            foreach (var action in actions)
+            {
+                action(emitter);
+            }
+
+            emitter.Call(methodInfo);
+        }        
 
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IEmitter emitter)
         {
@@ -4021,6 +4061,9 @@ namespace LightInject
         private readonly IConstructorSelector constructorSelector;
         private readonly IConstructorDependencySelector constructorDependencySelector;
         private readonly IPropertyDependencySelector propertyDependencySelector;
+        private readonly Func<Type, string, Expression> getConstructorDependencyExpression;
+
+        private readonly Func<Type, string, Expression> getPropertyDependencyExpression;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeConstructionInfoBuilder"/> class.
@@ -4031,14 +4074,20 @@ namespace LightInject
         /// responsible for selecting the constructor dependencies for a given <see cref="ConstructionInfo"/>.</param>
         /// <param name="propertyDependencySelector">The <see cref="IPropertyDependencySelector"/> that is responsible
         /// for selecting the property dependencies for a given <see cref="Type"/>.</param>
+        /// <param name="getConstructorDependencyExpression">A function delegate that returns the registered constructor dependency expression, if any.</param>
+        /// <param name="getPropertyDependencyExpression">A function delegate that returns the registered property dependency expression, if any.</param>
         public TypeConstructionInfoBuilder(
             IConstructorSelector constructorSelector,
             IConstructorDependencySelector constructorDependencySelector,
-            IPropertyDependencySelector propertyDependencySelector)
+            IPropertyDependencySelector propertyDependencySelector,
+            Func<Type, string, Expression> getConstructorDependencyExpression,
+            Func<Type, string, Expression> getPropertyDependencyExpression)
         {
             this.constructorSelector = constructorSelector;
             this.constructorDependencySelector = constructorDependencySelector;
             this.propertyDependencySelector = propertyDependencySelector;
+            this.getConstructorDependencyExpression = getConstructorDependencyExpression;
+            this.getPropertyDependencyExpression = getPropertyDependencyExpression;
         }
 
         /// <summary>
@@ -4051,14 +4100,42 @@ namespace LightInject
             var implementingType = registration.ImplementingType;
             var constructionInfo = new ConstructionInfo();            
             constructionInfo.ImplementingType = implementingType;
-            constructionInfo.PropertyDependencies.AddRange(propertyDependencySelector.Execute(implementingType));
+            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
             if (!registration.IgnoreConstructorDependencies)
-            {
+            {                
                 constructionInfo.Constructor = constructorSelector.Execute(implementingType);
-                constructionInfo.ConstructorDependencies.AddRange(constructorDependencySelector.Execute(constructionInfo.Constructor));    
+                constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructionInfo.Constructor));    
             }          
   
             return constructionInfo;
+        }
+
+        private IEnumerable<ConstructorDependency> GetConstructorDependencies(ConstructorInfo constructorInfo)
+        {
+            var constructorDependencies = constructorDependencySelector.Execute(constructorInfo).ToArray();
+            foreach (var constructorDependency in constructorDependencies)
+            {
+                constructorDependency.FactoryExpression =
+                    getConstructorDependencyExpression(
+                        constructorDependency.ServiceType,
+                        constructorDependency.ServiceName);
+            }
+
+            return constructorDependencies;
+        }
+
+        private IEnumerable<PropertyDependency> GetPropertyDependencies(Type implementingType)
+        {
+            var propertyDependencies = propertyDependencySelector.Execute(implementingType).ToArray();
+            foreach (var property in propertyDependencies)
+            {
+                property.FactoryExpression =
+                    getPropertyDependencyExpression(
+                        property.ServiceType,
+                        property.ServiceName);
+            }
+
+            return propertyDependencies;
         }
     }
 
@@ -4180,9 +4257,9 @@ namespace LightInject
             }
         }
 
-        private bool CanParse(LambdaExpression lambdaExpression)
+        private static bool CanParse(LambdaExpression lambdaExpression)
         {
-            return lambdaExpression.Parameters.Count <= 1;
+            return lambdaExpression.Body.AsEnumerable().All(e => e != null && e.NodeType != ExpressionType.Lambda) && lambdaExpression.Parameters.Count <= 1;            
         }
 
         private static ConstructionInfo CreateConstructionInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)

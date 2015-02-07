@@ -12,19 +12,19 @@
         <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
 		<dependencies>             
             <group targetFramework="net40">
-            <dependency id="LightInject" version="3.0.2.3" />
+            <dependency id="LightInject" version="3.0.2.4" />
             <dependency id="CommonServiceLocator" version="1.0" />
             </group>   
             <group targetFramework="net45">
-            <dependency id="LightInject" version="3.0.2.3" />
+            <dependency id="LightInject" version="3.0.2.4" />
             <dependency id="CommonServiceLocator" version="1.0" />
             </group>   
             <group targetFramework="netcore45">
-            <dependency id="LightInject" version="3.0.2.3" />
+            <dependency id="LightInject" version="3.0.2.4" />
             <dependency id="Portable.CommonServiceLocator" version="1.2.2" />
             </group>   
             <group targetFramework="wp8">
-            <dependency id="LightInject" version="3.0.2.3" />
+            <dependency id="LightInject" version="3.0.2.4" />
             <dependency id="Portable.CommonServiceLocator" version="1.2.2" />
             </group>               
 		</dependencies>

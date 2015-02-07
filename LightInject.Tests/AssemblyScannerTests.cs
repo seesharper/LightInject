@@ -84,7 +84,7 @@
         }
 
 
-        [TestMethod]
+        [TestMethod, Ignore]
         public void Scan_SampleAssemblyWithCompositionRoot_HandlesRegisterAssemblyWithinCompositionRoot()
         {
             var container = new ServiceContainer();

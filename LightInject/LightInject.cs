@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.3
+    LightInject version 3.0.2.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3793,8 +3793,7 @@ namespace LightInject
             }
 
             emitter.Call(methodInfo);
-        }
-        
+        }        
 #endif
 
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IEmitter emitter)

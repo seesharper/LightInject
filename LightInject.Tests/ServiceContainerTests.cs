@@ -1276,6 +1276,28 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
+        public void GetInstance_RegisteredConstructorDependency_IgnoresRegistrationAfterFirstRequest()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.RegisterConstructorDependency<IBar>((factory, info) => new Bar());
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            container.RegisterConstructorDependency<IBar>((factory, info) => new AnotherBar());
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+        }
+
+        [TestMethod]
+        public void GetInstance_RegisteredConstructorDependency_CanUpdateRegistrationBeforeFirstRequest()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.RegisterConstructorDependency<IBar>((factory, info) => new Bar());            
+            container.RegisterConstructorDependency<IBar>((factory, info) => new AnotherBar());
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
+        }
+
+        [TestMethod]
         public void GetInstance_RegisteredPropertyDependency_ReturnsInstanceWithDependency()
         {
             var container = CreateContainer();
@@ -1285,6 +1307,27 @@ namespace LightInject.Tests
             Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
         }
 
+        [TestMethod]
+        public void GetInstance_RegisteredPropertyDependency_IgnoresRegistrationAfterFirstRequest()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithProperyDependency>();
+            container.RegisterPropertyDependency<IBar>((factory, info) => new Bar());
+            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            container.RegisterPropertyDependency<IBar>((factory, info) => new AnotherBar());
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+        }
+
+        [TestMethod]
+        public void GetInstance_RegisteredPropertyDependency_CanUpdateRegistrationBeforeFirstRequest()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithProperyDependency>();
+            container.RegisterPropertyDependency<IBar>((factory, info) => new Bar());
+            container.RegisterPropertyDependency<IBar>((factory, info) => new AnotherBar());
+            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
+        }
 
 #if NET45 || NET 
         [TestMethod]
