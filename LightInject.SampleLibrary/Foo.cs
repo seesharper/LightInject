@@ -6,6 +6,22 @@ namespace LightInject.SampleLibrary
 {
     using System.Threading.Tasks;
 
+    public interface IFooWithProperty
+    {
+        string Value { get; }
+    }
+
+    public class FooWithProperty : IFooWithProperty
+    {
+        public string Value
+        {
+            get
+            {
+                return "SomeValue";
+            }
+        }
+    }
+
     public class FooWithCompilerGeneratedType : IFoo
     {      
         public Func<string> SomeAction

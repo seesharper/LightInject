@@ -1329,6 +1329,29 @@ namespace LightInject.Tests
             Assert.IsInstanceOfType(instance.Bar, typeof(AnotherBar));
         }
 
+        [TestMethod]
+        public void GetInstance_RegisterPropertyDependencyUsingFactoryParameter_ReturnsInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithProperyDependency>();
+            container.Register<IBar, Bar>();
+            container.RegisterPropertyDependency((factory, info) => factory.GetInstance<IBar>());
+            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+        }
+
+        [TestMethod]
+        public void GetInstance_RegisterConstructorDependencyUsingFactoryParameter_ReturnsInstanceWithDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IBar, Bar>();
+            container.RegisterConstructorDependency((factory, info) => factory.GetInstance<IBar>());
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
+        }
+
+
 #if NET45 || NET 
         [TestMethod]
         public void RegisterFrom_CompositionRoot_RegistersService()
