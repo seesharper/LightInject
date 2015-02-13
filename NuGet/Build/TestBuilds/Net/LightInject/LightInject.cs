@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.4
+    LightInject version 3.0.2.5
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3325,7 +3325,7 @@ namespace LightInject
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
             var actions = new List<Action<IEmitter>>();
-            var parameterExpressions = dependency.FactoryExpression.AsEnumerable().Where(e => e is ParameterExpression).Cast<ParameterExpression>().ToList();
+            var parameterExpressions = dependency.FactoryExpression.AsEnumerable().Where(e => e is ParameterExpression).Distinct().Cast<ParameterExpression>().ToList();
            
             Expression factoryExpression = dependency.FactoryExpression;
 

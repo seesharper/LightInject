@@ -61,8 +61,6 @@ namespace LightInject.Fixie
 
             CaseExecution.Wrap(WrapCaseExecution);
 
-            Parameters.Add(InitializeParameters);
-
             ClassExecution.Wrap(WrapClassExecution);
 
             ClassExecution.UsingFactory(CreateTestClassInstance);
@@ -130,9 +128,12 @@ namespace LightInject.Fixie
         {
             if (Config.ParameterSources.Any())
             {
+                next();
                 return;
             }
-            
+
+            Parameters.Add(InitializeParameters);
+
             var container = containers[context.Class];
             using (container.BeginScope())
             {

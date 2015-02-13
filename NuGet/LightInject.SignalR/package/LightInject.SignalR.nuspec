@@ -13,7 +13,7 @@
         <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web ASP.NET ASP AspNet SignalR AspNetSignalR</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.2.4" />
+            <dependency id="LightInject" version="3.0.2.5" />
         </dependencies>
     </metadata>   
 </package>
