@@ -26,8 +26,66 @@ namespace LightInject.Tests
     [TestClass]
     public class ServiceContainerTests : TestBase
     {
-        #region Values       
-        
+        #region NullCheck
+
+        [TestMethod]
+        public void Register_NullServiceType_ThrowsArgumentNullException()
+        {
+            var container = CreateContainer();
+            ExceptionAssert.Throws<ArgumentNullException>(
+                () => container.Register(null, typeof(Foo)),
+                e => e.ParamName == "serviceType");
+        }
+
+        [TestMethod]
+        public void Register_NullImplementingType_ThrowsArgumentNullException()
+        {
+            var container = CreateContainer();
+            ExceptionAssert.Throws<ArgumentNullException>(
+                () => container.Register(typeof(IFoo), (Type)null),
+                e => e.ParamName == "implementingType");
+        }
+
+        [TestMethod]
+        public void Register_NullServiceName_ThrowsArgumentNullException()
+        {
+            var container = CreateContainer();
+            ExceptionAssert.Throws<ArgumentNullException>(
+                () => container.Register(typeof(IFoo), typeof(Foo), (string)null),
+                e => e.ParamName == "serviceName");
+        }
+
+        [TestMethod]
+        public void RegisterInstance_NullServiceType_ThrowsArgumentNullException()
+        {
+            var container = CreateContainer();
+            ExceptionAssert.Throws<ArgumentNullException>(
+                () => container.RegisterInstance(null, new object()),
+                e => e.ParamName == "serviceType");
+        }
+
+        [TestMethod]
+        public void RegisterInstance_NullInstance_ThrowsArgumentNullException()
+        {
+            var container = CreateContainer();
+            ExceptionAssert.Throws<ArgumentNullException>(
+                () => container.RegisterInstance((string)null),
+                e => e.ParamName == "instance");
+        }
+
+        [TestMethod]
+        public void RegisterInstance_NullServiceName_ThrowsArgumentNullException()
+        {
+            var container = CreateContainer();
+            ExceptionAssert.Throws<ArgumentNullException>(
+                () => container.RegisterInstance(typeof(object), new object(), null),
+                e => e.ParamName == "serviceName");
+        }
+        #endregion
+
+
+        #region Values
+
         [TestMethod]
         public void GetInstance_ReferenceTypeValue_ReturnsValue()
         {

@@ -1135,6 +1135,27 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Contains a set of helper method related to validating 
+    /// user input.
+    /// </summary>
+    internal static class Ensure
+    {
+        /// <summary>
+        /// Ensures that the given <paramref name="value"/> is not null.
+        /// </summary>
+        /// <typeparam name="T">The type of value to be validated.</typeparam>
+        /// <param name="value">The value to be validated.</param>
+        /// <param name="paramName">The name of the parameter from which the <paramref name="value"/> comes from.</param>
+        public static void IsNotNull<T>(T value, string paramName)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+        }
+    }
+
+    /// <summary>
     /// Extends the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
     /// </summary>
     internal static class ImmutableHashTreeExtensions
@@ -2576,6 +2597,9 @@ namespace LightInject
         /// <param name="serviceName">The name of the service.</param>
         public void RegisterInstance(Type serviceType, object instance, string serviceName)
         {
+            Ensure.IsNotNull(instance, "instance");
+            Ensure.IsNotNull(serviceType, "serviceType");
+            Ensure.IsNotNull(serviceName, "serviceName");
             RegisterValue(serviceType, instance, serviceName);
         }
 
@@ -2809,7 +2833,7 @@ namespace LightInject
         /// <param name="serviceType">The service type to register.</param>
         /// <param name="implementingType">The implementing type.</param>
         public void Register(Type serviceType, Type implementingType)
-        {
+        {            
             RegisterService(serviceType, implementingType, null, string.Empty);
         }
 
@@ -4123,6 +4147,9 @@ namespace LightInject
 
         private void RegisterService(Type serviceType, Type implementingType, ILifetime lifetime, string serviceName)
         {
+            Ensure.IsNotNull(serviceType, "serviceType");
+            Ensure.IsNotNull(implementingType, "implementingType");
+            Ensure.IsNotNull(serviceName, "serviceName");
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime };
             Register(serviceRegistration);         
         }
