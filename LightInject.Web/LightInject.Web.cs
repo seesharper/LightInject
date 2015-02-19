@@ -48,7 +48,7 @@ namespace LightInject
         /// disposed when the web request ends.
         /// </summary>
         /// <param name="serviceContainer">The target <see cref="IServiceContainer"/>.</param>
-        public static void EnablePerWebRequestScope(this ServiceContainer serviceContainer)
+        public static void EnablePerWebRequestScope(this IServiceContainer serviceContainer)
         {            
             serviceContainer.ScopeManagerProvider = new PerWebRequestScopeManagerProvider();
         }      
