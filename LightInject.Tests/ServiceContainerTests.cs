@@ -26,7 +26,7 @@ namespace LightInject.Tests
     [TestClass]
     public class ServiceContainerTests : TestBase
     {
-        #region NullCheck
+        #region InputValidation
 
         [TestMethod]
         public void Register_NullServiceType_ThrowsArgumentNullException()
@@ -54,6 +54,15 @@ namespace LightInject.Tests
                 () => container.Register(typeof(IFoo), typeof(Foo), (string)null),
                 e => e.ParamName == "serviceName");
         }
+
+        //[TestMethod]
+        //public void Register_NonCompatibleImplementingType_ThrowsArgumentException()
+        //{
+        //    var container = CreateContainer();
+        //    ExceptionAssert.Throws<ArgumentException>(
+        //        () => container.Register(typeof(IBar), typeof(Foo)),
+        //        e => e.ParamName == "implementingType");
+        //}
 
         [TestMethod]
         public void RegisterInstance_NullServiceType_ThrowsArgumentNullException()
