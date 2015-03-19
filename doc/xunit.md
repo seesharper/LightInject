@@ -51,7 +51,7 @@ If such an implementation does not exists or that we for some other reason need 
 This method is executed regardless of other composition roots and allows customized configuration of the container before the test is executed.  
  
 
-## Scoping ##
+## Scoping (xUnit <= 1.9.2)##
 
 Services registered with the **PerScopeLifetime** or **PerRequestLifetime** needs to be resolved within an active **Scope** to ensure that any services that implements **IDisposable** are properly disposed.  
 
@@ -63,6 +63,17 @@ By decorating the test method with the **ScopedTheory** attribute, a new **Scope
 	    Assert.NotNull(foo);
 	}
 
+## Scoping (xUnit >= 2.0.0)##
+
+Services registered with the **PerScopeLifetime** or **PerRequestLifetime** needs to be resolved within an active **Scope** to ensure that any services that implements **IDisposable** are properly disposed.  
+
+By decorating the test method with the **Scoped** attribute, a new **Scope** will be started when the test method starts and it will end when the test method ends.   
+	
+	[Theory, Scoped, InjectData]
+	public void MethodWithScopedArgument(IFoo foo)
+	{
+	    Assert.NotNull(foo);
+	}
 
 
  
