@@ -1333,6 +1333,22 @@ namespace LightInject.Tests
         }
 
         [TestMethod]
+        public void Create_UsingFallback_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.RegisterFallback(
+                (type, s) =>
+                    {
+                        container.Register(type);
+                        return false;
+                    },
+                null);
+
+            var instance = container.GetInstance<Foo>();
+            Assert.IsInstanceOfType(instance, typeof(Foo));   
+        }
+
+        [TestMethod]
         public void GetInstance_RegisteredConstructorDependency_ReturnsInstanceWithDependency()
         {
             var container = CreateContainer();

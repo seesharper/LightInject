@@ -60,14 +60,15 @@ namespace LightInject.Xunit
         public override IEnumerable<object[]> GetData(MethodInfo methodUnderTest, Type[] parameterTypes)
         {
             var container = GetContainer(methodUnderTest.DeclaringType);
+            ParameterInfo[] parameters = methodUnderTest.GetParameters();
             if (ShouldStartScope(methodUnderTest))
             {
-                container.BeginScope();    
+                container.BeginScope();
             }
             
             try
             {
-                return ResolveParameters(container, parameterTypes);
+                return ResolveParameters(container, parameters);
             }
             catch (InvalidOperationException ex)
             {
@@ -116,9 +117,20 @@ namespace LightInject.Xunit
             return containerWrapper.Value;
         }
 
-        private static IEnumerable<object[]> ResolveParameters(IServiceFactory factory, IEnumerable<Type> parameterTypes)
+        private static IEnumerable<object[]> ResolveParameters(IServiceFactory factory, IEnumerable<ParameterInfo> parameters)
         {
-            return new[] { parameterTypes.Select(factory.GetInstance).ToArray() };            
+            return new[] { parameters.Select(p => GetInstance(factory, p)).ToArray() };
+        }
+
+        private static object GetInstance(IServiceFactory factory, ParameterInfo parameter)
+        {
+            var instance = factory.TryGetInstance(parameter.ParameterType);
+            if (instance == null)
+            {
+                instance = factory.GetInstance(parameter.ParameterType, parameter.Name);
+            }
+
+            return instance;
         }
 
         private static void InvokeConfigureMethodIfPresent(Type type, IServiceContainer container)

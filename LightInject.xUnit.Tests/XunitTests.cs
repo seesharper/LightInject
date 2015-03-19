@@ -38,12 +38,7 @@
             var method = typeof(XunitTestsWithConfigureMethod).GetMethod("MethodWithMissingService");
             Assert.Throws<InvalidOperationException>(() => attribute.GetData(method, new Type[] { typeof(int) }));
         }
-
-        
-
-
-
-
+       
         internal static void Configure(IServiceContainer container)
         {
             Console.WriteLine("Configure" + Thread.CurrentThread.ManagedThreadId);
