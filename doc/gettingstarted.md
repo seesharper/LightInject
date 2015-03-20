@@ -442,6 +442,16 @@ In the cases where we don't control the creation of the service instance, **Ligh
     container.InjectProperties(foo);
     Assert.IsNotNull(foo);
 
+## Initializers ##
+
+Use the **Initialize** method to perform service instance initialization/post-processing.  
+
+	container.Register<IFoo, FooWithPropertyDependency>();
+	container.Initialize(registration => registration.ServiceType == typeof(IFoo), 
+		(factory, instance) => ((FooWithPropertyDependency)instance).Bar = new Bar());
+	var foo = (FooWithProperyDependency)container.GetInstance<IFoo>();
+    Assert.IsInstanceOfType(foo.Bar, typeof(Bar));
+
 ## Assembly Scanning ##
 
 LightInject is capable of registering services by looking at the types of a given assembly.
