@@ -242,6 +242,11 @@
             throw new NotImplementedException();
         }
 
+        public void Initialize(Func<ServiceRegistration, bool> predicate, Action<IServiceFactory, object> processor)
+        {
+            throw new NotImplementedException();
+        }
+
         public Scope BeginScope()
         {
             throw new NotImplementedException();

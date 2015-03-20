@@ -1434,6 +1434,17 @@ namespace LightInject.Tests
             Assert.IsInstanceOfType(instance.Bar, typeof(Bar));
         }
 
+        [TestMethod]
+        public void GetInstance_UsingInitializer_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithProperyDependency>();
+            container.Initialize(
+                registration => true,
+                (factory, instance) => ((FooWithProperyDependency)instance).Bar = new Bar());
+            var foo = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            Assert.IsInstanceOfType(foo.Bar, typeof(Bar));
+        }
 
 #if NET45 || NET 
         [TestMethod]
