@@ -106,12 +106,13 @@ namespace LightInject.Xunit
 
         private static IServiceContainer GetContainer(Type type)
         {
-            var containerWrapper = (ContainerWrapper)CallContext.LogicalGetData(Key);
+            var key = CreateContainerKey(type);
+            var containerWrapper = (ContainerWrapper)CallContext.LogicalGetData(key);
             if (containerWrapper == null)
             {
                 containerWrapper = new ContainerWrapper { Value = new ServiceContainer() };
                 InvokeConfigureMethodIfPresent(type, containerWrapper.Value);
-                CallContext.LogicalSetData(Key, containerWrapper);                
+                CallContext.LogicalSetData(key, containerWrapper);                
             }
 
             return containerWrapper.Value;

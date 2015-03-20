@@ -13,7 +13,7 @@
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Web Nancy NancyFx</tags>
         <dependencies>
-            <dependency id="LightInject.Source" version="3.0.2.5" />
+            <dependency id="LightInject.Source" version="3.0.2.6" />
         </dependencies>        
     </metadata>
     <files>        

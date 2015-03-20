@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.5
+    LightInject version 3.0.2.6
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3639,6 +3639,7 @@ namespace LightInject
             {
                 return;
             }
+
             LocalBuilder instanceVariable = emitter.DeclareLocal(serviceRegistration.ServiceType);
             emitter.Store(instanceVariable);
             foreach (var postProcessor in processors)
@@ -3652,8 +3653,8 @@ namespace LightInject
                 MethodInfo invokeMethod = delegateType.GetMethod("Invoke");
                 emitter.Call(invokeMethod);                
             }
-            emitter.Push(instanceVariable);
 
+            emitter.Push(instanceVariable);
         }
 
         private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IEmitter emitter, Action<IEmitter> decoratorTargetEmitMethod)

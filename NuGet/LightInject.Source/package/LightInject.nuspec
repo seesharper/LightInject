@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject.Source</id>
-        <version>3.0.2.5</version>
+        <version>3.0.2.6</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>

@@ -13,7 +13,7 @@
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject UnitTesting Test xUnit</tags>
         <dependencies>
-            <dependency id="LightInject" version="3.0.2.5" />
+            <dependency id="LightInject" version="3.0.2.6" />
             <dependency id="xunit.extensions" version="1.9.2" />
         </dependencies>
     </metadata>    

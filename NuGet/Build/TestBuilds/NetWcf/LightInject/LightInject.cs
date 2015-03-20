@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.5
+    LightInject version 3.0.2.6
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -444,6 +444,13 @@ namespace LightInject
         void Override(
             Func<ServiceRegistration, bool> serviceSelector,
             Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory);
+
+        /// <summary>
+        /// Allows post-processing of a service instance. 
+        /// </summary>
+        /// <param name="predicate">A function delegate that determines if the given service can be post-processed.</param>
+        /// <param name="processor">An action delegate that exposes the created service instance.</param>
+        void Initialize(Func<ServiceRegistration, bool> predicate, Action<IServiceFactory, object> processor);
     }
     
     /// <summary>
@@ -1782,7 +1789,8 @@ namespace LightInject
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
         private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
-        
+        private readonly Storage<Initializer> initializers = new Storage<Initializer>();
+
         private readonly Stack<Action<IEmitter>> dependencyStack = new Stack<Action<IEmitter>>();
                         
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
@@ -2142,6 +2150,16 @@ namespace LightInject
                                           ServiceRegistrationFactory = serviceRegistrationFactory
                                       };
             overrides.Add(serviceOverride);
+        }
+
+        /// <summary>
+        /// Allows post-processing of a service instance. 
+        /// </summary>
+        /// <param name="predicate">A function delegate that determines if the given service can be post-processed.</param>
+        /// <param name="processor">An action delegate that exposes the created service instance.</param>
+        public void Initialize(Func<ServiceRegistration, bool> predicate, Action<IServiceFactory, object> processor)
+        {
+            initializers.Add(new Initializer { Predicate = predicate, Initialize = processor });
         }
 
         /// <summary>
@@ -3216,7 +3234,29 @@ namespace LightInject
                 {
                     EmitNewInstanceUsingImplementingType(emitter, constructionInfo, null);
                 }    
-            }                        
+            }
+
+            var processors = initializers.Items.Where(i => i.Predicate(serviceRegistration)).ToArray();
+            if (processors.Length == 0)
+            {
+                return;
+            }
+
+            LocalBuilder instanceVariable = emitter.DeclareLocal(serviceRegistration.ServiceType);
+            emitter.Store(instanceVariable);
+            foreach (var postProcessor in processors)
+            {
+                Type delegateType = postProcessor.Initialize.GetType();               
+                var delegateIndex = constants.Add(postProcessor.Initialize);
+                emitter.PushConstant(delegateIndex, delegateType);
+                var serviceFactoryIndex = constants.Add(this);
+                emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
+                emitter.Push(instanceVariable);                
+                MethodInfo invokeMethod = delegateType.GetMethod("Invoke");
+                emitter.Call(invokeMethod);                
+            }
+
+            emitter.Push(instanceVariable);
         }
 
         private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IEmitter emitter, Action<IEmitter> decoratorTargetEmitMethod)
@@ -3892,6 +3932,13 @@ namespace LightInject
             public Func<ServiceRequest, object> Factory { get; set; }
 
             public ILifetime LifeTime { get; set; }
+        }
+
+        private class Initializer
+        {
+            public Func<ServiceRegistration, bool> Predicate { get; set; }
+
+            public Action<IServiceFactory, object> Initialize { get; set; }
         }
 
         private class ServiceOverride
