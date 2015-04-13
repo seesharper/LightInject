@@ -739,7 +739,7 @@ The following code will throw an **InvalidOperationException** stating that ther
 
 ## Internals ##
 
-When running under the .Net platform, **LightInject** is capable of creating instances of classes that has the [internal](http://msdn.microsoft.com/en-us/library/7c5ka91b(v=vs.110).aspx) modifier. 
+When running under the .Net platform, **LightInject** is capable of creating instances of classes that has the [internal](http://msdn.microsoft.com/en-us/library/7c5ka91b.aspx) modifier. 
 
 The only requirement is that the internal class exposes a public constructor.
 
