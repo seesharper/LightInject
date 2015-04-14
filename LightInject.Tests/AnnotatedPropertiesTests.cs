@@ -36,6 +36,20 @@
         }
 
         [TestMethod]
+        public void GetInstance_ClassWithPrivateAnnotatedProperties_InjectsProperty()
+        {
+            var container = (ServiceContainer)base.CreateContainer();
+            container.PropertyDependencySelector = new AnnotatedPropertyDependencySelector(new AllPropertySelector());
+
+            container.Register<IFoo, FooWithPrivateAnnotatedProperyDependency>();
+            container.Register<IBar, Bar>();
+
+            var instance = (FooWithPrivateAnnotatedProperyDependency)container.GetInstance<IFoo>();
+
+            Assert.IsNotNull(instance.GetBar());
+        }
+
+        [TestMethod]
         public void GetInstance_ClassWithAnnotatedProperties_ThrowsExceptionWhenDependencyIsMissing()
         {
             var container = CreateContainer();

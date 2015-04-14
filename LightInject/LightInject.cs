@@ -3727,7 +3727,7 @@ namespace LightInject
             emitter.Push(instanceVariable);
             propertyDependencyEmitMethod(emitter);                
             emitter.UnboxOrCast(propertyDependency.ServiceType);
-            emitter.Call(propertyDependency.Property.GetSetMethod());
+            emitter.Call(propertyDependency.Property.GetSetMethod(/*include non public*/ true));
         }
 
         private Action<IEmitter> GetEmitMethodForDependency(Dependency dependency)
@@ -7075,7 +7075,8 @@ namespace LightInject
 
         private static bool IsReadOnly(PropertyInfo propertyInfo)
         {
-            return propertyInfo.GetSetMethod() == null || propertyInfo.GetSetMethod().IsStatic || propertyInfo.GetSetMethod().IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
+            var setMethod = propertyInfo.GetSetMethod();
+            return setMethod == null || setMethod.IsStatic || setMethod.IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
         }
     }
 #if NET || NET45

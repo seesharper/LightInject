@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 
@@ -662,6 +663,17 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; set; }
     }
 
+    public class FooWithPrivateAnnotatedProperyDependency : IFoo
+    {
+        [Inject]
+        protected IBar Bar { get; set; }
+
+        public IBar GetBar()
+        {
+            return Bar;
+        }
+    }
+
     public class FooWithNamedAnnotatedProperyDependency : IFoo
     {
         [Inject("AnotherBar")]
@@ -864,5 +876,32 @@ namespace LightInject.SampleLibrary
         }
     }
 
-    
+    internal class AllPropertySelector : IPropertySelector
+    {
+        public IEnumerable<System.Reflection.PropertyInfo> Execute(Type type)
+        {
+            var properties = type
+                .GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
+                .Where(IsInjectable)
+                .ToList();
+
+            return properties;
+        }
+
+        /// <summary>
+        /// Determines if the <paramref name="propertyInfo"/> represents an injectable property.
+        /// </summary>
+        /// <param name="propertyInfo">The <see cref="PropertyInfo"/> that describes the target property.</param>
+        /// <returns><b>true</b> if the property is injectable, otherwise <b>false</b>.</returns>
+        protected virtual bool IsInjectable(System.Reflection.PropertyInfo propertyInfo)
+        {
+            return !IsReadOnly(propertyInfo);
+        }
+
+        private static bool IsReadOnly(System.Reflection.PropertyInfo propertyInfo)
+        {
+            var setMethod = propertyInfo.GetSetMethod(true);
+            return setMethod == null || setMethod.IsStatic || propertyInfo.GetIndexParameters().Length > 0;
+        }
+    }
 }
