@@ -149,12 +149,12 @@ The container will call the Dispose method on all disposable objects when the co
 		Assert.AreSame(firstInstance, secondInstance);
 	}
 
-###PerRequestLifetime###
+###PerRequestLifeTime###
 
 A new instance is created for each request and the container calls **Dispose** when the scope ends.
 This lifetime is used when the conrete class implements **IDisposable**.
 
-	container.Register<IFoo,Foo>(new PerRequestLifetime());
+	container.Register<IFoo,Foo>(new PerRequestLifeTime());
 	using(container.BeginScope())
 	{		
 		var firstInstance = container.GetInstance<IFoo>();
@@ -162,7 +162,7 @@ This lifetime is used when the conrete class implements **IDisposable**.
 		Assert.AreNotSame(firstInstance, secondInstance);
 	}	
 
->**Note:** *An **InvalidOperationException** is thrown if a service registered with the **PerRequestLifetime** is requested outside the scope.*
+>**Note:** *An **InvalidOperationException** is thrown if a service registered with the **PerRequestLifeTime** is requested outside the scope.*
 
 
 ###Custom lifetime###
