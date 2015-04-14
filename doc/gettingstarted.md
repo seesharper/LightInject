@@ -22,6 +22,11 @@ This adds a reference to the LightInject.dll in the target project.
 
 This will install a single file (LightInject.cs) into the current project.
 
+### Creating a container###
+
+    var container = new LightInject.ServiceContainer();
+    
+The container implements IDisposable and should be disposed after usage has completed. It can also be used inside of a using statement for a constrained scope.
 
 ### Default services###
 
