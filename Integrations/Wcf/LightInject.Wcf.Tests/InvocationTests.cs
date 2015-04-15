@@ -3,8 +3,7 @@
     using System;
     using System.ServiceModel;
     using System.Threading.Tasks;
-
-    using LightInject.Tests;
+    
     using LightInject.Wcf;
     using LightInject.Wcf.SampleLibrary;
     using LightInject.Wcf.SampleLibrary.Implementation;

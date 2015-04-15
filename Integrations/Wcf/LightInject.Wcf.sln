@@ -3,7 +3,49 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf", "LightInject.Wcf\LightInject.Wcf.csproj", "{682E02DA-D307-4DB3-B984-A280C9A532D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.Tests", "LightInject.Wcf.Tests\LightInject.Wcf.Tests.csproj", "{D55190E9-13D8-4953-9A50-F8884D695056}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary", "LightInject.Wcf.SampleLibrary\LightInject.Wcf.SampleLibrary.csproj", "{15B3E0D2-6217-493A-A690-158C497F5318}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary.Implementation", "LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj", "{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleWebApplication", "LightInject.Wcf.SampleWebApplication\LightInject.Wcf.SampleWebApplication.csproj", "{37185FCC-A613-4A6C-9580-18A0A2F47B21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.Client", "LightInject.Wcf.Client\LightInject.Wcf.Client.csproj", "{C7A1E443-78F6-443E-9637-4964954B7E04}"
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{682E02DA-D307-4DB3-B984-A280C9A532D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{682E02DA-D307-4DB3-B984-A280C9A532D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{682E02DA-D307-4DB3-B984-A280C9A532D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{682E02DA-D307-4DB3-B984-A280C9A532D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D55190E9-13D8-4953-9A50-F8884D695056}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D55190E9-13D8-4953-9A50-F8884D695056}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D55190E9-13D8-4953-9A50-F8884D695056}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D55190E9-13D8-4953-9A50-F8884D695056}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15B3E0D2-6217-493A-A690-158C497F5318}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15B3E0D2-6217-493A-A690-158C497F5318}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15B3E0D2-6217-493A-A690-158C497F5318}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15B3E0D2-6217-493A-A690-158C497F5318}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37185FCC-A613-4A6C-9580-18A0A2F47B21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37185FCC-A613-4A6C-9580-18A0A2F47B21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37185FCC-A613-4A6C-9580-18A0A2F47B21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37185FCC-A613-4A6C-9580-18A0A2F47B21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7A1E443-78F6-443E-9637-4964954B7E04}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection

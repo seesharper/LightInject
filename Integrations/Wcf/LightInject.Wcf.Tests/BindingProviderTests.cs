@@ -3,8 +3,7 @@
     using System;
     using System.ServiceModel;
 
-    using LightInject.Interception;
-    using LightInject.Tests;
+    using LightInject.Interception;    
     using LightInject.Wcf.Client;
     using LightInject.Wcf.SampleLibrary;
 

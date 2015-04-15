@@ -42,6 +42,14 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LightInject, Version=3.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LightInject.3.0.2.0\lib\net45\LightInject.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="LightInject.Interception, Version=1.0.0.7, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LightInject.Interception.1.0.0.7\lib\net45\LightInject.Interception.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Web.DynamicData" />
@@ -71,6 +79,7 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="packages.config" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
@@ -79,10 +88,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LightInject.Interception\LightInject.Interception.csproj">
-      <Project>{f1fbc75d-e613-477e-9630-8bc01aa9bff3}</Project>
-      <Name>LightInject.Interception</Name>
-    </ProjectReference>
     <ProjectReference Include="..\LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj">
       <Project>{3013ca8c-3036-4bcb-baa7-cd8fa081f4f8}</Project>
       <Name>LightInject.Wcf.SampleLibrary.Implementation</Name>
@@ -94,10 +99,6 @@
     <ProjectReference Include="..\LightInject.Wcf\LightInject.Wcf.csproj">
       <Project>{682e02da-d307-4db3-b984-a280c9a532d9}</Project>
       <Name>LightInject.Wcf</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\LightInject\LightInject.csproj">
-      <Project>{3d54591b-b055-4edd-96b6-e6f184e8ca6e}</Project>
-      <Name>LightInject</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

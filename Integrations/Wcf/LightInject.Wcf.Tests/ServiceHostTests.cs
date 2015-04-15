@@ -1,8 +1,7 @@
 ﻿namespace LightInject.Wcf.Tests
 {
     using System;
-    using LightInject.Interception;
-    using LightInject.Tests;
+    using LightInject.Interception;    
     using LightInject.Wcf.SampleLibrary;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;

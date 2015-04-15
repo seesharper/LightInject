@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.50727</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{15B3E0D2-6217-493A-A690-158C497F5318}</ProjectGuid>
+    <ProjectGuid>{3013CA8C-3036-4BCB-BAA7-CD8FA081F4F8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LightInject.Wcf.SampleLibrary</RootNamespace>
-    <AssemblyName>LightInject.Wcf.SampleLibrary</AssemblyName>
+    <RootNamespace>LightInject.Wcf.SampleLibrary.Implementation</RootNamespace>
+    <AssemblyName>LightInject.Wcf.SampleLibrary.Implementation</AssemblyName>
     <ProjectTypeGuids>{3D9AD99F-2412-4246-B90B-4EAA41C64699};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <StartArguments>/client:"WcfTestClient.exe"</StartArguments>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
@@ -37,25 +37,31 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="LightInject, Version=3.0.2.6, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LightInject.3.0.2.6\lib\net45\LightInject.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SampleService.cs" />
     <Compile Include="CompositionRoot.cs" />
-    <Compile Include="ISampleService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NuGet\Build\Net\LightInject\LightInject.csproj">
-      <Project>{e0840582-8930-4663-921d-4365f1469f91}</Project>
-      <Name>LightInject</Name>
+    <ProjectReference Include="..\LightInject.Wcf.SampleLibrary\LightInject.Wcf.SampleLibrary.csproj">
+      <Project>{15b3e0d2-6217-493a-a690-158c497f5318}</Project>
+      <Name>LightInject.Wcf.SampleLibrary</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LightInject.Wcf\LightInject.Wcf.csproj">
+      <Project>{682e02da-d307-4db3-b984-a280c9a532d9}</Project>
+      <Name>LightInject.Wcf</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
