@@ -84,7 +84,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LightInject.Wcf.Client\LightInject.Wcf.Client.csproj">
-      <Project>{C7A1E443-78F6-443E-9637-4964954B7E04}</Project>
+      <Project>{c7a1e443-78f6-443e-9637-4964954b7e04}</Project>
       <Name>LightInject.Wcf.Client</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj">

@@ -52,10 +52,8 @@ namespace LightInject
             serviceRegistery.RegisterInstance(uriProvider);
             serviceRegistery.Register<IChannelProvider, ChannelProvider>(new PerContainerLifetime());
             serviceRegistery.Register<IChannelFactoryProvider, ChannelFactoryProvider>(new PerContainerLifetime());
-#if NET
             serviceRegistery.Register<IServiceProxyFactory, ServiceProxyFactory>(new PerContainerLifetime());
             serviceRegistery.Register<IServiceProxyTypeFactory, ServiceProxyTypeFactory>(new PerContainerLifetime());
-#endif
             serviceRegistery.Register<IServiceClient, ServiceClient>();
             serviceRegistery.Decorate<IChannelFactoryProvider, ChannelFactoryProviderCacheDecorator>();
         }
@@ -75,9 +73,7 @@ namespace LightInject.Wcf.Client
     using System.ServiceModel;
     using System.ServiceModel.Channels;
     using System.ServiceModel.Description;    
-#if NET 
     using LightInject.Interception;
-#endif
 
     /// <summary>
     /// Represents a class that is capable of providing a
@@ -179,7 +175,6 @@ namespace LightInject.Wcf.Client
         TResult Invoke<TService, TResult>(Func<TService, TResult> function);
     }
 
-#if NET    
     /// <summary>
     /// An <see cref="IInterceptor"/> that intercepts method calls made to 
     /// a service interface and forwards the method call to an <see cref="IServiceClient"/>.
@@ -222,7 +217,7 @@ namespace LightInject.Wcf.Client
             return result;
         }
     }
-#endif        
+
     /// <summary>
     /// Provides a <see cref="ChannelFactory{TChannel}"/>.
     /// </summary>
@@ -303,7 +298,7 @@ namespace LightInject.Wcf.Client
             return channelFactoryProvider.Value.GetChannelFactory<T>();
         }
     }
-#if NET
+
     /// <summary>
     /// Creates a proxy used to invoke the target service.
     /// </summary>
@@ -372,7 +367,7 @@ namespace LightInject.Wcf.Client
             return proxyDefinition;
         }
     }
-#endif
+
     /// <summary>
     /// A class that is capable of invoking a service method
     /// </summary>
@@ -474,7 +469,6 @@ namespace LightInject.Wcf.Client
             Binding binding;
             switch (uri.Scheme)
             {
-#if NET
                 case "net.tcp":
                     binding = new NetTcpBinding(SecurityMode.None);
                     break;
@@ -487,17 +481,6 @@ namespace LightInject.Wcf.Client
                 case "net.pipe":
                     binding = new NetNamedPipeBinding();
                     break;
-#endif
-#if WP_PCL || NETFX_CORE_PCL || WINDOWS_PHONE || NETFX_CORE
-                case "net.tcp":
-                    binding = new NetTcpBinding(SecurityMode.None);
-                    break;
-                case "http":
-                case "https":
-                    binding = new BasicHttpBinding();
-                    break;
-
-#endif
                 default:
                     throw new InvalidOperationException(string.Format("Unable to resolve binding for Uri: {0}", uri));
             }

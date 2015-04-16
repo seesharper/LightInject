@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-   LightInject.Wcf version 1.0.0.1
+   LightInject.Wcf version 1.0.0.1 
    http://www.lightinject.net/
    http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -53,9 +53,7 @@ namespace LightInject
         public static void EnableWcf(this IServiceContainer serviceContainer)
         {
             LightInjectServiceHostFactory.Container = serviceContainer;
-#if NET45
             ((ServiceContainer)serviceContainer).ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
-#endif
         }
     }
 
@@ -148,7 +146,7 @@ namespace LightInject.Wcf
         /// Sets the <see cref="IServiceContainer"/> instance that is 
         /// used to resolve services.
         /// </summary>
-        internal static IServiceContainer Container
+        public static IServiceContainer Container
         {
             set
             {              
@@ -205,6 +203,7 @@ namespace LightInject.Wcf
             if (container == null)
             {
                 container = new ServiceContainer();
+                container.ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();                
             }
         }
 
