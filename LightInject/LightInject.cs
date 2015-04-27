@@ -4104,6 +4104,13 @@ namespace LightInject
         {            
             lock (lockObject)
             {
+                var key = Tuple.Create(serviceType, serviceName);
+                var instanceDelegate = namedDelegates.Search(key);
+                if (instanceDelegate != null)
+                {
+                    return instanceDelegate;
+                }
+
                 var serviceEmitter = GetEmitMethod(serviceType, serviceName);
                 if (serviceEmitter == null && throwError)
                 {
