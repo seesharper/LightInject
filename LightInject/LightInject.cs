@@ -4040,8 +4040,7 @@ namespace LightInject
         {
             if (serviceRegistration.Lifetime is PerContainerLifetime)
             {
-                Func<object> instanceDelegate =
-                    WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod));                        
+                Func<object> instanceDelegate = () => WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod))();
                 var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);
                 var instanceIndex = constants.Add(instance);
                 emitter.PushConstant(instanceIndex, instance.GetType());                
