@@ -184,7 +184,7 @@ namespace LightInject.WebApi
         /// <returns>The requested service instance if available, otherwise null.</returns>                
         public object GetService(Type serviceType)
         {
-            return serviceContainer.GetInstance(serviceType);
+            return serviceContainer.TryGetInstance(serviceType);
         }
 
         /// <summary>
