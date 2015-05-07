@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "LightInject\LightInject.csproj", "{E0840582-8930-4663-921D-4365F1469F91}"
 EndProject
@@ -28,19 +28,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{A437BA
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf", "LightInject.Wcf\LightInject.Wcf.csproj", "{EE842E91-D277-478A-8A85-27E5B9543E67}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.Tests", "LightInject.Wcf.Tests\LightInject.Wcf.Tests.csproj", "{1D1149FE-3123-4A68-86EE-5913CA85E953}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.Client", "LightInject.Wcf.Client\LightInject.Wcf.Client.csproj", "{B2B16BD3-85F0-4CDB-8BEF-F3D8E08350E4}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.WebApi", "LightInject.WebApi\LightInject.WebApi.csproj", "{61AB5B19-C830-4BD8-A8AA-C207C1DF19A7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibrary", "LightInject.SampleLibrary\LightInject.SampleLibrary.csproj", "{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary", "LightInject.Wcf.SampleLibrary\LightInject.Wcf.SampleLibrary.csproj", "{CE4149D5-83BD-468A-A480-D3EDC290E79E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Wcf.SampleLibrary.Implementation", "LightInject.Wcf.SampleLibrary.Implementation\LightInject.Wcf.SampleLibrary.Implementation.csproj", "{323B266C-C139-414E-92F9-C072764807BC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.SampleLibraryWithCompositionRoot", "LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj", "{3D510916-A46E-431C-AB7A-491D4FC83B48}"
 EndProject
@@ -88,18 +78,6 @@ Global
 		{E75A908C-E1EF-4B2F-995A-A0DD6919A2D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E75A908C-E1EF-4B2F-995A-A0DD6919A2D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E75A908C-E1EF-4B2F-995A-A0DD6919A2D6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EE842E91-D277-478A-8A85-27E5B9543E67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EE842E91-D277-478A-8A85-27E5B9543E67}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EE842E91-D277-478A-8A85-27E5B9543E67}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EE842E91-D277-478A-8A85-27E5B9543E67}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1D1149FE-3123-4A68-86EE-5913CA85E953}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1D1149FE-3123-4A68-86EE-5913CA85E953}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1D1149FE-3123-4A68-86EE-5913CA85E953}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1D1149FE-3123-4A68-86EE-5913CA85E953}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B2B16BD3-85F0-4CDB-8BEF-F3D8E08350E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B2B16BD3-85F0-4CDB-8BEF-F3D8E08350E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B2B16BD3-85F0-4CDB-8BEF-F3D8E08350E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B2B16BD3-85F0-4CDB-8BEF-F3D8E08350E4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{61AB5B19-C830-4BD8-A8AA-C207C1DF19A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{61AB5B19-C830-4BD8-A8AA-C207C1DF19A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61AB5B19-C830-4BD8-A8AA-C207C1DF19A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -108,14 +86,6 @@ Global
 		{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8583F2A8-F11F-45E2-ACE3-D1B2CB881B8F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CE4149D5-83BD-468A-A480-D3EDC290E79E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CE4149D5-83BD-468A-A480-D3EDC290E79E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CE4149D5-83BD-468A-A480-D3EDC290E79E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CE4149D5-83BD-468A-A480-D3EDC290E79E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{323B266C-C139-414E-92F9-C072764807BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{323B266C-C139-414E-92F9-C072764807BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{323B266C-C139-414E-92F9-C072764807BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{323B266C-C139-414E-92F9-C072764807BC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3D510916-A46E-431C-AB7A-491D4FC83B48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3D510916-A46E-431C-AB7A-491D4FC83B48}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D510916-A46E-431C-AB7A-491D4FC83B48}.Release|Any CPU.ActiveCfg = Release|Any CPU

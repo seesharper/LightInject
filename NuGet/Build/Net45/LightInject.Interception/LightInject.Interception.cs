@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Interception version 1.0.0.7 
+    LightInject.Interception version 1.0.0.8 
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -1305,7 +1305,7 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Newobj, TargetInvocationInfoConstructor);
         }
 
-        private static GenericTypeParameterBuilder[] CreateGenericTypeParameters(MethodInfo targetMethod, MethodBuilder methodBuilder)
+        private static void DefineGenericParameters(MethodInfo targetMethod, MethodBuilder methodBuilder)
         {            
             Type[] genericArguments = targetMethod.GetGenericArguments().ToArray();
             GenericTypeParameterBuilder[] genericTypeParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(a => a.Name).ToArray());
@@ -1313,9 +1313,7 @@ namespace LightInject.Interception
             {
                 genericTypeParameters[i].SetGenericParameterAttributes(genericArguments[i].GenericParameterAttributes);
                 ApplyGenericConstraints(genericArguments[i], genericTypeParameters[i]);
-            }
-
-            return genericTypeParameters;
+            }            
         }
 
         private static void ApplyGenericConstraints(Type genericArgument, GenericTypeParameterBuilder genericTypeParameter)
@@ -1696,8 +1694,9 @@ namespace LightInject.Interception
             PushInterceptorInstance(lazyMethodInterceptorField, il);
             
             if (targetMethod.IsGenericMethod)
-            {                                                
-                var genericParameters = CreateGenericTypeParameters(targetMethod, methodBuilder);
+            {
+                GenericTypeParameterBuilder[] genericParameters =
+                    methodBuilder.GetGenericArguments().Cast<GenericTypeParameterBuilder>().ToArray();
                 FieldInfo staticOpenGenericTargetMethodInfoField =
                        DefineStaticOpenGenericTargetMethodInfoField(targetMethod);
                 PushInvocationInfoForGenericMethod(staticOpenGenericTargetMethodInfoField, il, parameters, argumentsArrayVariable, genericParameters);                                                
@@ -2029,6 +2028,11 @@ namespace LightInject.Interception
                                             targetMethod.ReturnType,
                                             targetMethod.GetParameters().Select(p => p.ParameterType).ToArray());
 
+            if (targetMethod.IsGenericMethod)
+            {
+                DefineGenericParameters(targetMethod, methodBuilder);    
+            }
+            
             if (targetMethod.DeclaringType != proxyDefinition.TargetType && targetMethod.DeclaringType != typeof(object))
             {
                 typeBuilder.DefineMethodOverride(methodBuilder, targetMethod);

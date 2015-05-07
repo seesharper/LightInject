@@ -144,7 +144,7 @@ private void CreateSourcePackages()
 	CreateLightInjectWebSourcePackage();
 	CreateLightInjectMvcSourcePackage();
 	CreateLightInjectServiceLocationSourcePackage();	
-	CreateLightInjectWcfSourcePackage();
+	//CreateLightInjectWcfSourcePackage();
 	CreateLightInjectWebApiSourcePackage();
 	CreateLightInjectSignalRSourcePackage();
 	CreateLightInjectNancySourcePackage();
@@ -291,7 +291,7 @@ private void UpdateNuGetBuildProjects()
 	
 
 	//LightInject.Wcf
-	version = VersionUtils.GetVersionString(@"..\..\LightInject.Wcf\LightInject.Wcf.cs");		
+	/*version = VersionUtils.GetVersionString(@"..\..\LightInject.Wcf\LightInject.Wcf.cs");		
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net\LightInject.Wcf\Properties\AssemblyInfo.cs", version);
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Wcf\Properties\AssemblyInfo.cs", version);
 	
@@ -299,7 +299,7 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NET", @"..\..\LightInject.Wcf\LightInject.Wcf.cs", @"..\Build\Net45\LightInject.Wcf\LightInject.Wcf.cs");
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf\package\LightInject.Wcf.nuspec", version, dependencies);
-	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", version, dependencies);
+	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Wcf.Source\package\LightInject.Wcf.nuspec", version, dependencies); */
 
 	//LightInject.Wcf.Client
 	/*version = VersionUtils.GetVersionString(@"..\..\LightInject.Wcf.Client\LightInject.Wcf.Client.cs");		
@@ -374,7 +374,7 @@ private void CreateBinaryPackages()
 	CreateLightInjectMvcBinaryPackage();
 	CreateLightInjectWebBinaryPackage();
 	CreateLightInjectServiceLocationBinaryPackage(); 
-	CreateLightInjectWcfBinaryPackage();
+	//CreateLightInjectWcfBinaryPackage();
 	CreateLightInjectWebApiBinaryPackage();
 	CreateLightInjectSignalRBinaryPackage();
 	CreateLightInjectNancyBinaryPackage();
