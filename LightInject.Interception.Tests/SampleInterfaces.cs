@@ -217,6 +217,11 @@
         void Execute<T>(T value);
     }
 
+    public interface IDerivedFromGenericMethod : IMethodWithGenericParameter
+    {
+        
+    }
+
     public interface IMethodWithGenericParameterThatHasClassConstraint
     {
         void Execute<T>(T value) where T : class;

@@ -170,7 +170,14 @@ namespace LightInject.Interception.Tests
 
             Assert.IsInstanceOfType(disposable, typeof(IDisposable));
         }
-
+       
+        [TestMethod]
+        public void GetProxyType_DerivedFromInterfaceWithGenericMethod_ReturnsProxyType()
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(IDerivedFromGenericMethod), () => null);
+            proxyDefinition.Implement(() => null);
+            var proxyType = CreateProxyType(proxyDefinition);
+        }
 
 
         [TestMethod]
