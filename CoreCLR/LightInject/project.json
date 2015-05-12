@@ -1,0 +1,14 @@
+﻿{
+	"version": "1.0.0-*",
+	"dependencies": {
+		"System.Runtime": "4.0.20-beta-22605"
+	},
+
+	"frameworks": {
+		"aspnetcore50": {
+			"dependencies": {
+				"System.Runtime": "4.0.20-beta-22523"
+			}
+		}
+	}
+}
