@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.6
+    LightInject version 3.0.2.7
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -48,6 +48,13 @@ namespace LightInject
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+
+    /// <summary>
+    /// A delegate that represent the dynamic method compiled to resolved service instances.
+    /// </summary>
+    /// <param name="args">The arguments used by the dynamic method that this delegate represents.</param>
+    /// <returns>A service instance.</returns>
+    internal delegate object GetInstanceDelegate(object[] args);
 
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
@@ -1072,6 +1079,74 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Extends the <see cref="ImmutableHashTable{TKey,TValue}"/> class.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    internal static class ImmutableHashTableExtensions
+    {
+        /// <summary>
+        /// Searches for a value using the given <paramref name="key"/>.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="hashTable">The target <see cref="ImmutableHashTable{TKey,TValue}"/> instance.</param>
+        /// <param name="key">The key for which to search for a value.</param>
+        /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
+        public static TValue Search<TKey, TValue>(this ImmutableHashTable<TKey, TValue> hashTable, TKey key)
+        {
+            var bucketIndex = RuntimeHelpers.GetHashCode(key) & (hashTable.Divisor - 1);
+            var items = hashTable.Buckets[bucketIndex].Items;
+            for (int i = 0; i < items.Length; i++)
+            {
+                var item = items[i];
+                if (ReferenceEquals(item.Key, key) || Equals(item.Key, key))
+                {
+                    return item.Value;
+                }
+            }
+
+            return default(TValue);
+        }
+
+        /// <summary>
+        /// Searches for a value using the given <paramref name="key"/>.
+        /// </summary>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="hashTable">The target <see cref="ImmutableHashTable{TKey,TValue}"/> instance.</param>
+        /// <param name="key">The key for which to search for a value.</param>
+        /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
+        public static TValue Search<TValue>(this ImmutableHashTable<Type, TValue> hashTable, Type key)
+        {
+            var bucketIndex = RuntimeHelpers.GetHashCode(key) & (hashTable.Divisor - 1);
+            var items = hashTable.Buckets[bucketIndex].Items;
+            for (int i = 0; i < items.Length; i++)
+            {
+                var item = items[i];
+                if (ReferenceEquals(item.Key, key))
+                {
+                    return item.Value;
+                }
+            }
+
+            return default(TValue);
+        }
+
+        /// <summary>
+        /// Adds a new element to the <see cref="ImmutableHashTree{TKey,TValue}"/>. 
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="hashTable">The target <see cref="ImmutableHashTable{TKey,TValue}"/>.</param>
+        /// <param name="key">The key to be associated with the value.</param>
+        /// <param name="value">The value to be added to the tree.</param>
+        /// <returns>A new <see cref="ImmutableHashTree{TKey,TValue}"/> that contains the new key/value pair.</returns>
+        public static ImmutableHashTable<TKey, TValue> Add<TKey, TValue>(this ImmutableHashTable<TKey, TValue> hashTable, TKey key, TValue value)
+        {
+            return new ImmutableHashTable<TKey, TValue>(hashTable, key, value);
+        }
+    }
+
+    /// <summary>
     /// Extends the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -1803,11 +1878,11 @@ namespace LightInject
         private readonly ICompositionRootExecutor compositionRootExecutor;
         private readonly ITypeExtractor compositionRootTypeExtractor;
         
-        private ImmutableHashTree<Type, Func<object[], object>> delegates =
-            ImmutableHashTree<Type, Func<object[], object>>.Empty;        
-        
-        private ImmutableHashTree<Tuple<Type, string>, Func<object[], object>> namedDelegates =
-            ImmutableHashTree<Tuple<Type, string>, Func<object[], object>>.Empty;
+        private ImmutableHashTable<Type, GetInstanceDelegate> delegates =
+            ImmutableHashTable<Type, GetInstanceDelegate>.Empty;
+
+        private ImmutableHashTable<Tuple<Type, string>, GetInstanceDelegate> namedDelegates =
+            ImmutableHashTable<Tuple<Type, string>, GetInstanceDelegate>.Empty;
 
         private ImmutableHashTree<Type, Func<object[], object, object>> propertyInjectionDelegates =
             ImmutableHashTree<Type, Func<object[], object, object>>.Empty;
@@ -2823,8 +2898,8 @@ namespace LightInject
         /// </summary>
         public void Invalidate()
         {
-            Interlocked.Exchange(ref delegates, ImmutableHashTree<Type, Func<object[], object>>.Empty);
-            Interlocked.Exchange(ref namedDelegates, ImmutableHashTree<Tuple<Type, string>, Func<object[], object>>.Empty);
+            Interlocked.Exchange(ref delegates, ImmutableHashTable<Type, GetInstanceDelegate>.Empty);
+            Interlocked.Exchange(ref namedDelegates, ImmutableHashTable<Tuple<Type, string>, GetInstanceDelegate>.Empty);
             Interlocked.Exchange(ref propertyInjectionDelegates, ImmutableHashTree<Type, Func<object[], object, object>>.Empty);
             constants.Clear();
             constructionInfoProvider.Value.Invalidate();
@@ -2986,7 +3061,7 @@ namespace LightInject
             return expression;
         }
 
-        private Func<object[], object> CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
+        private GetInstanceDelegate CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
         {
             var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
             IEmitter emitter = methodSkeleton.GetEmitter();
@@ -3007,10 +3082,10 @@ namespace LightInject
 
             isLocked = true;
 
-            return (Func<object[], object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object>));                                    
+            return (GetInstanceDelegate)methodSkeleton.CreateDelegate(typeof(GetInstanceDelegate));                                    
         }
 
-        private Func<object> WrapAsFuncDelegate(Func<object[], object> instanceDelegate)
+        private Func<object> WrapAsFuncDelegate(GetInstanceDelegate instanceDelegate)
         {
             return () => instanceDelegate(constants.Items);
         }
@@ -3795,7 +3870,7 @@ namespace LightInject
             return constants.Add(lifetime);
         }
 
-        private Func<object[], object> CreateDefaultDelegate(Type serviceType, bool throwError)
+        private GetInstanceDelegate CreateDefaultDelegate(Type serviceType, bool throwError)
         {
             var instanceDelegate = CreateDelegate(serviceType, string.Empty, throwError);
             if (instanceDelegate == null)
@@ -3807,7 +3882,7 @@ namespace LightInject
             return instanceDelegate;
         }
 
-        private Func<object[], object> CreateNamedDelegate(Tuple<Type, string> key, bool throwError)
+        private GetInstanceDelegate CreateNamedDelegate(Tuple<Type, string> key, bool throwError)
         {
             var instanceDelegate = CreateDelegate(key.Item1, key.Item2, throwError);
             if (instanceDelegate == null)
@@ -3819,7 +3894,7 @@ namespace LightInject
             return instanceDelegate;
         }
 
-        private Func<object[], object> CreateDelegate(Type serviceType, string serviceName, bool throwError)
+        private GetInstanceDelegate CreateDelegate(Type serviceType, string serviceName, bool throwError)
         {            
             lock (lockObject)
             {
@@ -5225,10 +5300,12 @@ namespace LightInject
             InternalTypes.Add(typeof(ImmutableList<>));
             InternalTypes.Add(typeof(KeyValue<,>));
             InternalTypes.Add(typeof(ImmutableHashTree<,>));
+            InternalTypes.Add(typeof(ImmutableHashTable<,>));
             InternalTypes.Add(typeof(PerThreadScopeManagerProvider));            
             InternalTypes.Add(typeof(Emitter));
             InternalTypes.Add(typeof(Instruction));
             InternalTypes.Add(typeof(Instruction<>));
+            InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
         }
@@ -5574,6 +5651,93 @@ namespace LightInject
         public ImmutableList<T> Add(T value)
         {
             return new ImmutableList<T>(this, value);
+        }
+    }
+
+    /// <summary>
+    /// A simple immutable add-only hash table.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the key.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
+    internal sealed class ImmutableHashTable<TKey, TValue>
+    {
+        /// <summary>
+        /// An empty <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public static readonly ImmutableHashTable<TKey, TValue> Empty = new ImmutableHashTable<TKey, TValue>();
+        
+        /// <summary>
+        /// Gets the number of items stored in the hash table.
+        /// </summary>
+        public readonly int Count;
+       
+        /// <summary>
+        /// Gets the hast table buckets.
+        /// </summary>
+        internal readonly ImmutableList<KeyValue<TKey, TValue>>[] Buckets;
+
+        /// <summary>
+        /// Gets the divisor used to calculate the bucket index from the hash code of the key.
+        /// </summary>
+        internal readonly int Divisor;
+       
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableHashTable{TKey,TValue}"/> class.
+        /// </summary>
+        /// <param name="previous">The "previous" hash table that contains already existing values.</param>
+        /// <param name="key">The key to be associated with the value.</param>
+        /// <param name="value">The value to be added to the tree.</param>
+        internal ImmutableHashTable(ImmutableHashTable<TKey, TValue> previous, TKey key, TValue value)
+        {
+            this.Count = previous.Count + 1;
+            if (previous.Count == previous.Divisor)
+            {
+                this.Divisor = previous.Divisor * 2;
+                this.Buckets = new ImmutableList<KeyValue<TKey, TValue>>[this.Divisor];
+                InitializeBuckets(0, this.Divisor);
+                this.AddExistingValues(previous);
+            }
+            else
+            {
+                this.Divisor = previous.Divisor;
+                this.Buckets = new ImmutableList<KeyValue<TKey, TValue>>[this.Divisor];
+                Array.Copy(previous.Buckets, this.Buckets, previous.Divisor);
+            }
+
+            var hashCode = key.GetHashCode();
+            var bucketIndex = hashCode & (this.Divisor - 1);
+            this.Buckets[bucketIndex] = this.Buckets[bucketIndex].Add(new KeyValue<TKey, TValue>(key, value));
+        }
+
+        /// <summary>
+        /// Prevents a default instance of the <see cref="ImmutableHashTable{TKey,TValue}"/> class from being created.
+        /// </summary>
+        private ImmutableHashTable()
+        {
+            this.Buckets = new ImmutableList<KeyValue<TKey, TValue>>[2];
+            this.Divisor = 2;
+            InitializeBuckets(0, 2);
+        }
+
+        private void AddExistingValues(ImmutableHashTable<TKey, TValue> previous)
+        {
+            foreach (ImmutableList<KeyValue<TKey, TValue>> bucket in previous.Buckets)
+            {
+                foreach (var keyValue in bucket.Items)
+                {
+                    int hashCode = keyValue.Key.GetHashCode();
+                    int bucketIndex = hashCode & (this.Divisor - 1);
+                    this.Buckets[bucketIndex] = this.Buckets[bucketIndex].Add(keyValue);
+                }
+            }
+        }
+
+        private void InitializeBuckets(int startIndex, int count)
+        {
+            for (int i = startIndex; i < count; i++)
+            {
+                this.Buckets[i] = ImmutableList<KeyValue<TKey, TValue>>.Empty;
+            }
         }
     }
 

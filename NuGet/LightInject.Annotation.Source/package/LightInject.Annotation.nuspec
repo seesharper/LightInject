@@ -13,7 +13,7 @@
         <copyright>Bernhard Richter</copyright>
         <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator WinRT Windows-Runtime</tags>
         <dependencies>
-            <dependency id="LightInject.Source" version="3.0.2.6" />
+            <dependency id="LightInject.Source" version="3.0.2.7" />
         </dependencies>
     </metadata>
     <files>
