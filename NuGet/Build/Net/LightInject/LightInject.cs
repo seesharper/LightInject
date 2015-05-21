@@ -1090,14 +1090,27 @@ namespace LightInject
         /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
         public static TValue Search<TKey, TValue>(this ImmutableHashTable<TKey, TValue> hashTable, TKey key)
         {
-            var bucketIndex = RuntimeHelpers.GetHashCode(key) & (hashTable.Divisor - 1);
-            var items = hashTable.Buckets[bucketIndex].Items;
-            for (int i = 0; i < items.Length; i++)
+            var hashCode = RuntimeHelpers.GetHashCode(key);
+            var bucketIndex = hashCode & (hashTable.Divisor - 1);
+            ImmutableHashTree<TKey, TValue> tree = hashTable.Buckets[bucketIndex];
+            while (tree.Height != 0 && tree.HashCode != hashCode)
             {
-                var item = items[i];
-                if (ReferenceEquals(item.Key, key) || Equals(item.Key, key))
+                tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
+            }
+
+            if (!tree.IsEmpty && (ReferenceEquals(tree.Key, key) || Equals(tree.Key, key)))
+            {
+                return tree.Value;
+            }
+
+            if (tree.Duplicates.Items.Length > 0)
+            {
+                foreach (var keyValue in tree.Duplicates.Items)
                 {
-                    return item.Value;
+                    if (ReferenceEquals(keyValue.Key, key) || Equals(tree.Key, key))
+                    {
+                        return keyValue.Value;
+                    }
                 }
             }
 
@@ -1113,14 +1126,27 @@ namespace LightInject
         /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
         public static TValue Search<TValue>(this ImmutableHashTable<Type, TValue> hashTable, Type key)
         {
-            var bucketIndex = RuntimeHelpers.GetHashCode(key) & (hashTable.Divisor - 1);
-            var items = hashTable.Buckets[bucketIndex].Items;
-            for (int i = 0; i < items.Length; i++)
+            var hashCode = RuntimeHelpers.GetHashCode(key);
+            var bucketIndex = hashCode & (hashTable.Divisor - 1);
+            ImmutableHashTree<Type, TValue> tree = hashTable.Buckets[bucketIndex];
+            while (tree.Height != 0 && tree.HashCode != hashCode)
             {
-                var item = items[i];
-                if (ReferenceEquals(item.Key, key))
+                tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
+            }
+
+            if (!tree.IsEmpty && ReferenceEquals(tree.Key, key))
+            {
+                return tree.Value;
+            }
+
+            if (tree.Duplicates.Items.Length > 0)
+            {
+                foreach (var keyValue in tree.Duplicates.Items)
                 {
-                    return item.Value;
+                    if (ReferenceEquals(keyValue.Key, key))
+                    {
+                        return keyValue.Value;
+                    }
                 }
             }
 
@@ -1212,6 +1238,37 @@ namespace LightInject
             }
 
             return new ImmutableHashTree<TKey, TValue>(key, value, tree);
+        }
+
+        /// <summary>
+        /// Returns the nodes in the tree using in order traversal.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="hashTree">The target <see cref="ImmutableHashTree{TKey,TValue}"/>.</param>
+        /// <returns>The nodes using in order traversal.</returns>
+        public static IEnumerable<KeyValue<TKey, TValue>> InOrder<TKey, TValue>(
+            this ImmutableHashTree<TKey, TValue> hashTree)
+        {
+            if (!hashTree.IsEmpty)
+            {
+                foreach (var left in InOrder(hashTree.Left))
+                {
+                    yield return new KeyValue<TKey, TValue>(left.Key, left.Value);
+                }
+
+                yield return new KeyValue<TKey, TValue>(hashTree.Key, hashTree.Value);
+
+                for (int i = 0; i < hashTree.Duplicates.Items.Length; i++)
+                {
+                    yield return hashTree.Duplicates.Items[i];
+                }
+
+                foreach (var right in InOrder(hashTree.Right))
+                {
+                    yield return new KeyValue<TKey, TValue>(right.Key, right.Value);
+                }
+            }
         }
 
         private static ImmutableHashTree<TKey, TValue> AddToLeftBranch<TKey, TValue>(ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
@@ -5585,7 +5642,7 @@ namespace LightInject
         /// <summary>
         /// Gets the hast table buckets.
         /// </summary>
-        internal readonly ImmutableList<KeyValue<TKey, TValue>>[] Buckets;
+        internal readonly ImmutableHashTree<TKey, TValue>[] Buckets;
 
         /// <summary>
         /// Gets the divisor used to calculate the bucket index from the hash code of the key.
@@ -5604,20 +5661,20 @@ namespace LightInject
             if (previous.Count == previous.Divisor)
             {
                 this.Divisor = previous.Divisor * 2;
-                this.Buckets = new ImmutableList<KeyValue<TKey, TValue>>[this.Divisor];
+                this.Buckets = new ImmutableHashTree<TKey, TValue>[this.Divisor];
                 InitializeBuckets(0, this.Divisor);
                 this.AddExistingValues(previous);
             }
             else
             {
                 this.Divisor = previous.Divisor;
-                this.Buckets = new ImmutableList<KeyValue<TKey, TValue>>[this.Divisor];
+                this.Buckets = new ImmutableHashTree<TKey, TValue>[this.Divisor];
                 Array.Copy(previous.Buckets, this.Buckets, previous.Divisor);
             }
 
             var hashCode = key.GetHashCode();
             var bucketIndex = hashCode & (this.Divisor - 1);
-            this.Buckets[bucketIndex] = this.Buckets[bucketIndex].Add(new KeyValue<TKey, TValue>(key, value));
+            this.Buckets[bucketIndex] = this.Buckets[bucketIndex].Add(key, value);
         }
 
         /// <summary>
@@ -5625,20 +5682,20 @@ namespace LightInject
         /// </summary>
         private ImmutableHashTable()
         {
-            this.Buckets = new ImmutableList<KeyValue<TKey, TValue>>[2];
+            this.Buckets = new ImmutableHashTree<TKey, TValue>[2];
             this.Divisor = 2;
             InitializeBuckets(0, 2);
         }
 
         private void AddExistingValues(ImmutableHashTable<TKey, TValue> previous)
         {
-            foreach (ImmutableList<KeyValue<TKey, TValue>> bucket in previous.Buckets)
+            foreach (ImmutableHashTree<TKey, TValue> bucket in previous.Buckets)
             {
-                foreach (var keyValue in bucket.Items)
+                foreach (var keyValue in bucket.InOrder())
                 {
                     int hashCode = keyValue.Key.GetHashCode();
                     int bucketIndex = hashCode & (this.Divisor - 1);
-                    this.Buckets[bucketIndex] = this.Buckets[bucketIndex].Add(keyValue);
+                    this.Buckets[bucketIndex] = this.Buckets[bucketIndex].Add(keyValue.Key, keyValue.Value);
                 }
             }
         }
@@ -5647,7 +5704,7 @@ namespace LightInject
         {
             for (int i = startIndex; i < count; i++)
             {
-                this.Buckets[i] = ImmutableList<KeyValue<TKey, TValue>>.Empty;
+                this.Buckets[i] = ImmutableHashTree<TKey, TValue>.Empty;
             }
         }
     }
