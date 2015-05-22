@@ -1,3 +1,8 @@
+## LightInject.WebApi 1.0.0.4 ##
+(Mai 22, 2015)
+
+Fixes [issue #188](https://github.com/seesharper/LightInject/issues/188)
+
 ## LightInject 3.0.2.4 ##
 (Mai 22, 2015)
 
