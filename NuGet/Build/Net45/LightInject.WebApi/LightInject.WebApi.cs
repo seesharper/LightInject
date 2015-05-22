@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.WebApi version 1.0.0.3
+    LightInject.WebApi version 1.0.0.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter    
 ******************************************************************************/
@@ -184,7 +184,7 @@ namespace LightInject.WebApi
         /// <returns>The requested service instance if available, otherwise null.</returns>                
         public object GetService(Type serviceType)
         {
-            return serviceContainer.GetInstance(serviceType);
+            return serviceContainer.TryGetInstance(serviceType);
         }
 
         /// <summary>
