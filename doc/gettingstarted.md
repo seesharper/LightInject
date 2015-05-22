@@ -99,13 +99,20 @@ In addition, **LightInject** supports the following [IEnumerable&lt;T&gt;](http:
 * IReadOnlyCollection&lt;T&gt; (Net 4.5 and Windows Runtime);
 * IReadOnlyList&lt;T&gt; (Net 4.5 and Windows Runtime)
 
-**LightInject** will resolve all services that are compatible with the requested element type.
+By default, **LightInject** will resolve all services that are compatible with the requested element type.
 
 	container.Register<Foo>();
 	container.Register<DerivedFoo>();
 	var instances = container.GetAllInstances<Foo>();
 	Assert.AreEqual(2, instances.Count());
 
+This behavior can be overridden using the **EnableVariance** container option.
+
+	var container = new ServiceContainer(new ContainerOptions { EnableVariance = false });
+	container.Register<Foo>();
+	container.Register<DerivedFoo>();
+	var instances = container.GetAllInstances<Foo>();
+	Assert.AreEqual(1, instances.Count());
 
 ### Values ###
 
