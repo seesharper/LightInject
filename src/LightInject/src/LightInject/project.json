@@ -11,7 +11,9 @@
     },
     "compile": "../../../../LightInject/LightInject.cs",
     "frameworks": {
-        //"dnx451": { },
+        "dnx46": { },
+        "dnx451": { },
+        "dnx452" : { },        
         "dnxcore50": {
             "dependencies": {
                 "System.Collections": "4.0.10-beta-22816",
