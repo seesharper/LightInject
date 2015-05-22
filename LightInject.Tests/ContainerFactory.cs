@@ -9,5 +9,10 @@ namespace LightInject.Tests
         {
             return new ServiceContainer();
         }
+
+        internal static IServiceContainer CreateContainer(ContainerOptions options)
+        {
+            return new ServiceContainer(options);
+        }
     }
 }

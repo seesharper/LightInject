@@ -694,7 +694,7 @@ namespace LightInject
         /// for providing the <see cref="ScopeManager"/> used to manage scopes.
         /// </summary>
         IScopeManagerProvider ScopeManagerProvider { get; set; }
-        
+     
         /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
         /// </summary>
@@ -708,7 +708,7 @@ namespace LightInject
         /// </summary>
         /// <param name="instance">The target instance for which to inject its property dependencies.</param>
         /// <returns>The <paramref name="instance"/> with its property dependencies injected.</returns>
-        object InjectProperties(object instance);
+        object InjectProperties(object instance);        
     }
 
     /// <summary>
@@ -1907,13 +1907,47 @@ namespace LightInject
             emitter.Emit(OpCodes.Ret);
         }
     }
- 
+
+    /// <summary>
+    /// Represents a set of configurable options when creating a new instance of the container.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    internal class ContainerOptions
+    {
+        private static readonly Lazy<ContainerOptions> DefaultOptions =
+            new Lazy<ContainerOptions>(CreateDefaultContainerOptions);
+
+        /// <summary>
+        /// Gets the default <see cref="ContainerOptions"/> used across all <see cref="ServiceContainer"/> instances.
+        /// </summary>
+        public static ContainerOptions Default
+        {
+            get
+            {
+                return DefaultOptions.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether variance is applied when resolving an <see cref="IEnumerable{T}"/>.        
+        /// </summary>
+        /// <remarks>
+        /// The default value is true.
+        /// </remarks>
+        public bool EnableVariance { get; set; }
+        
+        private static ContainerOptions CreateDefaultContainerOptions()
+        {
+            return new ContainerOptions { EnableVariance = true };
+        }
+    }
+
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     internal class ServiceContainer : IServiceContainer
-    {
+    {       
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
@@ -1922,7 +1956,7 @@ namespace LightInject
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
         
         private readonly object lockObject = new object();
-
+        private readonly ContainerOptions options;
         private readonly Storage<object> constants = new Storage<object>();
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
         private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
@@ -1945,12 +1979,13 @@ namespace LightInject
             ImmutableHashTree<Type, Func<object[], object, object>>.Empty;
 
         private bool isLocked;
-                
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
         public ServiceContainer()
-        {            
+        {
+            options = ContainerOptions.Default;
             var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
             compositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor());
             compositionRootExecutor = new CompositionRootExecutor(this);
@@ -1963,7 +1998,16 @@ namespace LightInject
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
             AssemblyLoader = new AssemblyLoader();            
         }
- 
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
+        /// </summary>
+        /// <param name="options">The <see cref="ContainerOptions"/> instances that represents the configurable options.</param>
+        public ServiceContainer(ContainerOptions options) : this()
+        {
+            this.options = options;
+        }
+
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible 
         /// for providing the <see cref="ScopeManager"/> used to manage scopes.
@@ -3819,7 +3863,16 @@ namespace LightInject
                 EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
             }
 
-            var emitMethods = emitters.Where(kv => actualServiceType.IsAssignableFrom(kv.Key)).SelectMany(kv => kv.Value.Values).ToList();
+            List<Action<IEmitter>> emitMethods;
+
+            if (options.EnableVariance)
+            {
+                emitMethods = emitters.Where(kv => actualServiceType.IsAssignableFrom(kv.Key)).SelectMany(kv => kv.Value.Values).ToList();
+            }
+            else
+            {
+                emitMethods = GetEmitMethods(actualServiceType).Values.ToList();
+            }
             
             if (dependencyStack.Count > 0 && emitMethods.Contains(dependencyStack.Peek()))
             {
@@ -5363,6 +5416,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Instruction));
             InternalTypes.Add(typeof(Instruction<>));
             InternalTypes.Add(typeof(GetInstanceDelegate));
+            InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
         }

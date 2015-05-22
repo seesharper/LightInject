@@ -945,6 +945,15 @@ namespace LightInject.Tests
             Assert.AreEqual(2, instances.Count());
         }
 
+        [TestMethod]
+        public void GetAllInstance_WithDisabledVariance_DoesNotReturnDerivedInstances()
+        {
+            var container = CreateContainer(new ContainerOptions { EnableVariance = false });
+            container.Register<Foo>();
+            container.Register<DerivedFoo>();
+            var instances = container.GetAllInstances<Foo>();
+            Assert.AreEqual(1, instances.Count());
+        }
 
         [TestMethod]
         public void GetInstance_UsingServicePredicate_ReturnsInstance()
