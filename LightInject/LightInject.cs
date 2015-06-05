@@ -4676,7 +4676,7 @@ namespace LightInject
         }
     }
 
-#if NET45 || DNX451
+#if NET45 || DNX451 || DNXCORE50
     /// <summary>
     /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> per
     /// <see cref="CallContext"/>.
@@ -8245,5 +8245,40 @@ namespace LightInject
             }
         }
     }
+#endif
+
+#if DNXCORE50 
+
+    public class LogicalThreadStorage<T>
+    {
+        private readonly Func<T> valueFactory;
+
+        private readonly AsyncLocal<T> asyncLocal;
+
+        private readonly object lockObject = new object();
+
+        public LogicalThreadStorage(Func<T> valueFactory)
+        {
+            asyncLocal = new AsyncLocal<T>();            
+            this.valueFactory = valueFactory;
+        }
+
+        public T Value
+        {
+            get
+            {
+                lock (lockObject)
+                {
+                    T value = asyncLocal.Value;
+                    if (value == null)
+                    {
+                        asyncLocal.Value = valueFactory();
+                    }
+                    return asyncLocal.Value;
+                }                               
+            }
+        }
+    }
+
 #endif
 }

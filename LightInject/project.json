@@ -23,7 +23,8 @@
                 "System.Runtime.InteropServices": "4.0.20-beta-*",
                 "System.Text.Encoding": "4.0.10-beta-*",
                 "System.Text.RegularExpressions": "4.0.10-beta-*",
-                "System.Threading": "4.0.10-beta-*"
+                "System.Threading": "4.0.10-beta-*",
+                "System.Diagnostics.Tools": "4.0.0-beta-*"
             }
         }
     }
