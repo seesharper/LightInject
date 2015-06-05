@@ -1,6 +1,6 @@
 #load "Common.csx"
 DirectoryUtils.DeleteAllPackages("..");
-BuildCoverageToXml();
+//BuildCoverageToXml();
 BuildMainSolution();
 //RunUnitTests();
 //RunUnitTestsWithCodeCoverage();
@@ -180,6 +180,7 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NET45", @"..\..\LightInject\LightInject.cs", @"..\Build\Net45\LightInject\LightInject.cs"); 
 	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject\LightInject.cs", @"..\Build\WindowsPhone\LightInject\LightInject.cs"); 
 	Publicizer.Write("IOS", @"..\..\LightInject\LightInject.cs", @"..\Build\Portable\LightInject\LightInject.cs"); 
+	Publicizer.Write("NET46", @"..\..\LightInject\LightInject.cs", @"..\Build\Net46\LightInject\LightInject.cs"); 
 
 	//LightInject.Annotation
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Annotation\LightInject.Annotation.cs");		

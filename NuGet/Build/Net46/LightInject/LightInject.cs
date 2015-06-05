@@ -401,12 +401,6 @@ namespace LightInject
             Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory);
 
         /// <summary>
-        /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        void RegisterAssembly(string searchPattern);
-
-        /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
         /// </summary>
         /// <param name="serviceType">The target service type.</param>
@@ -862,19 +856,6 @@ namespace LightInject
         /// <returns>A <see cref="ConstructionInfo"/> instance that represents the constructor to be used
         /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
         ConstructorInfo Execute(Type implementingType);
-    }
-
-    /// <summary>
-    /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
-    /// </summary>
-    public interface IAssemblyLoader
-    {
-        /// <summary>
-        /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern to use.</param>
-        /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
-        IEnumerable<Assembly> Load(string searchPattern);
     }
 
     /// <summary>
@@ -1472,11 +1453,6 @@ namespace LightInject
 
     internal static class TypeHelper
     {
-        public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
-        {
-            return Delegate.CreateDelegate(delegateType, target, methodInfo);
-        }
-
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetGenericArguments();
@@ -1565,6 +1541,16 @@ namespace LightInject
         public static bool IsCollectionOfT(this Type serviceType)
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(ICollection<>);
+        }
+
+        public static bool IsReadOnlyCollectionOfT(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>);
+        }
+
+        public static bool IsReadOnlyListOfT(this Type serviceType)
+        {
+            return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
         }
 
         public static bool IsLazy(this Type serviceType)
@@ -1976,7 +1962,6 @@ namespace LightInject
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-            AssemblyLoader = new AssemblyLoader();
         }
 
         /// <summary>
@@ -2016,11 +2001,6 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
-        /// </summary>
-        public IAssemblyLoader AssemblyLoader { get; set; }
 
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the registered services.
@@ -2229,18 +2209,6 @@ namespace LightInject
                 string.Empty,
                 s => factory,
                 (s, e) => isLocked ? e : factory);
-        }
-
-        /// <summary>
-        /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-        public void RegisterAssembly(string searchPattern)
-        {
-            foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
-            {
-                RegisterAssembly(assembly);
-            }
         }
 
         /// <summary>
@@ -3631,6 +3599,10 @@ namespace LightInject
             {
                 emitter = CreateEmitMethodForArrayServiceRequest(serviceType);
             }
+            else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
+            {
+                emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
+            }
             else if (serviceType.IsListOfT())
             {
                 emitter = CreateEmitMethodForListServiceRequest(serviceType);
@@ -3733,6 +3705,21 @@ namespace LightInject
             {
                 enumerableEmitter(ms);
                 ms.Emit(OpCodes.Call, closedGenericToListMethod);
+            };
+        }
+
+        private Action<IEmitter> CreateEmitMethodForReadOnlyCollectionServiceRequest(Type serviceType)
+        {
+            Type elementType = TypeHelper.GetElementType(serviceType);
+            Type closedGenericReadOnlyCollectionType = typeof(ReadOnlyCollection<>).MakeGenericType(elementType);
+            ConstructorInfo constructorInfo = closedGenericReadOnlyCollectionType.GetConstructors()[0];
+
+            Action<IEmitter> listEmitMethod = CreateEmitMethodForListServiceRequest(serviceType);
+
+            return emitter =>
+            {
+                listEmitMethod(emitter);
+                emitter.New(constructorInfo);
             };
         }
 
@@ -4087,7 +4074,7 @@ namespace LightInject
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
-                        "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, true);
+                    "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).GetTypeInfo().Module, true);
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
         }
@@ -4127,6 +4114,25 @@ namespace LightInject
     {
         private readonly ThreadLocal<ScopeManager> scopeManagers =
             new ThreadLocal<ScopeManager>(() => new ScopeManager());
+
+        /// <summary>
+        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// </summary>
+        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
+        public ScopeManager GetScopeManager()
+        {
+            return scopeManagers.Value;
+        }
+    }
+
+    /// <summary>
+    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> per
+    /// <see cref="CallContext"/>.
+    /// </summary>
+    public class PerLogicalCallContextScopeManagerProvider : IScopeManagerProvider
+    {
+        private readonly LogicalThreadStorage<ScopeManager> scopeManagers =
+            new LogicalThreadStorage<ScopeManager>(() => new ScopeManager());
 
         /// <summary>
         /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
@@ -5307,7 +5313,6 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-            InternalTypes.Add(typeof(AssemblyLoader));
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(ConstructionInfoBuilder));
@@ -5560,40 +5565,6 @@ namespace LightInject
         private static bool IsReadOnly(PropertyInfo propertyInfo)
         {
             return propertyInfo.GetSetMethod() == null || propertyInfo.GetSetMethod().IsStatic || propertyInfo.GetSetMethod().IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
-        }
-    }
-
-    /// <summary>
-    /// Loads all assemblies from the application base directory that matches the given search pattern.
-    /// </summary>
-    public class AssemblyLoader : IAssemblyLoader
-    {
-        /// <summary>
-        /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
-        /// </summary>
-        /// <param name="searchPattern">The search pattern to use.</param>
-        /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
-        public IEnumerable<Assembly> Load(string searchPattern)
-        {
-            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
-            if (directory != null)
-            {
-                string[] searchPatterns = searchPattern.Split('|');
-                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
-                {
-                    yield return Assembly.LoadFrom(file);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Indicates if the current <paramref name="fileName"/> represent a file that can be loaded.
-        /// </summary>
-        /// <param name="fileName">The name of the target file.</param>
-        /// <returns><b>true</b> if the file can be loaded, otherwise <b>false</b>.</returns>
-        protected virtual bool CanLoad(string fileName)
-        {
-            return true;
         }
     }
 
@@ -6384,6 +6355,36 @@ namespace LightInject
             var localBuilder = generator.DeclareLocal(type);
             variables.Add(localBuilder);
             return localBuilder;
+        }
+    }
+    public class LogicalThreadStorage<T>
+    {
+        private readonly Func<T> valueFactory;
+
+        private readonly AsyncLocal<T> asyncLocal;
+
+        private readonly object lockObject = new object();
+
+        public LogicalThreadStorage(Func<T> valueFactory)
+        {
+            asyncLocal = new AsyncLocal<T>();            
+            this.valueFactory = valueFactory;
+        }
+
+        public T Value
+        {
+            get
+            {
+                lock (lockObject)
+                {
+                    T value = asyncLocal.Value;
+                    if (value == null)
+                    {
+                        asyncLocal.Value = valueFactory();
+                    }
+                    return asyncLocal.Value;
+                }                               
+            }
         }
     }
 }

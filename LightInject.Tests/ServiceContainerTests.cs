@@ -14,7 +14,7 @@ namespace LightInject.Tests
     using LightInject;
     using LightInject.SampleLibrary;
     using LightInject.SampleLibraryWithCompositionRootTypeAttribute;
-#if NET || NET45 || NET45TEST
+#if NET || NET45 || NET45TEST || NET46
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 #else
     using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
