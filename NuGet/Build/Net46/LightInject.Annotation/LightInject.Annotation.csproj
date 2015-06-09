@@ -40,9 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\..\LightInject.Annotation\LightInject.Annotation.cs">
-      <Link>LightInject.Annotation.cs</Link>
-    </Compile>
+    <Compile Include="LightInject.Annotation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

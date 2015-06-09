@@ -3,7 +3,7 @@
     using System.Diagnostics;
     using System.IO;
 
-    using Microsoft.Build.Utilities;
+    
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public static class AssemblyAssert

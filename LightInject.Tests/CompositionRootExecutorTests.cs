@@ -4,8 +4,7 @@
 
     using LightMock;
 
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;    
     [TestClass]
     public class CompositionRootExecutorTests
     {

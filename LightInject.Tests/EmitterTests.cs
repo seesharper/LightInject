@@ -4,7 +4,7 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
-#if NET || NET45 || NET45TEST
+#if NET || NET45 || NET45TEST || NET46
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 #else
     using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
@@ -888,7 +888,7 @@
             Assert.AreEqual("ldarg 1", instruction.ToString());
         }
       
-#if NET || NET45
+#if NET || NET45 || NET46
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();

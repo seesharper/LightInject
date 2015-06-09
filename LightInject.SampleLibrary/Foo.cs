@@ -35,7 +35,7 @@ namespace LightInject.SampleLibrary
 
     }
 
-#if NET45
+#if NET45 || NET46
 
     public interface IAsyncFoo
     {

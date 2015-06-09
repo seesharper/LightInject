@@ -196,6 +196,7 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NETFX_CORE",@"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsRuntime\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net45\LightInject.Annotation\LightInject.Annotation.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Net46\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\WindowsPhone\LightInject.Annotation\LightInject.Annotation.cs");
 	Publicizer.Write("IOS", @"..\..\LightInject.Annotation\LightInject.Annotation.cs", @"..\Build\Portable\LightInject.Annotation\LightInject.Annotation.cs");
 
@@ -211,6 +212,7 @@ private void UpdateNuGetBuildProjects()
 
 	Publicizer.Write("NET", @"..\..\LightInject.Interception\LightInject.Interception.cs", @"..\Build\Net\LightInject.Interception\LightInject.Interception.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Interception\LightInject.Interception.cs", @"..\Build\Net45\LightInject.Interception\LightInject.Interception.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.Interception\LightInject.Interception.cs", @"..\Build\Net46\LightInject.Interception\LightInject.Interception.cs");
 
 	//LightInject.Xunit
 	version = VersionUtils.GetVersionString(@"..\..\LightInject.Xunit\LightInject.Xunit.cs");		
@@ -221,6 +223,7 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Xunit.Source\package\LightInject.Xunit.nuspec", version, dependencies);
 
 	Publicizer.Write("NET45", @"..\..\LightInject.Xunit\LightInject.Xunit.cs", @"..\Build\Net45\LightInject.Xunit\LightInject.Xunit.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.Xunit\LightInject.Xunit.cs", @"..\Build\Net46\LightInject.Xunit\LightInject.Xunit.cs");
 
 
 	//LightInject.Xunit2
@@ -232,6 +235,7 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.xUnit2.Source\package\LightInject.Xunit2.nuspec", version, dependencies);
 
 	Publicizer.Write("NET45", @"..\..\LightInject.Xunit2\LightInject.Xunit2.cs", @"..\Build\Net45\LightInject.Xunit2\LightInject.Xunit2.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.Xunit2\LightInject.Xunit2.cs", @"..\Build\Net46\LightInject.Xunit2\LightInject.Xunit2.cs");
 
 
 	//LightInject.Mocking
@@ -248,6 +252,7 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NETFX_CORE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsRuntime\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\Net\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\Net45\LightInject.Mocking\LightInject.Mocking.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\Net46\LightInject.Mocking\LightInject.Mocking.cs");
 	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.Mocking\LightInject.Mocking.cs", @"..\Build\WindowsPhone\LightInject.Mocking\LightInject.Mocking.cs");
 	
 	//LightInject.Web	
@@ -259,6 +264,7 @@ private void UpdateNuGetBuildProjects()
 
 	Publicizer.Write("NET", @"..\..\LightInject.Web\LightInject.Web.cs", @"..\Build\Net\LightInject.Web\LightInject.Web.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Web\LightInject.Web.cs", @"..\Build\Net45\LightInject.Web\LightInject.Web.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.Web\LightInject.Web.cs", @"..\Build\Net46\LightInject.Web\LightInject.Web.cs");
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web\package\LightInject.Web.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Web.Source\package\LightInject.Web.nuspec", version, dependencies);
@@ -270,6 +276,7 @@ private void UpdateNuGetBuildProjects()
 	
 	Publicizer.Write("NET", @"..\..\LightInject.Mvc\LightInject.Mvc.cs", @"..\Build\Net\LightInject.Mvc\LightInject.Mvc.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.Mvc\LightInject.Mvc.cs", @"..\Build\Net45\LightInject.Mvc\LightInject.Mvc.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.Mvc\LightInject.Mvc.cs", @"..\Build\Net46\LightInject.Mvc\LightInject.Mvc.cs");
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mvc\package\LightInject.Mvc.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Mvc.Source\package\LightInject.Mvc.nuspec", version, dependencies);
@@ -287,6 +294,7 @@ private void UpdateNuGetBuildProjects()
 	Publicizer.Write("NETFX_CORE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsRuntime\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("NET", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\Net\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\Net45\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\Net46\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 	Publicizer.Write("WINDOWS_PHONE", @"..\..\LightInject.ServiceLocation\LightInject.ServiceLocation.cs", @"..\Build\WindowsPhone\LightInject.ServiceLocation\LightInject.ServiceLocation.cs");
 
 	
@@ -320,6 +328,7 @@ private void UpdateNuGetBuildProjects()
 	
 	Publicizer.Write("NET", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net\LightInject.WebApi\LightInject.WebApi.cs");
 	Publicizer.Write("NET45", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net45\LightInject.WebApi\LightInject.WebApi.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.WebApi\LightInject.WebApi.cs", @"..\Build\Net46\LightInject.WebApi\LightInject.WebApi.cs");
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi\package\LightInject.WebApi.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.WebApi.Source\package\LightInject.WebApi.nuspec", version, dependencies);
@@ -329,6 +338,7 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.SignalR\Properties\AssemblyInfo.cs", version);
 		
 	Publicizer.Write("NET45", @"..\..\LightInject.SignalR\LightInject.SignalR.cs", @"..\Build\Net45\LightInject.SignalR\LightInject.SignalR.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.SignalR\LightInject.SignalR.cs", @"..\Build\Net46\LightInject.SignalR\LightInject.SignalR.cs");
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR\package\LightInject.SignalR.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.SignalR.Source\package\LightInject.SignalR.nuspec", version, dependencies);
@@ -338,6 +348,7 @@ private void UpdateNuGetBuildProjects()
 	VersionUtils.UpdateAssemblyInfo(@"..\Build\Net45\LightInject.Nancy\Properties\AssemblyInfo.cs", version);
 		
 	Publicizer.Write("NET45", @"..\..\LightInject.Nancy\LightInject.Nancy.cs", @"..\Build\Net45\LightInject.Nancy\LightInject.Nancy.cs");
+	Publicizer.Write("NET46", @"..\..\LightInject.Nancy\LightInject.Nancy.cs", @"..\Build\Net46\LightInject.Nancy\LightInject.Nancy.cs");
 
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Nancy\package\LightInject.Nancy.nuspec", version, dependencies);
 	VersionUtils.UpdateNuGetPackageSpecification(@"..\LightInject.Nancy.Source\package\LightInject.Nancy.nuspec", version, dependencies);

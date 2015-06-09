@@ -35,7 +35,57 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LightMock, Version=1.0.0.5, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LightMock.1.0.0.5\lib\portable-net40+sl50+win+wp80\LightMock.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Practices.ServiceLocation, Version=1.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\CommonServiceLocator.1.3\lib\portable-net4+sl5+netcore45+wpa81+wp8\Microsoft.Practices.ServiceLocation.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.6.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.Formatting, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Helpers, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.Helpers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.Http, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Core.5.2.3\lib\net45\System.Web.Http.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.Mvc, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.Mvc.5.2.3\lib\net45\System.Web.Mvc.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.Razor.3.2.3\lib\net45\System.Web.Razor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Deployment, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Deployment.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -50,8 +100,68 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedConstructorDependencySelectorTests.cs">
+      <Link>AnnotatedConstructorDependencySelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedConstructorSelectorTests.cs">
+      <Link>AnnotatedConstructorSelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedParametersTests.cs">
+      <Link>AnnotatedParametersTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedParametersVerificationTests.cs">
+      <Link>AnnotatedParametersVerificationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedPropertiesTests.cs">
+      <Link>AnnotatedPropertiesTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedPropertiesVerificationTests.cs">
+      <Link>AnnotatedPropertiesVerificationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AnnotatedPropertyDependencySelectorTests.cs">
+      <Link>AnnotatedPropertyDependencySelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AssemblyAssert.cs">
+      <Link>AssemblyAssert.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\AsyncTests.cs">
+      <Link>AsyncTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\CompositionRootExecutorTests.cs">
+      <Link>CompositionRootExecutorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\CompositionRootTypeExtractorTests.cs">
+      <Link>CompositionRootTypeExtractorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ConstructorInjectionTests.cs">
+      <Link>ConstructorInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ConstructorInjectionVerificationTests.cs">
+      <Link>ConstructorInjectionVerificationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ConstructorSelectorTests.cs">
+      <Link>ConstructorSelectorTests.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\ContainerFactory.cs">
       <Link>ContainerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ContainerMock.cs">
+      <Link>ContainerMock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\DecoratorTests.cs">
+      <Link>DecoratorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\DecoratorVerificationTests.cs">
+      <Link>DecoratorVerificationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\DisposableTests.cs">
+      <Link>DisposableTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\DynamicMethodTests.cs">
+      <Link>DynamicMethodTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\EmitterTests.cs">
+      <Link>EmitterTests.cs</Link>
     </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\ErrorMessages.cs">
       <Link>ErrorMessages.cs</Link>
@@ -59,11 +169,44 @@
     <Compile Include="..\..\..\..\LightInject.Tests\ExceptionAssert.cs">
       <Link>ExceptionAssert.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\FunctionFactoryTests.cs">
+      <Link>FunctionFactoryTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\FunctionFactoryVerificationTests.cs">
+      <Link>FunctionFactoryVerificationTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ImmutableListTests.cs">
+      <Link>ImmutableListTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ImmutableTreeTests.cs">
+      <Link>ImmutableTreeTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\LambdaExpressionParserTests.cs">
+      <Link>LambdaExpressionParserTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\LazyCompositionRootTests.cs">
+      <Link>LazyCompositionRootTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\MethodBuilderMethodSkeleton.cs">
+      <Link>MethodBuilderMethodSkeleton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ParallelInvoker.cs">
+      <Link>ParallelInvoker.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\ServiceContainerTests.cs">
       <Link>ServiceContainerTests.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\ServiceContainerVerificationTests.cs">
+      <Link>ServiceContainerVerificationTests.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\LightInject.Tests\TestBase.cs">
       <Link>TestBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\VerificationContainerFactory.cs">
+      <Link>VerificationContainerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\LightInject.Tests\WebTests.cs">
+      <Link>WebTests.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -72,18 +215,37 @@
       <Project>{3b0c19d1-d9e4-439a-bb58-dd3d66ac29b1}</Project>
       <Name>LightInject.Annotation</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LightInject.Nancy\LightInject.Nancy.csproj">
+      <Project>{262901c9-4c7b-4b7b-8394-ea362952afcc}</Project>
+      <Name>LightInject.Nancy</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRootTypeAttribute\LightInject.SampleLibraryWithCompositionRootTypeAttribute.csproj">
       <Project>{d87c0d10-19e9-4a67-99dd-ec8412f169ca}</Project>
       <Name>LightInject.SampleLibraryWithCompositionRootTypeAttribute</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.SampleLibraryWithCompositionRoot\LightInject.SampleLibraryWithCompositionRoot.csproj">
+      <Project>{9a8fe6a9-7d25-4d4a-b933-57ac68217946}</Project>
+      <Name>LightInject.SampleLibraryWithCompositionRoot</Name>
     </ProjectReference>
     <ProjectReference Include="..\LightInject.SampleLibrary\LightInject.SampleLibrary.csproj">
       <Project>{731a63a5-57cc-4847-aea6-cf3c79cb958f}</Project>
       <Name>LightInject.SampleLibrary</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LightInject.WebApi\LightInject.WebApi.csproj">
+      <Project>{4dea63f9-9461-4dd9-be0f-c2e3515d425d}</Project>
+      <Name>LightInject.WebApi</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LightInject.Web\LightInject.Web.csproj">
+      <Project>{117e9eba-ccdd-467a-bbcc-304393546993}</Project>
+      <Name>LightInject.Web</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LightInject\LightInject.csproj">
       <Project>{27334db4-7952-4f07-b63d-3a74d8d54f36}</Project>
       <Name>LightInject</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

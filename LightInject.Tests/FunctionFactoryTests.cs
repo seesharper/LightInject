@@ -3,7 +3,7 @@
     using System;
     using System.Linq;
     using LightInject.SampleLibrary;
-#if NET || NET45 || NET45TEST
+#if NET || NET45 || NET45TEST || NET46
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 #else
     using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
