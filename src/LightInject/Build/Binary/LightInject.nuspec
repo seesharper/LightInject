@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>LightInject</id>
+        <version>x.x.x.x</version>
+        <authors>Bernhard Richter</authors>
+        <owners>Bernhard Richter</owners>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+        <projectUrl>http://www.lightinject.net/</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>An ultra lightweight Inversion of Control container for the .Net framework. See LightInject.Source for the source distribution.</description>
+        <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
+        <copyright>Bernhard Richter</copyright>
+        <tags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime</tags>
+    </metadata>   
+</package>

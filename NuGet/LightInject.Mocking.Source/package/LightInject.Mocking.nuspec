@@ -19,6 +19,7 @@
     <files>
         <file src="content\net40\LightInject\Mocking\LightInject.Mocking.cs.pp" target="content\net40\LightInject\Mocking\LightInject.Mocking.cs.pp" />
         <file src="content\net45\LightInject\Mocking\LightInject.Mocking.cs.pp" target="content\net45\LightInject\Mocking\LightInject.Mocking.cs.pp" />
+        <file src="content\net46\LightInject\Mocking\LightInject.Mocking.cs.pp" target="content\net46\LightInject\Mocking\LightInject.Mocking.cs.pp" />
         <file src="content\netcore45\LightInject\Mocking\LightInject.Mocking.cs.pp" target="content\netcore45\LightInject\Mocking\LightInject.Mocking.cs.pp" />
         <file src="content\windowsphone8\LightInject\Mocking\LightInject.Mocking.cs.pp" target="content\windowsphone8\LightInject\Mocking\LightInject.Mocking.cs.pp" />
     </files>

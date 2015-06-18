@@ -19,5 +19,6 @@
     </metadata>
     <files>        
         <file src="content\net45\LightInject\SignalR\LightInject.SignalR.cs.pp" target="content\net45\LightInject\SignalR\LightInject.SignalR.cs.pp" />        
+        <file src="content\net46\LightInject\SignalR\LightInject.SignalR.cs.pp" target="content\net46\LightInject\SignalR\LightInject.SignalR.cs.pp" />        
     </files>
 </package>

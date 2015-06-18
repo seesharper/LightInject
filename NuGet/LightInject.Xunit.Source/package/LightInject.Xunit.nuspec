@@ -19,5 +19,7 @@
     <files>       
         <file src="content\net45\LightInject\Xunit\LightInject.Xunit.cs.pp" 
             target="content\net45\LightInject\Xunit\LightInject.Xunit.cs.pp" />
+        <file src="content\net46\LightInject\Xunit\LightInject.Xunit.cs.pp" 
+            target="content\net46\LightInject\Xunit\LightInject.Xunit.cs.pp" />
     </files>
 </package>

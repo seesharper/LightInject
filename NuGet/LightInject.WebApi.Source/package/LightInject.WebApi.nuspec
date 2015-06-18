@@ -19,5 +19,6 @@
     <files>
         <file src="content\net40\LightInject\WebApi\LightInject.WebApi.cs.pp" target="content\net40\LightInject\WebApi\LightInject.WebApi.cs.pp" />
         <file src="content\net45\LightInject\WebApi\LightInject.WebApi.cs.pp" target="content\net45\LightInject\WebApi\LightInject.WebApi.cs.pp" />        
+        <file src="content\net46\LightInject\WebApi\LightInject.WebApi.cs.pp" target="content\net46\LightInject\WebApi\LightInject.WebApi.cs.pp" />        
     </files>
 </package>

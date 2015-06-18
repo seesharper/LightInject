@@ -22,7 +22,8 @@ public static class MsBuild
 {
     public static void Build(string pathToSolutionFile)
     {
-        string pathToMsBuild = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\MsBuild.exe";
+        string pathToMsBuild = @"C:\Program Files (x86)\MSBuild\14.0\Bin\MsBuild.exe";
+        //string pathToMsBuild = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\MsBuild.exe";
         Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release /verbosity:quiet /nologo");     
     }
 }

@@ -32,6 +32,7 @@
     <files>
         <file src="content\net40\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\net40\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />
         <file src="content\net45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\net45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />
+        <file src="content\net46\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\net46\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />
         <file src="content\netcore45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\netcore45\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />    
         <file src="content\windowsphone8\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" target="content\windowsphone8\LightInject\ServiceLocation\LightInject.ServiceLocation.cs.pp" />    
     </files> 
