@@ -67,7 +67,8 @@ local.properties
 LightInject.PreProcessor.dll
 lib/
 ## TODO: If you have NuGet Package Restore enabled, uncomment this
-#packages/
+packages/
+scriptcs_packages/
 
 # Visual C++ cache files
 ipch/

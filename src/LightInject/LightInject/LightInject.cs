@@ -843,6 +843,22 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a class that is capable of extracting 
+    /// attributes of type <see cref="CompositionRootTypeAttribute"/> from an <see cref="Assembly"/>.
+    /// </summary>
+    public interface ICompositionRootAttributeExtractor
+    {
+        /// <summary>
+        /// Gets a list of attributes of type <see cref="CompositionRootTypeAttribute"/> from 
+        /// the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly from which to extract 
+        /// <see cref="CompositionRootTypeAttribute"/> attributes.</param>
+        /// <returns>A list of attributes of type <see cref="CompositionRootTypeAttribute"/></returns>
+        CompositionRootTypeAttribute[] GetAttributes(Assembly assembly);
+    }
+
+    /// <summary>
     /// Represents a class that is responsible for selecting injectable properties.
     /// </summary>
     public interface IPropertySelector
@@ -955,7 +971,7 @@ namespace LightInject
         /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
         ConstructorInfo Execute(Type implementingType);
     }
-#if NET || NET45 || DNX451
+#if NET || NET45 || DNX451 || NET46
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -1118,7 +1134,7 @@ namespace LightInject
     /// <summary>
     /// Extends the <see cref="Expression"/> class.
     /// </summary>
-    internal static class ExpressionExtensions
+    public static class ExpressionExtensions
     {
         /// <summary>
         /// Flattens the <paramref name="expression"/> into an <see cref="IEnumerable{T}"/>.
@@ -1153,7 +1169,7 @@ namespace LightInject
     /// Contains a set of helper method related to validating
     /// user input.
     /// </summary>
-    internal static class Ensure
+    public static class Ensure
     {
         /// <summary>
         /// Ensures that the given <paramref name="value"/> is not null.
@@ -1173,7 +1189,7 @@ namespace LightInject
     /// <summary>
     /// Extends the <see cref="ImmutableHashTable{TKey,TValue}"/> class.
     /// </summary>
-    internal static class ImmutableHashTableExtensions
+    public static class ImmutableHashTableExtensions
     {
         /// <summary>
         /// Searches for a value using the given <paramref name="key"/>.
@@ -1185,31 +1201,10 @@ namespace LightInject
         /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
         public static TValue Search<TKey, TValue>(this ImmutableHashTable<TKey, TValue> hashTable, TKey key)
         {
-            var hashCode = RuntimeHelpers.GetHashCode(key);
+            var hashCode = key.GetHashCode();
             var bucketIndex = hashCode & (hashTable.Divisor - 1);
             ImmutableHashTree<TKey, TValue> tree = hashTable.Buckets[bucketIndex];
-            while (tree.Height != 0 && tree.HashCode != hashCode)
-            {
-                tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
-            }
-
-            if (!tree.IsEmpty && (ReferenceEquals(tree.Key, key) || Equals(tree.Key, key)))
-            {
-                return tree.Value;
-            }
-
-            if (tree.Duplicates.Items.Length > 0)
-            {
-                foreach (var keyValue in tree.Duplicates.Items)
-                {
-                    if (ReferenceEquals(keyValue.Key, key) || Equals(tree.Key, key))
-                    {
-                        return keyValue.Value;
-                    }
-                }
-            }
-
-            return default(TValue);
+            return tree.Search(key);
         }
 
         /// <summary>
@@ -1224,28 +1219,7 @@ namespace LightInject
             var hashCode = RuntimeHelpers.GetHashCode(key);
             var bucketIndex = hashCode & (hashTable.Divisor - 1);
             ImmutableHashTree<Type, TValue> tree = hashTable.Buckets[bucketIndex];
-            while (tree.Height != 0 && tree.HashCode != hashCode)
-            {
-                tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
-            }
-
-            if (!tree.IsEmpty && ReferenceEquals(tree.Key, key))
-            {
-                return tree.Value;
-            }
-
-            if (tree.Duplicates.Items.Length > 0)
-            {
-                foreach (var keyValue in tree.Duplicates.Items)
-                {
-                    if (ReferenceEquals(keyValue.Key, key))
-                    {
-                        return keyValue.Value;
-                    }
-                }
-            }
-
-            return default(TValue);
+            return tree.Search(key);           
         }
 
         /// <summary>
@@ -1266,7 +1240,7 @@ namespace LightInject
     /// <summary>
     /// Extends the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
     /// </summary>
-    internal static class ImmutableHashTreeExtensions
+    public static class ImmutableHashTreeExtensions
     {
         /// <summary>
         /// Searches for a <typeparamref name="TValue"/> using the given <paramref name="key"/>.
@@ -1377,7 +1351,7 @@ namespace LightInject
         }
     }
 
-    internal static class LazyTypeExtensions
+    public static class LazyTypeExtensions
     {
         private static readonly ThreadSafeDictionary<Type, ConstructorInfo> Constructors = new ThreadSafeDictionary<Type, ConstructorInfo>();
 
@@ -1393,7 +1367,7 @@ namespace LightInject
         }
     }
 
-    internal static class EnumerableTypeExtensions
+    public static class EnumerableTypeExtensions
     {
         private static readonly ThreadSafeDictionary<Type, Type> EnumerableTypes = new ThreadSafeDictionary<Type, Type>();
 
@@ -1408,7 +1382,7 @@ namespace LightInject
         }
     }
 
-    internal static class FuncTypeExtensions
+    public static class FuncTypeExtensions
     {
         private static readonly ThreadSafeDictionary<Type, Type> FuncTypes = new ThreadSafeDictionary<Type, Type>();
 
@@ -1423,7 +1397,7 @@ namespace LightInject
         }
     }
 
-    internal static class LifetimeHelper
+    public static class LifetimeHelper
     {
         static LifetimeHelper()
         {
@@ -1439,7 +1413,7 @@ namespace LightInject
         public static MethodInfo GetScopeManagerMethod { get; private set; }
     }
 
-    internal static class DelegateTypeExtensions
+    public static class DelegateTypeExtensions
     {
         private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
             typeof(IServiceFactory).GetMethod("GetInstance", new Type[] { });
@@ -1460,7 +1434,7 @@ namespace LightInject
         }
     }
 
-    internal static class NamedDelegateTypeExtensions
+    public static class NamedDelegateTypeExtensions
     {
         private static readonly MethodInfo CreateInstanceDelegateMethodInfo =
             typeof(NamedDelegateTypeExtensions).GetPrivateStaticMethod("CreateInstanceDelegate");
@@ -1490,7 +1464,7 @@ namespace LightInject
         }
     }
 
-    internal static class ReflectionHelper
+    public static class ReflectionHelper
     {
         private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceWithParametersMethods;
 
@@ -1564,7 +1538,7 @@ namespace LightInject
         }
     }
 
-    internal static class TypeHelper
+    public static class TypeHelper
     {
 #if NETFX_CORE || WINDOWS_PHONE || IOS || DNXCORE50
         public static Type[] GetGenericTypeArguments(this Type type)
@@ -1852,7 +1826,7 @@ namespace LightInject
     /// Extends the <see cref="IEmitter"/> interface with a set of methods
     /// that optimizes and simplifies emitting MSIL instructions.
     /// </summary>
-    internal static class EmitterExtensions
+    public static class EmitterExtensions
     {
         /// <summary>
         /// Performs a cast or unbox operation if the current <see cref="IEmitter.StackType"/> is
@@ -2192,9 +2166,8 @@ namespace LightInject
 
         private readonly Stack<Action<IEmitter>> dependencyStack = new Stack<Action<IEmitter>>();
 
-        private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
-        private readonly ICompositionRootExecutor compositionRootExecutor;
-        private readonly ITypeExtractor compositionRootTypeExtractor;
+        private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;        
+        
 
         private ImmutableHashTable<Type, GetInstanceDelegate> delegates =
             ImmutableHashTable<Type, GetInstanceDelegate>.Empty;
@@ -2214,9 +2187,9 @@ namespace LightInject
         {
             options = ContainerOptions.Default;
             var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
-            compositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor());
-            compositionRootExecutor = new CompositionRootExecutor(this);
-            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, compositionRootTypeExtractor, compositionRootExecutor);
+            CompositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()));
+            CompositionRootExecutor = new CompositionRootExecutor(this, type => (ICompositionRoot)Activator.CreateInstance(type));
+            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor);
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
@@ -2228,7 +2201,7 @@ namespace LightInject
             methodSkeletonFactory = parameterTypes => new DynamicMethodSkeleton(parameterTypes);
 #endif
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-#if NET || NET45 || DNX451
+#if NET || NET45 || DNX451 || NET46
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
@@ -2255,6 +2228,18 @@ namespace LightInject
         public IPropertyDependencySelector PropertyDependencySelector { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="ITypeExtractor"/> that is responsible 
+        /// for extracting composition roots types from an assembly.
+        /// </summary>
+        public ITypeExtractor CompositionRootTypeExtractor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ICompositionRootExecutor"/> that is responsible 
+        /// for executing composition roots.
+        /// </summary>
+        public ICompositionRootExecutor CompositionRootExecutor { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="IConstructorDependencySelector"/> instance that
         /// is responsible for selecting the constructor dependencies for a given constructor.
         /// </summary>
@@ -2270,7 +2255,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET || NET45 || DNX451
+#if NET || NET45 || DNX451 || NET46
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
@@ -2406,7 +2391,7 @@ namespace LightInject
         /// </remarks>
         public void RegisterAssembly(Assembly assembly)
         {
-            Type[] compositionRootTypes = compositionRootTypeExtractor.Execute(assembly);
+            Type[] compositionRootTypes = CompositionRootTypeExtractor.Execute(assembly);
             if (compositionRootTypes.Length == 0)
             {
                 RegisterAssembly(assembly, (serviceType, implementingType) => true);
@@ -2466,7 +2451,7 @@ namespace LightInject
         /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
         public void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new()
         {
-            compositionRootExecutor.Execute(typeof(TCompositionRoot));
+            CompositionRootExecutor.Execute(typeof(TCompositionRoot));
         }
 
         /// <summary>
@@ -2497,7 +2482,7 @@ namespace LightInject
                 (s, e) => isLocked ? e : factory);
         }
 
-#if NET || NET45 || DNX451
+#if NET || NET45 || DNX451 || NET46
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -5831,7 +5816,7 @@ namespace LightInject
         }
     }
 
-    internal static class StackExtensions
+    public static class StackExtensions
     {
         public static T[] Pop<T>(this Stack<T> stack, int numberOfElements)
         {
@@ -6995,10 +6980,43 @@ namespace LightInject
     }
 
     /// <summary>
+    /// A class that is capable of extracting attributes of type 
+    /// <see cref="CompositionRootTypeAttribute"/> from an <see cref="Assembly"/>.    
+    /// </summary>
+    public class CompositionRootAttributeExtractor : ICompositionRootAttributeExtractor
+    {
+        /// <summary>
+        /// Gets a list of attributes of type <see cref="CompositionRootTypeAttribute"/> from 
+        /// the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly from which to extract 
+        /// <see cref="CompositionRootTypeAttribute"/> attributes.</param>
+        /// <returns>A list of attributes of type <see cref="CompositionRootTypeAttribute"/></returns>
+        public CompositionRootTypeAttribute[] GetAttributes(Assembly assembly)
+        {
+            return assembly.GetCustomAttributes(typeof(CompositionRootTypeAttribute))
+                       .Cast<CompositionRootTypeAttribute>().ToArray();
+        }
+    }
+
+    /// <summary>
     /// Extracts concrete <see cref="ICompositionRoot"/> implementations from an <see cref="Assembly"/>.
     /// </summary>
     public class CompositionRootTypeExtractor : ITypeExtractor
     {
+        private readonly ICompositionRootAttributeExtractor compositionRootAttributeExtractor;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CompositionRootTypeExtractor"/> class.
+        /// </summary>
+        /// <param name="compositionRootAttributeExtractor">The <see cref="ICompositionRootAttributeExtractor"/>
+        /// that is responsible for extracting attributes of type <see cref="CompositionRootTypeAttribute"/> from 
+        /// a given <see cref="Assembly"/>.</param>
+        public CompositionRootTypeExtractor(ICompositionRootAttributeExtractor compositionRootAttributeExtractor)
+        {
+            this.compositionRootAttributeExtractor = compositionRootAttributeExtractor;
+        }
+
         /// <summary>
         /// Extracts concrete <see cref="ICompositionRoot"/> implementations found in the given <paramref name="assembly"/>.
         /// </summary>
@@ -7007,8 +7025,7 @@ namespace LightInject
         public Type[] Execute(Assembly assembly)
         {
             CompositionRootTypeAttribute[] compositionRootAttributes =
-                assembly.GetCustomAttributes(typeof(CompositionRootTypeAttribute))
-                        .Cast<CompositionRootTypeAttribute>().ToArray();
+                compositionRootAttributeExtractor.GetAttributes(assembly);               
 
             if (compositionRootAttributes.Length > 0)
             {
@@ -7018,7 +7035,7 @@ namespace LightInject
             return assembly.GetTypes().Where(t => !t.IsAbstract() && typeof(ICompositionRoot).IsAssignableFrom(t)).ToArray();
         }
     }
-
+    
     /// <summary>
     /// A <see cref="ITypeExtractor"/> cache decorator.
     /// </summary>
@@ -7074,7 +7091,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-#if NET || NET45 || DNX451
+#if NET || NET45 || DNX451 || NET46
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
@@ -7103,7 +7120,8 @@ namespace LightInject
             InternalTypes.Add(typeof(Instruction<>));
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
-#if NET45 || DNX451
+            InternalTypes.Add(typeof(CompositionRootAttributeExtractor));            
+#if NET45 || DNX451 || NET46
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif
@@ -7147,6 +7165,7 @@ namespace LightInject
     public class CompositionRootExecutor : ICompositionRootExecutor
     {
         private readonly IServiceRegistry serviceRegistry;
+        private readonly Func<Type, ICompositionRoot> activator;
 
         private readonly IList<Type> executedCompositionRoots = new List<Type>();
 
@@ -7156,9 +7175,11 @@ namespace LightInject
         /// Initializes a new instance of the <see cref="CompositionRootExecutor"/> class.
         /// </summary>
         /// <param name="serviceRegistry">The <see cref="IServiceRegistry"/> to be configured by the <see cref="ICompositionRoot"/>.</param>
-        public CompositionRootExecutor(IServiceRegistry serviceRegistry)
+        /// <param name="activator">The function delegate that is responsible for creating an instance of the <see cref="ICompositionRoot"/>.</param>
+        public CompositionRootExecutor(IServiceRegistry serviceRegistry, Func<Type, ICompositionRoot> activator)
         {
             this.serviceRegistry = serviceRegistry;
+            this.activator = activator;
         }
 
         /// <summary>
@@ -7174,7 +7195,7 @@ namespace LightInject
                     if (!executedCompositionRoots.Contains(compositionRootType))
                     {
                         executedCompositionRoots.Add(compositionRootType);
-                        var compositionRoot = (ICompositionRoot)Activator.CreateInstance(compositionRootType);
+                        var compositionRoot = activator(compositionRootType);
                         compositionRoot.Compose(serviceRegistry);
                     }
                 }
@@ -7347,7 +7368,7 @@ namespace LightInject
             return propertyInfo.GetSetMethod() == null || propertyInfo.GetSetMethod().IsStatic || propertyInfo.GetSetMethod().IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
         }
     }
-#if NET || NET45 || DNX451
+#if NET || NET45 || DNX451 || NET46
 
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
@@ -7389,7 +7410,7 @@ namespace LightInject
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    internal sealed class KeyValue<TKey, TValue>
+    public sealed class KeyValue<TKey, TValue>
     {
         /// <summary>
         /// The key of this <see cref="KeyValue{TKey,TValue}"/> instance.
@@ -7417,7 +7438,7 @@ namespace LightInject
     /// Represents a simple "add only" immutable list.
     /// </summary>
     /// <typeparam name="T">The type of items contained in the list.</typeparam>
-    internal sealed class ImmutableList<T>
+    public sealed class ImmutableList<T>
     {
         /// <summary>
         /// Represents an empty <see cref="ImmutableList{T}"/>.
@@ -7468,7 +7489,7 @@ namespace LightInject
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    internal sealed class ImmutableHashTable<TKey, TValue>
+    public sealed class ImmutableHashTable<TKey, TValue>
     {
         /// <summary>
         /// An empty <see cref="ImmutableHashTree{TKey,TValue}"/>.
@@ -7555,7 +7576,7 @@ namespace LightInject
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    internal sealed class ImmutableHashTree<TKey, TValue>
+    public sealed class ImmutableHashTree<TKey, TValue>
     {
         /// <summary>
         /// An empty <see cref="ImmutableHashTree{TKey,TValue}"/>.

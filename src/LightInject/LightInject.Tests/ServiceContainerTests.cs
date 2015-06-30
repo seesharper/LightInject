@@ -1,3 +1,5 @@
+using LightMock;
+
 namespace LightInject.Tests
 {
     using System;
@@ -534,7 +536,7 @@ namespace LightInject.Tests
 
         #endregion
 
-#if NET45 || NETFX_CORE || WINDOWS_PHONE
+#if NET45 || NETFX_CORE || WINDOWS_PHONE || NET46
         #region ReadOnly Collection
 
         [Fact]
@@ -969,6 +971,22 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_UsingFallBack_ProvidesServiceReuest()
+        {
+            var container = CreateContainer();
+            ServiceRequest serviceRequest = null;
+            container.RegisterFallback((type, s) => type == typeof(IFoo), r =>
+            {
+                serviceRequest = r;
+                return new Foo();
+            });
+            container.GetInstance<IFoo>();
+            Assert.NotNull(serviceRequest.ServiceType);
+            Assert.NotNull(serviceRequest.ServiceFactory);
+            Assert.NotNull(serviceRequest.ServiceName);
+        }
+
+        [Fact]
         public void GetInstance_UsingFallback_DoesNotReuseLifetimeAcrossServices()
         {
             var container = CreateContainer();
@@ -1037,15 +1055,15 @@ namespace LightInject.Tests
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo), typeof(Foo), new PerContainerLifetime());
-            Foo.Instances = 0;
-            IList<IFoo> instances = new List<IFoo>();
+            container.Register(typeof(IFoo), typeof(SingletonFoo), new PerContainerLifetime());
+            SingletonFoo.Instances = 0;
+            
             for (int i = 0; i < 100; i++)
             {
                 RunParallel(container);
             }
                       
-            Assert.Equal(1,Foo.Instances);
+            Assert.Equal(1, SingletonFoo.Instances);
         }
 
         [Fact]
@@ -1242,12 +1260,10 @@ namespace LightInject.Tests
         public void GetInstance_LazyService_DoesNotCreateTarget()
         {
             var container = new ServiceContainer();
-            container.Register<IFoo, Foo>();
-            Foo.Instances = 0;
-
+            container.Register<IFoo, LazyFoo>();
+            LazyFoo.Instances = 0;
             container.GetInstance<Lazy<IFoo>>();
-
-            Assert.Equal(0, Foo.Instances);
+            Assert.Equal(0, LazyFoo.Instances);
         }
 
         [Fact]
@@ -1449,13 +1465,35 @@ namespace LightInject.Tests
             Assert.IsAssignableFrom(typeof(Bar), foo.Bar);
         }
 
-#if NET45 || NET 
         [Fact]
-        public void RegisterFrom_CompositionRoot_RegistersService()
+        public void GetInstance_ReadOnlyRegistration_ReturnsOriginalRegistration()
         {
             var container = CreateContainer();
-            container.RegisterFrom<CompositionRoot>();
-            Assert.Equal(1, container.AvailableServices.Count());
+            var registration = new ServiceRegistration();
+            registration.ServiceType = typeof (IFoo);
+            registration.ServiceName = "";
+            registration.ImplementingType = typeof (Foo);
+            registration.IsReadOnly = true;
+            container.Register(registration);
+
+            container.Register<IFoo, AnotherFoo>();
+
+            var instance = container.GetInstance<IFoo>();
+
+            Assert.IsType(typeof (Foo), instance);
+        }
+
+#if NET45 || NET || NET46
+        [Fact]
+        public void RegisterFrom_CompositionRoot_CallsCompositionRootExecutor()
+        {
+            var container = (ServiceContainer)CreateContainer();            
+            var compositionRootExecutorMock = new CompositionRootExecutorMock();
+            container.CompositionRootExecutor = compositionRootExecutorMock;
+            
+            container.RegisterFrom<CompositionRootMock>();
+
+            compositionRootExecutorMock.Assert(c => c.Execute(typeof(CompositionRootMock)), Invoked.Once);
         }
 #endif        
         [Fact]

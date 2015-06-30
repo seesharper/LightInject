@@ -2,7 +2,7 @@
 
 static string pathToSourceFile = @"..\LightInject.Wcf\LightInject.Wcf.cs";
 private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
-private string nugetBuildDirectory = Execute(() => CopyToNuGetBuildDirectory(@"..\LightInject.Wcf"), "Copying project to NuGet build directory");
+private string nugetBuildDirectory = Execute(() => 	(@"..\LightInject.Wcf"), "Copying project to NuGet build directory");
 Console.WriteLine ("Building version " + version);
 
 Execute(() => Build(@"..\LightInject.Wcf.sln"), "Building LightInject.Wcf");

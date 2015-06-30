@@ -3892,8 +3892,7 @@ namespace LightInject
         {
             if (serviceRegistration.Lifetime is PerContainerLifetime)
             {
-                Func<object> instanceDelegate =
-                    WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod));
+                Func<object> instanceDelegate = () => WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod))();
                 var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);
                 var instanceIndex = constants.Add(instance);
                 emitter.PushConstant(instanceIndex, instance.GetType());
@@ -3956,6 +3955,13 @@ namespace LightInject
         {
             lock (lockObject)
             {
+                var key = Tuple.Create(serviceType, serviceName);
+                var instanceDelegate = namedDelegates.Search(key);
+                if (instanceDelegate != null)
+                {
+                    return instanceDelegate;
+                }
+
                 var serviceEmitter = GetEmitMethod(serviceType, serviceName);
                 if (serviceEmitter == null && throwError)
                 {

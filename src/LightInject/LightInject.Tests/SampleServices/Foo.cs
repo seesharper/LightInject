@@ -76,12 +76,25 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    
+
     public class Foo : IFoo
     {
 
         public static int Instances { get; set; }
         
         public Foo()
+        {
+            Instances++;
+        }
+    }
+
+    public class LazyFoo : IFoo
+    {
+
+        public static int Instances { get; set; }
+
+        public LazyFoo()
         {
             Instances++;
         }
@@ -639,23 +652,23 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; private set; }
     }
 
-    //public class FooWithMultipleParameterizedConstructors
-    //{
-    //    public string StringValue { get; set; }
-    //    public int IntValue { get; set; }
+    public class FooWithMultipleParameterizedConstructors
+    {
+        public string StringValue { get; set; }
+        public int IntValue { get; set; }
 
-    //    public FooWithMultipleParameterizedConstructors([Inject("SomeValue")]int intValue)
-    //    {
-    //        IntValue = intValue;
-    //    }
+        public FooWithMultipleParameterizedConstructors(int intValue)
+        {
+            IntValue = intValue;
+        }
 
-    //    public FooWithMultipleParameterizedConstructors(string stringValue)
-    //    {
-    //        StringValue = stringValue;
-    //    }
-    //}
+        public FooWithMultipleParameterizedConstructors(string stringValue)
+        {
+            StringValue = stringValue;
+        }
+    }
 
-   
+
     public class FooWithProperyDependency : IFoo
     {
         public IBar Bar { get; set; }

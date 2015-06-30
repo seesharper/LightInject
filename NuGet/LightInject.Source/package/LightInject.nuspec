@@ -15,8 +15,7 @@
     </metadata>
     <files>
         <file src="content\net40\LightInject\LightInject.cs.pp" target="content\net40\LightInject\LightInject.cs.pp" />
-        <file src="content\net45\LightInject\LightInject.cs.pp" target="content\net45\LightInject\LightInject.cs.pp" />
-        <file src="content\net46\LightInject\LightInject.cs.pp" target="content\net46\LightInject\LightInject.cs.pp" />
+        <file src="content\net45\LightInject\LightInject.cs.pp" target="content\net45\LightInject\LightInject.cs.pp" />        
         <file src="content\netcore45\LightInject\LightInject.cs.pp" target="content\netcore45\LightInject\LightInject.cs.pp" />
         <file src="content\windowsphone8\LightInject\LightInject.cs.pp" target="content\windowsphone8\LightInject\LightInject.cs.pp" />
     </files>
