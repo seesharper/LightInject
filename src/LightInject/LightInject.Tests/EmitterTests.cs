@@ -886,7 +886,7 @@ namespace LightInject.Tests
             Assert.Equal("ldarg 1", instruction.ToString());
         }
       
-#if NET || NET45 || NET46
+#if NET40 || NET45 || NET46
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();

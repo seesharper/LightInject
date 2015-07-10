@@ -63,5 +63,7 @@ namespace LightInject.Tests
 
             Assert.Equal(42, value);
         }
+
+        
     }
 }

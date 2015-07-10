@@ -9,6 +9,7 @@ namespace LightInject.Tests
     using Xunit;
     using System.Threading.Tasks;
 
+#if NET45 || NET46
     
     public class AsyncTests : TestBase
     {
@@ -59,4 +60,5 @@ namespace LightInject.Tests
             }
         }
     }
+#endif
 }

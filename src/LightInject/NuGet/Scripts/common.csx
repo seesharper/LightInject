@@ -1,10 +1,25 @@
 using System.Diagnostics;
 using System.Xml.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.Win32;
+using System.Globalization;
+using System.Collections.ObjectModel;
+using System.Threading;
 
 private static int depth = 0;
 
 private static string lastWriteOperation;
+
+public static class DNU
+{
+    public static void Build(string pathToProjectFile)
+    {        
+        Command.Execute("cmd.exe","/C dnu.cmd --version " , ".");
+        Command.Execute("cmd.exe","/C dnu.cmd restore " + pathToProjectFile, ".");        
+        Command.Execute("cmd.exe","/C dnu.cmd build " + pathToProjectFile + " --configuration Release" , ".");   
+    }        
+}
+
 
 public class VersionInfo
 {
@@ -21,20 +36,26 @@ private static void WriteStart(string message, params object[] arguments)
 {
     StringBuilder sb = new StringBuilder();    
     sb.Append("\n");
-    sb.Append('\t', depth);
+    sb.Append(' ', depth);
     sb.Append(string.Format(message, arguments));            
+    Console.Out.Flush();
     Console.Write(sb.ToString());
+    Console.Out.Flush();
     lastWriteOperation = "WriteStart";
 }
 
 private static void WriteLine(string message,  params object[] arguments)
 {
+    if (message == null)
+    {
+        return;
+    }
     StringBuilder sb = new StringBuilder();    
     if (lastWriteOperation == "WriteStart")
     {
         sb.Append("\n");
     }
-    sb.Append('\t', depth);
+    sb.Append(' ', depth);
     sb.Append(string.Format(message, arguments));            
     Console.WriteLine(sb.ToString());
     lastWriteOperation = "WriteLine";
@@ -49,7 +70,7 @@ private static void WriteEnd(string message, params object[] arguments)
     else
     {
         StringBuilder sb = new StringBuilder();    
-        sb.Append('\t', depth);
+        sb.Append(' ', depth);
         sb.Append(string.Format(message, arguments));            
         Console.WriteLine(sb.ToString());
         lastWriteOperation = "WriteLine";
@@ -68,6 +89,12 @@ public static void CreateDirectory(string directory)
 {
     RemoveDirectory(directory);
     Directory.CreateDirectory(directory);
+}
+
+public static string ResolveDirectory(string path, string filePattern)
+{
+    string pathToFile = Directory.GetFiles(path, "xunit.runner.visualstudio.testadapter.dll", SearchOption.AllDirectories).Single();
+    return Path.GetDirectoryName(pathToFile);
 }
 
 
@@ -149,19 +176,16 @@ public static string GetNugetVersionNumber(string pathToNugetSpecification)
     }
 }
 
-public static void PatchAssemblyVersionInfo(string version, string pathToAssemblyInfo)
+public static void PatchAssemblyVersionInfo(string version, string frameworkMoniker, string pathToAssemblyInfo)
 {    
     var assemblyInfo = ReadFile(pathToAssemblyInfo);    
-    var pachedAssemblyInfo = Regex.Replace(assemblyInfo, @"Version\(""(.+?"")", string.Format(@"Version(""{0}""", version));
+    var pachedAssemblyInfo = Regex.Replace(assemblyInfo, @"Version\(""(.+?"")", string.Format(@"Version(""{0}""", version));    
+    pachedAssemblyInfo = Regex.Replace(pachedAssemblyInfo, @"(AssemblyCopyright\(""\D+)(\d*)", "${1}" + DateTime.Now.Year);    
     WriteFile(pathToAssemblyInfo, pachedAssemblyInfo);    
 }
 
 
-public static void Build(string pathToSolutionFile)
-{
-    string pathToMsBuild = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\MsBuild.exe";
-    Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release /verbosity:quiet /nologo");     
-}
+
 
 public static void CreatePackage(string pathToSpecification, string outputDirectory)
 {
@@ -209,45 +233,58 @@ public static class MsBuild
 {
     public static void Build(string pathToSolutionFile)
     {
-        string pathToMsBuild = @"C:\Program Files (x86)\MSBuild\14.0\Bin\MsBuild.exe";
-        Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release /p:VisualStudioVersion=12.0 /verbosity:quiet /nologo");     
+        string pathToMsBuild = ResolvePathToMsBuild();        
+        Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release /p:VisualStudioVersion=12.0 /verbosity:minimal",".");     
+    }
+    
+    private static string ResolvePathToMsBuild()
+    {                
+        return Path.Combine(PathResolver.GetPathToMsBuildTools(), "MsBuild.exe");                                                  
     }
 }
 
-public static class MsTest
+public static class PathResolver
 {
-    public static void Run(string pathToTestAssembly)
+    public static string GetPathToMsBuildTools()
     {
-        string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
-        string result = Command.Execute(pathToMsTest, pathToTestAssembly);
+        string keyName = @"SOFTWARE\Wow6432Node\Microsoft\MSBuild\ToolsVersions";
+        string decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator; 
+        
+        RegistryKey key = Registry.LocalMachine.OpenSubKey(keyName);
+        string[] subKeynames = key.GetSubKeyNames().Select(n => n.Replace(".", decimalSeparator)).ToArray();        
+        Collection<decimal> versionNumbers = new Collection<decimal>();
+        
+        for (int i = 0; i < subKeynames.Length; i++)
+        {
+            decimal versionNumber;
+            if (decimal.TryParse(subKeynames[i], out versionNumber))
+            {
+                versionNumbers.Add(versionNumber);
+            }                        
+        }
+        
+        decimal latestVersionNumber = versionNumbers.OrderByDescending(n => n).First();
+        RegistryKey latestVersionSubKey = key.OpenSubKey(latestVersionNumber.ToString().Replace(decimalSeparator, "."));
+        string pathToMsBuildTools = (string)latestVersionSubKey.GetValue("MSBuildToolsPath");
+        return pathToMsBuildTools;
     }
+}
 
+
+
+public static class MsTest
+{    
     public static void Run(string pathToTestAssembly, string pathToTestAdapter)
     {
         string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
-        string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /TestAdapterPath:" + pathToTestAdapter);
+        string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /TestAdapterPath:" + pathToTestAdapter, @"(Total tests:.*)|(Test execution time:.*)|(Failed.*)");
     }
-
-    public static void RunWithCodeCoverage(string pathToTestAssembly, params string[] includedAssemblies)
-    {
-        string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
-        string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /Enablecodecoverage");
-
-        var pathToCoverageFile = GetPathToCoverageFile(result);
-        var pathToCoverageXmlFile = GetPathToCoverageXmlFile(pathToCoverageFile);    
-        var directory = Path.GetDirectoryName(pathToCoverageFile);
-        
-        ConvertCoverageFileToXml(pathToCoverageFile);
-        //CreateSummaryFile(pathToCoverageXmlFile, directory, includedAssemblies);
-        //ValidateCodeCoverage(directory);
-        
-    }
-
+    
     public static void RunWithCodeCoverage(string pathToTestAssembly, string pathToTestAdapter, params string[] includedAssemblies)
     {
         string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
-        string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /Enablecodecoverage" + " /TestAdapterPath:" + pathToTestAdapter);        
-        var pathToCoverageFile = GetPathToCoverageFile(result);
+        string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /Enablecodecoverage" + " /TestAdapterPath:" + pathToTestAdapter, @"(Test execution.*)|(Test Run.*)|(Total tests.*)|\s*(.*coverage)|(Attachments:)");        
+        var pathToCoverageFile = GetPathToCoverageFile(result);        
         var pathToCoverageXmlFile = GetPathToCoverageXmlFile(pathToCoverageFile);    
         var directory = Path.GetDirectoryName(pathToCoverageFile);        
         ConvertCoverageFileToXml(pathToCoverageFile);
@@ -258,22 +295,32 @@ public static class MsTest
 
     private static void ValidateCodeCoverage(string directory)
     {
-        var pathToSummaryFile = Path.Combine(directory, "Summary.xml");
-        var doc = XDocument.Load(pathToSummaryFile);               
-        var coverage = doc.Root.Elements().Single( e => e.Name.LocalName == "Summary").Elements().Single (e => e.Name.LocalName == "LineCoverage").Value;
+        var pathToSummaryFile = Path.Combine(directory, "Summary.xml");       
+        var summaryContent = ReadFile(pathToSummaryFile);                                                                           
+        var coverage = Regex.Match(summaryContent, "LineCoverage>(.*)<").Groups[1].Captures[0].Value;
+        
+        WriteLine("Code coverage is {0}", coverage);
+                                
         if (coverage != "100%")
         {            
+            MatchCollection matchesRepresentingClassesWithInsufficientCoverage = Regex.Matches(summaryContent, @"Class name=""(.*?)"" coverage=""(\d{1,2}|\d+\.\d+)""");
+            foreach (Match match in matchesRepresentingClassesWithInsufficientCoverage)
+            {
+                var className = match.Groups[1].Captures[0].Value.Replace("&lt;", "<").Replace("&gt;", ">");
+                var classCoverage = match.Groups[2].Captures[0].Value;
+                WriteLine("Class name: {0} has only {1}% coverage", className, classCoverage);    
+            }
+                        
             throw new InvalidOperationException("Deploy failed. Test coverage is only " + coverage);
         }  
-              
+        
+                
     }
 
-
     public static void ConvertCoverageFileToXml(string pathToCoverageFile)
-    {
-        string pathToCoverageToXml = "../../packages/CoverageToXml.1.0.0/CoverageToXml.exe";
-        
-        Command.Execute(pathToCoverageToXml, StringUtils.Quote(pathToCoverageFile));
+    {        
+        string pathToCoverageToXml = "../../packages/CoverageToXml.1.0.0/CoverageToXml.exe";        
+        Command.Execute(pathToCoverageToXml, StringUtils.Quote(pathToCoverageFile), null);
     }
 
     public static void CreateSummaryFile(string pathToCoverageXmlFile, string directory, string[] includedAssemblies)
@@ -288,13 +335,8 @@ public static class MsTest
 
     public static string GetPathToCoverageFile(string result)
     {
-        result = result.Substring(result.IndexOf("Attachments:"));
-            
-        StringReader reader = new StringReader(result);
-    
-        reader.ReadLine();
-    
-        return reader.ReadLine().Trim();
+        var path = Regex.Match(result, @"Attachments:\s*(.*.coverage)").Groups[1].Value;        
+        return path;        
     }
 
     private static string GetPathToCoverageXmlFile(string pathToCoverageFile)
@@ -403,14 +445,30 @@ public static class VersionUtils
     }
 
 public static class DirectoryUtils
-{
-    public static void Delete(string directory)
+{   
+    public static void Delete(string path)
     {
-         if (Directory.Exists(directory))
+        // http://stackoverflow.com/questions/329355/cannot-delete-directory-with-directory-deletepath-true
+        foreach (string directory in Directory.GetDirectories(path))
         {
-            Directory.Delete(directory, true);
+            Delete(directory);
+        }
+        
+        try
+        {
+            Directory.Delete(path, true);
+        }
+        catch (IOException) 
+        {
+            Directory.Delete(path, true);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Directory.Delete(path, true);
         }
     }
+
+
 
    
 
@@ -474,18 +532,27 @@ public class FileUtils
 
 public static class Command
 {
-    public static string Execute(string commandPath, string arguments)
+    private static StringBuilder lastProcessOutput = new StringBuilder();
+    
+    private static StringBuilder lastStandardErrorOutput = new StringBuilder();    
+          
+    public static string Execute(string commandPath, string arguments, string capture = null)
     {
+        lastProcessOutput.Clear();
+        lastStandardErrorOutput.Clear();
         var startInformation = CreateProcessStartInfo(commandPath, arguments);
         var process = CreateProcess(startInformation);
-        var processOutput = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
+        SetVerbosityLevel(process, capture);        
+        process.Start();        
+        RunAndWait(process);                
+               
         if (process.ExitCode != 0 && commandPath != "robocopy")
-        {
-            throw new InvalidOperationException(processOutput);
-            Console.WriteLine(processOutput);
-        }     
-        return processOutput;
+        {                      
+            WriteLine(lastStandardErrorOutput.ToString());
+            throw new InvalidOperationException("Command failed");
+        }   
+        
+        return lastProcessOutput.ToString();
     }
 
     private static ProcessStartInfo CreateProcessStartInfo(string commandPath, string arguments)
@@ -494,15 +561,49 @@ public static class Command
         startInformation.CreateNoWindow = true;
         startInformation.Arguments =  arguments;
         startInformation.RedirectStandardOutput = true;
+        startInformation.RedirectStandardError = true;
         startInformation.UseShellExecute = false;
+        
         return startInformation;
+    }
+
+    private static void RunAndWait(Process process)
+    {        
+        process.BeginErrorReadLine();
+        process.BeginOutputReadLine();         
+        process.WaitForExit();                
+    }
+
+    private static void SetVerbosityLevel(Process process, string capture = null)
+    {
+        if(capture != null)
+        {
+            process.OutputDataReceived += (s, e) => 
+            {
+                if (e.Data == null)
+                {
+                    return;
+                }
+                              
+                if (Regex.Matches(e.Data, capture,RegexOptions.Multiline).Count > 0)
+                {
+                    lastProcessOutput.AppendLine(e.Data);
+                    WriteLine(e.Data);        
+                }                                             
+            };                        
+        }
+        process.ErrorDataReceived += (s, e) => 
+        {
+            lastStandardErrorOutput.AppendLine();
+            lastStandardErrorOutput.AppendLine(e.Data);                        
+        };
     }
 
     private static Process CreateProcess(ProcessStartInfo startInformation)
     {
         var process = new Process();
-        process.StartInfo = startInformation;
-        process.Start();
+        process.StartInfo = startInformation;       
+        //process.EnableRaisingEvents = true;
         return process;
     }
 }
@@ -527,56 +628,11 @@ public static class NuGet
     
     public static void Restore(string projectDirectory)
     {
-        var result = Command.Execute("nuget", "restore " + Path.Combine(projectDirectory, "packages.config") + " -PackagesDirectory " + Path.Combine(projectDirectory, @"..\packages"));
+        var result = Command.Execute("nuget", "restore " + Path.Combine(projectDirectory, "packages.config") + " -PackagesDirectory " + Path.Combine(projectDirectory, @"..\packages"),".");
         
     }
 }
 
-public class Compiler
-{
-	public static void Compile(string sourceDirectory, string outputFileName)
-	{
-		Console.WriteLine(CreateFileList(sourceDirectory));
-		//return;
-
-		var startInformation = CreateProcessStartInfo(sourceDirectory, outputFileName);
-        var process = CreateProcess(startInformation);
-        var processOutput = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
-        Console.WriteLine(processOutput);
-        FileUtils.DeleteAllTempFiles(sourceDirectory);
-	}
-
-    private static ProcessStartInfo CreateProcessStartInfo(string sourceDirectory, string outputFileName)
-    {
-        var startInformation = new ProcessStartInfo(@"C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe");
-        startInformation.CreateNoWindow = true;
-        startInformation.Arguments =  "/target:library /platform:ARM /warnaserror+ /warn:1 /optimize /debug:pdbonly "  + "/doc:" + Quote(Path.Combine(sourceDirectory,outputFileName + ".xml")) + " /out:" + Quote(Path.Combine(sourceDirectory, outputFileName + ".dll")) +  " " + Quote(Path.Combine(sourceDirectory, "*.cs"));
-        Console.WriteLine(startInformation.Arguments);
-        startInformation.RedirectStandardOutput = true;
-        startInformation.UseShellExecute = false;
-        return startInformation;
-    }
-
-    private static string Quote(string value)
-    {
-    	return "\"" + value + "\"";
-    }
-
-
-    private static Process CreateProcess(ProcessStartInfo startInformation)
-    {
-        var process = new Process();
-        process.StartInfo = startInformation;
-        process.Start();
-        return process;
-    }
-
-    private static string CreateFileList(string sourceDirectory)
-    {
-    	return Directory.GetFiles(sourceDirectory, "*.cs").Aggregate ((current,next) =>  Quote(current) + " " + Quote(next));
-    }
-}
 
 
 
@@ -680,6 +736,30 @@ public class SourceWriter
         }            
     }
 }
+
+public static class Internalizer
+{
+    public static void Internalize(string pathToSourceFile, string frameworkMoniker)
+    {
+        var source = ReadFile(pathToSourceFile);
+        
+        // Include source code that matches the framework moniker.    
+           
+        source = Regex.Replace(source, @"#if.*" + frameworkMoniker + ".*\r\n((.*\r\n)*?)#endif\r\n", "$1");
+                
+        // Exclude source code that does not match the framework moniker.                        
+        source = Regex.Replace(source, @"#if.*\r\n((.*\r\n)*?)#endif\r\n","");
+                                
+        // Make all public classes internal
+        source = Regex.Replace(source, "public (.*class|struct|interface)", "internal $1");
+        
+        // Exclude classes from code coverage
+        source = Regex.Replace(source, @"(([^\S\r\n]*)internal.*class.*)", "$2[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\n$1");
+                        
+        WriteFile(pathToSourceFile, source);
+    }
+}
+
 
 public class Publicizer
 {

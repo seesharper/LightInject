@@ -24,6 +24,18 @@ namespace LightInject.Tests
     {
         #region InputValidation
 
+        //[Fact]
+        //public void FailingTest()
+        //{
+        //    Assert.True(1 == 0);
+        //}
+
+        //[Fact]
+        //public void AnotherFailingTest()
+        //{
+        //    Assert.True(1 == 0);
+        //}
+
         [Fact]
         public void Register_NullServiceType_ThrowsArgumentNullException()
         {
@@ -416,7 +428,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             Foo.Instances = 0;
-            container.Register(typeof(IFoo), typeof(Foo), new PerContainerLifetime());            
+            container.Register(typeof(IFoo), typeof(Foo), new PerContainerLifetime());
             container.GetInstance(typeof(IFoo));
             container.GetInstance(typeof(IFoo));
             Assert.Equal(1, Foo.Instances);
@@ -1483,7 +1495,7 @@ namespace LightInject.Tests
             Assert.IsType(typeof (Foo), instance);
         }
 
-#if NET45 || NET || NET46
+#if NET45 || NET40 || NET46
         [Fact]
         public void RegisterFrom_CompositionRoot_CallsCompositionRootExecutor()
         {

@@ -32,21 +32,20 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
-
 namespace LightInject
 {
     using System;
 #if WINDOWS_PHONE || IOS
     using System.Collections;
 #endif
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || NET46
     using System.Collections.Concurrent;
 #endif
     using System.Collections.Generic;
-#if NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET || IOS || NET46
+#if NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET40 || IOS || NET46
     using System.Collections.ObjectModel;
 #endif
-#if NET || NET45 || DNX451 || DNXCORE50 || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
     using System.IO;
 #endif
     using System.Linq;
@@ -205,7 +204,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<TService>(Expression<Func<IServiceFactory, TService>> factory);
 
 #endif
@@ -220,13 +219,12 @@ namespace LightInject
         /// <typeparam name="T">The parameter type.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory);
-
 #endif
+
 #if IOS
         void Register<T, TService>(Func<IServiceFactory, T, TService> factory);
-
 #endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
@@ -236,7 +234,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory, string serviceName);
 
 #endif
@@ -252,7 +250,7 @@ namespace LightInject
         /// <typeparam name="T2">The type of the second parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory);
 
 #endif
@@ -269,7 +267,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory, string serviceName);
 
 #endif
@@ -286,7 +284,7 @@ namespace LightInject
         /// <typeparam name="T3">The type of the third parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory);
 
 #endif
@@ -304,7 +302,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory, string serviceName);
 
 #endif
@@ -322,7 +320,7 @@ namespace LightInject
         /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory);
 
 #endif
@@ -341,7 +339,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory, string serviceName);
 
 #endif
@@ -356,7 +354,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, ILifetime lifetime);
 
 #endif
@@ -371,7 +369,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName);
 
 #endif
@@ -387,7 +385,7 @@ namespace LightInject
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName, ILifetime lifetime);
 
 #endif
@@ -484,7 +482,7 @@ namespace LightInject
         void RegisterPropertyDependency<TDependency>(
             Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory);
 
-#if NET || NET45 || DNX451
+#if NET40 || NET45 || DNX451
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -520,7 +518,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The target service type.</typeparam>
         /// <param name="factory">A factory delegate used to create a decorator instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);
 
 #endif
@@ -971,7 +969,7 @@ namespace LightInject
         /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
         ConstructorInfo Execute(Type implementingType);
     }
-#if NET || NET45 || DNX451 || NET46
+#if NET40 || NET45 || DNX451 || NET46
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -1351,10 +1349,10 @@ namespace LightInject
         }
     }
 
-    public static class LazyTypeExtensions
+    internal static class LazyTypeExtensions
     {
         private static readonly ThreadSafeDictionary<Type, ConstructorInfo> Constructors = new ThreadSafeDictionary<Type, ConstructorInfo>();
-
+        
         public static ConstructorInfo GetLazyConstructor(this Type type)
         {
             return Constructors.GetOrAdd(type, GetConstructor);
@@ -1367,7 +1365,7 @@ namespace LightInject
         }
     }
 
-    public static class EnumerableTypeExtensions
+    internal static class EnumerableTypeExtensions
     {
         private static readonly ThreadSafeDictionary<Type, Type> EnumerableTypes = new ThreadSafeDictionary<Type, Type>();
 
@@ -1382,7 +1380,7 @@ namespace LightInject
         }
     }
 
-    public static class FuncTypeExtensions
+    internal static class FuncTypeExtensions
     {
         private static readonly ThreadSafeDictionary<Type, Type> FuncTypes = new ThreadSafeDictionary<Type, Type>();
 
@@ -1397,7 +1395,7 @@ namespace LightInject
         }
     }
 
-    public static class LifetimeHelper
+    internal static class LifetimeHelper
     {
         static LifetimeHelper()
         {
@@ -1413,7 +1411,7 @@ namespace LightInject
         public static MethodInfo GetScopeManagerMethod { get; private set; }
     }
 
-    public static class DelegateTypeExtensions
+    internal static class DelegateTypeExtensions
     {
         private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
             typeof(IServiceFactory).GetMethod("GetInstance", new Type[] { });
@@ -1434,7 +1432,7 @@ namespace LightInject
         }
     }
 
-    public static class NamedDelegateTypeExtensions
+    internal static class NamedDelegateTypeExtensions
     {
         private static readonly MethodInfo CreateInstanceDelegateMethodInfo =
             typeof(NamedDelegateTypeExtensions).GetPrivateStaticMethod("CreateInstanceDelegate");
@@ -1464,7 +1462,7 @@ namespace LightInject
         }
     }
 
-    public static class ReflectionHelper
+    internal static class ReflectionHelper
     {
         private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceWithParametersMethods;
 
@@ -1538,7 +1536,7 @@ namespace LightInject
         }
     }
 
-    public static class TypeHelper
+    internal static class TypeHelper
     {
 #if NETFX_CORE || WINDOWS_PHONE || IOS || DNXCORE50
         public static Type[] GetGenericTypeArguments(this Type type)
@@ -1672,14 +1670,14 @@ namespace LightInject
                 GetConstructors(type).FirstOrDefault(c => c.GetParameters().Select(p => p.ParameterType).SequenceEqual(types));
         }
 #endif
-#if NET
+#if NET40
         public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
         {
             return Delegate.CreateDelegate(delegateType, target, methodInfo);
         }
 
 #endif
-#if NET || NET45 || DNX451 || NET46
+#if NET40 || NET45 || DNX451 || NET46
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetGenericArguments();
@@ -2145,7 +2143,7 @@ namespace LightInject
     public class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
 #endif
 #if IOS
@@ -2194,14 +2192,14 @@ namespace LightInject
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
 #endif
 #if IOS
             methodSkeletonFactory = parameterTypes => new DynamicMethodSkeleton(parameterTypes);
 #endif
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-#if NET || NET45 || DNX451 || NET46
+#if NET40 || NET45 || DNX451 || NET46
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
@@ -2255,7 +2253,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET || NET45 || DNX451 || NET46
+#if NET40 || NET45 || DNX451 || NET46
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
@@ -2331,7 +2329,7 @@ namespace LightInject
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName, ILifetime lifetime)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, lifetime, serviceName);
@@ -2482,7 +2480,7 @@ namespace LightInject
                 (s, e) => isLocked ? e : factory);
         }
 
-#if NET || NET45 || DNX451 || NET46
+#if NET40 || NET45 || DNX451 || NET46
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -2534,7 +2532,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The target service type.</typeparam>
         /// <param name="factory">A factory delegate used to create a decorator instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
         {
             var decoratorRegistration = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
@@ -2661,7 +2659,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, ILifetime lifetime)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, lifetime, string.Empty);
@@ -2683,7 +2681,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
@@ -2787,7 +2785,7 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
@@ -2809,7 +2807,7 @@ namespace LightInject
         /// <typeparam name="T">The parameter type.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
@@ -2832,7 +2830,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
@@ -2855,7 +2853,7 @@ namespace LightInject
         /// <typeparam name="T2">The type of the second parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
@@ -2879,7 +2877,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
@@ -2903,7 +2901,7 @@ namespace LightInject
         /// <typeparam name="T3">The type of the third parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
@@ -2928,7 +2926,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
@@ -2953,7 +2951,7 @@ namespace LightInject
         /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
@@ -2979,7 +2977,7 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
@@ -3434,7 +3432,7 @@ namespace LightInject
         {
             lock (lockObject)
             {
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
                 IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
 #endif
 #if IOS
@@ -3491,7 +3489,7 @@ namespace LightInject
             return new ConstructionInfoProvider(CreateConstructionInfoBuilder());
         }
 
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private ConstructionInfoBuilder CreateConstructionInfoBuilder()
         {
             return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
@@ -3530,7 +3528,7 @@ namespace LightInject
 
         private GetInstanceDelegate CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
         {
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
 #endif
 #if IOS
@@ -3781,7 +3779,7 @@ namespace LightInject
 
                 if (constructionInfo.FactoryDelegate != null)
                 {
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
                     EmitNewInstanceUsingFactoryDelegate(constructionInfo.FactoryDelegate, emitter);
 #endif
 #if IOS
@@ -3841,7 +3839,7 @@ namespace LightInject
             EmitPropertyDependencies(constructionInfo, emitter);
         }
 
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private void EmitNewInstanceUsingFactoryDelegate(Delegate factoryDelegate, IEmitter emitter)
         {
             var factoryDelegateIndex = constants.Add(factoryDelegate);
@@ -3956,7 +3954,7 @@ namespace LightInject
 
         private Action<IEmitter> GetEmitMethodForDependency(Dependency dependency)
         {
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             if (dependency.FactoryExpression != null)
             {
                 return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
@@ -3975,7 +3973,7 @@ namespace LightInject
 
             return emitter;
         }
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
 
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
@@ -4130,7 +4128,7 @@ namespace LightInject
             return getInstanceMethod.CreateDelegate(serviceType, this);
         }
 
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private Action<IEmitter> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = CloneLifeTime(rule.LifeTime) };
@@ -4472,7 +4470,7 @@ namespace LightInject
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Value = value, Lifetime = new PerContainerLifetime() };
             Register(serviceRegistration);
         }
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
 
         private void RegisterServiceFromLambdaExpression<TService>(
             LambdaExpression factory, ILifetime lifetime, string serviceName)
@@ -4561,7 +4559,7 @@ namespace LightInject
             private IEmitter emitter;
             private DynamicMethod dynamicMethod;
 
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
             {
                 CreateDynamicMethod(returnType, parameterTypes);
@@ -4592,7 +4590,7 @@ namespace LightInject
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
-#if NET
+#if NET40
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
@@ -4665,8 +4663,8 @@ namespace LightInject
 
 #if NET45 || DNX451 || DNXCORE50 || NET46
     /// <summary>
-    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> per
-    /// <see cref="CallContext"/>.
+    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> across
+    /// async points.
     /// </summary>
     public class PerLogicalCallContextScopeManagerProvider : IScopeManagerProvider
     {
@@ -4684,7 +4682,7 @@ namespace LightInject
     }
 
 #endif
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || NET46
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
@@ -6123,12 +6121,12 @@ namespace LightInject
     /// </summary>
     public class ConstructionInfoBuilder : IConstructionInfoBuilder
     {
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private readonly Lazy<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilder;
 #endif
         private readonly Lazy<ITypeConstructionInfoBuilder> typeConstructionInfoBuilder;
 
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         /// <summary>
         /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.
         /// </summary>
@@ -6168,7 +6166,7 @@ namespace LightInject
         /// <returns>A <see cref="ConstructionInfo"/> instance that describes how to create a service instance.</returns>
         public ConstructionInfo Execute(Registration registration)
         {
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             return registration.FactoryExpression != null
                 ? CreateConstructionInfoFromLambdaExpression(registration.FactoryExpression)
                 : CreateConstructionInfoFromImplementingType(registration);
@@ -6186,7 +6184,7 @@ namespace LightInject
             return new ConstructionInfo { FactoryDelegate = factoryDelegate };
         }
 #endif
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
 
         private ConstructionInfo CreateConstructionInfoFromLambdaExpression(LambdaExpression lambdaExpression)
         {
@@ -6200,7 +6198,7 @@ namespace LightInject
         }
     }
 
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
     /// <summary>
     /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
     /// </summary>
@@ -6425,7 +6423,7 @@ namespace LightInject
         /// Gets or sets the <see cref="Type"/> that implements the <see cref="Registration.ServiceType"/>.
         /// </summary>
         public virtual Type ImplementingType { get; set; }
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
 
         /// <summary>
         /// Gets or sets the <see cref="LambdaExpression"/> used to create a service instance.
@@ -6469,7 +6467,7 @@ namespace LightInject
         {
             get
             {
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
                 return ImplementingType == null && FactoryExpression == null;
 #endif
 #if IOS
@@ -7075,7 +7073,7 @@ namespace LightInject
 
         static ConcreteTypeExtractor()
         {
-#if NET || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
 #endif
             InternalTypes.Add(typeof(ConstructorDependency));
@@ -7091,7 +7089,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-#if NET || NET45 || DNX451 || NET46
+#if NET40 || NET45 || DNX451 || NET46
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
@@ -7368,7 +7366,7 @@ namespace LightInject
             return propertyInfo.GetSetMethod() == null || propertyInfo.GetSetMethod().IsStatic || propertyInfo.GetSetMethod().IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
         }
     }
-#if NET || NET45 || DNX451 || NET46
+#if NET40 || NET45 || DNX451 || NET46
 
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
@@ -7520,7 +7518,7 @@ namespace LightInject
         internal ImmutableHashTable(ImmutableHashTable<TKey, TValue> previous, TKey key, TValue value)
         {
             this.Count = previous.Count + 1;
-            if (previous.Count == previous.Divisor)
+            if (previous.Count >= previous.Divisor)
             {
                 this.Divisor = previous.Divisor * 2;
                 this.Buckets = new ImmutableHashTree<TKey, TValue>[this.Divisor];
@@ -8270,6 +8268,10 @@ namespace LightInject
     }
 #endif
 #if DNXCORE50 || NET46
+    /// <summary>
+    /// Provides storage per logical thread of execution.
+    /// </summary>
+    /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
     public class LogicalThreadStorage<T>
     {
         private readonly Func<T> valueFactory;
@@ -8278,12 +8280,22 @@ namespace LightInject
 
         private readonly object lockObject = new object();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LogicalThreadStorage{T}"/> class.
+        /// </summary>
+        /// <param name="valueFactory">The value factory used to create an instance of <typeparamref name="T"/>.</param>
         public LogicalThreadStorage(Func<T> valueFactory)
         {
             asyncLocal = new AsyncLocal<T>();            
             this.valueFactory = valueFactory;
         }
 
+        /// <summary>
+        /// Gets the value for the current logical thread of execution.
+        /// </summary>
+        /// <value>
+        /// The value for the current logical thread of execution.
+        /// </value>
         public T Value
         {
             get

@@ -3,12 +3,7 @@ namespace LightInject.Tests
     using System;
     using System.Linq;
     using LightInject.SampleLibrary;
-#if NET || NET45 || NET45TEST || NET46
     using Xunit;
-#else
-    using Microsoft.VisualStudio.TestPlatform.UnitTestFramework;
-#endif
-
 
     
     public class FunctionFactoryTests : TestBase

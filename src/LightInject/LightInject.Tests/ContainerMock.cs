@@ -7,8 +7,7 @@ namespace LightInject.Tests
     using LightMock;
 
     internal class ContainerMock : MockContext<IServiceContainer>, IServiceContainer
-    {
-        private readonly IInvocationContext<IServiceContainer> invocationContext;      
+    {        
 
         public IEnumerable<ServiceRegistration> AvailableServices { get; private set; }
 
@@ -170,7 +169,7 @@ namespace LightInject.Tests
 
         public void RegisterAssembly(Assembly assembly)
         {
-	        invocationContext.Invoke(m => m.RegisterAssembly(assembly));
+            ((IInvocationContext<IServiceContainer>)this).Invoke(c => c.RegisterAssembly(assembly));            
         }
 
         public void RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister)

@@ -5,11 +5,26 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LightInject")]
-[assembly: AssemblyDescription("")]
+
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("LightInject")]
+[assembly: AssemblyTitle("LightInject")]
+#if NET40
+    [assembly: AssemblyDescription("LightInject (NET40)")]
+#endif
+#if NET45
+    [assembly: AssemblyDescription("LightInject (NET45)")]
+#endif
+#if NET46
+    [assembly: AssemblyDescription("LightInject (NET46)")]
+#endif
+#if DNX451
+    [assembly: AssemblyDescription("LightInject (DNX451)")]
+#endif
+#if DNXCORE50
+[assembly: AssemblyDescription("LightInject (DNXCORE50)")]
+#endif
 [assembly: AssemblyCopyright("Copyright © Bernhard Richter 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

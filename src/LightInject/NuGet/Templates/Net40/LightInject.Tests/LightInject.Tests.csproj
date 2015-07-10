@@ -4,20 +4,21 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4064201F-9CED-4F65-9E1B-A530CC798293}</ProjectGuid>
+    <ProjectGuid>{35F8874C-9558-4D8A-B0DD-7253FA301DBE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LightInject.SampleLibrary</RootNamespace>
-    <AssemblyName>LightInject.SampleLibrary</AssemblyName>
+    <RootNamespace>LightInject.Tests</RootNamespace>
+    <AssemblyName>LightInject.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;NET46</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -40,15 +41,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bar.cs" />
-    <Compile Include="Foo.cs" />
-    <Compile Include="IInternalsVisibleToDummy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SampleService.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LightInject\LightInject.csproj">
-      <Project>{3d54591b-b055-4edd-96b6-e6f184e8ca6e}</Project>
+    <ProjectReference Include="..\Binary\LightInject\LightInject.csproj">
+      <Project>{e5c9ea95-f424-41b3-bd6f-3f7e52ae497f}</Project>
       <Name>LightInject</Name>
     </ProjectReference>
   </ItemGroup>

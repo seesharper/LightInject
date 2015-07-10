@@ -80,14 +80,30 @@ namespace LightInject.SampleLibrary
 
     public class Foo : IFoo
     {
+        [ThreadStatic]
+        private static int _instances;
 
-        public static int Instances { get; set; }
-        
+
+        public static int Instances
+        {
+            get { return _instances; }
+            set { _instances = value; }
+        }
+
         public Foo()
         {
             Instances++;
         }
     }
+
+    public class FooWithCallback : IFoo
+    {
+        public FooWithCallback(Action callback)
+        {
+            callback();
+        }
+    }
+
 
     public class LazyFoo : IFoo
     {
