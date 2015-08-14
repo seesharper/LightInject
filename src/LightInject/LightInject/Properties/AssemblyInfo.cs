@@ -8,22 +8,24 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LightInject")]
 [assembly: AssemblyTitle("LightInject")]
 #if NET40
-    [assembly: AssemblyDescription("LightInject (NET40)")]
+    [assembly: AssemblyProduct("LightInject (NET40)")]
 #endif
 #if NET45
-    [assembly: AssemblyDescription("LightInject (NET45)")]
+    [assembly: AssemblyProduct("LightInject (NET45)")]
 #endif
 #if NET46
-    [assembly: AssemblyDescription("LightInject (NET46)")]
+    [assembly: AssemblyProduct("LightInject (NET46)")]
 #endif
 #if DNX451
-    [assembly: AssemblyDescription("LightInject (DNX451)")]
+    [assembly: AssemblyProduct("LightInject (DNX451)")]
 #endif
 #if DNXCORE50
-[assembly: AssemblyDescription("LightInject (DNXCORE50)")]
+    [assembly: AssemblyProduct("LightInject (DNXCORE50)")]
+#endif
+#if PCL_111
+    [assembly: AssemblyProduct("LightInject (PCL Profile 111))")]
 #endif
 [assembly: AssemblyCopyright("Copyright © Bernhard Richter 2013")]
 [assembly: AssemblyTrademark("")]
@@ -33,9 +35,6 @@ using System.Runtime.InteropServices;
 // to COM components.  If you need to access a type in this assembly from 
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
-
-// The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("29c44396-1968-43b7-b95f-32afe2a6da08")]
 
 // Version information for an assembly consists of the following four values:
 //

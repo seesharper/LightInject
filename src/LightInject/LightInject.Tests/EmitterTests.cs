@@ -7,7 +7,7 @@ namespace LightInject.Tests
 
     using Xunit;
 
-#if NETFX_CORE || WINDOWS_PHONE || IOS
+#if PCL_111
     using LocalBuilder = LightInject.LocalBuilder;
     using ILGenerator = LightInject.ILGenerator;
 #endif
@@ -15,229 +15,6 @@ namespace LightInject.Tests
     
     public class EmitterTests
     {
-#if IOS
-        [Fact]
-        public void Emit_SByte_ReturnsInteger()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_S, (sbyte)42);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(42, result);
-
-        }
-
-        [Fact]
-        public void Emit_Byte_ReturnsByte()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_S, (byte)42);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(42, result);
-
-        }
-
-        [Fact]
-        public void Emit_Ldarg_ReturnsArgument()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldarg, 0);
-            var result = (int)generator.ExecuteUsingOneArgument(42);
-            Assert.Equal(42, result);
-        }
-
-        [Fact]
-        public void Emit_Ldloc_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.DeclareLocal(typeof(int));
-            generator.Emit(OpCodes.Ldarg, 0);
-            generator.Emit(OpCodes.Stloc, 0);
-            generator.Emit(OpCodes.Ldloc, 0);
-            var result = (int)generator.ExecuteUsingOneArgument(42);
-            Assert.Equal(42, result);
-        }
-
-        [Fact]
-        public void Emit_Ldloc_0_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.DeclareLocal(typeof(int));
-            generator.Emit(OpCodes.Ldarg, 0);
-            generator.Emit(OpCodes.Stloc_0);
-            generator.Emit(OpCodes.Ldloc_0);
-            var result = (int)generator.ExecuteUsingOneArgument(42);
-            Assert.Equal(42, result);
-        }
-
-        [Fact]
-        public void Emit_Ldloc_1_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.DeclareLocal(typeof(int));
-            generator.DeclareLocal(typeof(int));
-            generator.Emit(OpCodes.Ldarg, 0);
-            generator.Emit(OpCodes.Stloc_1);
-            generator.Emit(OpCodes.Ldloc_1);
-            var result = (int)generator.ExecuteUsingOneArgument(42);
-            Assert.Equal(42, result);
-        }
-
-        [Fact]
-        public void Emit_Ldloc_2_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.DeclareLocal(typeof(int));
-            generator.DeclareLocal(typeof(int));
-            generator.DeclareLocal(typeof(int));
-            generator.Emit(OpCodes.Ldarg, 0);
-            generator.Emit(OpCodes.Stloc_2);
-            generator.Emit(OpCodes.Ldloc_2);
-            var result = (int)generator.ExecuteUsingOneArgument(42);
-            Assert.Equal(42, result);
-        }
-
-        [Fact]
-        public void Emit_Ldloc_3_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.DeclareLocal(typeof(int));
-            generator.DeclareLocal(typeof(int));
-            generator.DeclareLocal(typeof(int));
-            generator.DeclareLocal(typeof(int));
-            generator.Emit(OpCodes.Ldarg, 0);
-            generator.Emit(OpCodes.Stloc_3);
-            generator.Emit(OpCodes.Ldloc_3);
-            var result = (int)generator.ExecuteUsingOneArgument(42);
-            Assert.Equal(42, result);
-        }
-
-        [Fact]
-        [ExpectedException(typeof(NotSupportedException))]
-        public void Emit_MethodInfoWithInvalidOpCode_ThrowsException()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldarg, (MethodInfo)null);
-            generator.ExecuteUsingOneArgument(new object[] { });
-        }
-
-        [Fact]
-        [ExpectedException(typeof(NotSupportedException))]
-        public void Emit_TypeWithInvalidOpCode_ThrowsException()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldarg, (Type)null);
-            generator.ExecuteUsingOneArgument(new object[] { });
-        }
-
-        [Fact]
-        [ExpectedException(typeof(NotSupportedException))]
-        public void Emit_LocalBuilderWithInvalidOpCode_ThrowsException()
-        {
-            var generator = new ILGenerator();
-            var local = generator.DeclareLocal(typeof(int));
-            generator.Emit(OpCodes.Ldarg, local);
-            generator.ExecuteUsingOneArgument(new object[] { });
-        }
-
-        [Fact]
-        [ExpectedException(typeof(NotSupportedException))]
-        public void Emit_IntWithInvalidOpCode_ThrowsException()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldarg_0, 42);
-            generator.ExecuteUsingOneArgument(new object[] { });
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_0_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_0);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(0, result);
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_1_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_1);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(1, result);
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_2_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_2);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(2, result);
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_3_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_3);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(3, result);
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_4_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_4);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(4, result);
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_5_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_5);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(5, result);
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_6_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_6);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(6, result);
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_7_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_7);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(7, result);
-        }
-
-        [Fact]
-        public void Emit_Ldc_I4_8_ReturnsValue()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Ldc_I4_8);
-            var result = (int)generator.ExecuteUsingOneArgument(new object[] { });
-            Assert.Equal(8, result);
-        }
-
-        [Fact]
-        [ExpectedException(typeof(NotSupportedException))]
-        public void Emit_Nop_ThrowsException()
-        {
-            var generator = new ILGenerator();
-            generator.Emit(OpCodes.Nop);
-            generator.ExecuteUsingOneArgument(new object[] { });
-        }
-#endif
 
         [Fact]
         public void Push_Zero_EmitsMostEffectiveInstruction()
@@ -886,25 +663,18 @@ namespace LightInject.Tests
             Assert.Equal("ldarg 1", instruction.ToString());
         }
       
-#if NET40 || NET45 || NET46
+#if NET40 || NET45 || NET46 || DNX451 || DNXCORE50
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();
         }
 #endif
-#if NETFX_CORE || WINDOWS_PHONE
+#if PCL_111
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new LightInject.DynamicMethod(typeof(object), parameterTypes).GetILGenerator();
         }        
 #endif
-#if IOS
-        private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
-        {
-            return new LightInject.DynamicMethod(parameterTypes).GetILGenerator();
-        }        
-#endif
-
 
         private LocalBuilder[] CreateLocalBuilders(IEmitter emitter, int count)
         {

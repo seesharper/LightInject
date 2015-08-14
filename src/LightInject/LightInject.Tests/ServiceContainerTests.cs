@@ -548,7 +548,7 @@ namespace LightInject.Tests
 
         #endregion
 
-#if NET45 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET45 || PCL_111 || NET46
         #region ReadOnly Collection
 
         [Fact]

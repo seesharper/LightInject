@@ -12,11 +12,11 @@ private static string lastWriteOperation;
 
 public static class DNU
 {
-    public static void Build(string pathToProjectFile)
+    public static void Build(string pathToProjectFile, string frameworkMoniker)
     {        
         Command.Execute("cmd.exe","/C dnu.cmd --version " , ".");
         Command.Execute("cmd.exe","/C dnu.cmd restore " + pathToProjectFile, ".");        
-        Command.Execute("cmd.exe","/C dnu.cmd build " + pathToProjectFile + " --configuration Release" , ".");   
+        Command.Execute("cmd.exe","/C dnu.cmd build " + pathToProjectFile + " --framework " + frameworkMoniker + " --configuration Release" , ".");   
     }        
 }
 
@@ -31,6 +31,12 @@ public static void RoboCopy(string source, string destination, string arguments 
 {
     Command.Execute("robocopy", string.Format("{0} {1} {2}", source, destination, arguments));    
 }
+
+public static void RoboCopy(string source, string destination, string file, string arguments)
+{
+    Command.Execute("robocopy", string.Format("{0} {1} {2} {3}", source, destination, arguments));
+}
+
 
 private static void WriteStart(string message, params object[] arguments)
 {
@@ -448,6 +454,11 @@ public static class DirectoryUtils
 {   
     public static void Delete(string path)
     {
+        if (!Directory.Exists(path))
+        {
+            return;
+        }
+                
         // http://stackoverflow.com/questions/329355/cannot-delete-directory-with-directory-deletepath-true
         foreach (string directory in Directory.GetDirectories(path))
         {
@@ -525,7 +536,12 @@ public class FileUtils
         }
     }
 
-
+    public static void Rename(string pathToFile, string newName)
+    {
+        string directory = Path.GetDirectoryName(pathToFile);
+        string pathToNewFile = Path.Combine(directory, newName);
+        File.Move(pathToFile, pathToNewFile);
+    }
 
 }
 
@@ -619,17 +635,15 @@ public static class StringUtils
 
 public static class NuGet
 {
-    public static void CreatePackage(string pathToNuget, string pathToSpecification, string outputDirectory)
+    public static void CreatePackage(string pathToMetadata, string outputDirectory)
     {
-        string arguments = "pack " + StringUtils.Quote(pathToSpecification) + " -OutputDirectory " + StringUtils.Quote(outputDirectory);
-        var result = Command.Execute(pathToNuget, arguments);
-        Console.WriteLine(result);
+        string arguments = "pack " + StringUtils.Quote(pathToMetadata) + " -OutputDirectory " + StringUtils.Quote(outputDirectory);
+        Command.Execute("nuget", arguments, ".");        
     }
     
     public static void Restore(string projectDirectory)
     {
-        var result = Command.Execute("nuget", "restore " + Path.Combine(projectDirectory, "packages.config") + " -PackagesDirectory " + Path.Combine(projectDirectory, @"..\packages"),".");
-        
+        var result = Command.Execute("nuget", "restore " + Path.Combine(projectDirectory, "packages.config") + " -PackagesDirectory " + Path.Combine(projectDirectory, @"..\packages"),".");        
     }
 }
 
@@ -751,10 +765,13 @@ public static class Internalizer
         source = Regex.Replace(source, @"#if.*\r\n((.*\r\n)*?)#endif\r\n","");
                                 
         // Make all public classes internal
-        source = Regex.Replace(source, "public (.*class|struct|interface)", "internal $1");
-        
+        source = Regex.Replace(source, "public (.*class |struct |interface )", "internal $1");
+                        
         // Exclude classes from code coverage
         source = Regex.Replace(source, @"(([^\S\r\n]*)internal.*class.*)", "$2[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\n$1");
+
+        // Update version information with the framework moniker.        
+        source = Regex.Replace(source, @"(LightInject version \S*)", "$1 (" + frameworkMoniker + ")");
                         
         WriteFile(pathToSourceFile, source);
     }

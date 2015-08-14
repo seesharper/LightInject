@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 3.0.2.7
+    LightInject version 4.0.0.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -35,16 +35,9 @@
 namespace LightInject
 {
     using System;
-#if WINDOWS_PHONE || IOS
-    using System.Collections;
-#endif
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || NET46
     using System.Collections.Concurrent;
-#endif
     using System.Collections.Generic;
-#if NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET40 || IOS || NET46
     using System.Collections.ObjectModel;
-#endif
 #if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
     using System.IO;
 #endif
@@ -204,14 +197,8 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<TService>(Expression<Func<IServiceFactory, TService>> factory);
 
-#endif
-#if IOS
-        void Register<TService>(Func<IServiceFactory, TService> factory);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -219,13 +206,8 @@ namespace LightInject
         /// <typeparam name="T">The parameter type.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory);
-#endif
 
-#if IOS
-        void Register<T, TService>(Func<IServiceFactory, T, TService> factory);
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -234,14 +216,8 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory, string serviceName);
 
-#endif
-#if IOS
-        void Register<T, TService>(Func<IServiceFactory, T, TService> factory, string serviceName);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -250,14 +226,8 @@ namespace LightInject
         /// <typeparam name="T2">The type of the second parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory);
 
-#endif
-#if IOS
-        void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -267,14 +237,8 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory, string serviceName);
 
-#endif
-#if IOS
-        void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory, string serviceName);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -284,14 +248,8 @@ namespace LightInject
         /// <typeparam name="T3">The type of the third parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory);
 
-#endif
-#if IOS
-        void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -302,14 +260,8 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory, string serviceName);
 
-#endif
-#if IOS
-        void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory, string serviceName);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -320,14 +272,8 @@ namespace LightInject
         /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory);
 
-#endif
-#if IOS
-        void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -339,14 +285,8 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory, string serviceName);
 
-#endif
-#if IOS
-        void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory, string serviceName);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -354,14 +294,8 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, ILifetime lifetime);
 
-#endif
-#if IOS
-        void Register<TService>(Func<IServiceFactory, TService> factory, ILifetime lifetime);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -369,14 +303,8 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName);
 
-#endif
-#if IOS
-        void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName);
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -385,14 +313,8 @@ namespace LightInject
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName, ILifetime lifetime);
 
-#endif
-#if IOS
-        void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime);
-
-#endif
         /// <summary>
         /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
         /// </summary>
@@ -482,7 +404,7 @@ namespace LightInject
         void RegisterPropertyDependency<TDependency>(
             Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory);
 
-#if NET40 || NET45 || DNX451
+#if NET40 || NET45 || NET46 || DNX451 
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -518,14 +440,8 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The target service type.</typeparam>
         /// <param name="factory">A factory delegate used to create a decorator instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory);
 
-#endif
-#if IOS
-        void Decorate<TService>(Func<IServiceFactory, TService, TService> factory);
-
-#endif
         /// <summary>
         /// Registers a decorator based on a <see cref="DecoratorRegistration"/> instance.
         /// </summary>
@@ -969,7 +885,7 @@ namespace LightInject
         /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
         ConstructorInfo Execute(Type implementingType);
     }
-#if NET40 || NET45 || DNX451 || NET46
+#if NET40 || NET45 || NET46|| DNX451
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -1538,7 +1454,7 @@ namespace LightInject
 
     internal static class TypeHelper
     {
-#if NETFX_CORE || WINDOWS_PHONE || IOS || DNXCORE50
+#if PCL_111 || DNXCORE50
         public static Type[] GetGenericTypeArguments(this Type type)
         {
             return type.GetTypeInfo().GenericTypeArguments;
@@ -1768,7 +1684,7 @@ namespace LightInject
         {
             return serviceType.IsGenericType() && serviceType.GetGenericTypeDefinition() == typeof(ICollection<>);
         }
-#if NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
 
         public static bool IsReadOnlyCollectionOfT(this Type serviceType)
         {
@@ -2143,12 +2059,7 @@ namespace LightInject
     public class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
-#endif
-#if IOS
-        private readonly Func<Type[], IMethodSkeleton> methodSkeletonFactory;
-#endif
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
         private readonly ServiceRegistry<Expression> constructorDependencyFactories = new ServiceRegistry<Expression>();
         private readonly ServiceRegistry<Expression> propertyDependencyFactories = new ServiceRegistry<Expression>();
@@ -2192,12 +2103,7 @@ namespace LightInject
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
-#endif
-#if IOS
-            methodSkeletonFactory = parameterTypes => new DynamicMethodSkeleton(parameterTypes);
-#endif
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
 #if NET40 || NET45 || DNX451 || NET46
             AssemblyLoader = new AssemblyLoader();
@@ -2329,21 +2235,11 @@ namespace LightInject
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName, ILifetime lifetime)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, lifetime, serviceName);
         }
 
-#endif
-#if IOS
-        public void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime)
-        {
-            Func<TService> factoryDelegate = () => factory(this);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName, lifetime);
-        }
-
-#endif
         /// <summary>
         /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
         /// </summary>
@@ -2532,22 +2428,12 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The target service type.</typeparam>
         /// <param name="factory">A factory delegate used to create a decorator instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
         {
             var decoratorRegistration = new DecoratorRegistration { FactoryExpression = factory, ServiceType = typeof(TService), CanDecorate = si => true };
             Decorate(decoratorRegistration);
         }
 
-#endif
-#if IOS
-        public void Decorate<TService>(Func<IServiceFactory, TService, TService> factory)
-        {
-            var decoratorRegistration = new DecoratorRegistration { FactoryDelegate = factory, ServiceType = typeof(TService), CanDecorate = si => true };
-            Decorate(decoratorRegistration);
-        }
-
-#endif
         /// <summary>
         /// Registers a decorator based on a <see cref="DecoratorRegistration"/> instance.
         /// </summary>
@@ -2659,21 +2545,11 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, ILifetime lifetime)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, lifetime, string.Empty);
         }
 
-#endif
-#if IOS
-        public void Register<TService>(Func<IServiceFactory, TService> factory, ILifetime lifetime)
-        {
-            Func<TService> factoryDelegate = () => factory(this);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService), lifetime: lifetime);
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2681,21 +2557,11 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
 
-#endif
-#if IOS
-        public void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName)
-        {
-            Func<TService> factoryDelegate = () => factory(this);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
-        }
-
-#endif
         /// <summary>
         /// Registers a concrete type as a service.
         /// </summary>
@@ -2785,21 +2651,11 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
-#endif
-#if IOS
-        public void Register<TService>(Func<IServiceFactory, TService> factory)
-        {
-            Func<TService> factoryDelegate = () => factory(this);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService));
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2807,21 +2663,11 @@ namespace LightInject
         /// <typeparam name="T">The parameter type.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
-#endif
-#if IOS
-        public void Register<T, TService>(Func<IServiceFactory, T, TService> factory)
-        {
-            Func<T, TService> factoryDelegate = arg => factory(this, arg);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService));
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2830,21 +2676,11 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
 
-#endif
-#if IOS
-        public void Register<T, TService>(Func<IServiceFactory, T, TService> factory, string serviceName)
-        {
-            Func<T, TService> factoryDelegate = arg => factory(this, arg);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2853,21 +2689,11 @@ namespace LightInject
         /// <typeparam name="T2">The type of the second parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
-#endif
-#if IOS
-        public void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory)
-        {
-            Func<T1, T2, TService> factoryDelegate = (arg1, arg2) => factory(this, arg1, arg2);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService));
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2877,21 +2703,11 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
 
-#endif
-#if IOS
-        public void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory, string serviceName)
-        {
-            Func<T1, T2, TService> factoryDelegate = (arg1, arg2) => factory(this, arg1, arg2);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2901,21 +2717,11 @@ namespace LightInject
         /// <typeparam name="T3">The type of the third parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
-#endif
-#if IOS
-        public void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory)
-        {
-            Func<T1, T2, T3, TService> factoryDelegate = (arg1, arg2, arg3) => factory(this, arg1, arg2, arg3);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService));
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2926,21 +2732,11 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
 
-#endif
-#if IOS
-        public void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory, string serviceName)
-        {
-            Func<T1, T2, T3, TService> factoryDelegate = (arg1, arg2, arg3) => factory(this, arg1, arg2, arg3);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2951,21 +2747,11 @@ namespace LightInject
         /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
         }
 
-#endif
-#if IOS
-        public void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory)
-        {
-            Func<T1, T2, T3, T4, TService> factoryDelegate = (arg1, arg2, arg3, arg4) => factory(this, arg1, arg2, arg3, arg4);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService));
-        }
-
-#endif
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -2977,21 +2763,11 @@ namespace LightInject
         /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">A factory delegate used to create the <typeparamref name="TService"/> instance.</param>
         /// <param name="serviceName">The name of the service.</param>
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
         }
 
-#endif
-#if IOS
-        public void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory, string serviceName)
-        {
-            Func<T1, T2, T3, T4, TService> factoryDelegate = (arg1, arg2, arg3, arg4) => factory(this, arg1, arg2, arg3, arg4);
-            RegisterFactoryDelegate(factoryDelegate, typeof(TService), serviceName);
-        }
-
-#endif
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with the <paramref name="implementingType"/>.
         /// </summary>
@@ -3432,12 +3208,7 @@ namespace LightInject
         {
             lock (lockObject)
             {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
                 IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
-#endif
-#if IOS
-                IMethodSkeleton methodSkeleton = methodSkeletonFactory(new[] { typeof(object[]), typeof(object) });
-#endif
                 ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
                 var emitter = methodSkeleton.GetEmitter();
                 emitter.PushArgument(1);
@@ -3489,18 +3260,10 @@ namespace LightInject
             return new ConstructionInfoProvider(CreateConstructionInfoBuilder());
         }
 
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private ConstructionInfoBuilder CreateConstructionInfoBuilder()
         {
             return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
         }
-#endif
-#if IOS
-        private ConstructionInfoBuilder CreateConstructionInfoBuilder()
-        {
-            return new ConstructionInfoBuilder(CreateTypeConstructionInfoBuilder);
-        }
-#endif
 
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
@@ -3528,12 +3291,7 @@ namespace LightInject
 
         private GetInstanceDelegate CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
         {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
-#endif
-#if IOS
-            var methodSkeleton = methodSkeletonFactory(new[] { typeof(object[]) });
-#endif
             IEmitter emitter = methodSkeleton.GetEmitter();
             serviceEmitter(emitter);
             if (emitter.StackType.IsValueType())
@@ -3779,12 +3537,8 @@ namespace LightInject
 
                 if (constructionInfo.FactoryDelegate != null)
                 {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+
                     EmitNewInstanceUsingFactoryDelegate(constructionInfo.FactoryDelegate, emitter);
-#endif
-#if IOS
-                    EmitNewInstanceUsingFactoryDelegate(serviceRegistration.ServiceType, serviceRegistration.ServiceName, constructionInfo.FactoryDelegate, emitter);
-#endif
                 }
                 else
                 {
@@ -3839,7 +3593,6 @@ namespace LightInject
             EmitPropertyDependencies(constructionInfo, emitter);
         }
 
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private void EmitNewInstanceUsingFactoryDelegate(Delegate factoryDelegate, IEmitter emitter)
         {
             var factoryDelegateIndex = constants.Add(factoryDelegate);
@@ -3857,34 +3610,6 @@ namespace LightInject
             emitter.Call(invokeMethod);
         }
 
-#endif
-#if IOS
-        private void EmitNewInstanceUsingFactoryDelegate(Type serviceType, string serviceName, Delegate factoryDelegate, IEmitter emitter)
-        {
-            var factoryDelegateIndex = constants.Add(factoryDelegate);
-            Type funcType = factoryDelegate.GetType();
-            emitter.PushConstant(factoryDelegateIndex, funcType);
-            var parameters = factoryDelegate.GetMethodInfo().GetParameters();
-            if (parameters.Length == 1 && parameters[0].ParameterType == typeof(ServiceRequest))
-            {
-                var serviceRequest = new ServiceRequest(serviceType, serviceName, this);
-                var serviceRequestIndex = constants.Add(serviceRequest);
-                emitter.PushConstant(serviceRequestIndex, typeof(ServiceRequest));
-            }
-            else
-            {
-                if (parameters.Length > 0)
-                {
-                    emitter.PushArguments(parameters);
-                }
-            }
-
-            MethodInfo invokeMethod = funcType.GetMethod("Invoke");
-            emitter.Call(invokeMethod);
-            emitter.Cast(serviceType);
-        }
-
-#endif
         private void EmitConstructorDependencies(ConstructionInfo constructionInfo, IEmitter emitter, Action<IEmitter> decoratorTargetEmitter)
         {
             foreach (ConstructorDependency dependency in constructionInfo.ConstructorDependencies)
@@ -3924,6 +3649,21 @@ namespace LightInject
 
         private void EmitConstructorDependency(IEmitter emitter, Dependency dependency)
         {
+            //var instanceDelegate = delegates.Search(dependency.ServiceType);
+            //if (instanceDelegate == null)
+            //{
+            //    instanceDelegate = CreateDefaultDelegate(dependency.ServiceType, throwError: true);
+            //}
+
+            //var instanceDelegateIndex = constants.Add(instanceDelegate);
+
+
+            //var invokeMethod = typeof(GetInstanceDelegate).GetMethod("Invoke");
+            //emitter.PushConstant(instanceDelegateIndex);
+            //emitter.Emit(OpCodes.Ldarg_0);
+            //emitter.Call(invokeMethod);
+            //emitter.UnboxOrCast(dependency.ServiceType);
+
             var emitMethod = GetEmitMethodForDependency(dependency);
 
             try
@@ -3954,13 +3694,11 @@ namespace LightInject
 
         private Action<IEmitter> GetEmitMethodForDependency(Dependency dependency)
         {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             if (dependency.FactoryExpression != null)
             {
                 return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
             }
 
-#endif
             Action<IEmitter> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
             if (emitter == null)
             {
@@ -3973,8 +3711,7 @@ namespace LightInject
 
             return emitter;
         }
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
-
+    
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
             var actions = new List<Action<IEmitter>>();
@@ -4016,7 +3753,6 @@ namespace LightInject
 
             emitter.Call(methodInfo);
         }
-#endif
 
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IEmitter emitter)
         {
@@ -4058,7 +3794,7 @@ namespace LightInject
             {
                 emitter = CreateEmitMethodForArrayServiceRequest(serviceType);
             }
-#if NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
             else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
                 emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
@@ -4128,7 +3864,6 @@ namespace LightInject
             return getInstanceMethod.CreateDelegate(serviceType, this);
         }
 
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
         private Action<IEmitter> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Lifetime = CloneLifeTime(rule.LifeTime) };
@@ -4149,7 +3884,6 @@ namespace LightInject
 
             return methodSkeleton => EmitNewInstanceWithDecorators(serviceRegistration, methodSkeleton);
         }
-#endif
 #if IOS
         private Action<IEmitter> CreateServiceEmitterBasedOnFactoryRule(FactoryRule rule, Type serviceType, string serviceName)
         {
@@ -4188,7 +3922,7 @@ namespace LightInject
                 ms.Emit(OpCodes.Call, closedGenericToListMethod);
             };
         }
-#if NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
 
         private Action<IEmitter> CreateEmitMethodForReadOnlyCollectionServiceRequest(Type serviceType)
         {
@@ -4470,7 +4204,7 @@ namespace LightInject
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Value = value, Lifetime = new PerContainerLifetime() };
             Register(serviceRegistration);
         }
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+
 
         private void RegisterServiceFromLambdaExpression<TService>(
             LambdaExpression factory, ILifetime lifetime, string serviceName)
@@ -4478,25 +4212,6 @@ namespace LightInject
             var serviceRegistration = new ServiceRegistration { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, Lifetime = lifetime };
             Register(serviceRegistration);
         }
-#endif
-#if IOS
-
-        private void RegisterFactoryDelegate(
-            Delegate factoryDelegate,
-            Type serviceType,
-            string serviceName = "",
-            ILifetime lifetime = null)
-        {
-            var serviceRegistration = new ServiceRegistration
-            {
-                ServiceType = serviceType,
-                FactoryDelegate = factoryDelegate,
-                ServiceName = serviceName,
-                Lifetime = lifetime
-            };
-            Register(serviceRegistration);
-        }
-#endif
 
         private class Storage<T>
         {
@@ -4559,20 +4274,11 @@ namespace LightInject
             private IEmitter emitter;
             private DynamicMethod dynamicMethod;
 
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
             {
                 CreateDynamicMethod(returnType, parameterTypes);
             }
 
-#endif
-#if IOS
-            public DynamicMethodSkeleton(Type[] parameterTypes)
-            {
-                CreateDynamicMethod(parameterTypes);
-            }
-
-#endif
             public IEmitter GetEmitter()
             {
                 return emitter;
@@ -4583,13 +4289,6 @@ namespace LightInject
                 return dynamicMethod.CreateDelegate(delegateType);
             }
 
-#if IOS
-            private void CreateDynamicMethod(Type[] parameterTypes)
-            {
-                dynamicMethod = new DynamicMethod(parameterTypes);
-                emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
-            }
-#endif
 #if NET40
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
@@ -4598,7 +4297,7 @@ namespace LightInject
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
-#if NET45 || DNX451 || DNXCORE50 || NET46
+#if NET45 || DNX451 || DNXCORE50 || NET46 
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
@@ -4606,7 +4305,7 @@ namespace LightInject
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
-#if NETFX_CORE || WINDOWS_PHONE
+#if PCL_111
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);
@@ -4682,13 +4381,13 @@ namespace LightInject
     }
 
 #endif
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || NET46
+
     /// <summary>
     /// A thread safe dictionary.
     /// </summary>
     /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
     /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
-    internal class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
+    public class ThreadSafeDictionary<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class.
@@ -4708,226 +4407,11 @@ namespace LightInject
         }
     }
 
-#endif
-#if WINDOWS_PHONE || IOS
-    /// <summary>
-    /// A thread safe dictionary.
-    /// </summary>
-    /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
-    /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
-    internal class ThreadSafeDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
-    {
-        private readonly Dictionary<TKey, TValue> dictionary;
-        private readonly object syncObject = new object();
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class.
-        /// </summary>
-        public ThreadSafeDictionary()
-        {
-            dictionary = new Dictionary<TKey, TValue>();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ThreadSafeDictionary{TKey,TValue}"/> class using the
-        /// given <see cref="IEqualityComparer{T}"/>.
-        /// </summary>
-        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing keys</param>
-        public ThreadSafeDictionary(IEqualityComparer<TKey> comparer)
-        {
-            dictionary = new Dictionary<TKey, TValue>(comparer);
-        }
-
-        /// <summary>
-        /// Gets the number of key/value pairs contained in the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        public int Count
-        {
-            get { return dictionary.Count; }
-        }
-
-        /// <summary>
-        /// Gets a collection that contains the values in the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        public ICollection<TValue> Values
-        {
-            get
-            {
-                lock (syncObject)
-                {
-                    return dictionary.Values;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets a collection containing the keys in the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        public ICollection<TKey> Keys
-        {
-            get
-            {
-                lock (syncObject)
-                {
-                    return dictionary.Keys;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the value associated with the specified key.
-        /// </summary>
-        /// <param name="key">The key of the value to get or set.</param>
-        /// <returns>The value of the key/value pair at the specified index.</returns>
-        public TValue this[TKey key]
-        {
-            set
-            {
-                lock (syncObject)
-                {
-                    dictionary[key] = value;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Adds a key/value pair to the <see cref="ThreadSafeDictionary{TKey,TValue}"/> by using the specified function, if the key does not already exist.
-        /// </summary>
-        /// <param name="key">The key of the element to add.</param>
-        /// <param name="valuefactory">The function used to generate a value for the key</param>
-        /// <returns>The value for the key.</returns>
-        public TValue GetOrAdd(TKey key, Func<TKey, TValue> valuefactory)
-        {
-            lock (syncObject)
-            {
-                TValue value;
-                if (!dictionary.TryGetValue(key, out value))
-                {
-                    value = valuefactory(key);
-                    dictionary.Add(key, value);
-                }
-
-                return value;
-            }
-        }
-
-        /// <summary>
-        /// Uses the specified functions to add a key/value pair to the <see cref="ThreadSafeDictionary{TKey,TValue}"/> if the key does not already exist,
-        /// or to update a key/value pair in the <see cref="ThreadSafeDictionary{TKey,TValue}"/> if the key already exists.
-        /// </summary>
-        /// <param name="key">The key to be added or whose value should be updated</param>
-        /// <param name="addValueFactory">The function used to generate a value for an absent key</param>
-        /// <param name="updateValueFactory">The function used to generate a new value for an existing key based on the key's existing value</param>
-        public void AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
-        {
-            lock (syncObject)
-            {
-                TValue value;
-                if (!dictionary.TryGetValue(key, out value))
-                {
-                    dictionary.Add(key, addValueFactory(key));
-                }
-                else
-                {
-                    dictionary[key] = updateValueFactory(key, value);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Attempts to get the value associated with the specified key from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        /// <param name="key">The key of the value to get.</param>
-        /// <param name="value">When this method returns, contains the object from the <see cref="ThreadSafeDictionary{TKey,TValue}"/> that has the specified key,
-        /// or the default value of <typeparamref name="TValue"/>, if the operation failed.</param>
-        public void TryGetValue(TKey key, out TValue value)
-        {
-            lock (syncObject)
-            {
-                dictionary.TryGetValue(key, out value);
-            }
-        }
-
-        /// <summary>
-        /// Attempts to remove and return the value that has the specified key from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        /// <param name="key">The key of the element to remove and return.</param>
-        /// <param name="value">When this method returns, contains the object removed from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.</param>
-        /// <returns>When this method returns, contains the object removed from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>,
-        /// or the default value of the <typeparamref name="TValue"/> type if key does not exist.</returns>
-        public bool TryRemove(TKey key, out TValue value)
-        {
-            lock (syncObject)
-            {
-                if (dictionary.TryGetValue(key, out value))
-                {
-                    return true;
-                }
-
-                value = default(TValue);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Attempts to add the specified key and value to the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        /// <param name="key">The key of the element to add.</param>
-        /// <param name="value">The value of the element to add.</param>
-        /// <returns>true if the key/value pair was added to the <see cref="ThreadSafeDictionary{TKey,TValue}"/> successfully; false if the key already exists.</returns>
-        public bool TryAdd(TKey key, TValue value)
-        {
-            lock (syncObject)
-            {
-                if (dictionary.ContainsKey(key))
-                {
-                    return false;
-                }
-
-                dictionary.Add(key, value);
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Removes all keys and values from the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        public void Clear()
-        {
-            lock (syncObject)
-            {
-                dictionary.Clear();
-            }
-        }
-
-        /// <summary>
-        /// Returns an enumerator that iterates through the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        /// <returns>An enumerator for the <see cref="ThreadSafeDictionary{TKey,TValue}"/></returns>
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            lock (syncObject)
-            {
-                return dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value).GetEnumerator();
-            }
-        }
-
-        /// <summary>
-        /// Returns an enumerator that iterates through the <see cref="ThreadSafeDictionary{TKey,TValue}"/>.
-        /// </summary>
-        /// <returns>An enumerator for the <see cref="ThreadSafeDictionary{TKey,TValue}"/></returns>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-    }
-
-#endif
-#if NETFX_CORE || WINDOWS_PHONE || SILVERLIGHT
+#if PCL_111
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
     /// </summary>
-    internal class DynamicMethod
+    public class DynamicMethod
     {
         private readonly Type returnType;
 
@@ -5427,440 +4911,7 @@ namespace LightInject
     }
 
 #endif
-#if IOS
-    public class DynamicMethod
-    {
 
-        private readonly Type[] parameterTypes;
-        private readonly ILGenerator generator;
-
-        public DynamicMethod(Type[] parameterTypes)
-        {
-            this.parameterTypes = parameterTypes;
-            generator = new ILGenerator();
-        }
-
-        public Delegate CreateDelegate(Type delegateType)
-        {
-            MethodInfo executeMethod;
-            var parameterCount = parameterTypes.Length;
-
-            if (parameterCount == 1)
-            {
-                executeMethod = typeof(ILGenerator).GetMethod("ExecuteUsingOneArgument");
-            }
-            else
-            {
-                executeMethod = typeof(ILGenerator).GetMethod("ExecuteUsingTwoArguments");
-            }
-
-            var d = executeMethod.CreateDelegate(delegateType, generator);
-            return d;
-        }
-
-        public ILGenerator GetILGenerator()
-        {
-            return generator;
-        }
-    }
-
-    public class ExecutionContext
-    {
-        public ExecutionContext(object[] arguments, LocalBuilder[] locals)
-        {
-            Arguments = arguments;
-            Stack = new Stack<object>();
-            Locals = locals;
-        }
-
-        public object[] Arguments { get; private set; }
-
-        public Stack<object> Stack { get; private set; }
-
-        public LocalBuilder[] Locals { get; private set; }
-    }
-
-    public class ILGenerator
-    {
-        private readonly List<Action<ExecutionContext>> instructions = new List<Action<ExecutionContext>>();
-        private readonly List<LocalBuilder> declaredLocals = new List<LocalBuilder>();
-
-        public object ExecuteUsingOneArgument(object argument)
-        {
-            var context = new ExecutionContext(new[] { argument }, declaredLocals.Select(l => new LocalBuilder(l.LocalType, l.LocalIndex)).ToArray());
-
-            foreach (var instruction in instructions)
-            {
-                instruction(context);
-            }
-
-            return context.Stack.Pop();
-        }
-
-        public object ExecuteUsingTwoArguments(object firstArgument, object secondArgument)
-        {
-            var context = new ExecutionContext(new[] { firstArgument, secondArgument }, declaredLocals.Select(l => new LocalBuilder(l.LocalType, l.LocalIndex)).ToArray());
-
-            foreach (var instruction in instructions)
-            {
-                instruction(context);
-            }
-
-            return context.Stack.Pop();
-        }
-
-        public LocalBuilder DeclareLocal(Type type)
-        {
-            var localBuilder = new LocalBuilder(type, declaredLocals.Count);
-            declaredLocals.Add(localBuilder);
-            return localBuilder;
-        }
-
-        public void Emit(OpCode code, ConstructorInfo constructor)
-        {
-            instructions.Add(context => EmitInternal(code, constructor, context));
-        }
-
-        public void Emit(OpCode code, int arg)
-        {
-            instructions.Add(context => EmitInternal(code, arg, context));
-        }
-
-        public void Emit(OpCode code, LocalBuilder localBuilder)
-        {
-            instructions.Add(context => EmitInternal(code, context.Locals[localBuilder.LocalIndex], context));
-        }
-
-        public void Emit(OpCode code, sbyte arg)
-        {
-            instructions.Add(context => EmitInternal(code, arg, context));
-        }
-
-        public void Emit(OpCode code, byte arg)
-        {
-            instructions.Add(context => EmitInternal(code, arg, context));
-        }
-
-        public void Emit(OpCode code, Type type)
-        {
-            instructions.Add(context => EmitInternal(code, type, context));
-        }
-
-        public void Emit(OpCode code, MethodInfo methodInfo)
-        {
-            instructions.Add(context => EmitInternal(code, methodInfo, context));
-        }
-
-        public void Emit(OpCode code)
-        {
-            instructions.Add(context => EmitInternal(code, context));
-        }
-
-        private void EmitInternal(OpCode code, ConstructorInfo constructor, ExecutionContext context)
-        {
-            var stack = context.Stack;
-
-            if (code == OpCodes.Newobj)
-            {
-                var parameterCount = constructor.GetParameters().Length;
-                object[] arguments = stack.Pop(parameterCount);
-                Type type = constructor.DeclaringType;
-                object instance;
-                try
-                {
-                    instance = Activator.CreateInstance(type, arguments);
-                }
-                catch (TargetInvocationException ex)
-                {
-                    throw ex.InnerException;
-                }
-
-                stack.Push(instance);
-            }
-        }
-
-        private static void EmitInternal(OpCode code, int arg, ExecutionContext context)
-        {
-            var stack = context.Stack;
-            var locals = context.Locals;
-            var arguments = context.Arguments;
-
-            if (code == OpCodes.Ldc_I4)
-            {
-                stack.Push(arg);
-            }
-            else if (code == OpCodes.Ldc_I4_S)
-            {
-                stack.Push(arg);
-            }
-            else if (code == OpCodes.Ldarg)
-            {
-                stack.Push(arguments[arg]);
-            }
-            else if (code == OpCodes.Ldloc)
-            {
-                stack.Push(locals[arg].Value);
-            }
-            else if (code == OpCodes.Stloc)
-            {
-                locals[arg].Value = stack.Pop();
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        private static void EmitInternal(OpCode code, LocalBuilder localBuilder, ExecutionContext context)
-        {
-            var stack = context.Stack;
-
-            if (code == OpCodes.Stloc)
-            {
-                localBuilder.Value = stack.Pop();
-            }
-            else if (code == OpCodes.Ldloc)
-            {
-                stack.Push(localBuilder.Value);
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        internal void EmitInternal(OpCode code, Type type, ExecutionContext context)
-        {
-            var stack = context.Stack;
-            if (code == OpCodes.Newarr)
-            {
-                var array = Array.CreateInstance(type, (int)stack.Pop());
-                stack.Push(array);
-            }
-            else if (code == OpCodes.Stelem)
-            {
-                var value = stack.Pop();
-                var index = stack.Pop();
-                var array = (Array)stack.Pop();
-                array.SetValue(value, (int)index);
-            }
-            else if (code == OpCodes.Castclass)
-            {
-                stack.Push(stack.Pop());
-            }
-            else if (code == OpCodes.Box)
-            {
-                stack.Push(stack.Pop());
-            }
-            else if (code == OpCodes.Unbox_Any)
-            {
-                stack.Push(stack.Pop());
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        internal void EmitInternal(OpCode code, MethodInfo methodInfo, ExecutionContext context)
-        {
-            var stack = context.Stack;
-
-            if (code == OpCodes.Callvirt || code == OpCodes.Call)
-            {
-                var parameterCount = methodInfo.GetParameters().Length;
-                object[] arguments = stack.Pop(parameterCount);
-
-                object result;
-                if (!methodInfo.IsStatic)
-                {
-                    object instance = stack.Pop();
-                    try
-                    {
-                        result = methodInfo.Invoke(instance, arguments);
-                    }
-                    catch (TargetInvocationException ex)
-                    {
-                        throw ex.InnerException;
-                    }
-                }
-                else
-                {
-                    result = methodInfo.Invoke(null, arguments);
-                }
-
-                if (methodInfo.ReturnType != typeof(void))
-                {
-                    stack.Push(result);
-                }
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-
-        internal void EmitInternal(OpCode code, ExecutionContext context)
-        {
-            var stack = context.Stack;
-            var args = context.Arguments;
-            var locals = context.Locals;
-
-            if (code == OpCodes.Ldarg_0)
-            {
-                stack.Push(args[0]);
-            }
-            else if (code == OpCodes.Ldarg_1)
-            {
-                stack.Push(args[1]);
-            }
-            else if (code == OpCodes.Ldloc_0)
-            {
-                stack.Push(locals[0].Value);
-            }
-            else if (code == OpCodes.Ldloc_1)
-            {
-                stack.Push(locals[1].Value);
-            }
-            else if (code == OpCodes.Ldloc_2)
-            {
-                stack.Push(locals[2].Value);
-            }
-            else if (code == OpCodes.Ldloc_3)
-            {
-                stack.Push(locals[3].Value);
-            }
-            else if (code == OpCodes.Stloc_0)
-            {
-                locals[0].Value = stack.Pop();
-            }
-            else if (code == OpCodes.Stloc_1)
-            {
-                locals[1].Value = stack.Pop();
-            }
-            else if (code == OpCodes.Stloc_2)
-            {
-                locals[2].Value = stack.Pop();
-            }
-            else if (code == OpCodes.Stloc_3)
-            {
-                locals[3].Value = stack.Pop();
-            }
-            else if (code == OpCodes.Ldelem_Ref)
-            {
-                var index = (int)stack.Pop();
-                var array = (Array)stack.Pop();
-                var value = array.GetValue(index);
-                stack.Push(value);
-            }
-            else if (code == OpCodes.Ldlen)
-            {
-                var array = (Array)stack.Pop();
-                stack.Push(array.Length);
-            }
-            else if (code == OpCodes.Conv_I4)
-            {
-                stack.Push(stack.Pop());
-            }
-            else if (code == OpCodes.Ldc_I4_0)
-            {
-                stack.Push(0);
-            }
-            else if (code == OpCodes.Ldc_I4_1)
-            {
-                stack.Push(1);
-            }
-            else if (code == OpCodes.Ldc_I4_2)
-            {
-                stack.Push(2);
-            }
-            else if (code == OpCodes.Ldc_I4_3)
-            {
-                stack.Push(3);
-            }
-            else if (code == OpCodes.Ldc_I4_4)
-            {
-                stack.Push(4);
-            }
-            else if (code == OpCodes.Ldc_I4_5)
-            {
-                stack.Push(5);
-            }
-            else if (code == OpCodes.Ldc_I4_6)
-            {
-                stack.Push(6);
-            }
-            else if (code == OpCodes.Ldc_I4_7)
-            {
-                stack.Push(7);
-            }
-            else if (code == OpCodes.Ldc_I4_8)
-            {
-                stack.Push(8);
-            }
-            else if (code == OpCodes.Sub)
-            {
-                var right = (int)stack.Pop();
-                var left = (int)stack.Pop();
-                stack.Push(left - right);
-            }
-            else if (code == OpCodes.Ret)
-            {
-            }
-            else
-            {
-                throw new NotSupportedException(code.ToString());
-            }
-        }
-    }
-
-    public static class StackExtensions
-    {
-        public static T[] Pop<T>(this Stack<T> stack, int numberOfElements)
-        {
-            var elementsToPop = new T[numberOfElements];
-            for (int i = 0; i < numberOfElements; i++)
-            {
-                elementsToPop[i] = stack.Pop();
-            }
-
-            return elementsToPop.Reverse().ToArray();
-        }
-    }
-
-    /// <summary>
-    /// Represents a local variable within a method or constructor.
-    /// </summary>
-    public class LocalBuilder
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LocalBuilder"/> class.
-        /// </summary>
-        /// <param name="type">The <see cref="Type"/> of the variable that this <see cref="LocalBuilder"/> represents.</param>
-        /// <param name="localIndex">The zero-based index of the local variable within the method body.</param>
-        public LocalBuilder(Type type, int localIndex)
-        {
-            LocalType = type;
-            LocalIndex = localIndex;
-        }
-
-        /// <summary>
-        /// Gets the type of the local variable.
-        /// </summary>
-        public Type LocalType { get; private set; }
-
-        /// <summary>
-        /// Gets the zero-based index of the local variable within the method body.
-        /// </summary>
-        public int LocalIndex { get; private set; }
-
-        /// <summary>
-        /// Gets or sets the value associated with this <see cref="LocalBuilder"/>.
-        /// </summary>
-        public object Value { get; set; }
-    }
-
-#endif
     /// <summary>
     /// Selects the <see cref="ConstructionInfo"/> from a given type that represents the most resolvable constructor.
     /// </summary>
@@ -6121,12 +5172,12 @@ namespace LightInject
     /// </summary>
     public class ConstructionInfoBuilder : IConstructionInfoBuilder
     {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
         private readonly Lazy<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilder;
 #endif
         private readonly Lazy<ITypeConstructionInfoBuilder> typeConstructionInfoBuilder;
 
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
+#if NET40 || NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
         /// <summary>
         /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.
         /// </summary>
@@ -6145,20 +5196,6 @@ namespace LightInject
         }
 
 #endif
-#if IOS
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.
-        /// </summary>
-        /// <param name="typeConstructionInfoBuilderFactory">
-        /// A function delegate used to provide a <see cref="ITypeConstructionInfoBuilder"/> instance.
-        /// </param>
-        public ConstructionInfoBuilder(
-            Func<ITypeConstructionInfoBuilder> typeConstructionInfoBuilderFactory)
-        {
-            typeConstructionInfoBuilder = new Lazy<ITypeConstructionInfoBuilder>(typeConstructionInfoBuilderFactory);
-        }
-
-#endif
         /// <summary>
         /// Returns a <see cref="ConstructionInfo"/> instance based on the given <see cref="Registration"/>.
         /// </summary>
@@ -6166,31 +5203,15 @@ namespace LightInject
         /// <returns>A <see cref="ConstructionInfo"/> instance that describes how to create a service instance.</returns>
         public ConstructionInfo Execute(Registration registration)
         {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             return registration.FactoryExpression != null
                 ? CreateConstructionInfoFromLambdaExpression(registration.FactoryExpression)
                 : CreateConstructionInfoFromImplementingType(registration);
-#endif
-#if IOS
-            return registration.FactoryDelegate != null
-                ? CreateConstructionInfoFromFactoryDelegate(registration.FactoryDelegate)
-                : CreateConstructionInfoFromImplementingType(registration);
-#endif
         }
-#if IOS
-
-        private static ConstructionInfo CreateConstructionInfoFromFactoryDelegate(Delegate factoryDelegate)
-        {
-            return new ConstructionInfo { FactoryDelegate = factoryDelegate };
-        }
-#endif
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
 
         private ConstructionInfo CreateConstructionInfoFromLambdaExpression(LambdaExpression lambdaExpression)
         {
             return lambdaConstructionInfoBuilder.Value.Execute(lambdaExpression);
         }
-#endif
 
         private ConstructionInfo CreateConstructionInfoFromImplementingType(Registration registration)
         {
@@ -6198,7 +5219,6 @@ namespace LightInject
         }
     }
 
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
     /// <summary>
     /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
     /// </summary>
@@ -6369,7 +5389,6 @@ namespace LightInject
         }
     }
 
-#endif
     /// <summary>
     /// Contains information about a service request that originates from a rule based service registration.
     /// </summary>
@@ -6423,20 +5442,11 @@ namespace LightInject
         /// Gets or sets the <see cref="Type"/> that implements the <see cref="Registration.ServiceType"/>.
         /// </summary>
         public virtual Type ImplementingType { get; set; }
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
 
         /// <summary>
         /// Gets or sets the <see cref="LambdaExpression"/> used to create a service instance.
         /// </summary>
         public LambdaExpression FactoryExpression { get; set; }
-#endif
-#if IOS
-
-        /// <summary>
-        /// Gets or sets the <see cref="Delegate"/> used to create the service instance.
-        /// </summary>
-        public Delegate FactoryDelegate { get; set; }
-#endif
     }
 
     /// <summary>
@@ -6467,12 +5477,7 @@ namespace LightInject
         {
             get
             {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
                 return ImplementingType == null && FactoryExpression == null;
-#endif
-#if IOS
-                return ImplementingType == null && FactoryDelegate == null;
-#endif
             }
         }
     }
@@ -7073,9 +6078,7 @@ namespace LightInject
 
         static ConcreteTypeExtractor()
         {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NETFX_CORE || WINDOWS_PHONE || NET46
             InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
-#endif
             InternalTypes.Add(typeof(ConstructorDependency));
             InternalTypes.Add(typeof(PropertyDependency));
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
@@ -7119,21 +6122,14 @@ namespace LightInject
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));            
-#if NET45 || DNX451 || NET46
+#if NET45 || DNX451 || NET46 || DNXCORE50
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif
-#if NETFX_CORE || WINDOWS_PHONE || IOS
+#if PCL_111
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
-#endif
-#if SILVERLIGHT
-            InternalTypes.Add(typeof(ThreadLocal<>));
-            InternalTypes.Add(typeof(ThreadLocal<>.Holder));
-#endif
-#if IOS
-            InternalTypes.Add(typeof(ExecutionContext));
 #endif
         }
 

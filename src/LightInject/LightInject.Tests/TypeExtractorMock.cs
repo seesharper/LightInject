@@ -4,7 +4,7 @@ using LightMock;
 
 namespace LightInject.Tests
 {
-    public class TypeExtractorMock : MockContext<ITypeExtractor>, ITypeExtractor
+    internal class TypeExtractorMock : MockContext<ITypeExtractor>, ITypeExtractor
     {
         public Type[] Execute(Assembly assembly)
         {

@@ -1,4 +1,4 @@
-#if NETFX_CORE || WINDOWS_PHONE
+#if PCL_111
 using System;
 using System.Collections.Generic;
 using System.Linq;

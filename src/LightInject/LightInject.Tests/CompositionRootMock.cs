@@ -9,7 +9,7 @@ namespace LightInject.Tests
 {
    
 
-    public class CompositionRootMock : MockContext<ICompositionRoot>, ICompositionRoot
+    internal class CompositionRootMock : MockContext<ICompositionRoot>, ICompositionRoot
     {
         public void Compose(IServiceRegistry serviceRegistry)
         {
@@ -17,7 +17,7 @@ namespace LightInject.Tests
         }
     }
 
-    public class AnotherCompositionRootMock : MockContext<ICompositionRoot>, ICompositionRoot
+    internal class AnotherCompositionRootMock : MockContext<ICompositionRoot>, ICompositionRoot
     {
         public void Compose(IServiceRegistry serviceRegistry)
         {

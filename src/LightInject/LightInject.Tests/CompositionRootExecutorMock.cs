@@ -3,7 +3,7 @@ using LightMock;
 
 namespace LightInject.Tests
 {
-    public class CompositionRootExecutorMock : MockContext<ICompositionRootExecutor>, ICompositionRootExecutor
+    internal class CompositionRootExecutorMock : MockContext<ICompositionRootExecutor>, ICompositionRootExecutor
     {
         public void Execute(Type compositionRootType)
         {

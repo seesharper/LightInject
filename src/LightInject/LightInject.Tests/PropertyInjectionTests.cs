@@ -262,7 +262,7 @@ namespace LightInject.Tests
 
             Assert.IsAssignableFrom(typeof(Bar), result.Bar);
         }
-#if NET40 || NET45 || NETFX_CORE || WINDOWS_PHONE       
+#if NET40 || NET45 || PCL_111       
         [Fact]
         public void InjectProperties_FuncFactory_InjectsPropertyDependencies()
         {

@@ -3,7 +3,7 @@ using LightMock;
 
 namespace LightInject.Tests
 {
-    public class CompositionRootAttributeExtractorMock : MockContext<ICompositionRootAttributeExtractor> ,ICompositionRootAttributeExtractor
+    internal class CompositionRootAttributeExtractorMock : MockContext<ICompositionRootAttributeExtractor> ,ICompositionRootAttributeExtractor
     {
         public CompositionRootTypeAttribute[] GetAttributes(Assembly assembly)
         {
