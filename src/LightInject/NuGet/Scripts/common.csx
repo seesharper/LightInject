@@ -20,13 +20,6 @@ public static class DNU
     }        
 }
 
-
-public class VersionInfo
-{
-    public string PackageName {get; set;}
-    public string Version {get;set;}
-}
-
 public static void RoboCopy(string source, string destination, string arguments = null)
 {
     Command.Execute("robocopy", string.Format("{0} {1} {2}", source, destination, arguments));    
@@ -141,62 +134,12 @@ public static void Execute(Action action, string description)
     WriteEnd("...Done! ({0} ms)", watch.ElapsedMilliseconds);                      
 }
 
-public static string Format(string message, params object[] arguments)
-{
-    StringBuilder sb = new StringBuilder();
-    sb.Append('\t', depth -1);
-    sb.Append(string.Format(message, arguments));    
-    return sb.ToString();
-}
-
-public static string Format(string message,int indentation, params object[] arguments)
-{
-    StringBuilder sb = new StringBuilder();
-    sb.Append('\t', indentation);
-    sb.Append(string.Format(message, arguments));    
-    return sb.ToString();
-}
-
-public static void CopyFiles(string sourceDirectory, 
-                      string destinationDirectory,                       
-                      string searchPattern)
-{
-    DirectoryInfo source = new DirectoryInfo(sourceDirectory);
-    DirectoryInfo destination = new DirectoryInfo(destinationDirectory);
-
-    FileInfo[] files = source.GetFiles(searchPattern);
-
-    //this section is what's really important for your application.
-    foreach (FileInfo file in files)
-    {
-        file.CopyTo(destination.FullName + "\\" + file.Name, true);
-    }
-}
-public static string GetNugetVersionNumber(string pathToNugetSpecification)
-{
-    using(StreamReader reader = new StreamReader(pathToNugetSpecification))
-    {
-        string nuspec = reader.ReadToEnd();
-        var match = Regex.Match(nuspec, @"<version>(.+)<\/version>");
-        return match.Groups[1].Value;
-    }
-}
-
 public static void PatchAssemblyVersionInfo(string version, string frameworkMoniker, string pathToAssemblyInfo)
 {    
     var assemblyInfo = ReadFile(pathToAssemblyInfo);    
     var pachedAssemblyInfo = Regex.Replace(assemblyInfo, @"Version\(""(.+?"")", string.Format(@"Version(""{0}""", version));    
     pachedAssemblyInfo = Regex.Replace(pachedAssemblyInfo, @"(AssemblyCopyright\(""\D+)(\d*)", "${1}" + DateTime.Now.Year);    
     WriteFile(pathToAssemblyInfo, pachedAssemblyInfo);    
-}
-
-
-
-
-public static void CreatePackage(string pathToSpecification, string outputDirectory)
-{
-    string arguments = "pack " + StringUtils.Quote(pathToSpecification) + " -OutputDirectory " + StringUtils.Quote(outputDirectory);
-    var result = Command.Execute("nuget.exe", arguments); 
 }
 
 public static string GetVersionNumberFromSourceFile(string pathToSourceFile)
@@ -352,104 +295,6 @@ public static class MsTest
 
 }
 
-
-
-
-public static class VersionUtils
-{
-    public static string GetVersionString(string pathToSourceFile)
-    {
-        using (var reader = new StreamReader(pathToSourceFile))
-        {
-           while(!reader.EndOfStream)
-           {
-               var line = reader.ReadLine();
-               if (line.Contains(" version "))
-               {
-                    return line.Substring(line.IndexOf(" version ") + 9).Trim();
-               }
-           }
-        }
-        throw new InvalidOperationException("version string not found");
-    }
-
-    public static void UpdateNuGetPackageSpecification(string pathToPackageSpecification, string version, Dictionary<string, string> dependencies)
-    {
-        Console.WriteLine("[VersionUtils] Updating {0} to version {1}", pathToPackageSpecification, version);
-        var tempFile = Path.GetTempFileName();
-        using (var reader = new StreamReader(pathToPackageSpecification))
-        {
-            using (var writer = new StreamWriter(tempFile))
-            {
-                while(!reader.EndOfStream)
-                {
-                    var line = reader.ReadLine();
-                    if (line.Contains("<version>"))
-                    {
-                        line = string.Format("        <version>{0}</version>", version);
-                    }           
-
-                    if (line.Contains("<dependency id"))    
-                    {
-                        XElement element = XElement.Parse(line);
-                        var idAttribute = element.Attribute("id");
-                        if (dependencies.ContainsKey(idAttribute.Value))
-                        {
-                            var versionAttribute = element.Attribute("version");
-                            versionAttribute.Value = dependencies[idAttribute.Value];
-                        }
-                        line = "            " + element.ToString();
-                    }
-
-                    writer.WriteLine(line);
-                } 
-           }           
-        }
-
-        File.Copy(tempFile, pathToPackageSpecification, true);
-    }
-
-
-    public static void UpdateAssemblyInfo(string pathToAssemblyInfoFile, string version)
-    {        
-        var tempFile = Path.GetTempFileName();
-        using (var reader = new StreamReader(pathToAssemblyInfoFile))
-        {
-            using (var writer = new StreamWriter(tempFile))
-            {
-                while(!reader.EndOfStream)
-                {
-                    var line = reader.ReadLine();
-                    if (line.Contains("[assembly: AssemblyVersion"))
-                    {
-                        line = string.Format("[assembly: AssemblyVersion(\"{0}\")]", version);
-                    }
-                    if (line.Contains("[assembly: AssemblyFileVersion"))
-                    {
-                        line = string.Format("[assembly: AssemblyFileVersion(\"{0}\")]", version);
-                    }
-                    if (!line.Contains("InternalsVisibleTo"))    
-                    {
-                        writer.WriteLine(line);
-                    }
-                } 
-           }           
-        }
-
-        File.Copy(tempFile, pathToAssemblyInfoFile, true);
-    }
-
-
-}
-
- public static void DeleteAllPackages(string directory)
-    {
-        foreach(var file in Directory.GetFiles(directory, "*.nupkg"))
-        {            
-            File.Delete(file);
-        }
-    }
-
 public static class DirectoryUtils
 {   
     public static void Delete(string path)
@@ -477,65 +322,11 @@ public static class DirectoryUtils
         {
             Directory.Delete(path, true);
         }
-    }
-
-
-
-   
-
-
-    public static void DeleteContentFolder(string currentDirectory)
-    {
-        string contentFolder = Path.Combine(currentDirectory , @"package\content");
-        if (Directory.Exists(contentFolder))
-        {
-            Directory.Delete(contentFolder, true);
-        }
-    }
-
-    public static void DeleteLibFolder(string currentDirectory)
-    {
-        string libFolder = Path.Combine(currentDirectory , @"package\lib");
-        if (Directory.Exists(libFolder))
-        {
-            Directory.Delete(libFolder, true);
-        }
-    }
-
-    public static void DeleteBuildFolder(string currentDirectory)
-    {
-        string buildFolder = Path.Combine(currentDirectory , @"build");
-        if (Directory.Exists(buildFolder))
-        {
-            Directory.Delete(buildFolder, true);
-        }
-    }
+    } 
 }
 
 public class FileUtils
-{
-    public static void CopyAll(string sourceDirectory, string targetDirectory)
-    {
-        Directory.CreateDirectory(targetDirectory);
-        foreach(var file in Directory.GetFiles(sourceDirectory))
-        {
-            File.Copy(file, Path.Combine(targetDirectory, Path.GetFileName(file)));    
-        }        
-    }
-
-    public static void DeleteAllTempFiles(string directory)
-    {
-        foreach(var file in Directory.GetFiles(directory, "*.tmp"))
-        {
-            File.Delete(file);
-        }
-
-        foreach(var file in Directory.GetFiles(directory, "*.cs"))
-        {
-            File.Delete(file);
-        }
-    }
-
+{    
     public static void Rename(string pathToFile, string newName)
     {
         string directory = Path.GetDirectoryName(pathToFile);
@@ -632,7 +423,6 @@ public static class StringUtils
     }
 }
 
-
 public static class NuGet
 {
     public static void CreatePackage(string pathToMetadata, string outputDirectory)
@@ -644,110 +434,6 @@ public static class NuGet
     public static void Restore(string projectDirectory)
     {
         var result = Command.Execute("nuget", "restore " + Path.Combine(projectDirectory, "packages.config") + " -PackagesDirectory " + Path.Combine(projectDirectory, @"..\packages"),".");        
-    }
-}
-
-
-
-
-
-public class DirectiveEvaluator
-{
-    public bool Execute(string directive, string expression)
-    {
-        string[] subExpressions =
-            expression.Split(new[] { "||" }, StringSplitOptions.None).Select(e => e.Trim()).ToArray();
-
-        return subExpressions.Any(subExpression => directive == subExpression);
-    }
-}
-
-public class SourceWriter
-{
-    private static DirectiveEvaluator directiveEvaluator = new DirectiveEvaluator();
-
-    public static void Write(string directive, string inputFile, string outputFile, bool processNameSpace, bool excludeFromCodeCoverage)
-    {            
-        using (var reader = new StreamReader(inputFile))
-        {
-            using (var writer = new StreamWriter(outputFile))
-            {
-                Write(directive, reader, writer, processNameSpace, excludeFromCodeCoverage);                    
-            }
-        }     
-    }
-
-
-
-    public static void Write(string directive, StreamReader reader, StreamWriter writer, bool processNameSpace, bool excludeFromCodeCoverage)
-    {
-        bool shouldWrite = true;                        
-        while (!reader.EndOfStream)
-        {
-            var line = reader.ReadLine();
-            if (line.StartsWith("#if"))
-            {
-                shouldWrite = directiveEvaluator.Execute(directive, line.Substring(4));
-                continue;
-            }
-
-            if (line.StartsWith("#endif"))
-            {
-                shouldWrite = true;
-                continue;
-            }
-
-
-            if (shouldWrite)
-            {
-                if (line.Contains("namespace") && processNameSpace)
-                {
-                    line = line.Insert(10, "$rootnamespace$.");
-                }
-
-                if (line.Contains("typeof(LightInject.Web.LightInjectHttpModuleInitializer)") && processNameSpace)
-                {
-                    line = line.Replace("typeof(LightInject.Web.LightInjectHttpModuleInitializer)", "typeof($rootnamespace$.LightInject.Web.LightInjectHttpModuleInitializer)");
-                }
-
-                if (line.Contains("typeof(LightInject.Wcf.LightInjectWcfInitializer)") && processNameSpace)
-                {
-                    line = line.Replace("typeof(LightInject.Wcf.LightInjectWcfInitializer)", "typeof($rootnamespace$.LightInject.Wcf.LightInjectWcfInitializer)");
-                }
-
-                if (line.Contains("LightInject.Wcf.LightInjectServiceHostFactory, LightInject.Wcf") && processNameSpace)
-                {
-                    line = line.Replace("LightInject.Wcf.LightInjectServiceHostFactory, LightInject.Wcf", "$rootnamespace$.LightInject.Wcf.LightInjectServiceHostFactory, $assemblyname$");
-                }
-
-                
-
-                if (line.Contains("public class") || line.Contains("internal class") || line.Contains("internal static class"))
-                {                        
-                    var lineWithOutIndent = line.TrimStart(new char[] { ' ' });
-                    var indentLength = line.Length - lineWithOutIndent.Length;
-                    var indent = line.Substring(0, indentLength);
-                    
-                            
-                    if (excludeFromCodeCoverage)
-                    {
-                        writer.WriteLine("{0}{1}", indent, "[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");                        
-                    }
-                    
-                }
-
-                
-                if (!reader.EndOfStream)
-                {
-                    writer.WriteLine(line);
-                }
-                else
-                {
-                    writer.Write(line);
-                }
-
-            }
-        }            
     }
 }
 
@@ -778,119 +464,11 @@ public static class Internalizer
 }
 
 
-public class Publicizer
-{
-    private static readonly List<string> Exceptions = new List<string>();
-    private static readonly List<string> Includes = new List<string>();
+    
    
 
-    static Publicizer()
-    {
-       
-
-        Exceptions.Add("TypeHelper");
-        Exceptions.Add("ReflectionHelper"); 
-        Exceptions.Add("LifetimeHelper"); 
-        Exceptions.Add("NamedDelegateTypeExtensions"); 
-        Exceptions.Add("DelegateTypeExtensions"); 
-        Exceptions.Add("LazyTypeExtensions");
-        Exceptions.Add("EnumerableTypeExtensions");
-        Exceptions.Add("FuncTypeExtensions");
-        //Exceptions.Add("OpCodes");
-        //Exceptions.Add("OpCode");
-        //Exceptions.Add("ILGenerator");        
-        Exceptions.Add("DynamicMethodSkeleton");
-        //Exceptions.Add("DynamicMethod");
-        //Exceptions.Add("MethodInfoExtensions");
-       
+   
 
 
-        Includes.Add("internal struct OpCode");
-        Includes.Add("internal static class");
-        Includes.Add("internal class");
-        Includes.Add("internal sealed class");
-        Includes.Add("internal interface");
-        Includes.Add("internal abstract class");
-        Includes.Add("internal LightInjectServiceLocator");
-        Includes.Add("internal static void SetServiceContainer");
-        Includes.Add("internal LightInjectMvcDependencyResolver");
-                
 
-    }
-    
-    public static void Write(string directive, string inputFile, string outputFile)
-     {
-         var tempFile = Path.GetTempFileName();
-         SourceWriter.Write(directive, inputFile, tempFile, false, false);         
-         using (var reader = new StreamReader(tempFile))
-         {             
-             using (var writer = new StreamWriter(outputFile))
-             {
-                 Write(reader, writer);
-             }
-         }             
-     }
-
-    public static void Write(StreamReader reader, StreamWriter writer)
-    {
-         while (!reader.EndOfStream)
-         {
-             var line = reader.ReadLine();
-             if (Includes.Any(i => line.Contains(i)) && !Exceptions.Any(e => line.Contains(e)))
-             {
-                 line = line.Replace("internal", "public");                 
-             }
-             
-             if (line.Contains(@"Gets or sets the parent <see cref=""Scope""/>."))
-             {
-                line = line.Replace("Gets or sets", "Gets");
-             }
-
-             if (line.Contains(@"Gets or sets the child <see cref=""Scope""/>."))
-             {
-                line = line.Replace("Gets or sets", "Gets");
-             }   
-
-             writer.WriteLine(line);
-         }
-    }
-}
-
-public class AssemblyInfoWriter
-{
-    private static readonly List<string> Exceptions = new List<string>();
-
-    static AssemblyInfoWriter()
-    {
-        Exceptions.Add("InternalsVisibleTo");                        
-    }
-
-    public static void Write(string inputFile, string outputFile, string version)
-     {
-         var tempFile = Path.GetTempFileName();
-         using (var reader = new StreamReader(inputFile))
-         {             
-             using (var writer = new StreamWriter(tempFile))
-             {
-                 Write(reader, writer, version);
-             }
-         }    
-
-
-     }
-
-    public static void Write(StreamReader reader, StreamWriter writer, string version)
-    {
-         while (!reader.EndOfStream)
-         {
-             var line = reader.ReadLine();
-             if (!Exceptions.Any(e => line.Contains(e)))
-             {
-                 writer.WriteLine(line);
-             }             
-         }
-    }
-
-    
-}
    

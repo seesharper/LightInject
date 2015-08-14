@@ -1,6 +1,5 @@
 
 #load "common.csx"
-//	portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10
 
 private const string portableClassLibraryProjectTypeGuid = "{786C830F-07A1-408B-BD7F-6EE04809D6DB}";
 private const string csharpProjectTypeGuid = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}";
@@ -11,17 +10,17 @@ private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
 
 WriteLine("LightInject version {0}" , version);
 
-Execute(() => RestoreNuGetPackages(), "NuGet");
-Execute(() => InitializBuildDirectories(), "Preparing build directories");
-Execute(() => RenameSolutionFiles(), "Renaming solution files");
-Execute(() => PatchAssemblyInfo(), "Patching assembly information");
-Execute(() => PatchProjectFiles(), "Patching project files");
-Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
-Execute(() => BuildAllFrameworks(), "Building all frameworks");
-Execute(() => InitializeNuGetPackageDirectories(), "Preparing NuGet build directories");
+//  Execute(() => RestoreNuGetPackages(), "NuGet");
+//  Execute(() => InitializBuildDirectories(), "Preparing build directories");
+//  Execute(() => RenameSolutionFiles(), "Renaming solution files");
+//  Execute(() => PatchAssemblyInfo(), "Patching assembly information");
+//  Execute(() => PatchProjectFiles(), "Patching project files");
+//  Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
+//  Execute(() => BuildAllFrameworks(), "Building all frameworks");
+//  Execute(() => InitializeNuGetPackageDirectories(), "Preparing NuGet build directories");
 
 //Execute(() => RunAllUnitTests(), "Running unit tests");
-
+Execute(() => AnalyzeTestCoverage("NET40"), "Analyzing test coverage for NET40");
 
 
 private void InitializeNuGetPackageDirectories()
@@ -44,6 +43,7 @@ private void CopySourceFilesToNuGetLibDirectory()
 	CopySourceFile("NET46", "net46");		
 	CopySourceFile("DNX451", "dnx451");		
 	CopySourceFile("DNXCORE50", "dnxcore50");
+	CopySourceFile("PCL_111", "portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10");
 }
 
 private void CopyBinaryFilesToNuGetLibDirectory()
@@ -52,7 +52,8 @@ private void CopyBinaryFilesToNuGetLibDirectory()
 	CopyBinaryFile("NET45", "net45");
 	CopyBinaryFile("NET46", "net46");	
 	CopyBinaryFile("DNX451", "dnx451");
-	CopyBinaryFile("DNXCORE50", "dnxcore50");	
+	CopyBinaryFile("DNXCORE50", "dnxcore50");
+	CopyBinaryFile("PCL_111", "portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10");	
 }
 
 private void CreateSourcePackage()
@@ -104,6 +105,7 @@ private void BuildAllFrameworks()
 	Build("Net40");
 	Build("Net45");
 	Build("Net46");	
+	Build("Pcl_111");
 	BuildDnx();
 }
 
@@ -137,7 +139,7 @@ private void RunAllUnitTests()
 	Execute(() => RunUnitTests("Net40"), "Running unit tests for Net40");
 	Execute(() => RunUnitTests("Net45"), "Running unit tests for Net45");
 	Execute(() => RunUnitTests("Net46"), "Running unit tests for Net46");
-	Execute(() => AnalyzeTestCoverage("Net40"), "Analysing test coverage for Net40");			
+	//Execute(() => AnalyzeTestCoverage("Net40"), "Analysing test coverage for Net40");			
 }
 
 private void RunUnitTests(string frameworkMoniker)
