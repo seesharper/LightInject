@@ -6077,6 +6077,7 @@ namespace LightInject
             foreach (var constructorDependency in constructorDependencies)
             {
                 constructorDependency.FactoryExpression =
+                    constructorDependency.FactoryExpression ??
                     getConstructorDependencyExpression(
                         constructorDependency.ServiceType,
                         constructorDependency.ServiceName);
