@@ -134,13 +134,17 @@ public static void Execute(Action action, string description)
     WriteEnd("...Done! ({0} ms)", watch.ElapsedMilliseconds);                      
 }
 
-public static void PatchAssemblyVersionInfo(string version, string frameworkMoniker, string pathToAssemblyInfo)
+public static void PatchAssemblyVersionInfo(string version, string fileVersion, string frameworkMoniker, string pathToAssemblyInfo)
 {    
     var assemblyInfo = ReadFile(pathToAssemblyInfo);    
-    var pachedAssemblyInfo = Regex.Replace(assemblyInfo, @"Version\(""(.+?"")", string.Format(@"Version(""{0}""", version));    
-    pachedAssemblyInfo = Regex.Replace(pachedAssemblyInfo, @"(AssemblyCopyright\(""\D+)(\d*)", "${1}" + DateTime.Now.Year);    
-    WriteFile(pathToAssemblyInfo, pachedAssemblyInfo);    
+    var patchedAssemblyInfo = Regex.Replace(assemblyInfo, @"((?<=AssemblyVersion\(.)[\d\.]+)", fileVersion);
+    patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"((?<=AssemblyFileVersion\(.)[\d\.]+)", fileVersion);
+    patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"((?<=AssemblyInformationalVersion\(.)[\d\.]+)", version);        
+    patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"(AssemblyCopyright\(""\D+)(\d*)", "${1}" + DateTime.Now.Year);        
+    WriteFile(pathToAssemblyInfo, patchedAssemblyInfo);    
 }
+
+
 
 public static string GetVersionNumberFromSourceFile(string pathToSourceFile)
 {

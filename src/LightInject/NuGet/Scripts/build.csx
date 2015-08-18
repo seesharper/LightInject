@@ -7,20 +7,23 @@ private const string csharpProjectTypeGuid = "{FAE04EC0-301F-11D3-BF4B-00C04F79E
 string pathToSourceFile = @"..\..\LightInject\LightInject.cs";
 string pathToBuildDirectory = @"../tmp/";
 private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
+private string fileVersion = Regex.Match(version, @"(^[\d\.]+)-?").Groups[1].Captures[0].Value;
+
+WriteLine(fileVersion);
 
 WriteLine("LightInject version {0}" , version);
 
-//  Execute(() => RestoreNuGetPackages(), "NuGet");
-//  Execute(() => InitializBuildDirectories(), "Preparing build directories");
-//  Execute(() => RenameSolutionFiles(), "Renaming solution files");
-//  Execute(() => PatchAssemblyInfo(), "Patching assembly information");
-//  Execute(() => PatchProjectFiles(), "Patching project files");
-//  Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
-//  Execute(() => BuildAllFrameworks(), "Building all frameworks");
-//  Execute(() => InitializeNuGetPackageDirectories(), "Preparing NuGet build directories");
+Execute(() => RestoreNuGetPackages(), "NuGet");
+Execute(() => InitializBuildDirectories(), "Preparing build directories");
+Execute(() => RenameSolutionFiles(), "Renaming solution files");
+Execute(() => PatchAssemblyInfo(), "Patching assembly information");
+Execute(() => PatchProjectFiles(), "Patching project files");
+Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
+Execute(() => BuildAllFrameworks(), "Building all frameworks");
+Execute(() => InitializeNuGetPackageDirectories(), "Preparing NuGet build directories");
 
 //Execute(() => RunAllUnitTests(), "Running unit tests");
-Execute(() => AnalyzeTestCoverage("NET40"), "Analyzing test coverage for NET40");
+//Execute(() => AnalyzeTestCoverage("NET40"), "Analyzing test coverage for NET40");
 
 
 private void InitializeNuGetPackageDirectories()
@@ -81,6 +84,7 @@ private void CopySourceFile(string frameworkMoniker, string packageDirectoryName
 	string pathToDestination = Path.Combine(pathToPackageDirectory, "content/" + packageDirectoryName + "/LightInject");
 	RoboCopy(pathToSourceFile, pathToDestination, "LightInject.cs");
 	FileUtils.Rename(Path.Combine(pathToDestination, "LightInject.cs"), "LightInject.cs.pp");
+	ReplaceInFile(@"namespace \S*", "namespace $rootnamespace$.LightInject", Path.Combine(pathToDestination, "LightInject.cs.pp"));
 }
 
 private void CopyBinaryFile(string frameworkMoniker, string packageDirectoryName)
@@ -231,9 +235,9 @@ private void PatchAssemblyInfo()
 private void PatchAssemblyInfo(string framework)
 {	
 	var pathToAssemblyInfo = Path.Combine(pathToBuildDirectory, framework + @"\Binary\Lightinject\Properties\AssemblyInfo.cs");	
-	PatchAssemblyVersionInfo(version, framework, pathToAssemblyInfo);
+	PatchAssemblyVersionInfo(version, fileVersion, framework, pathToAssemblyInfo);
 	pathToAssemblyInfo = Path.Combine(pathToBuildDirectory, framework + @"\Source\Lightinject\Properties\AssemblyInfo.cs");
-	PatchAssemblyVersionInfo(version, framework, pathToAssemblyInfo);	
+	PatchAssemblyVersionInfo(version, fileVersion, framework, pathToAssemblyInfo);	
 	PatchInternalsVisibleToAttribute(pathToAssemblyInfo);		
 }
 
