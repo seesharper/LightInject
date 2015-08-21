@@ -61,6 +61,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyAssert.cs" />
     <Compile Include="AssemblyScannerMock.cs" />
     <Compile Include="AssemblyScannerTests.cs" />
     <Compile Include="AsyncTests.cs" />
@@ -71,6 +72,7 @@
     <Compile Include="CompositionRootTypeExtractorTests.cs" />
     <Compile Include="ConstructorSelectorTests.cs" />
     <Compile Include="DecoratorTests.cs" />
+    <Compile Include="DecoratorVerificationTests.cs" />
     <Compile Include="DisposableTests.cs" />
     <Compile Include="DynamicMethodTests.cs" />
     <Compile Include="EmitterTests.cs" />
@@ -79,12 +81,14 @@
     <Compile Include="ImmutableTreeTests.cs" />
     <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="LazyCompositionRootTests.cs" />
+    <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="PropertySelectorTests.cs" />
     <Compile Include="SampleServices\Bar.cs" />
     <Compile Include="SampleServices\Foo.cs" />
     <Compile Include="SampleServices\IInternalsVisibleToDummy.cs" />
     <Compile Include="SampleServices\SampleService.cs" />
     <Compile Include="ScopeTests.cs" />
+    <Compile Include="ServiceContainerVerificationTests.cs" />
     <Compile Include="ServiceRegistrationTests.cs" />
     <Compile Include="TypeExtractorMock.cs" />
     <Compile Include="ConstructorInjectionTests.cs" />
@@ -97,6 +101,7 @@
     <Compile Include="PropertyInjectionTests.cs" />
     <Compile Include="ServiceContainerTests.cs" />
     <Compile Include="TestBase.cs" />
+    <Compile Include="VerificationContainerFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

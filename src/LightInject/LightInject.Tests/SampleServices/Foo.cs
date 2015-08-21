@@ -883,7 +883,7 @@ namespace LightInject.SampleLibrary
             return 42;
         }
     }
-
+    
     public class FooWithBrokenDependency
     {
         public FooWithBrokenDependency(IBar bar)

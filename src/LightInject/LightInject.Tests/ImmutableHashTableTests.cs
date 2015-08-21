@@ -64,6 +64,16 @@ namespace LightInject.Tests
             Assert.Equal(42, value);
         }
 
-        
+        [Fact]
+        public void AddValues_CausingTableResize_PreservesExistingValues()
+        {
+            ImmutableHashTable<int, int> hashTable = ImmutableHashTable<int, int>.Empty;
+            hashTable = hashTable.Add(2, 2);
+            hashTable = hashTable.Add(4, 4);
+            hashTable = hashTable.Add(8, 8);
+
+            var value = hashTable.Search(2);
+            Assert.Equal(2, value);
+        }
     }
 }

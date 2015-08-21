@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 
 namespace LightInject.Tests
 {
-    using System.Reflection;
-    using System.Reflection.Emit;
+    using System.Reflection;    
 
     using Xunit;
 

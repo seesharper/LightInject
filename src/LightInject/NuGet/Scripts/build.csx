@@ -20,10 +20,11 @@ Execute(() => PatchAssemblyInfo(), "Patching assembly information");
 Execute(() => PatchProjectFiles(), "Patching project files");
 Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
 Execute(() => BuildAllFrameworks(), "Building all frameworks");
+//Execute(() => RunAllUnitTests(), "Running unit tests");
+//Execute(() => AnalyzeTestCoverage(), "Analyzing test coverage");
 Execute(() => InitializeNuGetPackageDirectories(), "Preparing NuGet build directories");
 
-//Execute(() => RunAllUnitTests(), "Running unit tests");
-//Execute(() => AnalyzeTestCoverage("NET40"), "Analyzing test coverage for NET40");
+
 
 
 private void InitializeNuGetPackageDirectories()
@@ -151,6 +152,13 @@ private void RunUnitTests(string frameworkMoniker)
 	string pathToTestAssembly = Path.Combine(pathToBuildDirectory, frameworkMoniker + @"/Binary/LightInject.Tests/bin/Release/LightInject.Tests.dll");
 	string pathToTestAdapter = ResolveDirectory("../../packages/", "xunit.runner.visualstudio.testadapter.dll");
 	MsTest.Run(pathToTestAssembly, pathToTestAdapter);	
+}
+
+private void AnalyzeTestCoverage()
+{
+	Execute(() => AnalyzeTestCoverage("NET40"), "Analyzing test coverage for NET40");
+	Execute(() => AnalyzeTestCoverage("NET45"), "Analyzing test coverage for NET45");
+	Execute(() => AnalyzeTestCoverage("NET46"), "Analyzing test coverage for NET46");
 }
 
 private void AnalyzeTestCoverage(string frameworkMoniker)

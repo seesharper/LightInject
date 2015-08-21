@@ -326,6 +326,18 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_NamedInstanceTwice_CompilesOnlyOnce()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
+            container.GetInstance<IFoo>("SomeFoo");
+            container.GetInstance<IFoo>("SomeFoo");
+
+
+        }
+
+
+        [Fact]
         public void GetInstance_OpenGenericType_ReturnsInstance()
         {
             var container = CreateContainer();

@@ -234,5 +234,14 @@ namespace LightInject.Tests
             var nodes = node.InOrder().ToArray();
             Assert.True(nodes.Select(n => n.Key).SequenceEqual(new[] { 10, 20, 30 }));
         }
+
+        [Fact]
+        public void InOrder_DuplicatesHashCodes_ReturnsNodes()
+        {
+            var root = ImmutableHashTree<FooWithSameHashCode, int>.Empty;
+            var node = root.Add(new FooWithSameHashCode(42), 42).Add(new FooWithSameHashCode(84), 84);
+            var nodes = node.InOrder();
+            Assert.Equal(2, nodes.Count());
+        }       
     }
 }

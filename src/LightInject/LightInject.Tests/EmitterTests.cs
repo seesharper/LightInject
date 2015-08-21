@@ -2,8 +2,9 @@ namespace LightInject.Tests
 {
     using System;
     using System.Reflection;
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
     using System.Reflection.Emit;
-
+#endif
 
     using Xunit;
 
@@ -492,13 +493,14 @@ namespace LightInject.Tests
             ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));            
         }
 
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
         [Fact]        
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
             ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Xor));                        
         }
-
+#endif
         [Fact]
         public void Push_Zero_ReturnsCorrectStackType()
         {

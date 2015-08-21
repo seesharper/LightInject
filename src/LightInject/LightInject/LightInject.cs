@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.0-beta
+    LightInject version 4.0.0-beta2
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -44,7 +44,9 @@ namespace LightInject
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
     using System.Reflection.Emit;
+#endif
     using System.Runtime.CompilerServices;
 #if NET45 || DNX451
     using System.Runtime.Remoting.Messaging;
@@ -4408,6 +4410,463 @@ namespace LightInject
     }
 
 #if PCL_111
+    /// <summary>
+    /// Represents the MSIL instructions.
+    /// </summary>
+    public enum OpCode
+	{
+        /// <summary>
+        /// Adds two values and pushes the result onto the evaluation stack.
+        /// </summary>
+        Add,
+
+        /// <summary>
+        /// Attempts to cast an object passed by reference to the specified class.
+        /// </summary>
+        Castclass,
+
+        /// <summary>
+        /// Converts the boxed representation of a type specified in the instruction to its unboxed form.
+        /// </summary>
+        Unbox_Any,
+
+        /// <summary>
+        /// Loads the element containing an object reference at a specified array index 
+        /// onto the top of the evaluation stack as type O (object reference).
+        /// </summary>
+		Ldelem_Ref,
+
+        /// <summary>
+        /// Loads an argument (referenced by a specified index value) onto the stack.
+        /// </summary>
+        Ldarg,
+       
+        /// <summary>
+        /// Loads the argument at index 0 onto the evaluation stack.
+        /// </summary>
+        Ldarg_0,
+
+        /// <summary>
+        /// Loads the argument at index 1 onto the evaluation stack.
+        /// </summary>
+        Ldarg_1,
+
+        /// <summary>
+        /// Loads the argument at index 2 onto the evaluation stack.
+        /// </summary>
+        Ldarg_2,
+
+        /// <summary>
+        /// Loads the argument at index 3 onto the evaluation stack.
+        /// </summary>
+        Ldarg_3,
+
+        /// <summary>
+        /// Loads the argument (referenced by a specified short form index) onto the evaluation stack.
+        /// </summary>
+        Ldarg_S,
+
+        /// <summary>
+        /// Pushes the number of elements of a zero-based, one-dimensional array onto the evaluation stack.
+        /// </summary>
+		Ldlen,
+
+        /// <summary>
+        /// Converts the value on top of the evaluation stack to int32.
+        /// </summary>
+        Conv_I4,
+
+        /// <summary>
+        /// Subtracts one value from another and pushes the result onto the evaluation stack.
+        /// </summary>
+        Sub,
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack 
+        /// and stores it in a the local variable list at a specified index.
+        /// </summary>
+        Stloc,
+
+        /// <summary>
+        /// Loads the local variable at a specific index onto the evaluation stack.
+        /// </summary>
+		Ldloc,
+
+        /// <summary>
+        /// Pushes a supplied value of type int32 onto the evaluation stack as an int32.
+        /// </summary>
+		Ldc_I4,
+
+        /// <summary>
+        /// Calls a late-bound method on an object, pushing the return value onto the evaluation stack.
+        /// </summary>
+        Callvirt,
+
+        /// <summary>
+        /// Creates a new object or a new instance of a value type, pushing an object reference (type O) onto the evaluation stack.
+        /// </summary>
+        Newobj,
+
+        /// <summary>
+        /// Loads the local variable at index 0 onto the evaluation stack.
+        /// </summary>
+		Ldloc_0,
+
+        /// <summary>
+        /// Loads the local variable at index 1 onto the evaluation stack.
+        /// </summary>
+        Ldloc_1,
+
+        /// <summary>
+        /// Loads the local variable at index 2 onto the evaluation stack.
+        /// </summary>
+		Ldloc_2,
+
+        /// <summary>
+        /// Loads the local variable at index 3 onto the evaluation stack.
+        /// </summary>
+		Ldloc_3,
+
+        /// <summary>
+        /// Loads the local variable at a specific index onto the evaluation stack, short form.
+        /// </summary>
+		Ldloc_S,
+
+        /// <summary>
+        /// Calls the method indicated by the passed method descriptor.
+        /// </summary>
+		Call,
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 0.
+        /// </summary>
+		Stloc_0,
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 1.
+        /// </summary>
+		Stloc_1,
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 2.
+        /// </summary>
+        Stloc_2,
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 3.
+        /// </summary>
+		Stloc_3,
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index (short form).
+        /// </summary>
+		Stloc_S,
+
+        /// <summary>
+        /// Pushes the integer value of 0 onto the evaluation stack as an int32.
+        /// </summary>
+        Ldc_I4_0,
+
+        /// <summary>
+        /// Pushes the integer value of 1 onto the evaluation stack as an int32.
+        /// </summary>
+		Ldc_I4_1,
+
+        /// <summary>
+        /// Pushes the integer value of 2 onto the evaluation stack as an int32.
+        /// </summary>
+		Ldc_I4_2,
+
+        /// <summary>
+        /// Pushes the integer value of 3 onto the evaluation stack as an int32.
+        /// </summary>
+        Ldc_I4_3,
+
+        /// <summary>
+        /// Pushes the integer value of 4 onto the evaluation stack as an int32.
+        /// </summary>
+		Ldc_I4_4,
+
+        /// <summary>
+        /// Pushes the integer value of 5 onto the evaluation stack as an int32.
+        /// </summary>
+        Ldc_I4_5,
+
+        /// <summary>
+        /// Pushes the integer value of 6 onto the evaluation stack as an int32.
+        /// </summary>
+		Ldc_I4_6,
+
+        /// <summary>
+        /// Pushes the integer value of 7 onto the evaluation stack as an int32.
+        /// </summary>
+        Ldc_I4_7,
+
+        /// <summary>
+        /// Pushes the integer value of 8 onto the evaluation stack as an int32.
+        /// </summary>
+		Ldc_I4_8,
+
+        /// <summary>
+        /// Pushes the supplied int8 value onto the evaluation stack as an int32, short form.
+        /// </summary>
+        Ldc_I4_S,
+
+        /// <summary>
+        /// Returns from the current method, pushing a return value (if present) from the callee's evaluation stack onto the caller's evaluation stack.
+        /// </summary>
+        Ret,
+
+        /// <summary>
+        /// Pushes an object reference to a new zero-based, one-dimensional array whose elements are of a specific type onto the evaluation stack.
+        /// </summary>
+		Newarr,
+
+        /// <summary>
+        /// Replaces the array element at a given index with the value on the evaluation stack, whose type is specified in the instruction.
+        /// </summary>
+		Stelem,
+
+        /// <summary>
+        /// Converts a value type to an object reference (type O).
+        /// </summary>
+		Box,
+
+        /// <summary>
+        /// Pushes a new object reference to a string literal stored in the metadata.
+        /// </summary>
+        Ldstr
+    }
+
+    /// <summary>
+    /// Provides field representations of the Microsoft Intermediate Language (MSIL) instructions.
+    /// </summary>
+    public static class OpCodes
+	{
+        /// <summary>
+        /// Adds two values and pushes the result onto the evaluation stack.
+        /// </summary>
+        public static OpCode Add = OpCode.Add;
+        
+        /// <summary>
+        /// Attempts to cast an object passed by reference to the specified class.
+        /// </summary>
+        public static OpCode Castclass = OpCode.Castclass;
+
+        /// <summary>
+        /// Converts the boxed representation of a type specified in the instruction to its unboxed form.
+        /// </summary>
+        public static OpCode Unbox_Any = OpCode.Unbox_Any;
+
+        /// <summary>
+        /// Loads the element containing an object reference at a specified array index 
+        /// onto the top of the evaluation stack as type O (object reference).
+        /// </summary>
+		public static OpCode Ldelem_Ref = OpCode.Ldelem_Ref;
+
+        /// <summary>
+        /// Loads an argument (referenced by a specified index value) onto the stack.
+        /// </summary>
+        public static OpCode Ldarg = OpCode.Ldarg;
+
+        /// <summary>
+        /// Loads the argument at index 0 onto the evaluation stack.
+        /// </summary>
+        public static OpCode Ldarg_0 = OpCode.Ldarg_0;
+
+        /// <summary>
+        /// Loads the argument at index 1 onto the evaluation stack.
+        /// </summary>
+		public static OpCode Ldarg_1 = OpCode.Ldarg_1;
+
+        /// <summary>
+        /// Loads the argument at index 2 onto the evaluation stack.
+        /// </summary>
+		public static OpCode Ldarg_2 = OpCode.Ldarg_2;
+
+        /// <summary>
+        /// Loads the argument at index 3 onto the evaluation stack.
+        /// </summary>
+		public static OpCode Ldarg_3 = OpCode.Ldarg_3;
+
+        /// <summary>
+        /// Loads the argument (referenced by a specified short form index) onto the evaluation stack.
+        /// </summary>
+		public static OpCode Ldarg_S = OpCode.Ldarg_S;
+
+        /// <summary>
+        /// Pushes the number of elements of a zero-based, one-dimensional array onto the evaluation stack.
+        /// </summary>
+		public static OpCode Ldlen = OpCode.Ldlen;
+
+        /// <summary>
+        /// Converts the value on top of the evaluation stack to int32.
+        /// </summary>
+		public static OpCode Conv_I4 = OpCode.Conv_I4;
+
+        /// <summary>
+        /// Subtracts one value from another and pushes the result onto the evaluation stack.
+        /// </summary>
+		public static OpCode Sub = OpCode.Sub;
+
+        /// <summary>
+        /// Pushes a supplied value of type int32 onto the evaluation stack as an int32.
+        /// </summary>
+		public static OpCode Ldc_I4 = OpCode.Ldc_I4;
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack 
+        /// and stores it in a the local variable list at a specified index.
+        /// </summary>
+		public static OpCode Stloc = OpCode.Stloc;
+
+        /// <summary>
+        /// Loads the local variable at a specific index onto the evaluation stack.
+        /// </summary>
+        public static OpCode Ldloc = OpCode.Ldloc;
+
+        /// <summary>
+        /// Calls a late-bound method on an object, pushing the return value onto the evaluation stack.
+        /// </summary>
+		public static OpCode Callvirt = OpCode.Callvirt;
+
+        /// <summary>
+        /// Creates a new object or a new instance of a value type, pushing an object reference (type O) onto the evaluation stack.
+        /// </summary>
+        public static OpCode Newobj = OpCode.Newobj;
+
+        /// <summary>
+        /// Loads the local variable at index 0 onto the evaluation stack.
+        /// </summary>
+		public static OpCode Ldloc_0 = OpCode.Ldloc_0;
+
+        /// <summary>
+        /// Loads the local variable at index 1 onto the evaluation stack.
+        /// </summary>
+        public static OpCode Ldloc_1 = OpCode.Ldloc_1;
+
+        /// <summary>
+        /// Loads the local variable at index 2 onto the evaluation stack.
+        /// </summary>
+		public static OpCode Ldloc_2 = OpCode.Ldloc_2;
+
+        /// <summary>
+        /// Loads the local variable at index 3 onto the evaluation stack.
+        /// </summary>
+        public static OpCode Ldloc_3 = OpCode.Ldloc_3;
+
+        /// <summary>
+        /// Loads the local variable at a specific index onto the evaluation stack, short form.
+        /// </summary>
+		public static OpCode Ldloc_S = OpCode.Ldloc_S;
+
+        /// <summary>
+        /// Calls the method indicated by the passed method descriptor.
+        /// </summary>
+		public static OpCode Call = OpCode.Call;
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 0.
+        /// </summary>
+		public static OpCode Stloc_0 = OpCode.Stloc_0;
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 1.
+        /// </summary>
+        public static OpCode Stloc_1 = OpCode.Stloc_1;
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 2.
+        /// </summary>
+        public static OpCode Stloc_2 = OpCode.Stloc_2;
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 3.
+        /// </summary>
+        public static OpCode Stloc_3 = OpCode.Stloc_3;
+
+        /// <summary>
+        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index (short form).
+        /// </summary>
+        public static OpCode Stloc_S = OpCode.Stloc_S;
+
+        /// <summary>
+        /// Pushes the integer value of 0 onto the evaluation stack as an int32.
+        /// </summary>
+		public static OpCode Ldc_I4_0 = OpCode.Ldc_I4_0;
+
+        /// <summary>
+        /// Pushes the integer value of 1 onto the evaluation stack as an int32.
+        /// </summary>
+        public static OpCode Ldc_I4_1 = OpCode.Ldc_I4_1;
+
+        /// <summary>
+        /// Pushes the integer value of 2 onto the evaluation stack as an int32.
+        /// </summary>
+        public static OpCode Ldc_I4_2 = OpCode.Ldc_I4_2;
+
+        /// <summary>
+        /// Pushes the integer value of 3 onto the evaluation stack as an int32.
+        /// </summary>
+        public static OpCode Ldc_I4_3 = OpCode.Ldc_I4_3;
+
+        /// <summary>
+        /// Pushes the integer value of 4 onto the evaluation stack as an int32.
+        /// </summary>
+        public static OpCode Ldc_I4_4 = OpCode.Ldc_I4_4;
+
+        /// <summary>
+        /// Pushes the integer value of 5 onto the evaluation stack as an int32.
+        /// </summary>
+        public static OpCode Ldc_I4_5 = OpCode.Ldc_I4_5;
+
+        /// <summary>
+        /// Pushes the integer value of 6 onto the evaluation stack as an int32.
+        /// </summary>
+        public static OpCode Ldc_I4_6 = OpCode.Ldc_I4_6;
+
+        /// <summary>
+        /// Pushes the integer value of 7 onto the evaluation stack as an int32.
+        /// </summary>
+        public static OpCode Ldc_I4_7 = OpCode.Ldc_I4_7;
+
+        /// <summary>
+        /// Pushes the integer value of 8 onto the evaluation stack as an int32.
+        /// </summary>
+        public static OpCode Ldc_I4_8 = OpCode.Ldc_I4_8;
+
+        /// <summary>
+        /// Pushes the supplied int8 value onto the evaluation stack as an int32, short form.
+        /// </summary>
+        public static OpCode Ldc_I4_S = OpCode.Ldc_I4_S;
+
+        /// <summary>
+        /// Pushes an object reference to a new zero-based, one-dimensional array whose elements are of a specific type onto the evaluation stack.
+        /// </summary>
+		public static OpCode Newarr = OpCode.Newarr;
+
+        /// <summary>
+        /// Replaces the array element at a given index with the value on the evaluation stack, whose type is specified in the instruction.
+        /// </summary>
+        public static OpCode Stelem = OpCode.Stelem;
+
+        /// <summary>
+        /// Converts a value type to an object reference (type O).
+        /// </summary>
+        public static OpCode Box = OpCode.Box;
+
+        /// <summary>
+        /// Returns from the current method, pushing a return value (if present) from the callee's evaluation stack onto the caller's evaluation stack.
+        /// </summary>
+		public static OpCode Ret = OpCode.Ret;
+
+        /// <summary>
+        /// Pushes a new object reference to a string literal stored in the metadata.
+        /// </summary>
+		public static OpCode Ldstr = OpCode.Ldstr;
+
+	}
+    
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
     /// </summary>
