@@ -3602,13 +3602,13 @@ namespace LightInject
             Type funcType = factoryDelegate.GetType();
             emitter.PushConstant(factoryDelegateIndex, funcType);
             emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
-            if (factoryDelegate.GetMethodInfo().GetParameters().Length > 2)
-            {
-                var parameters = factoryDelegate.GetMethodInfo().GetParameters().Skip(2).ToArray();
-                emitter.PushArguments(parameters);
-            }
-
             MethodInfo invokeMethod = funcType.GetMethod("Invoke");
+            var parameters = invokeMethod.GetParameters();
+            if (parameters.Length > 1)
+            {                
+                emitter.PushArguments(parameters.Skip(1).ToArray());
+            }
+           
             emitter.Call(invokeMethod);
         }
 
