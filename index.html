@@ -40,7 +40,7 @@ $(document).ready(function() {
         var markdownElement = $("markdown");
         var hashValue = (location.hash != '') ? location.hash.substring(1) : "gettingstarted";                
         markdownElement.attr("src","doc/" + hashValue + ".md");        
-        if (hashValue == "license")  
+        if (hashValue == "license" || hashValue == "lightinject40")  
         {
           renderMarkdown2(false);   
         }
@@ -133,6 +133,13 @@ $(document).ready(function() {
           <img src="images/Logo120.png"/>
         </div>      
     </div>   
+    <div class="item">            
+        <div class="carousel-caption">          
+          <h1>The future is here</h1>             
+          <p class="lead">Use LightInject as your favorite IoC container on any platform.</p>   
+          <a class="btn btn-default" href="#lightinject40">Read more...</a>              
+        </div>
+    </div>
     <div class="item">            
         <div class="carousel-caption">          
           <h1>Nancy</h1>             
