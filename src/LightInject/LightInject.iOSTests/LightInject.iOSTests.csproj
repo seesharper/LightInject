@@ -15,13 +15,16 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\iPhoneSimulator\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
+    <DefineConstants>DEBUG;PCL_111</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
     <MtouchArch>i386</MtouchArch>
-    <MtouchLink>None</MtouchLink>
     <MtouchDebug>true</MtouchDebug>
+    <MtouchUseRefCounting>true</MtouchUseRefCounting>
+    <MtouchI18n>
+    </MtouchI18n>
+    <MtouchLink>None</MtouchLink>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|iPhone' ">
     <DebugType>full</DebugType>
@@ -49,7 +52,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\iPhone\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
+    <DefineConstants>DEBUG;PCL_111</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
@@ -57,6 +60,9 @@
     <CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
     <CodesignKey>iPhone Developer</CodesignKey>
     <MtouchDebug>true</MtouchDebug>
+    <MtouchUseRefCounting>true</MtouchUseRefCounting>
+    <MtouchI18n>
+    </MtouchI18n>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -92,9 +98,6 @@
     </Reference>
     <Reference Include="LightMock">
       <HintPath>packages\LightMock.1.0.0.5\lib\portable-net40+sl50+win+wp80\LightMock.dll</HintPath>
-    </Reference>
-    <Reference Include="LightInject">
-      <HintPath>packages\LightInject.4.0.0-beta\lib\portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10\LightInject.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -137,6 +140,39 @@
     </Compile>
     <Compile Include="..\LightInject.Tests\ContainerFactory.cs">
       <Link>ContainerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\DecoratorTests.cs">
+      <Link>DecoratorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\ConstructorInjectionTests.cs">
+      <Link>ConstructorInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\PropertyInjectionTests.cs">
+      <Link>PropertyInjectionTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\EmitterTests.cs">
+      <Link>EmitterTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\FunctionFactoryTests.cs">
+      <Link>FunctionFactoryTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject\LightInject.cs">
+      <Link>LightInject.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\ImmutableHashTableTests.cs">
+      <Link>ImmutableHashTableTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\ImmutableListTests.cs">
+      <Link>ImmutableListTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\ImmutableTreeTests.cs">
+      <Link>ImmutableTreeTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\PropertySelectorTests.cs">
+      <Link>PropertySelectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\LightInject.Tests\ScopeTests.cs">
+      <Link>ScopeTests.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
