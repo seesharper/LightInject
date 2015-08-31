@@ -1312,7 +1312,7 @@ namespace LightInject.Tests
 
             Assert.IsAssignableFrom(typeof(Foo), instance);
         }
-
+#if !PCL_111
         [Fact]
         public void GetInstance_ServiceWithGenericConstraint_ThrowsException()
         {
@@ -1357,7 +1357,7 @@ namespace LightInject.Tests
 
             Assert.Equal(2, instances.Count());
         }
-
+#endif
         [Fact]
         public void CreateGeneric_ConcreteClass_ReturnsInstance()
         {

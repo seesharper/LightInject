@@ -654,7 +654,7 @@ namespace LightInject.Tests
         {
             var instruction = new Instruction(OpCodes.Stloc, null);
             
-            Assert.Equal("stloc", instruction.ToString());
+            Assert.Equal("stloc", instruction.ToString(),StringComparer.InvariantCultureIgnoreCase);
         }
 
         [Fact]
@@ -662,7 +662,7 @@ namespace LightInject.Tests
         {
             var instruction = new Instruction<int>(OpCodes.Ldarg, 1, null);
 
-            Assert.Equal("ldarg 1", instruction.ToString());
+            Assert.Equal("ldarg 1", instruction.ToString(), StringComparer.InvariantCultureIgnoreCase);
         }
       
 #if NET40 || NET45 || NET46 || DNX451 || DNXCORE50
