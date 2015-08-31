@@ -27,7 +27,6 @@
     <MtouchLink>None</MtouchLink>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|iPhone' ">
-    <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\iPhone\Release</OutputPath>
     <ErrorReport>prompt</ErrorReport>
@@ -36,6 +35,10 @@
     <MtouchArch>ARMv7, ARM64</MtouchArch>
     <ConsolePause>false</ConsolePause>
     <CodesignKey>iPhone Developer</CodesignKey>
+    <MtouchUseRefCounting>true</MtouchUseRefCounting>
+    <MtouchI18n>
+    </MtouchI18n>
+    <DefineConstants>PCL_111</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|iPhoneSimulator' ">
     <DebugType>full</DebugType>
@@ -99,6 +102,9 @@
     <Reference Include="LightMock">
       <HintPath>packages\LightMock.1.0.0.5\lib\portable-net40+sl50+win+wp80\LightMock.dll</HintPath>
     </Reference>
+    <Reference Include="LightInject">
+      <HintPath>packages\LightInject.4.0.0\lib\portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10\LightInject.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ImageAsset Include="Resources\Images.xcassets\AppIcons.appiconset\Contents.json" />
@@ -155,9 +161,6 @@
     </Compile>
     <Compile Include="..\LightInject.Tests\FunctionFactoryTests.cs">
       <Link>FunctionFactoryTests.cs</Link>
-    </Compile>
-    <Compile Include="..\LightInject\LightInject.cs">
-      <Link>LightInject.cs</Link>
     </Compile>
     <Compile Include="..\LightInject.Tests\ImmutableHashTableTests.cs">
       <Link>ImmutableHashTableTests.cs</Link>
