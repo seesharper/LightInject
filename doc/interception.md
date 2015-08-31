@@ -31,16 +31,18 @@ This will install a single file (LightInject.Interception.cs) into the current p
 
 An interceptor sits between the call site and the target instance and intercepts method calls.
 
-    public class SampleInterceptor : IInterceptor
+```
+public class SampleInterceptor : IInterceptor
+{
+    public object Invoke(IInvocationInfo invocationInfo)
     {
-        public object Invoke(IInvocationInfo invocationInfo)
-        {
-            // Perform logic before invoking the target method
-            var returnValue = invocationInfo.Proceed();
-            // Perform logic after invoking the target method
-            return returnValue;           
-        }        
-    }
+        // Perform logic before invoking the target method
+        var returnValue = invocationInfo.Proceed();
+        // Perform logic after invoking the target method
+        return returnValue;           
+    }        
+}
+```
 
 The **IInvocationInfo** instance passed into the **Invoke** method contains information about the method being intercepted.
 

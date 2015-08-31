@@ -32,7 +32,12 @@ function renderElement2(element, showTableofContents){
       $(element).html(marked(data));    
       if (showTableofContents)    
       {
-        $('#toc').toc({container:element});   
+        $('#toc').toc({
+          container:element,
+          itemClass: function(i, heading, $heading){
+            return "list-group-item";
+          }
+          });   
       }      
       var elements = $('pre code');
       $('pre code').each(function(i, e) {hljs.highlightBlock(e)});

@@ -50,11 +50,8 @@
 
 
 
-#toc{
-  border-style: solid;
-  border-width: 1;
-  border-radius: 5px;
-  border-color: black;
+#toc{  
+  width: 250px;
 }
 
 

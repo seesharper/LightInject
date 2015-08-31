@@ -57,6 +57,7 @@ $.fn.toc = function(options) {
     //build TOC
     var el = $(this);
     var ul = $('<ul/>');
+    ul.addClass("list-group")
     headings.each(function(i, heading) {
       var $h = $(heading);
       headingOffsets.push($h.offset().top - opts.highlightOffset);
@@ -86,7 +87,7 @@ $.fn.toc = function(options) {
 
 jQuery.fn.toc.defaults = {
   container: 'body',
-  selectors: 'h1,h2,h3',
+  selectors: 'h1,h2',
   smoothScrolling: true,
   prefix: 'toc',
   onHighlight: function() {},
