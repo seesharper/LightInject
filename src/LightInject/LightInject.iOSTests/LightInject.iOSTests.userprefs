@@ -1,1 +1,25 @@
-﻿<Properties StartupItem="LightInject.iOSTests.csproj" />
+﻿<Properties StartupItem="LightInject.iOSTests.csproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release|iPhone" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneDeviceTarget.bernhard.richter’s iPhone" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="../LightInject.Tests/EmitterTests.cs">
+    <Files>
+      <File FileName="AppDelegate.cs" Line="1" Column="1" />
+      <File FileName="../LightInject.Tests/ServiceContainerTests.cs" Line="1" Column="1" />
+      <File FileName="../LightInject.Tests/SampleServices/Bar.cs" Line="1" Column="1" />
+      <File FileName="../LightInject.Tests/SampleServices/Foo.cs" Line="1" Column="1" />
+      <File FileName="../LightInject.Tests/TestBase.cs" Line="1" Column="1" />
+      <File FileName="../LightInject.Tests/ExceptionAssert.cs" Line="1" Column="1" />
+      <File FileName="packages.config" Line="1" Column="1" />
+      <File FileName="../LightInject.Tests/SampleServices/SampleService.cs" Line="1" Column="1" />
+      <File FileName="../LightInject.Tests/EmitterTests.cs" Line="681" Column="17" />
+      <File FileName="../LightInject.Tests/DecoratorTests.cs" Line="1" Column="1" />
+      <File FileName="../LightInject.Tests/SampleServices/IInternalsVisibleToDummy.cs" Line="1" Column="1" />
+      <File FileName="Main.cs" Line="16" Column="1" />
+      <File FileName="../LightInject/LightInject.cs" Line="3607" Column="4" />
+      <File FileName="../LightInject.Tests/ScopeTests.cs" Line="1" Column="1" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
