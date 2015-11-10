@@ -79,7 +79,6 @@
     <Compile Include="ImmutableHashTableTests.cs" />
     <Compile Include="ImmutableListTests.cs" />
     <Compile Include="ImmutableTreeTests.cs" />
-    <Compile Include="LambdaExpressionParserTests.cs" />
     <Compile Include="LazyCompositionRootTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="PropertySelectorTests.cs" />

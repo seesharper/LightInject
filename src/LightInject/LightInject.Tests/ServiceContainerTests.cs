@@ -852,6 +852,22 @@ namespace LightInject.Tests
             return new Foo();
         }
 
+        [Fact]
+        public void GetInstance_FuncWithClosure_ReturnsInstance()
+        {
+            var container = new ServiceContainer();
+            Register(container,"SomeName");
+            var foo = container.GetInstance<IFoo>("SomeName");
+            Assert.IsType<FooWithDependency>(foo);
+        }
+
+        private void Register(IServiceContainer container, string serviceName)
+        {
+            container.Register<IBar, Bar>(serviceName);
+            container.Register<IFoo>(f => new FooWithDependency(f.GetInstance<IBar>(serviceName)), serviceName);
+        }
+
+
         #endregion
 
         #region IEnumerable

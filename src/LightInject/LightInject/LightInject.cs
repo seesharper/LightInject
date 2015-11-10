@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.0
+    LightInject version 4.0.1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -847,20 +847,7 @@ namespace LightInject
         /// </summary>
         void Invalidate();
     }
-
-    /// <summary>
-    /// Represents a class that builds a <see cref="ConstructionInfo"/> instance based on a <see cref="LambdaExpression"/>.
-    /// </summary>
-    public interface ILambdaConstructionInfoBuilder
-    {
-        /// <summary>
-        /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
-        /// </summary>
-        /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
-        /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
-        ConstructionInfo Execute(LambdaExpression lambdaExpression);
-    }
-
+    
     /// <summary>
     /// Represents a class that builds a <see cref="ConstructionInfo"/> instance based on the implementing <see cref="Type"/>.
     /// </summary>
@@ -1078,7 +1065,7 @@ namespace LightInject
                 nodes.Add(node);
                 return base.Visit(node);
             }
-        }
+        }               
     }
 
     /// <summary>
@@ -3259,14 +3246,9 @@ namespace LightInject
 
         private ConstructionInfoProvider CreateConstructionInfoProvider()
         {
-            return new ConstructionInfoProvider(CreateConstructionInfoBuilder());
+            return new ConstructionInfoProvider(CreateTypeConstructionInfoBuilder());
         }
-
-        private ConstructionInfoBuilder CreateConstructionInfoBuilder()
-        {
-            return new ConstructionInfoBuilder(() => new LambdaConstructionInfoBuilder(), CreateTypeConstructionInfoBuilder);
-        }
-
+        
         private TypeConstructionInfoBuilder CreateTypeConstructionInfoBuilder()
         {
             return new TypeConstructionInfoBuilder(
@@ -5493,7 +5475,7 @@ namespace LightInject
     /// <summary>
     /// Builds a <see cref="ConstructionInfo"/> instance based on the implementing <see cref="Type"/>.
     /// </summary>
-    public class TypeConstructionInfoBuilder : ITypeConstructionInfoBuilder
+    public class TypeConstructionInfoBuilder : IConstructionInfoBuilder
     {
         private readonly IConstructorSelector constructorSelector;
         private readonly IConstructorDependencySelector constructorDependencySelector;
@@ -5534,6 +5516,11 @@ namespace LightInject
         /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
         public ConstructionInfo Execute(Registration registration)
         {
+            if (registration.FactoryExpression != null)
+            {
+                return new ConstructionInfo() {FactoryDelegate = registration.FactoryExpression.Compile()};
+            }
+
             var implementingType = registration.ImplementingType;
             var constructionInfo = new ConstructionInfo();
             constructionInfo.ImplementingType = implementingType;
@@ -5611,229 +5598,6 @@ namespace LightInject
         public void Invalidate()
         {
             cache.Clear();
-        }
-    }
-
-    /// <summary>
-    /// Provides a <see cref="ConstructorInfo"/> instance
-    /// that describes how to create a service instance.
-    /// </summary>
-    public class ConstructionInfoBuilder : IConstructionInfoBuilder
-    {
-#if NET40 || NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
-        private readonly Lazy<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilder;
-#endif
-        private readonly Lazy<ITypeConstructionInfoBuilder> typeConstructionInfoBuilder;
-
-#if NET40 || NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ConstructionInfoBuilder"/> class.
-        /// </summary>
-        /// <param name="lambdaConstructionInfoBuilderFactory">
-        /// A function delegate used to provide a <see cref="ILambdaConstructionInfoBuilder"/> instance.
-        /// </param>
-        /// <param name="typeConstructionInfoBuilderFactory">
-        /// A function delegate used to provide a <see cref="ITypeConstructionInfoBuilder"/> instance.
-        /// </param>
-        public ConstructionInfoBuilder(
-            Func<ILambdaConstructionInfoBuilder> lambdaConstructionInfoBuilderFactory,
-            Func<ITypeConstructionInfoBuilder> typeConstructionInfoBuilderFactory)
-        {
-            typeConstructionInfoBuilder = new Lazy<ITypeConstructionInfoBuilder>(typeConstructionInfoBuilderFactory);
-            lambdaConstructionInfoBuilder = new Lazy<ILambdaConstructionInfoBuilder>(lambdaConstructionInfoBuilderFactory);
-        }
-
-#endif
-        /// <summary>
-        /// Returns a <see cref="ConstructionInfo"/> instance based on the given <see cref="Registration"/>.
-        /// </summary>
-        /// <param name="registration">The <see cref="Registration"/> for which to return a <see cref="ConstructionInfo"/> instance.</param>
-        /// <returns>A <see cref="ConstructionInfo"/> instance that describes how to create a service instance.</returns>
-        public ConstructionInfo Execute(Registration registration)
-        {
-            return registration.FactoryExpression != null
-                ? CreateConstructionInfoFromLambdaExpression(registration.FactoryExpression)
-                : CreateConstructionInfoFromImplementingType(registration);
-        }
-
-        private ConstructionInfo CreateConstructionInfoFromLambdaExpression(LambdaExpression lambdaExpression)
-        {
-            return lambdaConstructionInfoBuilder.Value.Execute(lambdaExpression);
-        }
-
-        private ConstructionInfo CreateConstructionInfoFromImplementingType(Registration registration)
-        {
-            return typeConstructionInfoBuilder.Value.Execute(registration);
-        }
-    }
-
-    /// <summary>
-    /// Parses a <see cref="LambdaExpression"/> into a <see cref="ConstructionInfo"/> instance.
-    /// </summary>
-    public class LambdaConstructionInfoBuilder : ILambdaConstructionInfoBuilder
-    {
-        /// <summary>
-        /// Parses the <paramref name="lambdaExpression"/> and returns a <see cref="ConstructionInfo"/> instance.
-        /// </summary>
-        /// <param name="lambdaExpression">The <see cref="LambdaExpression"/> to parse.</param>
-        /// <returns>A <see cref="ConstructionInfo"/> instance.</returns>
-        public ConstructionInfo Execute(LambdaExpression lambdaExpression)
-        {
-            if (!CanParse(lambdaExpression))
-            {
-                return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
-            }
-
-            switch (lambdaExpression.Body.NodeType)
-            {
-                case ExpressionType.New:
-                    return CreateConstructionInfoBasedOnNewExpression((NewExpression)lambdaExpression.Body);
-                case ExpressionType.MemberInit:
-                    return CreateConstructionInfoBasedOnHandleMemberInitExpression((MemberInitExpression)lambdaExpression.Body);
-                default:
-                    return CreateConstructionInfoBasedOnLambdaExpression(lambdaExpression);
-            }
-        }
-
-        private static bool CanParse(LambdaExpression lambdaExpression)
-        {
-            return lambdaExpression.Body.AsEnumerable().All(e => e != null && e.NodeType != ExpressionType.Lambda) && lambdaExpression.Parameters.Count <= 1;
-        }
-
-        private static ConstructionInfo CreateConstructionInfoBasedOnLambdaExpression(LambdaExpression lambdaExpression)
-        {
-            return new ConstructionInfo { FactoryDelegate = lambdaExpression.Compile() };
-        }
-
-        private static ConstructionInfo CreateConstructionInfoBasedOnNewExpression(NewExpression newExpression)
-        {
-            var constructionInfo = CreateConstructionInfo(newExpression);
-            ParameterInfo[] parameters = newExpression.Constructor.GetParameters();
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                ConstructorDependency constructorDependency = CreateConstructorDependency(parameters[i]);
-                ApplyDependencyDetails(newExpression.Arguments[i], constructorDependency);
-                constructionInfo.ConstructorDependencies.Add(constructorDependency);
-            }
-
-            return constructionInfo;
-        }
-
-        private static ConstructionInfo CreateConstructionInfo(NewExpression newExpression)
-        {
-            var constructionInfo = new ConstructionInfo { Constructor = newExpression.Constructor, ImplementingType = newExpression.Constructor.DeclaringType };
-            return constructionInfo;
-        }
-
-        private static ConstructionInfo CreateConstructionInfoBasedOnHandleMemberInitExpression(MemberInitExpression memberInitExpression)
-        {
-            var constructionInfo = CreateConstructionInfoBasedOnNewExpression(memberInitExpression.NewExpression);
-            foreach (MemberBinding memberBinding in memberInitExpression.Bindings)
-            {
-                HandleMemberAssignment((MemberAssignment)memberBinding, constructionInfo);
-            }
-
-            return constructionInfo;
-        }
-
-        private static void HandleMemberAssignment(MemberAssignment memberAssignment, ConstructionInfo constructionInfo)
-        {
-            var propertyDependency = CreatePropertyDependency(memberAssignment);
-            ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
-            constructionInfo.PropertyDependencies.Add(propertyDependency);
-        }
-
-        private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
-        {
-            var constructorDependency = new ConstructorDependency
-            {
-                Parameter = parameterInfo,
-                ServiceType = parameterInfo.ParameterType,
-                IsRequired = true
-            };
-            return constructorDependency;
-        }
-
-        private static PropertyDependency CreatePropertyDependency(MemberAssignment memberAssignment)
-        {
-            var propertyDependecy = new PropertyDependency
-            {
-                Property = (PropertyInfo)memberAssignment.Member,
-                ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType
-            };
-            return propertyDependecy;
-        }
-
-        private static void ApplyDependencyDetails(Expression expression, Dependency dependency)
-        {
-            if (RepresentsServiceFactoryMethod(expression))
-            {
-                ApplyDependencyDetailsFromMethodCall((MethodCallExpression)expression, dependency);
-            }
-            else
-            {
-                ApplyDependecyDetailsFromExpression(expression, dependency);
-            }
-        }
-
-        private static bool RepresentsServiceFactoryMethod(Expression expression)
-        {
-            return IsMethodCall(expression) &&
-                IsServiceFactoryMethod(((MethodCallExpression)expression).Method);
-        }
-
-        private static bool IsMethodCall(Expression expression)
-        {
-            return expression.NodeType == ExpressionType.Call;
-        }
-
-        private static bool IsServiceFactoryMethod(MethodInfo methodInfo)
-        {
-            return methodInfo.DeclaringType == typeof(IServiceFactory);
-        }
-
-        private static void ApplyDependecyDetailsFromExpression(Expression expression, Dependency dependency)
-        {
-            dependency.FactoryExpression = expression;
-            dependency.ServiceName = string.Empty;
-        }
-
-        private static void ApplyDependencyDetailsFromMethodCall(MethodCallExpression methodCallExpression, Dependency dependency)
-        {
-            dependency.ServiceType = methodCallExpression.Method.ReturnType;
-            if (RepresentsGetNamedInstanceMethod(methodCallExpression))
-            {
-                dependency.ServiceName = (string)((ConstantExpression)methodCallExpression.Arguments[0]).Value;
-            }
-            else
-            {
-                dependency.ServiceName = string.Empty;
-            }
-        }
-
-        private static bool RepresentsGetNamedInstanceMethod(MethodCallExpression node)
-        {
-            return IsGetInstanceMethod(node.Method) && HasOneArgumentRepresentingServiceName(node);
-        }
-
-        private static bool IsGetInstanceMethod(MethodInfo methodInfo)
-        {
-            return methodInfo.Name == "GetInstance";
-        }
-
-        private static bool HasOneArgumentRepresentingServiceName(MethodCallExpression node)
-        {
-            return HasOneArgument(node) && IsConstantExpression(node.Arguments[0]);
-        }
-
-        private static bool HasOneArgument(MethodCallExpression node)
-        {
-            return node.Arguments.Count == 1;
-        }
-
-        private static bool IsConstantExpression(Expression argument)
-        {
-            return argument.NodeType == ExpressionType.Constant;
         }
     }
 
@@ -6525,8 +6289,7 @@ namespace LightInject
         private static readonly List<Type> InternalTypes = new List<Type>();
 
         static ConcreteTypeExtractor()
-        {
-            InternalTypes.Add(typeof(LambdaConstructionInfoBuilder));
+        {            
             InternalTypes.Add(typeof(ConstructorDependency));
             InternalTypes.Add(typeof(PropertyDependency));
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
@@ -6544,8 +6307,7 @@ namespace LightInject
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
-            InternalTypes.Add(typeof(ConstructionInfoProvider));
-            InternalTypes.Add(typeof(ConstructionInfoBuilder));
+            InternalTypes.Add(typeof(ConstructionInfoProvider));            
             InternalTypes.Add(typeof(MostResolvableConstructorSelector));
             InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerContainerLifetime));
