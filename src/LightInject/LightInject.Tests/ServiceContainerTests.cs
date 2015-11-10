@@ -936,6 +936,17 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_KnownOpenGenericCollection_ReturnsKnownCollection()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(ICollection<>), typeof(FooCollection<>));
+            var instance = container.GetInstance<ICollection<int>>();
+            Assert.IsType<FooCollection<int>>(instance);
+        }
+
+
+
+        [Fact]
         public void GetAllInstances_ClosedAndOpenGenericService_ReturnsAllInstances()
         {
             var container = CreateContainer();

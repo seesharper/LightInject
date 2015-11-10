@@ -3391,6 +3391,10 @@ namespace LightInject
             Action<IEmitter> emitMethod;
             var registrations = GetEmitMethods(serviceType);
             registrations.TryGetValue(serviceName, out emitMethod);
+            if (emitMethod == null && serviceType.IsClosedGeneric())
+            {
+                emitMethod = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+            }
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
@@ -3651,21 +3655,6 @@ namespace LightInject
 
         private void EmitConstructorDependency(IEmitter emitter, Dependency dependency)
         {
-            //var instanceDelegate = delegates.Search(dependency.ServiceType);
-            //if (instanceDelegate == null)
-            //{
-            //    instanceDelegate = CreateDefaultDelegate(dependency.ServiceType, throwError: true);
-            //}
-
-            //var instanceDelegateIndex = constants.Add(instanceDelegate);
-
-
-            //var invokeMethod = typeof(GetInstanceDelegate).GetMethod("Invoke");
-            //emitter.PushConstant(instanceDelegateIndex);
-            //emitter.Emit(OpCodes.Ldarg_0);
-            //emitter.Call(invokeMethod);
-            //emitter.UnboxOrCast(dependency.ServiceType);
-
             var emitMethod = GetEmitMethodForDependency(dependency);
 
             try
