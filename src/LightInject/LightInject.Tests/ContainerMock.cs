@@ -92,62 +92,62 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory)
+        public void Register<TService>(Func<IServiceFactory, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory)
+        public void Register<T, TService>(Func<IServiceFactory, T, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T, TService>(Expression<Func<IServiceFactory, T, TService>> factory, string serviceName)
+        public void Register<T, TService>(Func<IServiceFactory, T, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory)
+        public void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, TService>(Expression<Func<IServiceFactory, T1, T2, TService>> factory, string serviceName)
+        public void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory)
+        public void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, T3, TService>(Expression<Func<IServiceFactory, T1, T2, T3, TService>> factory, string serviceName)
+        public void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory)
+        public void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, T3, T4, TService>(Expression<Func<IServiceFactory, T1, T2, T3, T4, TService>> factory, string serviceName)
+        public void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, ILifetime lifetime)
+        public void Register<TService>(Func<IServiceFactory, TService> factory, ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName)
+        public void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(Expression<Func<IServiceFactory, TService>> factory, string serviceName, ILifetime lifetime)
+        public void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
@@ -192,12 +192,12 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
-        public void RegisterConstructorDependency<TDependency>(Expression<Func<IServiceFactory, ParameterInfo, TDependency>> factory)
+        public void RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, TDependency> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterPropertyDependency<TDependency>(Expression<Func<IServiceFactory, PropertyInfo, TDependency>> factory)
+        public void RegisterPropertyDependency<TDependency>(Func<IServiceFactory, PropertyInfo, TDependency> factory)
         {
             throw new NotImplementedException();
         }
@@ -222,7 +222,7 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
-        public void Decorate<TService>(Expression<Func<IServiceFactory, TService, TService>> factory)
+        public void Decorate<TService>(Func<IServiceFactory, TService, TService> factory)
         {
             throw new NotImplementedException();
         }
