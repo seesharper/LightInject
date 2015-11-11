@@ -20,7 +20,7 @@ Execute(() => PatchAssemblyInfo(), "Patching assembly information");
 Execute(() => PatchProjectFiles(), "Patching project files");
 Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
 Execute(() => BuildAllFrameworks(), "Building all frameworks");
-//Execute(() => RunAllUnitTests(), "Running unit tests");
+Execute(() => RunAllUnitTests(), "Running unit tests");
 //Execute(() => AnalyzeTestCoverage(), "Analyzing test coverage");
 Execute(() => InitializeNuGetPackageDirectories(), "Preparing NuGet build directories");
 

@@ -3164,7 +3164,11 @@ namespace LightInject
             lock (lockObject)
             {
                 IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
-                ConstructionInfo constructionInfo = GetContructionInfoForConcreteType(concreteType);
+                
+                ConstructionInfo constructionInfo = new ConstructionInfo();
+                constructionInfo.PropertyDependencies.AddRange(PropertyDependencySelector.Execute(concreteType));
+                constructionInfo.ImplementingType = concreteType;
+                
                 var emitter = methodSkeleton.GetEmitter();
                 emitter.PushArgument(1);
                 emitter.Cast(concreteType);
@@ -3185,31 +3189,7 @@ namespace LightInject
                 return (Func<object[], object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object, object>));
             }
         }
-
-        private ConstructionInfo GetContructionInfoForConcreteType(Type concreteType)
-        {
-            var serviceRegistration = GetServiceRegistrationForConcreteType(concreteType);
-            return GetConstructionInfo(serviceRegistration);
-        }
-
-        private ServiceRegistration GetServiceRegistrationForConcreteType(Type concreteType)
-        {
-            var services = GetAvailableServices(concreteType);
-            return services.GetOrAdd(string.Empty, s => CreateServiceRegistrationBasedOnConcreteType(concreteType));
-        }
-
-        private ServiceRegistration CreateServiceRegistrationBasedOnConcreteType(Type type)
-        {
-            var serviceRegistration = new ServiceRegistration
-            {
-                ServiceType = type,
-                ImplementingType = type,
-                ServiceName = string.Empty,
-                IgnoreConstructorDependencies = true
-            };
-            return serviceRegistration;
-        }
-
+           
         private ConstructionInfoProvider CreateConstructionInfoProvider()
         {
             return new ConstructionInfoProvider(CreateTypeConstructionInfoBuilder());
@@ -3670,7 +3650,7 @@ namespace LightInject
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
             var actions = new List<Action<IEmitter>>();
-            var parameters = dependency.FactoryExpression.Method.GetParameters();
+            var parameters = dependency.FactoryExpression.GetMethodInfo().GetParameters();
                         
             foreach (var parameter in parameters)
             {
@@ -5522,13 +5502,10 @@ namespace LightInject
             var implementingType = registration.ImplementingType;
             var constructionInfo = new ConstructionInfo();
             constructionInfo.ImplementingType = implementingType;
-            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
-            if (!registration.IgnoreConstructorDependencies)
-            {
-                constructionInfo.Constructor = constructorSelector.Execute(implementingType);
-                constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructionInfo.Constructor));
-            }
-
+            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));                        
+            constructionInfo.Constructor = constructorSelector.Execute(implementingType);
+            constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructionInfo.Constructor));
+            
             return constructionInfo;
         }
 
@@ -5642,12 +5619,7 @@ namespace LightInject
         /// Gets or sets the service <see cref="Type"/>.
         /// </summary>
         public Type ServiceType { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether constructor dependencies should be ignored.
-        /// </summary>
-        public bool IgnoreConstructorDependencies { get; set; }
-
+        
         /// <summary>
         /// Gets or sets the <see cref="Type"/> that implements the <see cref="Registration.ServiceType"/>.
         /// </summary>

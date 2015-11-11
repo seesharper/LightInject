@@ -262,7 +262,7 @@ namespace LightInject.Tests
 
             Assert.IsAssignableFrom(typeof(Bar), result.Bar);
         }
-#if NET40 || NET45 || PCL_111       
+#if NET40 || NET45 || PCL_111  || NET46     
         [Fact]
         public void InjectProperties_FuncFactory_InjectsPropertyDependencies()
         {
@@ -274,7 +274,7 @@ namespace LightInject.Tests
 
             var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
 
-            Assert.IsAssignableFrom(typeof(AnotherBar), result.Bar);
+            Assert.IsAssignableFrom(typeof(Bar), result.Bar);
         }
 #endif
         [Fact]
