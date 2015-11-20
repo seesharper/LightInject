@@ -1,7 +1,7 @@
 ﻿/*****************************************************************************   
     The MIT License (MIT)
 
-    Copyright (c) 2014 bernhard.richter@gmail.com
+    Copyright (c) 2015 bernhard.richter@gmail.com
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Annotation version 1.0.0.4
+    LightInject.Annotation version 1.0.0.5
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -70,7 +70,7 @@ namespace LightInject
     /// Extends the <see cref="ServiceContainer"/> class with methods for enabling
     /// annotated property/constructor injection.
     /// </summary>
-    internal static class AnnotationExtension
+    public static class AnnotationExtension
     {
         /// <summary>
         /// Enables annotated property injection.
@@ -107,7 +107,7 @@ namespace LightInject.Annotation
     /// An <see cref="IPropertyDependencySelector"/> that uses the <see cref="InjectAttribute"/>
     /// to determine which properties to inject dependencies.
     /// </summary>
-    internal class AnnotatedPropertyDependencySelector : PropertyDependencySelector
+    public class AnnotatedPropertyDependencySelector : PropertyDependencySelector
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="AnnotatedPropertyDependencySelector"/> class.
@@ -153,7 +153,7 @@ namespace LightInject.Annotation
     /// A <see cref="ConstructorDependencySelector"/> that looks for the <see cref="InjectAttribute"/> 
     /// to determine the name of service to be injected.
     /// </summary>
-    internal class AnnotatedConstructorDependencySelector : ConstructorDependencySelector
+    public class AnnotatedConstructorDependencySelector : ConstructorDependencySelector
     {
         /// <summary>
         /// Selects the constructor dependencies for the given <paramref name="constructor"/>.
@@ -183,7 +183,7 @@ namespace LightInject.Annotation
     /// A <see cref="IConstructorSelector"/> implementation that uses information 
     /// from the <see cref="InjectAttribute"/> to determine if a given service can be resolved.
     /// </summary>
-    internal class AnnotatedConstructorSelector : MostResolvableConstructorSelector
+    public class AnnotatedConstructorSelector : MostResolvableConstructorSelector
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="AnnotatedConstructorSelector"/> class.

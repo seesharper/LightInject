@@ -65,6 +65,7 @@ local.properties
 *.dotCover
 *.cs.pp
 *.nupkg
+project.lock.json
 LightInject.PreProcessor.dll
 lib/
 ## TODO: If you have NuGet Package Restore enabled, uncomment this

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>LightInject.Annotation</id>
+        <version>1.0.0.4</version>
+        <authors>Bernhard Richter</authors>
+        <owners>Bernhard Richter</owners>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+        <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>An extension to the LightInject service container that allows properties and constructor parameters to be annotated with the InjectAttribute class.</description>
+        <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
+        <copyright>Bernhard Richter</copyright>
+        <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator WinRT Windows-Runtime</tags>
+        <dependencies>
+            <dependency id="LightInject" version="3.0.2.7" />
+        </dependencies>
+    </metadata>   
+</package>

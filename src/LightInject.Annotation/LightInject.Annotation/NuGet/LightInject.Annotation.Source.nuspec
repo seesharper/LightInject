@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>LightInject.Annotation.Source</id>
+        <version>1.0.0.4</version>
+        <authors>Bernhard Richter</authors>
+        <owners>Bernhard Richter</owners>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+        <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>An extension to the LightInject service container that allows properties and constructor parameters to be annotated with the InjectAttribute class.</description>
+        <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
+        <copyright>Bernhard Richter</copyright>
+        <tags>Ioc Dependency-Injection Inversion-of-Control LightInject CommonServiceLocator WinRT Windows-Runtime</tags>
+        <dependencies>
+            <dependency id="LightInject.Source" version="4.0.0.1" />          
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="content\net40\LightInject.Annotation\LightInject.Annotation.cs.pp" target="content\net40\LightInject.Annotation\LightInject.Annotation.cs.pp" />
+        <file src="content\net45\LightInject.Annotation\LightInject.Annotation.cs.pp" target="content\net45\LightInject.Annotation\LightInject.Annotation.cs.pp" />
+        <file src="content\net46\LightInject.Annotation\LightInject.Annotation.cs.pp" target="content\net46\LightInject.Annotation\LightInject.Annotation.cs.pp" />
+        <file src="content\dnxcore50\LightInject.Annotation\LightInject.Annotation.cs.pp" target="content\dnxcore50\LightInject.Annotation\LightInject.Annotation.cs.pp" />
+        <file src="content\dnx451\LightInject.Annotation\LightInject.Annotation.cs.pp" target="content\dnx451\LightInject.Annotation\LightInject.Annotation.cs.pp" />
+        <file src="content\portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10\LightInject.Annotation\LightInject.Annotation.cs.pp" target="content\portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10\LightInject.Annotation\LightInject.Annotation.cs.pp" />
+    </files>
+</package>

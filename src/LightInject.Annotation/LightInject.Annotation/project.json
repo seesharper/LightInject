@@ -1,0 +1,31 @@
+{
+    "version": "3.0.0.10",
+    "dependencies": {
+        "LightInject": "4.0.1"
+    },
+    "frameworks": {
+        "dnx451": {
+            "dependencies": {}
+        },
+        "dnxcore50": {
+            "dependencies": {
+                "System.Collections": "4.0.10",
+                "System.Collections.Concurrent" : "4.0.10",
+                "System.IO": "4.0.10",
+                "System.Linq": "4.0.0",
+                "System.Linq.Expressions": "4.0.10",
+                "System.Reflection": "4.0.10",
+                "System.Reflection.Emit": "4.0.0",
+                "System.Reflection.Emit.Lightweight": "4.0.0",
+                "System.Reflection.Extensions": "4.0.0",
+                "System.Reflection.TypeExtensions": "4.0.0",
+                "System.Runtime": "4.0.20",
+                "System.Runtime.Extensions": "4.0.10",                                
+                "System.Text.Encoding": "4.0.10",
+                "System.Text.RegularExpressions": "4.0.10",
+                "System.Threading": "4.0.10",
+                "System.Diagnostics.Tools": "4.0.0"                           
+            }
+        }
+    }
+}
