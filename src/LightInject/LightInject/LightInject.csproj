@@ -10,7 +10,7 @@
     <AssemblyName>LightInject</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />    
+    <TargetFrameworkProfile />
     <!--<StyleCopTreatErrorsAsWarnings>true</StyleCopTreatErrorsAsWarnings>-->
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

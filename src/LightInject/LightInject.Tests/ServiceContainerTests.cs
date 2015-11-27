@@ -39,9 +39,8 @@ namespace LightInject.Tests
         public void Register_NullServiceType_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            ExceptionAssert.Throws<ArgumentNullException>(
-                () => container.Register(null, typeof(Foo)),
-                e => e.ParamName == "serviceType");
+            Assert.Throws<ArgumentNullException>(
+                () => container.Register(null, typeof(Foo)));
         }
 
         [Fact]
@@ -75,9 +74,8 @@ namespace LightInject.Tests
         public void RegisterInstance_NullServiceType_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            ExceptionAssert.Throws<ArgumentNullException>(
-                () => container.RegisterInstance(null, new object()),
-                e => e.ParamName == "serviceType");
+            Assert.Throws<ArgumentNullException>(
+                () => container.RegisterInstance(null, new object()));
         }
 
         [Fact]

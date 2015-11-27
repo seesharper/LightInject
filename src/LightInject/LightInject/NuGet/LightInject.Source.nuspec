@@ -33,8 +33,7 @@
         </group>
       </dependencies>
     </metadata>
-    <files>
-        <file src="content\net40\LightInject\LightInject.cs.pp" target="content\net40\LightInject\LightInject.cs.pp" />
+    <files>        
         <file src="content\net45\LightInject\LightInject.cs.pp" target="content\net45\LightInject\LightInject.cs.pp" />        
         <file src="content\net46\LightInject\LightInject.cs.pp" target="content\net46\LightInject\LightInject.cs.pp" />
         <file src="content\dnxcore50\LightInject\LightInject.cs.pp" target="content\dnxcore50\LightInject\LightInject.cs.pp" />        

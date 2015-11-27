@@ -41,8 +41,7 @@ private void InitializeNuGetPackageDirectories()
 }
 
 private void CopySourceFilesToNuGetLibDirectory()
-{
-	CopySourceFile("NET40", "net40");
+{	
 	CopySourceFile("NET45", "net45");
 	CopySourceFile("NET46", "net46");		
 	CopySourceFile("DNX451", "dnx451");		
@@ -52,7 +51,6 @@ private void CopySourceFilesToNuGetLibDirectory()
 
 private void CopyBinaryFilesToNuGetLibDirectory()
 {
-	CopyBinaryFile("NET40", "net40");
 	CopyBinaryFile("NET45", "net45");
 	CopyBinaryFile("NET46", "net46");	
 	CopyBinaryFile("DNX451", "dnx451");
@@ -107,7 +105,6 @@ private string ResolvePathToBinaryFile(string frameworkMoniker)
 
 private void BuildAllFrameworks()
 {
-	Build("Net40");
 	Build("Net45");
 	Build("Net46");	
 	Build("Pcl_111");
@@ -140,8 +137,7 @@ private void RestoreNuGetPackages()
 
 private void RunAllUnitTests()
 {	
-	DirectoryUtils.Delete("TestResults");
-	Execute(() => RunUnitTests("Net40"), "Running unit tests for Net40");
+	DirectoryUtils.Delete("TestResults");	
 	Execute(() => RunUnitTests("Net45"), "Running unit tests for Net45");
 	Execute(() => RunUnitTests("Net46"), "Running unit tests for Net46");
 	//Execute(() => AnalyzeTestCoverage("Net40"), "Analysing test coverage for Net40");			
@@ -156,7 +152,6 @@ private void RunUnitTests(string frameworkMoniker)
 
 private void AnalyzeTestCoverage()
 {
-	Execute(() => AnalyzeTestCoverage("NET40"), "Analyzing test coverage for NET40");
 	Execute(() => AnalyzeTestCoverage("NET45"), "Analyzing test coverage for NET45");
 	Execute(() => AnalyzeTestCoverage("NET46"), "Analyzing test coverage for NET46");
 }
@@ -171,7 +166,6 @@ private void AnalyzeTestCoverage(string frameworkMoniker)
 private void InitializBuildDirectories()
 {
 	DirectoryUtils.Delete(pathToBuildDirectory);	
-	Execute(() => InitializeNugetBuildDirectory("NET40"), "Preparing Net40");
 	Execute(() => InitializeNugetBuildDirectory("NET45"), "Preparing Net45");
 	Execute(() => InitializeNugetBuildDirectory("NET46"), "Preparing Net46");
 	Execute(() => InitializeNugetBuildDirectory("DNXCORE50"), "Preparing DNXCORE50");
@@ -207,7 +201,6 @@ private void RenameSolutionFile(string frameworkMoniker)
 
 private void RenameSolutionFiles()
 {
-	RenameSolutionFile("NET40");
 	RenameSolutionFile("NET45");
 	RenameSolutionFile("NET46");
 	RenameSolutionFile("DNXCORE50");
@@ -223,7 +216,6 @@ private void Internalize(string frameworkMoniker)
 
 private void InternalizeSourceVersions()
 {
-	Execute (()=> Internalize("NET40"), "Internalizing NET40");
 	Execute (()=> Internalize("NET45"), "Internalizing NET45");
 	Execute (()=> Internalize("NET46"), "Internalizing NET46");
 	Execute (()=> Internalize("DNXCORE50"), "Internalizing DNXCORE50");
@@ -231,8 +223,7 @@ private void InternalizeSourceVersions()
 }
 
 private void PatchAssemblyInfo()
-{
-	Execute(() => PatchAssemblyInfo("Net40"), "Patching AssemblyInfo (Net40)");
+{	
 	Execute(() => PatchAssemblyInfo("Net45"), "Patching AssemblyInfo (Net45)");
 	Execute(() => PatchAssemblyInfo("Net46"), "Patching AssemblyInfo (Net46)");	
 	Execute(() => PatchAssemblyInfo("DNXCORE50"), "Patching AssemblyInfo (DNXCORE50)");
@@ -259,7 +250,6 @@ private void PatchInternalsVisibleToAttribute(string pathToAssemblyInfo)
 
 private void PatchProjectFiles()
 {
-	Execute(() => PatchProjectFile("NET40", "4.0"), "Patching project file (NET40)");
 	Execute(() => PatchProjectFile("NET45", "4.5"), "Patching project file (NET45)");
 	Execute(() => PatchProjectFile("NET46", "4.6"), "Patching project file (NET46)");
 	Execute(() => PatchPortableProjectFile(), "Patching project file (PCL_111)");	
