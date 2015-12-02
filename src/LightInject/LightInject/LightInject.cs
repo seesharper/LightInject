@@ -363,12 +363,12 @@ namespace LightInject
         /// Registers services from the given <paramref name="assembly"/>.
         /// </summary>
         /// <param name="assembly">The assembly to be scanned for services.</param>
-        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <remarks>
         /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this
         /// will be used to configure the container.
         /// </remarks>
-        void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetime);
+        void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory);
 
         /// <summary>
         /// Registers services from the given <paramref name="assembly"/>.
@@ -467,6 +467,13 @@ namespace LightInject
         /// <param name="predicate">A function delegate that determines if the given service can be post-processed.</param>
         /// <param name="processor">An action delegate that exposes the created service instance.</param>
         void Initialize(Func<ServiceRegistration, bool> predicate, Action<IServiceFactory, object> processor);
+
+        
+        /// <summary>
+        /// Sets the default lifetime for types registered without an explicit lifetime. Will only affect new registrations (after this call).
+        /// </summary>
+        /// <typeparam name="T">The default lifetime type</typeparam>
+        void SetDefaultLifetime<T>() where T : ILifetime, new();
     }
 
     /// <summary>
@@ -2230,6 +2237,9 @@ namespace LightInject
             ImmutableHashTree<Type, Func<object[], object, object>>.Empty;
 
         private bool isLocked;
+        private Type defaultLifetimeType;
+
+        private ILifetime DefaultLifetime => (ILifetime)(defaultLifetimeType != null ? Activator.CreateInstance(defaultLifetimeType) : null);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
@@ -2449,7 +2459,7 @@ namespace LightInject
         /// </remarks>
         public void RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister)
         {
-            AssemblyScanner.Scan(assembly, this, () => null, shouldRegister);
+            AssemblyScanner.Scan(assembly, this, () => DefaultLifetime, shouldRegister);
         }
 
         /// <summary>
@@ -3247,6 +3257,12 @@ namespace LightInject
             Register(serviceType);
             return GetInstance(serviceType);
         }
+        
+        /// <summary>
+        /// Sets the default lifetime for types registered without an explicit lifetime. Will only affect new registrations (after this call).
+        /// </summary>
+        /// <typeparam name="T">The default lifetime type</typeparam>
+        public void SetDefaultLifetime<T>() where T : ILifetime, new() => defaultLifetimeType = typeof(T);
 
         /// <summary>
         /// Disposes any services registered using the <see cref="PerContainerLifetime"/>.
@@ -4031,7 +4047,7 @@ namespace LightInject
                 ServiceType = serviceType,
                 ServiceName = serviceName,
                 FactoryExpression = rule.Factory,
-                Lifetime = CloneLifeTime(rule.LifeTime)
+                Lifetime = CloneLifeTime(rule.LifeTime) ?? DefaultLifetime
             };
             if (rule.LifeTime != null)
             {
@@ -4146,16 +4162,12 @@ namespace LightInject
             }
 
             var serviceRegistration = new ServiceRegistration
-                                                          {
-                                                              ServiceType = closedGenericServiceType,
-                                                              ImplementingType =
-                                                                  closedGenericImplementingType,
-                                                              ServiceName = serviceName,
-                                                              Lifetime =
-                                                                  CloneLifeTime(
-                                                                      openGenericServiceRegistration
-                                                                  .Lifetime)
-                                                          };
+            {
+                ServiceType = closedGenericServiceType,
+                ImplementingType = closedGenericImplementingType,
+                ServiceName = serviceName,
+                Lifetime = CloneLifeTime(openGenericServiceRegistration.Lifetime) ?? DefaultLifetime
+            };
             Register(serviceRegistration);
             return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
         }
@@ -4231,7 +4243,7 @@ namespace LightInject
             Ensure.IsNotNull(serviceType, "type");
             Ensure.IsNotNull(implementingType, "implementingType");
             Ensure.IsNotNull(serviceName, "serviceName");
-            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime };
+            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime ?? DefaultLifetime };
             Register(serviceRegistration);
         }
 
@@ -4341,15 +4353,24 @@ namespace LightInject
 
         private void RegisterValue(Type serviceType, object value, string serviceName)
         {
-            var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ServiceName = serviceName, Value = value, Lifetime = new PerContainerLifetime() };
+            var serviceRegistration = new ServiceRegistration {
+                ServiceType = serviceType,
+                ServiceName = serviceName,
+                Value = value,
+                Lifetime = new PerContainerLifetime()
+            };
             Register(serviceRegistration);
         }
 
 
-        private void RegisterServiceFromLambdaExpression<TService>(
-            Delegate factory, ILifetime lifetime, string serviceName)
+        private void RegisterServiceFromLambdaExpression<TService>(Delegate factory, ILifetime lifetime, string serviceName)
         {
-            var serviceRegistration = new ServiceRegistration { ServiceType = typeof(TService), FactoryExpression = factory, ServiceName = serviceName, Lifetime = lifetime };
+            var serviceRegistration = new ServiceRegistration {
+                ServiceType = typeof(TService),
+                FactoryExpression = factory,
+                ServiceName = serviceName,
+                Lifetime = lifetime ?? DefaultLifetime
+            };
             Register(serviceRegistration);
         }
 
