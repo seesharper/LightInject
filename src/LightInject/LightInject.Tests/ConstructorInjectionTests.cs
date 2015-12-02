@@ -24,8 +24,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), e=> e.InnerException.Message == ErrorMessages.UnknownConstructorDependency);
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            Assert.Equal(ErrorMessages.UnknownConstructorDependency, exception.InnerException.Message);            
         }
 
         [Fact]
@@ -292,8 +292,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), ex => ex.InnerException.InnerException.Message == ErrorMessages.RecursiveDependency);
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            Assert.Equal(ErrorMessages.RecursiveDependency, exception.InnerException.InnerException.Message);            
         }
 
         [Fact]
@@ -302,18 +302,17 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register(typeof(IBar), typeof(BarWithFooDependency));
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IBar>(), ex => ex.InnerException.InnerException.InnerException.Message == ErrorMessages.RecursiveDependency);
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IBar>());
+            Assert.Equal(ErrorMessages.RecursiveDependency, exception.InnerException.InnerException.InnerException.Message);
         }
 
         [Fact]
         public void GetInstance_PerContainerLifetimeWithRecursiveDependency_ThrowsException()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(factory => CreateRecursive(factory), new PerContainerLifetime());            
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(),
-                ex => ex.ToString().Contains("Recursive dependency detected"));            
+            container.Register<IFoo>(factory => CreateRecursive(factory), new PerContainerLifetime());
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            Assert.True(exception.ToString().Contains("Recursive dependency detected"));            
         }
 
         private static FooWithRecursiveDependency CreateRecursive(IServiceFactory factory)

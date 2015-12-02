@@ -16,9 +16,8 @@
             <dependency id="LightInject.Source" version="3.0.2.7" />
         </dependencies>
     </metadata>
-    <files>
-        <file src="content\net40\LightInject\Interception\LightInject.Interception.cs.pp" target="content\net40\LightInject\Interception\LightInject.Interception.cs.pp" />
-        <file src="content\net45\LightInject\Interception\LightInject.Interception.cs.pp" target="content\net45\LightInject\Interception\LightInject.Interception.cs.pp" />
-        <file src="content\net46\LightInject\Interception\LightInject.Interception.cs.pp" target="content\net46\LightInject\Interception\LightInject.Interception.cs.pp" />
+    <files>        
+        <file src="content\net45\LightInject.Interception\LightInject.Interception.cs.pp" target="content\net45\LightInject.Interception\LightInject.Interception.cs.pp" />
+        <file src="content\net46\LightInject.Interception\LightInject.Interception.cs.pp" target="content\net46\LightInject.Interception\LightInject.Interception.cs.pp" />
     </files>
 </package>

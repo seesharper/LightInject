@@ -284,10 +284,9 @@ namespace LightInject.Tests
             container.Register<IFoo, FooWithRecursiveDependency>();
 
             var barWithPropertyDependency = new BarWithPropertyDependency();
-
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.InjectProperties(barWithPropertyDependency), ErrorMessages.RecursivePropertyDependency);
-
+            var exception =
+                Assert.Throws<InvalidOperationException>(() => container.InjectProperties(barWithPropertyDependency));
+            Assert.Equal(ErrorMessages.RecursivePropertyDependency, exception.Message);            
         }
 
         [Fact]

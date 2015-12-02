@@ -23,7 +23,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[] { typeof(object[]) });
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add));
         }
         
         [Fact]
@@ -31,7 +31,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[]{typeof(object[])});
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (ConstructorInfo)null));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (ConstructorInfo)null));
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[] { typeof(object[]) });
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (LocalBuilder)null));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (LocalBuilder)null));
         }
 
         [Fact]
@@ -47,7 +47,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[] { typeof(object[]) });
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, 42));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, 42));
         }
 
         [Fact]
@@ -55,7 +55,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[] { typeof(object[]) });
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (SByte)42));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (SByte)42));
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[] { typeof(object[]) });
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (byte)42));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (byte)42));
         }
 
         [Fact]
@@ -71,7 +71,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[] { typeof(object[]) });
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (string)null));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (string)null));
         }
 
         [Fact]
@@ -79,7 +79,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[] { typeof(object[]) });
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, typeof(string)));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, typeof(string)));
         }
 
         [Fact]
@@ -87,7 +87,7 @@ namespace LightInject.Tests
         {
             DynamicMethod dynamicMethod = new DynamicMethod(typeof(object), new Type[] { typeof(object[]) });
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            ExceptionAssert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (MethodInfo)null));
+            Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add, (MethodInfo)null));
         }
 
     }

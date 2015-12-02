@@ -1,15 +1,13 @@
 {
     "version": "3.0.0.10",
-    "dependencies": {
-        "LightInject": "4.0.1"
-    },
+    "dependencies": {},
     "frameworks": {
         "dnx451": {
             "dependencies": {}
         },
         "dnxcore50": {
             "dependencies": {
-                "System.Collections": "4.0.10",
+               "System.Collections": "4.0.10",
                 "System.Collections.Concurrent" : "4.0.10",
                 "System.IO": "4.0.10",
                 "System.Linq": "4.0.0",
@@ -24,7 +22,7 @@
                 "System.Text.Encoding": "4.0.10",
                 "System.Text.RegularExpressions": "4.0.10",
                 "System.Threading": "4.0.10",
-                "System.Diagnostics.Tools": "4.0.0"                                           
+                "System.Diagnostics.Tools": "4.0.0"                   
             }
         }
     }

@@ -23,7 +23,7 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 var instance = container.GetInstance<IAsyncFoo>();
-                ExceptionAssert.Throws<AggregateException>(() => instance.GetBar().Wait());                
+                Assert.Throws<AggregateException>(() => instance.GetBar().Wait());                
             }
         }
 

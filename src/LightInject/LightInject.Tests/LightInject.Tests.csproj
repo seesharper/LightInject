@@ -94,7 +94,6 @@
     <Compile Include="ContainerFactory.cs" />
     <Compile Include="ContainerMock.cs" />
     <Compile Include="ErrorMessages.cs" />
-    <Compile Include="ExceptionAssert.cs" />
     <Compile Include="FunctionFactoryTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyInjectionTests.cs" />

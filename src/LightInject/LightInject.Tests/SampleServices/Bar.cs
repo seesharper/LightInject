@@ -4,14 +4,14 @@ namespace LightInject.SampleLibrary
 {
     public class FooWithStaticConstructor
     {
-        private FooWithStaticConstructor()
-        {
-        }
-
         static FooWithStaticConstructor()
         {
-            
+
         }
+
+        private FooWithStaticConstructor()
+        {
+        }      
     }
     
     public class FooWithPrivateConstructor

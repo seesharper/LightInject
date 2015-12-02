@@ -447,7 +447,7 @@ namespace LightInject.Tests
         public void Emit_InvalidOpCodeWithInteger_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
-            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, 42));
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, 42));
 
         }
         
@@ -455,42 +455,42 @@ namespace LightInject.Tests
         public void Emit_InvalidOpCodeWithLocalBuilder_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
-            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (LocalBuilder)null));
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (LocalBuilder)null));
         }
 
         [Fact]        
         public void Emit_InvalidOpCodeWithSignedByte_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
-            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (sbyte)42));            
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (sbyte)42));            
         }
 
         [Fact]        
         public void Emit_InvalidOpCodeWithByte_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
-            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (byte)42));                        
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (byte)42));                        
         }
 
         [Fact]        
         public void Emit_InvalidOpCodeWithType_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
-            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, typeof(object)));                                    
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, typeof(object)));                                    
         }
 
         [Fact]        
         public void Emit_InvalidOpCodeWithMethodInfo_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
-            ExceptionAssert.Throws<NotSupportedException>(() =>  emitter.Emit(OpCodes.Ldarg_0, (MethodInfo)null));
+            Assert.Throws<NotSupportedException>(() =>  emitter.Emit(OpCodes.Ldarg_0, (MethodInfo)null));
         }
 
         [Fact]        
         public void Emit_InvalidOpCodeWithConstructorInfo_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
-            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));            
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));            
         }
 
 #if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
@@ -498,7 +498,7 @@ namespace LightInject.Tests
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] {});
-            ExceptionAssert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Xor));                        
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Xor));                        
         }
 #endif
         [Fact]

@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Interception version 1.0.0.9 
+    LightInject.Interception version 1.0.1.0 
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -36,7 +36,6 @@ namespace LightInject
 {
     using System;
     using System.Linq;
-    using System.Linq.Expressions;
     using System.Reflection;
     using LightInject.Interception;
 
@@ -55,17 +54,17 @@ namespace LightInject
         /// <param name="additionalInterfaces">A list of additional interface that will be implemented by the proxy type.</param>
         /// <param name="defineProxyType">An action delegate that is used to define the proxy type.</param>
         public static void Intercept(this IServiceRegistry serviceRegistry, Func<ServiceRegistration, bool> serviceSelector, Type[] additionalInterfaces, Action<IServiceFactory, ProxyDefinition> defineProxyType)
-        {                                    
+        {
             var decoratorRegistration = new DecoratorRegistration();
             decoratorRegistration.CanDecorate =
-                registration => serviceSelector(registration) && registration.ServiceType != typeof(IInterceptor) && registration.ServiceType.IsInterface();
+                registration => serviceSelector(registration) && registration.ServiceType != typeof(IInterceptor) && registration.ServiceType.GetTypeInfo().IsInterface;
             decoratorRegistration.ImplementingTypeFactory = (serviceFactory, serviceRegistration) => CreateProxyType(serviceRegistration.ServiceType, additionalInterfaces, serviceFactory, defineProxyType, serviceRegistration);
             serviceRegistry.Decorate(decoratorRegistration);
 
             // class based proxies
             serviceRegistry.Override(serviceSelector, (serviceFactory, registration) => CreateProxyServiceRegistration(registration, additionalInterfaces, serviceFactory, defineProxyType));
         }
-                
+
         /// <summary>
         /// Decorates the service identified by the <paramref name="serviceSelector"/> delegate with a dynamic proxy type
         /// that is used to decorate the target type.
@@ -117,7 +116,7 @@ namespace LightInject
 
         private static Func<ServiceRegistration, bool> HasMethodsThatMatchesMethodSelector(Func<MethodInfo, bool> methodSelector)
         {
-            return registration => registration.ServiceType.GetMethods().Any(methodSelector);
+            return registration => registration.ServiceType.GetRuntimeMethods().Any(methodSelector);
         }
 
         private static Type CreateProxyType(
@@ -138,44 +137,41 @@ namespace LightInject
 
         private static MethodInfo GetMethod(Delegate del)
         {
-#if NET40 || NET45 || DNX451 || NET46
-            return del.Method;
-#endif
-#if DNXCORE50
+
             return del.GetMethodInfo();
-#endif
         }
 
 
         private static ServiceRegistration CreateProxyServiceRegistration(ServiceRegistration registration, Type[] additionalInterfaces, IServiceFactory serviceFactory, Action<IServiceFactory, ProxyDefinition> defineProxyType)
         {
-            if (registration.ServiceType.IsInterface())
+            if (registration.ServiceType.GetTypeInfo().IsInterface)
             {
                 return registration;
             }
-                        
+
             if (registration.ImplementingType == null)
             {
-                throw new InvalidOperationException("Unable to determine the implementing type.");                    
+                throw new InvalidOperationException("Unable to determine the implementing type.");
             }
 
             var proxyType = CreateProxyType(registration.ImplementingType, additionalInterfaces, serviceFactory, defineProxyType, registration);
             registration.ImplementingType = proxyType;
             return registration;
-            
-        }        
+
+        }
     }
 }
 
 namespace LightInject.Interception
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;    
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
-    
+
     /// <summary>
     /// Implemented by all proxy types.
     /// </summary>
@@ -260,7 +256,7 @@ namespace LightInject.Interception
         /// <returns>A proxy <see cref="Type"/>.</returns>
         Type GetProxyType(ProxyDefinition definition);
     }
-     
+
     /// <summary>
     /// Represents a class that intercepts method calls.
     /// </summary>
@@ -332,7 +328,7 @@ namespace LightInject.Interception
                     new Lazy<IInterceptor>(() => new CompositeInterceptor(interceptors));
             }
 
-            return interceptors[0];            
+            return interceptors[0];
         }
     }
 
@@ -340,17 +336,17 @@ namespace LightInject.Interception
     /// Contains information about the target method being intercepted.
     /// </summary>
     public class TargetMethodInfo
-    {                
+    {
         /// <summary>
         /// The function delegate used to invoke the target method.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]        
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]
         public Lazy<Func<object, object[], object>> ProceedDelegate;
 
         /// <summary>
         /// The <see cref="MethodInfo"/> that represents the target method.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]        
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Loading a field is faster than going through a property.")]
         public MethodInfo Method;
 
         private static readonly IMethodBuilder ProceedDelegateBuilder = new CachedMethodBuilder(new DynamicMethodBuilder());
@@ -423,7 +419,7 @@ namespace LightInject.Interception
     /// a method without using late-bound invocation.
     /// </summary>
     public class DynamicMethodBuilder : IMethodBuilder
-    {             
+    {
         private readonly Func<IDynamicMethodSkeleton> methodSkeletonFactory;
 
         /// <summary>
@@ -442,8 +438,8 @@ namespace LightInject.Interception
         public Func<object, object[], object> GetDelegate(MethodInfo targetMethod)
         {
             var parameters = targetMethod.GetParameters();
-            IDynamicMethodSkeleton methodSkeleton = methodSkeletonFactory();            
-            var il = methodSkeleton.GetILGenerator();            
+            IDynamicMethodSkeleton methodSkeleton = methodSkeletonFactory();
+            var il = methodSkeleton.GetILGenerator();
             PushInstance(targetMethod, il);
             PushArguments(parameters, il);
             CallTargetMethod(targetMethod, il);
@@ -460,12 +456,12 @@ namespace LightInject.Interception
             }
             else
             {
-                BoxIfNecessary(method.ReturnType, il);                
+                BoxIfNecessary(method.ReturnType, il);
             }
 
             il.Emit(OpCodes.Ret);
         }
-        
+
         private static void PushArguments(ParameterInfo[] parameters, ILGenerator il)
         {
             for (int i = 0; i < parameters.Length; i++)
@@ -514,10 +510,10 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Castclass, method.GetDeclaringType());
         }
-       
+
         private static void UnboxOrCast(Type parameterType, ILGenerator il)
         {
-            il.Emit(parameterType.IsValueType() ? OpCodes.Unbox_Any : OpCodes.Castclass, parameterType);
+            il.Emit(parameterType.GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, parameterType);
         }
 
         private static void UpdateOutAndRefArguments(ParameterInfo[] parameters, ILGenerator il)
@@ -540,7 +536,7 @@ namespace LightInject.Interception
 
         private static void BoxIfNecessary(Type parameterType, ILGenerator il)
         {
-            if (parameterType.IsValueType())
+            if (parameterType.GetTypeInfo().IsValueType)
             {
                 il.Emit(OpCodes.Box, parameterType);
             }
@@ -548,7 +544,7 @@ namespace LightInject.Interception
 
         private class DynamicMethodSkeleton : IDynamicMethodSkeleton
         {
-            private readonly DynamicMethod dynamicMethod = new DynamicMethod("DynamicMethod", typeof(object), new[] { typeof(object), typeof(object[]) }, typeof(DynamicMethodSkeleton).GetModule(), true);
+            private readonly DynamicMethod dynamicMethod = new DynamicMethod("DynamicMethod", typeof(object), new[] { typeof(object), typeof(object[]) }, typeof(DynamicMethodSkeleton).GetTypeInfo().Module, true);
 
             /// <summary>
             /// Gets the <see cref="ILGenerator"/> used to emit the method body.
@@ -578,8 +574,8 @@ namespace LightInject.Interception
     {
         private readonly IMethodBuilder methodBuilder;
 
-        private readonly ThreadSafeDictionary<MethodInfo, Func<object, object[], object>> cache
-            = new ThreadSafeDictionary<MethodInfo, Func<object, object[], object>>();
+        private readonly ConcurrentDictionary<MethodInfo, Func<object, object[], object>> cache
+            = new ConcurrentDictionary<MethodInfo, Func<object, object[], object>>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CachedMethodBuilder"/> class.
@@ -610,7 +606,7 @@ namespace LightInject.Interception
         private readonly TargetMethodInfo targetMethodInfo;
         private readonly IProxy proxy;
         private readonly object[] arguments;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TargetInvocationInfo"/> class.
         /// </summary>
@@ -676,7 +672,7 @@ namespace LightInject.Interception
     {
         private readonly IInvocationInfo nextInvocationInfo;
         private readonly Lazy<IInterceptor> nextInterceptor;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="InterceptorInvocationInfo"/> class.
         /// </summary>
@@ -696,7 +692,7 @@ namespace LightInject.Interception
             get
             {
                 return nextInvocationInfo.Method;
-            }        
+            }
         }
 
         /// <summary>
@@ -707,7 +703,7 @@ namespace LightInject.Interception
             get
             {
                 return nextInvocationInfo.Proxy;
-            }            
+            }
         }
 
         /// <summary>
@@ -718,7 +714,7 @@ namespace LightInject.Interception
             get
             {
                 return nextInvocationInfo.Arguments;
-            }            
+            }
         }
 
         /// <summary>
@@ -744,7 +740,7 @@ namespace LightInject.Interception
         /// </summary>
         /// <param name="interceptors">The <see cref="IInterceptor"/> chain to be invoked.</param>
         public CompositeInterceptor(Lazy<IInterceptor>[] interceptors)
-        {                                 
+        {
             this.interceptors = interceptors;
         }
 
@@ -757,9 +753,9 @@ namespace LightInject.Interception
         public object Invoke(IInvocationInfo invocationInfo)
         {
             for (int i = interceptors.Length - 1; i >= 1; i--)
-            {                                                
-                IInvocationInfo nextInvocationInfo = invocationInfo;                
-                invocationInfo = new InterceptorInvocationInfo(nextInvocationInfo, interceptors[i]);                               
+            {
+                IInvocationInfo nextInvocationInfo = invocationInfo;
+                invocationInfo = new InterceptorInvocationInfo(nextInvocationInfo, interceptors[i]);
             }
 
             return interceptors[0].Value.Invoke(invocationInfo);
@@ -801,9 +797,10 @@ namespace LightInject.Interception
         /// </summary>
         /// <param name="targetType">The type of object to proxy.</param>        
         /// <param name="additionalInterfaces">A list of additional interfaces to be implemented by the proxy type.</param>
-        public ProxyDefinition(Type targetType, params Type[] additionalInterfaces) 
+        public ProxyDefinition(Type targetType, params Type[] additionalInterfaces)
             : this(targetType, true, additionalInterfaces)
-        {            
+        {
+
         }
 
         /// <summary>
@@ -875,7 +872,7 @@ namespace LightInject.Interception
                 return typeAttributes.SelectMany(t => t);
             }
         }
-               
+
         /// <summary>
         /// Implements the methods identified by the <paramref name="methodSelector"/> by forwarding method calls
         /// to the <see cref="IInterceptor"/> created by the <paramref name="interceptorFactory"/>.
@@ -922,7 +919,7 @@ namespace LightInject.Interception
 
         private Type[] ResolveAdditionalInterfaces(Type targetType, IEnumerable<Type> additionalInterfaces)
         {
-            if (targetType.IsInterface())
+            if (targetType.GetTypeInfo().IsInterface)
             {
                 return targetType.GetInterfaces().Concat(additionalInterfaces).Distinct().ToArray();
             }
@@ -1002,7 +999,7 @@ namespace LightInject.Interception
         public static PropertyInfo GetProperty(this MethodInfo method)
         {
             return method.GetDeclaringType().GetProperties().FirstOrDefault(p => p.GetGetMethod() == method || p.GetSetMethod() == method);
-        }        
+        }
     }
 
     /// <summary>
@@ -1019,8 +1016,8 @@ namespace LightInject.Interception
         public MethodInfo[] Execute(Type targetType, Type[] additionalInterfaces)
         {
             MethodInfo[] interceptableMethods;
-            
-            if (targetType.IsInterface())
+
+            if (targetType.GetTypeInfo().IsInterface)
             {
                 interceptableMethods = targetType.GetMethods()
                                           .Where(m => !m.IsSpecialName)
@@ -1060,20 +1057,20 @@ namespace LightInject.Interception
         public TypeBuilder CreateTypeBuilder(Type targetType, Type[] additionalInterfaces)
         {
             ModuleBuilder moduleBuilder = GetModuleBuilder();
-            const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
+            const TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.Class;
             var typeName = targetType.Name + "Proxy";
-            
+
             if (targetType.GetTypeInfo().IsInterface)
             {
                 Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
-                var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);
+                var typeBuilder = moduleBuilder.DefineType(typeName, typeAttributes, null, interfaceTypes);
                 return typeBuilder;
             }
             else
             {
-                var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes, targetType, additionalInterfaces);
+                var typeBuilder = moduleBuilder.DefineType(typeName, typeAttributes, targetType, additionalInterfaces);
                 return typeBuilder;
-            }            
+            }
         }
 
         /// <summary>
@@ -1083,7 +1080,7 @@ namespace LightInject.Interception
         /// <returns>The proxy <see cref="Type"/>.</returns>
         public Type CreateType(TypeBuilder typeBuilder)
         {
-            return typeBuilder.CreateType();
+            return typeBuilder.CreateTypeInfo().AsType();            
         }
 
         private static ModuleBuilder GetModuleBuilder()
@@ -1093,7 +1090,7 @@ namespace LightInject.Interception
         }
 
         private static AssemblyBuilder GetAssemblyBuilder()
-        {                        
+        {
             var assemblybuilder = AssemblyBuilder.DefineDynamicAssembly(
             new AssemblyName("LightInject.Interception.ProxyAssembly"), AssemblyBuilderAccess.Run);
             return assemblybuilder;
@@ -1104,29 +1101,29 @@ namespace LightInject.Interception
     /// A class that is capable of creating a proxy <see cref="Type"/>.
     /// </summary>
     public class ProxyBuilder : IProxyBuilder
-    {        
-        private static readonly ConstructorInfo LazyInterceptorConstructor;        
+    {
+        private static readonly ConstructorInfo LazyInterceptorConstructor;
         private static readonly ConstructorInfo TargetInvocationInfoConstructor;
         private static readonly ConstructorInfo TargetMethodInfoConstructor;
         private static readonly ConstructorInfo OpenGenericTargetMethodInfoConstructor;
         private static readonly ConstructorInfo ObjectConstructor;
-        private static readonly MethodInfo GetTargetMethod;        
+        private static readonly MethodInfo GetTargetMethod;
         private static readonly MethodInfo CreateMethodInterceptorMethod;
         private static readonly MethodInfo GetMethodFromHandleMethod;
-        private static readonly MethodInfo GetTypeFromHandleMethod;        
-        private static readonly MethodInfo LazyInterceptorGetValueMethod;        
+        private static readonly MethodInfo GetTypeFromHandleMethod;
+        private static readonly MethodInfo LazyInterceptorGetValueMethod;
         private static readonly MethodInfo InterceptorInvokeMethod;
-        private static readonly MethodInfo GetTargetMethodInfoMethod;                
+        private static readonly MethodInfo GetTargetMethodInfoMethod;
         private readonly Dictionary<string, int> memberNames = new Dictionary<string, int>();
         private readonly ITypeBuilderFactory typeBuilderFactory;
-        
+
         private FieldBuilder targetFactoryField;
         private FieldBuilder targetField;
         private FieldInfo[] lazyInterceptorFields;
         private MethodInfo[] targetMethods;
         private TypeBuilder typeBuilder;
         private MethodBuilder initializerMethodBuilder;
-        private ConstructorBuilder staticConstructorBuilder;        
+        private ConstructorBuilder staticConstructorBuilder;
         private ProxyDefinition proxyDefinition;
 
         static ProxyBuilder()
@@ -1139,7 +1136,7 @@ namespace LightInject.Interception
             GetTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Public | BindingFlags.Static);
             TargetMethodInfoConstructor = typeof(TargetMethodInfo).GetConstructors()[0];
             OpenGenericTargetMethodInfoConstructor = typeof(OpenGenericTargetMethodInfo).GetConstructors()[0];
-            LazyInterceptorGetValueMethod = typeof(Lazy<IInterceptor>).GetProperty("Value").GetGetMethod();                        
+            LazyInterceptorGetValueMethod = typeof(Lazy<IInterceptor>).GetProperty("Value").GetGetMethod();
             TargetInvocationInfoConstructor = typeof(TargetInvocationInfo).GetConstructors()[0];
             InterceptorInvokeMethod = typeof(IInterceptor).GetMethod("Invoke");
             GetTargetMethodInfoMethod = typeof(OpenGenericTargetMethodInfo).GetMethod("GetTargetMethodInfo");
@@ -1171,12 +1168,12 @@ namespace LightInject.Interception
             proxyDefinition = definition;
             InitializeTypeBuilder();
             ApplyTypeAttributes();
-            DefineTargetField();                        
+            DefineTargetField();
             DefineInitializerMethod();
             DefineStaticTargetFactoryField();
-            ImplementConstructor();                                       
-            DefineInterceptorFields();           
-            ImplementProxyInterface();                        
+            ImplementConstructor();
+            DefineInterceptorFields();
+            ImplementProxyInterface();
             PopulateTargetMethods();
             ImplementMethods();
             ImplementProperties();
@@ -1187,7 +1184,7 @@ namespace LightInject.Interception
             var del = CreateTypedInstanceDelegate(definition.TargetFactory, definition.TargetType);
             AssignTargetFactory(proxyType, del);
             AssignInterceptorFactories(definition, proxyType);
-            
+
             return proxyType;
         }
 
@@ -1197,24 +1194,30 @@ namespace LightInject.Interception
             var propertyArgumentValues = new List<object>();
             var fieldArguments = new List<FieldInfo>();
             var fieldArgumentValues = new List<object>();
-            
+
             foreach (var namedArgument in customAttributeData.NamedArguments)
             {
-                if (namedArgument.MemberInfo.MemberType == MemberTypes.Field)
+
+                if (namedArgument.IsField)
                 {
-                    fieldArguments.Add((FieldInfo)namedArgument.MemberInfo);
+                    fieldArguments.Add(customAttributeData.AttributeType.GetRuntimeField(namedArgument.MemberName));
                     fieldArgumentValues.Add(namedArgument.TypedValue.Value);
                 }
 
-                if (namedArgument.MemberInfo.MemberType == MemberTypes.Property)
+                else
                 {
-                    propertyArguments.Add((PropertyInfo)namedArgument.MemberInfo);
+                    propertyArguments.Add(customAttributeData.AttributeType.GetRuntimeProperty(namedArgument.MemberName));
                     propertyArgumentValues.Add(namedArgument.TypedValue.Value);
-                }                
+                }
             }
 
+            var constructorArguments = customAttributeData.ConstructorArguments.Select(c => c.ArgumentType);
+
+            var constructor = customAttributeData.AttributeType.GetTypeInfo().DeclaredConstructors.Where(c => c.GetParameters().Select(p => p.ParameterType).SequenceEqual(constructorArguments)).Single();
+
+
             return new CustomAttributeBuilder(
-              customAttributeData.Constructor,
+              constructor,
               customAttributeData.ConstructorArguments.Select(ctorArg => ctorArg.Value).ToArray(),
               propertyArguments.ToArray(),
               propertyArgumentValues.ToArray(),
@@ -1233,13 +1236,13 @@ namespace LightInject.Interception
         }
 
         private static void AssignTargetFactory(Type proxyType, Delegate del)
-        {            
+        {
             proxyType.GetField("TargetFactory").SetValue(null, del);
         }
 
         private static void PushInvocationInfoForNonGenericMethod(FieldInfo staticTargetMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
-        {            
-            PushTargetMethodInfoForNonGenericMethod(staticTargetMethodInfoField, il);            
+        {
+            PushTargetMethodInfoForNonGenericMethod(staticTargetMethodInfoField, il);
             PushProxyInstance(il);
             PushArguments(il, parameters, argumentsArrayVariable);
             il.Emit(OpCodes.Newobj, TargetInvocationInfoConstructor);
@@ -1247,28 +1250,28 @@ namespace LightInject.Interception
 
         private static void PushInvocationInfoForGenericMethod(FieldInfo staticOpenGenericTargetMethodInfoField, ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable, GenericTypeParameterBuilder[] genericParameters)
         {
-            PushTargetMethodInfoForGenericMethod(staticOpenGenericTargetMethodInfoField, il, genericParameters);                        
+            PushTargetMethodInfoForGenericMethod(staticOpenGenericTargetMethodInfoField, il, genericParameters);
             PushProxyInstance(il);
-            PushArguments(il, parameters, argumentsArrayVariable);            
+            PushArguments(il, parameters, argumentsArrayVariable);
             il.Emit(OpCodes.Newobj, TargetInvocationInfoConstructor);
         }
 
         private static void DefineGenericParameters(MethodInfo targetMethod, MethodBuilder methodBuilder)
-        {            
+        {
             Type[] genericArguments = targetMethod.GetGenericArguments().ToArray();
             GenericTypeParameterBuilder[] genericTypeParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(a => a.Name).ToArray());
             for (int i = 0; i < genericArguments.Length; i++)
             {
-                genericTypeParameters[i].SetGenericParameterAttributes(genericArguments[i].GenericParameterAttributes);
+                genericTypeParameters[i].SetGenericParameterAttributes(genericArguments[i].GetTypeInfo().GenericParameterAttributes);
                 ApplyGenericConstraints(genericArguments[i], genericTypeParameters[i]);
-            }            
+            }
         }
 
         private static void ApplyGenericConstraints(Type genericArgument, GenericTypeParameterBuilder genericTypeParameter)
         {
-            var genericConstraints = genericArgument.GetGenericParameterConstraints();
-            genericTypeParameter.SetInterfaceConstraints(genericConstraints.Where(gc => gc.IsInterface).ToArray());
-            genericTypeParameter.SetBaseTypeConstraint(genericConstraints.FirstOrDefault(t => t.IsClass));
+            var genericConstraints = genericArgument.GetTypeInfo().GetGenericParameterConstraints();
+            genericTypeParameter.SetInterfaceConstraints(genericConstraints.Where(gc => gc.GetTypeInfo().IsInterface).ToArray());
+            genericTypeParameter.SetBaseTypeConstraint(genericConstraints.FirstOrDefault(t => t.GetTypeInfo().IsClass));
         }
 
         private static void PushArguments(ILGenerator il, ParameterInfo[] parameters, LocalBuilder argumentsArrayVariable)
@@ -1284,7 +1287,7 @@ namespace LightInject.Interception
                 if (parameters[i].IsOut || parameterType.IsByRef)
                 {
                     parameterType = parameters[i].ParameterType.GetElementType();
-                    if (parameterType.IsValueType)
+                    if (parameterType.GetTypeInfo().IsValueType)
                     {
                         il.Emit(OpCodes.Ldobj, parameterType);
                     }
@@ -1294,7 +1297,7 @@ namespace LightInject.Interception
                     }
                 }
 
-                if (parameterType.IsValueType || parameterType.IsGenericParameter)
+                if (parameterType.GetTypeInfo().IsValueType || parameterType.GetTypeInfo().IsGenericParameter)
                 {
                     il.Emit(OpCodes.Box, parameterType);
                 }
@@ -1330,7 +1333,7 @@ namespace LightInject.Interception
                     il.Emit(OpCodes.Ldloc, argumentsArrayField);
                     il.Emit(OpCodes.Ldc_I4, i);
                     il.Emit(OpCodes.Ldelem_Ref);
-                    il.Emit(parameterType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, parameterType);
+                    il.Emit(parameterType.GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, parameterType);
                     il.Emit(OpCodes.Stobj, parameterType);
                 }
             }
@@ -1341,12 +1344,12 @@ namespace LightInject.Interception
             var typeArrayField = il.DeclareLocal(typeof(Type[]));
             il.Emit(OpCodes.Ldc_I4, genericParameters.Length);
             il.Emit(OpCodes.Newarr, typeof(Type));
-            il.Emit(OpCodes.Stloc, typeArrayField);            
+            il.Emit(OpCodes.Stloc, typeArrayField);
             for (int i = 0; i < genericParameters.Length; i++)
             {
                 il.Emit(OpCodes.Ldloc, typeArrayField);
                 il.Emit(OpCodes.Ldc_I4, i);
-                il.Emit(OpCodes.Ldtoken, genericParameters[i]);
+                il.Emit(OpCodes.Ldtoken, genericParameters[i].AsType());
                 il.Emit(OpCodes.Call, GetTypeFromHandleMethod);
                 il.Emit(OpCodes.Stelem_Ref);
             }
@@ -1358,7 +1361,7 @@ namespace LightInject.Interception
 
         private static void PushTargetMethodInfoForNonGenericMethod(FieldInfo staticTargetMethodInfoField, ILGenerator il)
         {
-            il.Emit(OpCodes.Ldsfld, staticTargetMethodInfoField);            
+            il.Emit(OpCodes.Ldsfld, staticTargetMethodInfoField);
         }
 
         private static void PushInterceptorInstance(FieldInfo lazyMethodInterceptorField, ILGenerator il)
@@ -1367,7 +1370,7 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Ldfld, lazyMethodInterceptorField);
             il.Emit(OpCodes.Callvirt, LazyInterceptorGetValueMethod);
         }
-   
+
         private static void PushMethodInfo(MethodInfo targetMethod, ILGenerator il)
         {
             il.Emit(OpCodes.Ldtoken, targetMethod);
@@ -1383,14 +1386,14 @@ namespace LightInject.Interception
                 il.Emit(OpCodes.Ldarg, i);
             }
         }
-   
+
         private static void CallObjectConstructor(ILGenerator il)
         {
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Call, ObjectConstructor);
             il.Emit(OpCodes.Ldarg_0);
         }
-        
+
         // ReSharper disable UnusedMember.Local
         private static Func<T> CreateGenericTargetFactory<T>(Func<object> del)
         // ReSharper restore UnusedMember.Local
@@ -1405,13 +1408,14 @@ namespace LightInject.Interception
 
         private static void Return(ILGenerator il)
         {
-            il.Emit(OpCodes.Ret);            
+            il.Emit(OpCodes.Ret);
         }
 
         private void ApplyTypeAttributes()
         {
             foreach (var customAttributeData in proxyDefinition.TypeAttributes)
             {
+
                 CustomAttributeBuilder attributeBuilder = CreateCustomAttributeBuilder(customAttributeData);
                 typeBuilder.SetCustomAttribute(attributeBuilder);
             }
@@ -1423,12 +1427,12 @@ namespace LightInject.Interception
             {
                 il.Emit(OpCodes.Ldfld, targetField);
                 var getTargetValueMethod = targetField.FieldType.GetProperty("Value").GetGetMethod();
-                il.Emit(OpCodes.Call, getTargetValueMethod);    
+                il.Emit(OpCodes.Call, getTargetValueMethod);
             }
             else
             {
                 il.Emit(OpCodes.Ldfld, targetField);
-            }            
+            }
         }
 
         private void PushReturnValue(ILGenerator il, Type returnType)
@@ -1443,8 +1447,8 @@ namespace LightInject.Interception
                 {
                     PushProxyInstanceIfReturnValueEqualsTargetInstance(il, typeof(object));
                 }
-                
-                il.Emit(OpCodes.Unbox_Any, returnType);                
+
+                il.Emit(OpCodes.Unbox_Any, returnType);
             }
 
             Return(il);
@@ -1476,21 +1480,21 @@ namespace LightInject.Interception
         }
 
         private IEnumerable<PropertyInfo> GetTargetProperties()
-        {            
+        {
             return proxyDefinition.TargetType.GetProperties();
         }
-        
+
         private void ImplementConstructor()
         {
-            if (proxyDefinition.TargetType.IsClass)
+            if (proxyDefinition.TargetType.GetTypeInfo().IsClass)
             {
                 ImplementAllConstructorsFromBaseClass();
-            }            
+            }
             else if (proxyDefinition.TargetFactory == null)
             {
                 if (proxyDefinition.UseLazyTarget)
                 {
-                    ImplementConstructorWithLazyTargetParameter();    
+                    ImplementConstructorWithLazyTargetParameter();
                 }
                 else
                 {
@@ -1502,7 +1506,7 @@ namespace LightInject.Interception
                 ImplementParameterlessConstructor();
             }
         }
-        
+
         private void ImplementAllConstructorsFromBaseClass()
         {
             var constructors = proxyDefinition.TargetType.GetConstructors();
@@ -1537,11 +1541,11 @@ namespace LightInject.Interception
 
         private void ImplementProperties()
         {
-            if (proxyDefinition.TargetType.IsClass)
+            if (proxyDefinition.TargetType.GetTypeInfo().IsClass)
             {
                 return;
             }
-            
+
             var targetProperties = GetTargetProperties();
 
             foreach (var property in targetProperties)
@@ -1564,7 +1568,7 @@ namespace LightInject.Interception
 
         private void ImplementEvents()
         {
-            if (proxyDefinition.TargetType.IsClass)
+            if (proxyDefinition.TargetType.GetTypeInfo().IsClass)
             {
                 return;
             }
@@ -1607,10 +1611,10 @@ namespace LightInject.Interception
         private Delegate CreateTypedInstanceDelegate(Func<object> targetFactory, Type targetType)
         {
             var openGenericMethod = GetType().GetMethod("CreateGenericTargetFactory", BindingFlags.NonPublic | BindingFlags.Static);
-            var closedGenericMethod = openGenericMethod.MakeGenericMethod(targetType);            
+            var closedGenericMethod = openGenericMethod.MakeGenericMethod(targetType);
             return (Delegate)closedGenericMethod.Invoke(this, new object[] { targetFactory });
         }
-        
+
         private void ImplementMethods()
         {
             foreach (var targetMethod in targetMethods)
@@ -1620,14 +1624,14 @@ namespace LightInject.Interception
         }
 
         private MethodBuilder ImplementMethod(MethodInfo targetMethod)
-        {          
+        {
             int[] interceptorIndicies = proxyDefinition.Interceptors
                                                        .Where(i => i.MethodSelector(targetMethod)).Select(i => i.Index).ToArray();
             if (interceptorIndicies.Length > 0)
             {
                 return ImplementInterceptedMethod(targetMethod, interceptorIndicies);
             }
-            
+
             return ImplementPassThroughMethod(targetMethod);
         }
 
@@ -1640,27 +1644,27 @@ namespace LightInject.Interception
             ParameterInfo[] parameters = targetMethod.GetParameters();
             LocalBuilder argumentsArrayVariable = DeclareArgumentArray(il, parameters.Length);
             PushInterceptorInstance(lazyMethodInterceptorField, il);
-            
+
             if (targetMethod.IsGenericMethod)
             {
                 GenericTypeParameterBuilder[] genericParameters =
                     methodBuilder.GetGenericArguments().Cast<GenericTypeParameterBuilder>().ToArray();
                 FieldInfo staticOpenGenericTargetMethodInfoField =
                        DefineStaticOpenGenericTargetMethodInfoField(targetMethod);
-                PushInvocationInfoForGenericMethod(staticOpenGenericTargetMethodInfoField, il, parameters, argumentsArrayVariable, genericParameters);                                                
+                PushInvocationInfoForGenericMethod(staticOpenGenericTargetMethodInfoField, il, parameters, argumentsArrayVariable, genericParameters);
             }
             else
-            {                
-                FieldInfo staticTargetMethodInfoField = DefineStaticTargetMethodInfoField(targetMethod);                
-                PushInvocationInfoForNonGenericMethod(staticTargetMethodInfoField, il, parameters, argumentsArrayVariable);                
+            {
+                FieldInfo staticTargetMethodInfoField = DefineStaticTargetMethodInfoField(targetMethod);
+                PushInvocationInfoForNonGenericMethod(staticTargetMethodInfoField, il, parameters, argumentsArrayVariable);
             }
 
             Call(il, InterceptorInvokeMethod);
             UpdateRefArguments(parameters, il, argumentsArrayVariable);
-            PushReturnValue(il, targetMethod.ReturnType);              
+            PushReturnValue(il, targetMethod.ReturnType);
             return methodBuilder;
         }
-       
+
         private FieldBuilder DefineStaticTargetMethodInfoField(MethodInfo targetMethod)
         {
             var fieldBuilder = typeBuilder.DefineField(
@@ -1680,13 +1684,13 @@ namespace LightInject.Interception
                 GetUniqueMemberName(targetMethod.Name + "OpenGenericMethodInfo"),
                 typeof(OpenGenericTargetMethodInfo),
                 FieldAttributes.InitOnly | FieldAttributes.Private | FieldAttributes.Static);
-            var il = staticConstructorBuilder.GetILGenerator();            
+            var il = staticConstructorBuilder.GetILGenerator();
             PushMethodInfo(targetMethod, il);
             il.Emit(OpCodes.Newobj, OpenGenericTargetMethodInfoConstructor);
             il.Emit(OpCodes.Stsfld, fieldBuilder);
             return fieldBuilder;
         }
-       
+
         private void ImplementLazyMethodInterceptorInitialization(FieldInfo interceptorField, int[] interceptorIndicies)
         {
             var il = initializerMethodBuilder.GetILGenerator();
@@ -1694,14 +1698,14 @@ namespace LightInject.Interception
             il.Emit(OpCodes.Ldc_I4, interceptorIndicies.Length);
             il.Emit(OpCodes.Newarr, typeof(Lazy<IInterceptor>));
             il.Emit(OpCodes.Stloc, interceptorArray);
-            
+
             for (int i = 0; i < interceptorIndicies.Length; i++)
-            {                
-                il.Emit(OpCodes.Ldloc, interceptorArray);    
+            {
+                il.Emit(OpCodes.Ldloc, interceptorArray);
                 il.Emit(OpCodes.Ldc_I4, i);
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldfld, lazyInterceptorFields[interceptorIndicies[i]]);
-                il.Emit(OpCodes.Stelem_Ref);                
+                il.Emit(OpCodes.Stelem_Ref);
             }
 
             il.Emit(OpCodes.Ldarg_0);
@@ -1716,7 +1720,7 @@ namespace LightInject.Interception
 
             var memberName = GetUniqueMemberName(methodName + "Interceptor");
 
-            return typeBuilder.DefineField(memberName, typeof(Lazy<IInterceptor>), FieldAttributes.Private);            
+            return typeBuilder.DefineField(memberName, typeof(Lazy<IInterceptor>), FieldAttributes.Private);
         }
 
         private string GetUniqueMemberName(string memberName)
@@ -1724,11 +1728,11 @@ namespace LightInject.Interception
             int count;
             if (!memberNames.TryGetValue(memberName, out count))
             {
-                memberNames.Add(memberName, 0);                
+                memberNames.Add(memberName, 0);
             }
             else
             {
-                memberNames[memberName] = count + 1;    
+                memberNames[memberName] = count + 1;
             }
 
             return memberName + memberNames[memberName];
@@ -1740,7 +1744,7 @@ namespace LightInject.Interception
             {
                 return null;
             }
-            
+
             MethodBuilder methodBuilder = GetMethodBuilder(targetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
 
@@ -1754,7 +1758,7 @@ namespace LightInject.Interception
                 PushProxyInstanceIfReturnValueEqualsTargetInstance(il, targetMethod.ReturnType);
             }
 
-            Return(il);            
+            Return(il);
             return methodBuilder;
         }
 
@@ -1779,14 +1783,14 @@ namespace LightInject.Interception
             Type targetFieldType;
             if (proxyDefinition.UseLazyTarget)
             {
-                targetFieldType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);    
+                targetFieldType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
             }
             else
             {
                 targetFieldType = proxyDefinition.TargetType;
             }
-            
-            targetField = typeBuilder.DefineField("target", targetFieldType, FieldAttributes.Private);            
+
+            targetField = typeBuilder.DefineField("target", targetFieldType, FieldAttributes.Private);
         }
 
         private void DefineStaticTargetFactoryField()
@@ -1804,7 +1808,7 @@ namespace LightInject.Interception
             else
             {
                 DefineInitializerMethodForClassProxy();
-            }            
+            }
         }
 
         private void DefineInitializerMethodForInterfaceProxy(Type parameterType)
@@ -1827,7 +1831,7 @@ namespace LightInject.Interception
 
         private void DefineInterceptorFields()
         {
-            InterceptorInfo[] interceptors = proxyDefinition.Interceptors.ToArray();            
+            InterceptorInfo[] interceptors = proxyDefinition.Interceptors.ToArray();
             lazyInterceptorFields = new FieldInfo[interceptors.Length];
             for (int index = 0; index < interceptors.Length; index++)
             {
@@ -1838,11 +1842,11 @@ namespace LightInject.Interception
                     "InterceptorFactory" + index,
                     typeof(Func<IInterceptor>),
                     FieldAttributes.Public | FieldAttributes.Static);
-                
+
                 ImplementLazyInterceptorInitialization(interceptorField, interceptorFactoryField);
 
                 lazyInterceptorFields[index] = interceptorField;
-            }            
+            }
         }
 
         private void ImplementParameterlessConstructor()
@@ -1859,11 +1863,11 @@ namespace LightInject.Interception
             var lazyConstructor = GetLazyConstructorForTargetType();
             il.Emit(OpCodes.Ldsfld, targetFactoryField);
             il.Emit(OpCodes.Newobj, lazyConstructor);
-            il.Emit(OpCodes.Call, initializerMethodBuilder);           
+            il.Emit(OpCodes.Call, initializerMethodBuilder);
         }
 
         private void CallInitializeMethod(ILGenerator il)
-        {            
+        {
             il.Emit(OpCodes.Call, initializerMethodBuilder);
         }
 
@@ -1894,7 +1898,7 @@ namespace LightInject.Interception
             var lazyTargetType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
             const MethodAttributes Attributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName
                                                 | MethodAttributes.RTSpecialName;
-            var constructorBuilder = typeBuilder.DefineConstructor(Attributes, CallingConventions.Standard, new[] { lazyTargetType });            
+            var constructorBuilder = typeBuilder.DefineConstructor(Attributes, CallingConventions.Standard, new[] { lazyTargetType });
             ILGenerator il = constructorBuilder.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Call, ObjectConstructor);
@@ -1920,7 +1924,7 @@ namespace LightInject.Interception
         }
 
         private void ImplementGetTargetMethod()
-        {                       
+        {
             MethodBuilder methodBuilder = GetMethodBuilder(GetTargetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
             if (proxyDefinition.TargetType.GetTypeInfo().IsInterface)
@@ -1965,7 +1969,7 @@ namespace LightInject.Interception
                 }
             }
             else
-            {                
+            {
                 methodAttributes = targetMethod.Attributes;
                 methodAttributes &= ~MethodAttributes.VtableLayoutMask;
             }
@@ -1978,9 +1982,9 @@ namespace LightInject.Interception
 
             if (targetMethod.IsGenericMethod)
             {
-                DefineGenericParameters(targetMethod, methodBuilder);    
+                DefineGenericParameters(targetMethod, methodBuilder);
             }
-            
+
             if (targetMethod.DeclaringType != proxyDefinition.TargetType && targetMethod.DeclaringType != typeof(object))
             {
                 typeBuilder.DefineMethodOverride(methodBuilder, targetMethod);
@@ -1991,7 +1995,7 @@ namespace LightInject.Interception
 
         private void PopulateTargetMethods()
         {
-            targetMethods = MethodSelector.Execute(proxyDefinition.TargetType, proxyDefinition.AdditionalInterfaces);     
+            targetMethods = MethodSelector.Execute(proxyDefinition.TargetType, proxyDefinition.AdditionalInterfaces);
         }
     }
 
@@ -2052,598 +2056,6 @@ namespace LightInject.Interception
         public object Invoke(IInvocationInfo invocationInfo)
         {
             return implementation(invocationInfo);
-        }
-    }
-
-    internal static class TypeHelper
-    {
-#if PCL_111 || DNXCORE50
-        
-        /// <summary>
-        /// Returns an array of <see cref="Type"/> objects that represent the type arguments of a closed generic type or the type parameters of a generic type definition.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>An array of <see cref="Type"/> objects that represent the type arguments of a generic type. Returns an empty array if the current type is not a generic type.</returns>
-        public static Type[] GetGenericTypeArguments(this Type type)
-        {
-            return type.GetTypeInfo().GenericTypeArguments;
-        }
-
-        /// <summary>
-        /// Gets a collection of the methods defined by the current type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>A collection of the methods defined by the current type.</returns>
-        public static MethodInfo[] GetMethods(this Type type)
-        {
-            return type.GetTypeInfo().DeclaredMethods.ToArray();
-        }
-        
-        /// <summary>
-        /// Gets a collection that represents all the properties defined on a specified type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>A collection that represents all the properties defined on a specified type.</returns>
-        public static PropertyInfo[] GetProperties(this Type type)
-        {
-            return type.GetRuntimeProperties().ToArray();
-        }
-
-
-        /// <summary>
-        /// Gets a collection of the interfaces implemented by the current type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>A collection of the interfaces implemented by the current type.</returns>        
-        public static Type[] GetInterfaces(this Type type)
-        {
-            return type.GetTypeInfo().ImplementedInterfaces.ToArray();
-        }
-
-        /// <summary>
-        /// Gets a collection of the constructors declared by the current type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>A collection of the constructors declared by the current type.</returns>                
-        public static ConstructorInfo[] GetConstructors(this Type type)
-        {
-            return type.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the private method.</param>
-        /// <returns>A <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.</returns>
-        public static MethodInfo GetPrivateMethod(this Type type, string name)
-        {
-            return GetMethod(type, name);
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the private method.</param>
-        /// <returns>A <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.</returns>
-        public static MethodInfo GetPrivateStaticMethod(this Type type, string name)
-        {
-            return GetMethod(type, name);
-        }
-
-        /// <summary>
-        /// Gets an array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>An array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.</returns>
-        public static MethodInfo[] GetPrivateStaticMethods(this Type type)
-        {
-            return type.GetRuntimeMethods().Where(m => m.IsPrivate && m.IsStatic).ToArray();
-        }
-
-        /// <summary>
-        /// Gets an object that represents the specified public method declared by the current type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the method to find.</param>
-        /// <returns>An object that represents the specified public method declared by the current type.</returns>        
-        public static MethodInfo GetMethod(this Type type, string name)
-        {
-            return type.GetTypeInfo().GetDeclaredMethod(name);
-        }
-
-        /// <summary>
-        /// Gets a method in the type matching the name and arguments.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the method to find.</param>
-        /// <param name="types">The types of the method's arguments to match.</param>
-        /// <returns>A method in the type matching the name and arguments.</returns>        
-        public static MethodInfo GetMethod(this Type type, string name, Type[] types)
-        {
-            return type.GetRuntimeMethod(name, types);
-        }
-
-        /// <summary>
-        /// Determines whether an instance of a specified type can be assigned to the current type instance.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="fromType">The type to compare with the current type.</param>
-        /// <returns>true if an instance of a specified type can be assigned to the current type instance, otherwise false.</returns>                
-        public static bool IsAssignableFrom(this Type type, Type fromType)
-        {
-            return type.GetTypeInfo().IsAssignableFrom(fromType.GetTypeInfo());
-        }
-
-        /// <summary>
-        /// Indicates whether one or more attributes of the specified type or of its derived types is applied to this member.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="attributeType">The type of custom attribute to search for.</param>
-        /// <param name="inherit">true to search this member's inheritance chain to find the attributes; otherwise, false. </param>
-        /// <returns>true if one or more instances of attributeType or any of its derived types is applied to this member; otherwise, false.</returns>            
-        public static bool IsDefined(this Type type, Type attributeType, bool inherit)
-        {
-            return type.GetTypeInfo().IsDefined(attributeType, inherit);
-        }
-
-        /// <summary>
-        /// Returns an object that represents the specified public property declared by the current type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the property to find.</param>        
-        /// <returns>A method in the type matching the name and arguments.</returns>        
-        public static PropertyInfo GetProperty(this Type type, string name)
-        {
-            return type.GetTypeInfo().GetDeclaredProperty(name);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the type is a value type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the type is a value type; otherwise, false.</returns>              
-        public static bool IsValueType(this Type type)
-        {
-            return type.GetTypeInfo().IsValueType;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the type is a class or a delegate; that is, not a value type or interface.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the type is a class; otherwise, false.</returns>          
-        public static bool IsClass(this Type type)
-        {
-            return type.GetTypeInfo().IsClass;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the Type is abstract and must be overridden.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the Type is abstract; otherwise, false.</returns>          
-        public static bool IsAbstract(this Type type)
-        {
-            return type.GetTypeInfo().IsAbstract;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the Type is nested and declared private.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the Type is nested and declared private; otherwise, false.</returns>          
-        public static bool IsNestedPrivate(this Type type)
-        {
-            return type.GetTypeInfo().IsNestedPrivate;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the current type is a generic type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the current type is a generic type; otherwise, false.</returns>          
-        public static bool IsGenericType(this Type type)
-        {
-            return type.GetTypeInfo().IsGenericType;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the current Type object has type parameters that have not been replaced by specific types.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the Type object is itself a generic type parameter or has type parameters 
-        /// for which specific types have not been supplied; otherwise, false.</returns>                  
-        public static bool ContainsGenericParameters(this Type type)
-        {
-            return type.GetTypeInfo().ContainsGenericParameters;
-        }
-
-        
-        /// <summary>
-        /// Gets the type from which the current Type directly inherits.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>The Type from which the current Type directly inherits, or null if the current Type represents the Object class or an interface.</returns>          
-        public static Type GetBaseType(this Type type)
-        {
-            return type.GetTypeInfo().BaseType;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the current Type represents a generic type definition, from which other generic types can be constructed.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the Type object represents a generic type definition; otherwise, false.</returns>          
-        public static bool IsGenericTypeDefinition(this Type type)
-        {
-            return type.GetTypeInfo().IsGenericTypeDefinition;
-        }
-
-        public static bool IsInterface(this Type type)
-        {
-            return type.GetTypeInfo().IsInterface;
-        }
-        
-        public static Module GetModule(this Type type)
-        {
-            return type.GetTypeInfo().Module;
-        }
-        
-        /// <summary>
-        /// Returns a MethodInfo representing the set accessor for this property.
-        /// </summary>
-        /// <param name="propertyInfo">The target <see cref="PropertyInfo"/>.</param>
-        /// <returns>The MethodInfo object representing the Set method for this property if the set accessor is public, or null if the set accessor is not public.</returns>   
-        public static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.SetMethod;
-        }
-
-        /// <summary>
-        /// Returns a MethodInfo representing the get accessor for this property.
-        /// </summary>
-        /// <param name="propertyInfo">The target <see cref="PropertyInfo"/>.</param>
-        /// <returns>The MethodInfo object representing the get method for this property if the get accessor is public, or null if the get accessor is not public.</returns>   
-        public static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetMethod;
-        }
-
-        
-        /// <summary>
-        /// Gets a collection of the types defined in this assembly.
-        /// </summary>
-        /// <param name="assembly">The target <see cref="Assembly"/>.</param>
-        /// <returns>A collection of the types defined in this assembly.</returns>   
-        public static Type[] GetTypes(this Assembly assembly)
-        {
-            return assembly.DefinedTypes.Select(t => t.AsType()).ToArray();
-        }
-
-        /// <summary>
-        /// Gets the assembly where the target types is defined.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>The assembly where the target types is defined.</returns>     
-        public static Assembly GetAssembly(this Type type)
-        {
-            return type.GetTypeInfo().Assembly;
-        }
-     
-        /// <summary>
-        /// Gets a specific constructor of the current Type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="types">The types representing the parameters and their ordering.</param>
-        /// <returns>The constructor if found, otherwise null.</returns>     
-        public static ConstructorInfo GetConstructor(this Type type, Type[] types)
-        {
-            return
-                GetConstructors(type).FirstOrDefault(c => c.GetParameters().Select(p => p.ParameterType).SequenceEqual(types));
-        }
-#endif
-#if NET40
-        
-        /// <summary>
-        /// Creates a delegate of the specified type with the specified target from this method.
-        /// </summary>
-        /// <param name="methodInfo">The target <see cref="MethodInfo"/>.</param>
-        /// <param name="delegateType">The type of the delegate to create.</param>
-        /// <param name="target">The object targeted by the delegate.</param>
-        /// <returns>The delegate for this method.</returns>     
-        public static Delegate CreateDelegate(this MethodInfo methodInfo, Type delegateType, object target)
-        {
-            return Delegate.CreateDelegate(delegateType, target, methodInfo);
-        }
-
-#endif
-#if NET40 || NET45 || DNX451 || NET46
-
-        /// <summary>
-        /// Returns an array of <see cref="Type"/> objects that represent the type arguments of a closed generic type or the type parameters of a generic type definition.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>An array of <see cref="Type"/> objects that represent the type arguments of a generic type. Returns an empty array if the current type is not a generic type.</returns>
-        public static Type[] GetGenericTypeArguments(this Type type)
-        {
-            return type.GetGenericArguments();
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is a class or a delegate; that is, not a value type or interface.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is a class; otherwise, false</returns>
-        public static bool IsClass(this Type type)
-        {
-            return type.IsClass;
-        }
-
-        public static bool IsInterface(this Type type)
-        {
-            return type.IsInterface;
-        }
-
-        public static Module GetModule(this Type type)
-        {
-            return type.Module;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is abstract and must be overridden.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is abstract; otherwise, false.</returns>
-        public static bool IsAbstract(this Type type)
-        {
-            return type.IsAbstract;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is nested and declared private.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is nested and declared private; otherwise, false.</returns>
-        public static bool IsNestedPrivate(this Type type)
-        {
-            return type.IsNestedPrivate;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the current <see cref="Type"/> is a generic type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the current <see cref="Type"/> is a generic type; otherwise, false.</returns>
-        public static bool IsGenericType(this Type type)
-        {
-            return type.IsGenericType;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the current <see cref="Type"/> object has type parameters that have not been replaced by specific types.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> object is itself a generic type parameter or has type parameters for which specific types have not been supplied; otherwise, false</returns>
-        public static bool ContainsGenericParameters(this Type type)
-        {
-            return type.ContainsGenericParameters;
-        }
-
-        /// <summary>
-        /// Gets the type from which the current Type directly inherits.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>The <see cref="Type"/> from which the current Type directly inherits, or null if the current Type represents the Object class or an interface.</returns>
-        public static Type GetBaseType(this Type type)
-        {
-            return type.BaseType;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the current <see cref="Type"/> represents a generic type definition, from which other generic types can be constructed.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> object represents a generic type definition; otherwise, false.</returns>
-        public static bool IsGenericTypeDefinition(this Type type)
-        {
-            return type.IsGenericTypeDefinition;
-        }
-
-        /// <summary>
-        /// Gets the <see cref="Assembly"/> in which the type is declared. For generic types, gets the <see cref="Assembly"/> in which the generic type is defined.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>An <see cref="Assembly"/> instance that describes the assembly containing the current type. 
-        /// For generic types, the instance describes the assembly that contains the generic type definition, not the assembly that creates and uses a particular constructed type.
-        /// </returns>
-        public static Assembly GetAssembly(this Type type)
-        {
-            return type.Assembly;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is a value type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is a value type; otherwise, false.</returns>
-        public static bool IsValueType(this Type type)
-        {
-            return type.IsValueType;
-        }
-
-        /// <summary>
-        /// Gets the method represented by the delegate.
-        /// </summary>
-        /// <param name="del">The target <see cref="Delegate"/>.</param>
-        /// <returns></returns>
-        public static MethodInfo GetMethodInfo(this Delegate del)
-        {
-            return del.Method;
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the private method.</param>
-        /// <returns>A <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.</returns>
-        public static MethodInfo GetPrivateMethod(this Type type, string name)
-        {
-            return type.GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the private method.</param>
-        /// <returns>A <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.</returns>
-        public static MethodInfo GetPrivateStaticMethod(this Type type, string name)
-        {
-            return type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic);
-        }
-
-        /// <summary>
-        /// Gets an array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>An array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.</returns>
-        public static MethodInfo[] GetPrivateStaticMethods(this Type type)
-        {
-            return type.GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
-        }
-
-        /// <summary>
-        /// Gets the custom attributes for this <paramref name="assembly"/>.
-        /// </summary>
-        /// <param name="assembly">The target <see cref="Assembly"/>.</param>
-        /// <param name="attributeType">The type of <see cref="Attribute"/> objects to return.</param>
-        /// <returns></returns>
-        public static IEnumerable<Attribute> GetCustomAttributes(this Assembly assembly, Type attributeType)
-        {
-            return assembly.GetCustomAttributes(attributeType, false).Cast<Attribute>();
-        }
-#endif
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IEnumerable{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IEnumerable{T}"/>; otherwise, false.</returns>
-        public static bool IsEnumerableOfT(this Type type)
-        {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IList{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IList{T}"/>; otherwise, false.</returns>
-        public static bool IsListOfT(this Type type)
-        {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IList<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="ICollection{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="ICollection{T}"/>; otherwise, false.</returns>
-        public static bool IsCollectionOfT(this Type type)
-        {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(ICollection<>);
-        }
-#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
-
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/>; otherwise, false.</returns>
-        public static bool IsReadOnlyCollectionOfT(this Type type)
-        {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyList{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IReadOnlyList{T}"/>; otherwise, false.</returns>
-        public static bool IsReadOnlyListOfT(this Type type)
-        {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
-        }
-#endif
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Lazy{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="Lazy{T}"/>; otherwise, false.</returns>
-        public static bool IsLazy(this Type type)
-        {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(Lazy<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Func{T1}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="Func{T1}"/>; otherwise, false.</returns>
-        public static bool IsFunc(this Type type)
-        {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(Func<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Func{T1, TResult}"/>, 
-        /// <see cref="Func{T1,T2,TResult}"/>, <see cref="Func{T1,T2,T3, TResult}"/> or an <see cref="Func{T1,T2,T3,T4 ,TResult}"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="Func{T1, TResult}"/>, <see cref="Func{T1,T2,TResult}"/>, <see cref="Func{T1,T2,T3, TResult}"/> or an <see cref="Func{T1,T2,T3,T4 ,TResult}"/>; otherwise, false.</returns>
-        public static bool IsFuncWithParameters(this Type type)
-        {
-            if (!type.IsGenericType())
-            {
-                return false;
-            }
-
-            Type genericTypeDefinition = type.GetGenericTypeDefinition();
-
-            return genericTypeDefinition == typeof(Func<,>) || genericTypeDefinition == typeof(Func<,,>)
-                || genericTypeDefinition == typeof(Func<,,,>) || genericTypeDefinition == typeof(Func<,,,,>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is a closed generic type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is a closed generic type; otherwise, false.</returns>
-        public static bool IsClosedGeneric(this Type type)
-        {
-            return type.IsGenericType() && !type.IsGenericTypeDefinition();
-        }
-
-        /// <summary>
-        /// Returns the <see cref="Type"/> of the object encompassed or referred to by the current array, pointer or reference type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>The <see cref="Type"/> of the object encompassed or referred to by the current array, pointer, or reference type, 
-        /// or null if the current Type is not an array or a pointer, or is not passed by reference, 
-        /// or represents a generic type or a type parameter in the definition of a generic type or generic method.</returns>
-        public static Type GetElementType(Type type)
-        {
-            if (type.IsGenericType() && type.GetGenericTypeArguments().Count() == 1)
-            {
-                return type.GetGenericTypeArguments()[0];
-            }
-
-            return type.GetElementType();
         }
     }
 }

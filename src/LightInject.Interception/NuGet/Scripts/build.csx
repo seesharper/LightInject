@@ -202,7 +202,17 @@ private void InitializeNugetBuildDirectory(string frameworkMoniker)
 				
 	var pathToSource = Path.Combine(pathToBuildDirectory,  frameworkMoniker +  "/Source");	
 	CreateDirectory(pathToSource);
-	RoboCopy("../../../LightInject.Interception", pathToSource, "/e /XD bin obj .vs NuGet TestResults packages");				  
+	RoboCopy("../../../LightInject.Interception", pathToSource, "/e /XD bin obj .vs NuGet TestResults packages");
+	
+	if (frameworkMoniker.StartsWith("DNX"))
+	{
+		var pathToJsonTemplateFile = Path.Combine(pathToBinary, "LightInject.Interception/project.json_");
+		var pathToJsonFile = Path.Combine(pathToBinary, "LightInject.Interception/project.json");
+		File.Move(pathToJsonTemplateFile, pathToJsonFile);
+		pathToJsonTemplateFile = Path.Combine(pathToSource, "LightInject.Interception/project.json_");
+		pathToJsonFile = Path.Combine(pathToSource, "LightInject.Interception/project.json");
+		File.Move(pathToJsonTemplateFile, pathToJsonFile);
+	}				  
 }
 
 private void RenameSolutionFile(string frameworkMoniker)

@@ -14,15 +14,15 @@ namespace LightInject.Interception.Tests
         public TypeBuilder CreateTypeBuilder(Type targetType, Type[] additionalInterfaces)
         {
             ModuleBuilder moduleBuilder = GetModuleBuilder();
-            const TypeAttributes TypeAttributes = TypeAttributes.Public | TypeAttributes.Class;
+            const TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.Class;
             var typeName = targetType.Name + "Proxy";
             if (targetType.IsInterface)
             {
                 Type[] interfaceTypes = new[] { targetType }.Concat(additionalInterfaces).ToArray();
-                return moduleBuilder.DefineType(typeName, TypeAttributes, null, interfaceTypes);
+                return moduleBuilder.DefineType(typeName, typeAttributes, null, interfaceTypes);
             }
 
-            return moduleBuilder.DefineType(typeName, TypeAttributes, targetType, additionalInterfaces);
+            return moduleBuilder.DefineType(typeName, typeAttributes, targetType, additionalInterfaces);
         }
 
         public Type CreateType(TypeBuilder typeBuilder)

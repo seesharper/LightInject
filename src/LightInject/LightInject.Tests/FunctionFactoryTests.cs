@@ -356,7 +356,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo>(factory => new FooWithDependency(factory.GetInstance<IBar>()));
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
         }
 
 

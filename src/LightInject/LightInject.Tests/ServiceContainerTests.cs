@@ -47,18 +47,16 @@ namespace LightInject.Tests
         public void Register_NullImplementingType_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            ExceptionAssert.Throws<ArgumentNullException>(
-                () => container.Register(typeof(IFoo), (Type)null),
-                e => e.ParamName == "implementingType");
+            var exception = Assert.Throws<ArgumentNullException>(() => container.Register(typeof (IFoo), (Type) null));
+            Assert.Equal("implementingType", exception.ParamName);            
         }
 
         [Fact]
         public void Register_NullServiceName_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            ExceptionAssert.Throws<ArgumentNullException>(
-                () => container.Register(typeof(IFoo), typeof(Foo), (string)null),
-                e => e.ParamName == "serviceName");
+            var exception = Assert.Throws<ArgumentNullException>(() => container.Register(typeof (IFoo), typeof (Foo), (string) null));
+            Assert.Equal("serviceName", exception.ParamName);            
         }
 
         //[Fact]
@@ -82,18 +80,16 @@ namespace LightInject.Tests
         public void RegisterInstance_NullInstance_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            ExceptionAssert.Throws<ArgumentNullException>(
-                () => container.RegisterInstance((string)null),
-                e => e.ParamName == "instance");
+            var exception = Assert.Throws<ArgumentNullException>(() => container.RegisterInstance((string) null));
+            Assert.Equal("instance", exception.ParamName);            
         }
 
         [Fact]
         public void RegisterInstance_NullServiceName_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            ExceptionAssert.Throws<ArgumentNullException>(
-                () => container.RegisterInstance(typeof(object), new object(), null),
-                e => e.ParamName == "serviceName");
+            var exception = Assert.Throws<ArgumentNullException>(() => container.RegisterInstance(typeof (object), new object(), null));
+            Assert.Equal("serviceName", exception.ParamName);            
         }
         #endregion
 
@@ -224,7 +220,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
 
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IBar>());
+            Assert.Throws<InvalidOperationException>(() => container.GetInstance<IBar>());
         }
         
         
@@ -253,7 +249,9 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo)), ErrorMessages.UnableToResolveType);
+
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof (IFoo)));
+            Assert.Equal(ErrorMessages.UnableToResolveType, exception.Message);            
         }
 
         [Fact]
@@ -271,7 +269,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IBar<>), typeof(Bar<>));
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)), ErrorMessages.UnknownGenericDependency);
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof (IFoo<int>)));
+            Assert.Equal(ErrorMessages.UnknownGenericDependency, exception.Message);
         }
 
         [Fact]
@@ -471,9 +470,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>(new PerScopeLifetime());
-
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(), e => e.Message == ErrorMessages.GetInstanceOutSideScope);
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            Assert.Equal(ErrorMessages.GetInstanceOutSideScope, exception.Message);            
         }
 
         [Fact]
@@ -508,11 +506,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, DisposableFoo>(new PerRequestLifeTime());
-
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetInstance<IFoo>(),
-                exception => exception.Message == ErrorMessages.DisposableOutsideScope);
-
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            Assert.Equal(ErrorMessages.DisposableOutsideScope, exception.Message);            
         }
 
         #region Array
@@ -975,8 +970,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
-            ExceptionAssert.Throws<InvalidOperationException>(
-                () => container.GetAllInstances<IFoo>(), ex => ex.InnerException.InnerException.InnerException.Message == ErrorMessages.RecursiveDependency);
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetAllInstances<IFoo>());
+            Assert.Equal(ErrorMessages.RecursiveDependency, exception.InnerException.InnerException.InnerException.Message);
         }
 
         [Fact]
@@ -1125,7 +1120,8 @@ namespace LightInject.Tests
             }
             catch (Exception)
             {
-                var ex = ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>(), e => !e.InnerException.Message.Contains("Recursive"));
+                var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+                Assert.False(exception.InnerException.Message.Contains("Recursive"));                
             }
         }
 
@@ -1290,7 +1286,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
            
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());            
+            Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());            
         }
 
         [Fact]
@@ -1343,7 +1339,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>));
-            ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)), ErrorMessages.UnknownGenericDependency);
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof (IFoo<int>)));
+            Assert.Equal(ErrorMessages.UnknownGenericDependency, exception.Message);            
         }
 
         [Fact]
@@ -1575,7 +1572,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, InternalFooWithInternalConstructor>();
-            var exception = ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
             //StringAssert.Contains(exception.InnerException.Message, "Missing public constructor for Type");            
         }
 
