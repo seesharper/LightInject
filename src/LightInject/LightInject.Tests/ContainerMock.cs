@@ -177,7 +177,7 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
-        public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetime)
+        public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory)
         {
             throw new NotImplementedException();
         }
@@ -238,6 +238,11 @@ namespace LightInject.Tests
         }
 
         public void Initialize(Func<ServiceRegistration, bool> predicate, Action<IServiceFactory, object> processor)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetDefaultLifetime<T>() where T : ILifetime, new()
         {
             throw new NotImplementedException();
         }
