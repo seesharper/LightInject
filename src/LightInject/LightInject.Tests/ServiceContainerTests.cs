@@ -1,3 +1,4 @@
+using System.Reflection;
 using LightMock;
 
 namespace LightInject.Tests
@@ -1586,8 +1587,12 @@ namespace LightInject.Tests
         [Fact]
         public void RegisterAssembly_uses_DefaultLifetime_if_set()
         {
-            var container = CreateContainer();
+            var container = (ServiceContainer)CreateContainer();
             container.SetDefaultLifetime<PerContainerLifetime>();
+            var compositionRootExtractorMock = new TypeExtractorMock();
+            compositionRootExtractorMock.Arrange(m => m.Execute(The<Assembly>.IsAnyValue)).Returns(new Type[] {});
+            container.CompositionRootTypeExtractor = compositionRootExtractorMock;
+                       
             container.RegisterAssembly(typeof(Foo).Assembly);
 
             var foo1 = container.GetInstance<IFoo>();
