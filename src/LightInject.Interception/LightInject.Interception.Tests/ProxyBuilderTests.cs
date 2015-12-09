@@ -1,4 +1,5 @@
 using System;
+using LightInject.SampleLibrary;
 using Xunit;
 
 namespace LightInject.Interception.Tests
@@ -13,6 +14,34 @@ namespace LightInject.Interception.Tests
     [Collection("Interception")]
     public class ProxyBuilderTests
     {
+
+        [Fact]
+        public void ShouldCallBaseEquals()
+        {
+            var proxyBuilder = CreateProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithOverriddenEquals));
+            proxyDefinition.Implement(() => new SampleInterceptor(), info => true);
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            var instance1 = (ClassWithOverriddenEquals)Activator.CreateInstance(proxyType);
+            var instance2 = (ClassWithOverriddenEquals)Activator.CreateInstance(proxyType);
+            instance1.Name = "TEST";
+            instance2.Name = "TEST";
+            Assert.True(instance1.Equals(instance2));
+        }
+
+        [Fact]
+        public void ShouldHandleCallsToVirtualMemberInConstructor()
+        {
+            var proxyBuilder = CreateProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualMemberCallInConstructor));
+            proxyDefinition.Implement(() => new SampleInterceptor(), info => true);
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            var instance = Activator.CreateInstance(proxyType);
+            Assert.NotNull(instance);
+        }
+
+
+
         [Fact]
         public void GetProxyType_SingleInterface_ImplementsInterface()
         {
@@ -669,6 +698,22 @@ namespace LightInject.Interception.Tests
             Assert.Equal("SomeValue", result);
         }
 
+        [Fact]
+        public void GetProxyType_ClassWithProtectedConstructor_ImplementsPublicConstructor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyBuilder = new ProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(typeof(FooWithProtectedConstructor), () => null);
+            proxyDefinition.Implement(() => interceptorMock.Object);
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            var instance = (FooWithProtectedConstructor)Activator.CreateInstance(proxyType);
+            instance.Execute();
+            
+            interceptorMock.Verify(interceptor => interceptor.Invoke(It.IsAny<IInvocationInfo>()), Times.Once);
+
+            //instance.Execute();
+            //interceptorMock.Verify(i => i.Invoke(It.IsAny<IInvocationInfo>()), Times.Once);
+        }
 
 
         #endregion

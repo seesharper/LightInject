@@ -25,6 +25,10 @@
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
+
+using System.Net;
+using System.Threading;
+
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
@@ -331,6 +335,48 @@ namespace LightInject.Interception
             return interceptors[0];
         }
     }
+
+    /// <summary>
+    /// A thread safe class that ensures that a given 
+    /// <see cref="Action"/> is only executed once.
+    /// </summary>
+    public class RunOnce
+    {
+        private Action action;
+        private bool hasExecuted;
+        
+        private readonly object lockObject = new object();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RunOnce"/> class.
+        /// </summary>
+        /// <param name="action">The <see cref="Action"/> delegate to be executed once.</param>
+        public RunOnce(Action action)
+        {
+            this.action = action;
+        }
+
+        /// <summary>
+        /// Executes the <see cref="Action"/> only if not already executed.
+        /// </summary>
+        public void Run()
+        {
+            if (hasExecuted)
+            {
+                return;
+            }
+            lock (lockObject)
+            {
+                if (hasExecuted)
+                {
+                    return;
+                }            
+                action();  //Takes 10 sekconds
+                hasExecuted = true;                
+            }            
+        }
+    }
+
 
     /// <summary>
     /// Contains information about the target method being intercepted.
@@ -1107,6 +1153,8 @@ namespace LightInject.Interception
         private static readonly ConstructorInfo TargetMethodInfoConstructor;
         private static readonly ConstructorInfo OpenGenericTargetMethodInfoConstructor;
         private static readonly ConstructorInfo ObjectConstructor;
+        private static readonly ConstructorInfo ActionConstructor;
+        private static readonly ConstructorInfo RunOnceConstructor;
         private static readonly MethodInfo GetTargetMethod;
         private static readonly MethodInfo CreateMethodInterceptorMethod;
         private static readonly MethodInfo GetMethodFromHandleMethod;
@@ -1114,15 +1162,22 @@ namespace LightInject.Interception
         private static readonly MethodInfo LazyInterceptorGetValueMethod;
         private static readonly MethodInfo InterceptorInvokeMethod;
         private static readonly MethodInfo GetTargetMethodInfoMethod;
+        private static readonly MethodInfo MonitorEnterMethod;
+        private static readonly MethodInfo MonitorExitMethod;
+
+        private static readonly MethodInfo RunMethod; 
         private readonly Dictionary<string, int> memberNames = new Dictionary<string, int>();
         private readonly ITypeBuilderFactory typeBuilderFactory;
 
         private FieldBuilder targetFactoryField;
         private FieldBuilder targetField;
+        private FieldBuilder isInitializedField;
+        private FieldBuilder lockField;
         private FieldInfo[] lazyInterceptorFields;
         private MethodInfo[] targetMethods;
         private TypeBuilder typeBuilder;
         private MethodBuilder initializerMethodBuilder;
+        private MethodBuilder ensureInitializedMethodBuilder;
         private ConstructorBuilder staticConstructorBuilder;
         private ProxyDefinition proxyDefinition;
 
@@ -1140,6 +1195,12 @@ namespace LightInject.Interception
             TargetInvocationInfoConstructor = typeof(TargetInvocationInfo).GetConstructors()[0];
             InterceptorInvokeMethod = typeof(IInterceptor).GetMethod("Invoke");
             GetTargetMethodInfoMethod = typeof(OpenGenericTargetMethodInfo).GetMethod("GetTargetMethodInfo");
+            RunMethod = typeof (RunOnce).GetMethod("Run");            
+            ActionConstructor = typeof (Action).GetConstructor(new[] { typeof(object), typeof(IntPtr) });
+            RunOnceConstructor = typeof (RunOnce).GetConstructor(new[] {typeof (Action)});
+            MonitorEnterMethod =
+                typeof (Monitor).GetMethods().Where(m => m.Name == "Enter" && m.GetParameters().Length == 2).Single();
+            MonitorExitMethod = typeof(Monitor).GetMethod("Exit", new Type[] { typeof(object) });
         }
 
         /// <summary>
@@ -1170,11 +1231,13 @@ namespace LightInject.Interception
             ApplyTypeAttributes();
             DefineTargetField();
             DefineInitializerMethod();
+            DefineIsInitializedField();            
             DefineStaticTargetFactoryField();
             ImplementConstructor();
             DefineInterceptorFields();
             ImplementProxyInterface();
             PopulateTargetMethods();
+            ImplementEnsureInitializedMethod();
             ImplementMethods();
             ImplementProperties();
             ImplementEvents();
@@ -1509,10 +1572,13 @@ namespace LightInject.Interception
 
         private void ImplementAllConstructorsFromBaseClass()
         {
-            var constructors = proxyDefinition.TargetType.GetConstructors();
+            var constructors = proxyDefinition.TargetType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ToArray();
+          
+
             foreach (var constructorInfo in constructors)
             {
-                MethodAttributes methodAttributes = constructorInfo.Attributes;
+                
+                MethodAttributes methodAttributes = constructorInfo.Attributes | MethodAttributes.Public;
                 CallingConventions callingConvention = constructorInfo.CallingConvention;
                 Type[] parameterTypes = constructorInfo.GetParameters().Select(p => p.ParameterType).ToArray();
                 var constructorBuilder = typeBuilder.DefineConstructor(methodAttributes, callingConvention, parameterTypes);
@@ -1527,16 +1593,33 @@ namespace LightInject.Interception
                 var generator = constructorBuilder.GetILGenerator();
 
                 generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Newobj, ObjectConstructor);
+                generator.Emit(OpCodes.Stfld, lockField);
+
+
+                //generator.Emit(OpCodes.Ldarg_0);
+                //generator.Emit(OpCodes.Ldarg_0);
+                //generator.Emit(OpCodes.Ldftn, initializerMethodBuilder);
+                //generator.Emit(OpCodes.Newobj, ActionConstructor);
+                //generator.Emit(OpCodes.Newobj, RunOnceConstructor);
+                //generator.Emit(OpCodes.Stfld, runOnceInitializerField);
+
+
+                generator.Emit(OpCodes.Ldarg_0);
                 for (int i = 1; i <= constructorInfo.GetParameters().Length; ++i)
                 {
                     generator.Emit(OpCodes.Ldarg, i);
                 }
 
                 generator.Emit(OpCodes.Call, constructorInfo);
-                generator.Emit(OpCodes.Ldarg_0);
+
+
+              
+
+                
                 CallInitializeMethod(generator);
                 generator.Emit(OpCodes.Ret);
-            }
+            }           
         }
 
         private void ImplementProperties()
@@ -1639,6 +1722,14 @@ namespace LightInject.Interception
         {
             MethodBuilder methodBuilder = GetMethodBuilder(targetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
+
+            if (proxyDefinition.TargetType.GetTypeInfo().IsClass)
+            {
+                il.Emit(OpCodes.Ldarg_0);                
+                il.Emit(OpCodes.Callvirt, ensureInitializedMethodBuilder);
+            }
+
+
             FieldInfo lazyMethodInterceptorField = DeclareLazyMethodInterceptorField(targetMethod);
             ImplementLazyMethodInterceptorInitialization(lazyMethodInterceptorField, interceptorIndicies);
             ParameterInfo[] parameters = targetMethod.GetParameters();
@@ -1829,6 +1920,75 @@ namespace LightInject.Interception
                 "InitializeProxy", MethodAttributes.Private | MethodAttributes.HideBySig, typeof(void), Type.EmptyTypes);
         }
 
+
+        private void DefineIsInitializedField()
+        {
+            isInitializedField = typeBuilder.DefineField("runOnceInitializer", typeof (bool), FieldAttributes.Private);
+            lockField = typeBuilder.DefineField("runOnceInitializer", typeof(object), FieldAttributes.Private);
+        }
+
+        private void ImplementEnsureInitializedMethod()
+        {
+            if (proxyDefinition.TargetType.GetTypeInfo().IsInterface)
+            {
+                return;
+            }        
+    
+
+            ensureInitializedMethodBuilder = typeBuilder.DefineMethod("EnsureInitialized", MethodAttributes.Private,
+                typeof (void), Type.EmptyTypes);
+            var il = ensureInitializedMethodBuilder.GetILGenerator();
+
+            Label enterlock = il.DefineLabel();
+            Label callInitializeMethod = il.DefineLabel();
+            Label endfinally = il.DefineLabel();
+            Label end = il.DefineLabel();
+            LocalBuilder lockVariable = il.DeclareLocal(typeof (object));
+            LocalBuilder isInitializedVariable = il.DeclareLocal(typeof (bool));
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, isInitializedField);    
+            il.Emit(OpCodes.Brfalse, enterlock);
+            il.Emit(OpCodes.Ret);
+            il.MarkLabel(enterlock);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, lockField);
+            il.Emit(OpCodes.Stloc, lockVariable);
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Stloc, isInitializedVariable);
+            il.BeginExceptionBlock();
+            il.Emit(OpCodes.Ldloc, lockVariable);
+            il.Emit(OpCodes.Ldloca, 1);
+            il.Emit(OpCodes.Call, MonitorEnterMethod);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, isInitializedField);
+            il.Emit(OpCodes.Brfalse, callInitializeMethod);
+            il.Emit(OpCodes.Leave, end);
+            il.MarkLabel(callInitializeMethod);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Callvirt, initializerMethodBuilder);
+
+            //Set the isInitialized field to "true"
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldc_I4_1);
+            il.Emit(OpCodes.Stfld, isInitializedField);
+            il.Emit(OpCodes.Leave, end);            
+            il.BeginFinallyBlock();
+
+            il.Emit(OpCodes.Ldloc, isInitializedVariable);
+            il.Emit(OpCodes.Brfalse, endfinally);
+            il.Emit(OpCodes.Ldloc, lockVariable);
+            il.Emit(OpCodes.Call, MonitorExitMethod);
+            il.MarkLabel(endfinally);
+            il.Emit(OpCodes.Endfinally);
+            il.EndExceptionBlock();
+            il.MarkLabel(end);
+            il.Emit(OpCodes.Ret);
+        }
+
+
+
+
         private void DefineInterceptorFields()
         {
             InterceptorInfo[] interceptors = proxyDefinition.Interceptors.ToArray();
@@ -1868,6 +2028,7 @@ namespace LightInject.Interception
 
         private void CallInitializeMethod(ILGenerator il)
         {
+            il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Call, initializerMethodBuilder);
         }
 
@@ -1971,6 +2132,13 @@ namespace LightInject.Interception
             else
             {
                 methodAttributes = targetMethod.Attributes;
+                if (targetMethod.IsAbstract)
+                {
+                    methodAttributes = targetMethod.Attributes ^ MethodAttributes.Abstract;
+                }
+                
+
+                //methodAttributes = targetMethod.Attributes;
                 methodAttributes &= ~MethodAttributes.VtableLayoutMask;
             }
 

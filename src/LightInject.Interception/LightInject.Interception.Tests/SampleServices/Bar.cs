@@ -21,6 +21,19 @@ namespace LightInject.SampleLibrary
         }
     }
 
+
+    public class FooWithProtectedConstructor
+    {
+        protected FooWithProtectedConstructor()
+        {
+        }
+
+        public virtual void Execute()
+        {
+            
+        }
+    }
+
     
     public interface IBar
     {

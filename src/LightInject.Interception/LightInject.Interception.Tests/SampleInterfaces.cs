@@ -414,6 +414,40 @@ namespace LightInject.Interception.Tests
         }        
     }
 
+    public class ClassWithOverriddenEquals
+    {
+        protected ClassWithOverriddenEquals()
+        {
+        }
+
+        public string Name { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is ClassWithOverriddenEquals) &&
+                ((ClassWithOverriddenEquals)obj).Name == this.Name;
+        }
+
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode();
+        }
+    }
+
+
+    public class ClassWithVirtualMemberCallInConstructor
+    {
+        public ClassWithVirtualMemberCallInConstructor()
+        {
+            Execute();
+        }
+
+        public virtual void Execute()
+        {
+            
+        }
+    }
+
 
     public class ClassWithConstructorArguments : IMethodWithValueTypeReturnValue
     {

@@ -122,4 +122,12 @@ namespace LightInject.Interception.Tests
             }
         }
     }
+
+
+    public abstract class ClassWithAbstractMethod
+    {
+        public abstract void Execute();
+    }
+
+    
 }

@@ -1,4 +1,6 @@
 using System;
+using LightInject.SampleLibrary;
+using Moq;
 
 namespace LightInject.Interception.Tests
 {
@@ -137,6 +139,21 @@ namespace LightInject.Interception.Tests
 
         }
 
+        [Fact]
+        public void Execute_AbstractMethod_InvokeInterceptor()
+        {
+            var interceptorMock = new Mock<IInterceptor>();
+            var proxyBuilder = new ProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithAbstractMethod), () => null);
+            proxyDefinition.Implement(() => interceptorMock.Object);            
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            var instance = (ClassWithAbstractMethod)Activator.CreateInstance(proxyType);
+            instance.Execute();
+            interceptorMock.Verify(interceptor => interceptor.Invoke(It.IsAny<IInvocationInfo>()), Times.Once);
+
+        }
+
+     
 
         private Type CreateProxyType(ProxyDefinition proxyDefinition)
         {
