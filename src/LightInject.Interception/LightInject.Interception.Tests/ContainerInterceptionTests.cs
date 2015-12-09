@@ -184,6 +184,24 @@ namespace LightInject.Interception.Tests
             Assert.Throws<InvalidOperationException>(() => container.GetInstance<ClassWithVirtualMethod>());            
         }
 
+        [Fact]
+        public void issue_229()
+        {
+            var container = new ServiceContainer();
+            container.Register<ClassImplementingDisposable>();
+
+            container.Intercept(
+                sr => sr.ServiceType == typeof (ClassImplementingDisposable),
+                (factory, definition) => definition.Implement(() => new SampleInterceptor(), m => m.IsDeclaredBy(definition.TargetType) && m.IsPublic));
+
+            var instance = container.TryGetInstance<ClassImplementingDisposable>();
+
+            Assert.IsAssignableFrom(typeof (IProxy), instance);
+
+        }
+
+
+
         private static ClassWithVirtualMethod CreateClassWithVirtualMethod()
         {
             return new ClassWithVirtualMethod();

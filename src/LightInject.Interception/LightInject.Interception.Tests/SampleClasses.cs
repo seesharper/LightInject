@@ -99,6 +99,18 @@ namespace LightInject.Interception.Tests
         }
     }
 
+    public abstract class AbstractClassImplementingDisposable : IDisposable
+    {
+        public virtual void Dispose()
+        {
+        }
+    }
+
+    public class ClassImplementingDisposable : AbstractClassImplementingDisposable
+    {
+        
+    }
+
 
     public class ClassWithPrivateMethod
     {
