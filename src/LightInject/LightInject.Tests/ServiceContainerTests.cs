@@ -305,6 +305,17 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void issue_231()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>("foo", new PerContainerLifetime());
+            container.GetInstance<IFoo>();
+            var instances = container.GetAllInstances<IFoo>();
+
+        }
+
+
+        [Fact]
         public void GetInstance_OneNamedClosedGenericService_ReturnsDefaultService()
         {
             var container = CreateContainer();

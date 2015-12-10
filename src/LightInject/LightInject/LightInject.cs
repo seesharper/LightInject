@@ -3992,9 +3992,7 @@ namespace LightInject
             {
                 emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
             }
-
-            UpdateEmitMethod(serviceType, serviceName, emitter);
-
+            
             return emitter;
         }
 
