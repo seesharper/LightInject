@@ -159,7 +159,7 @@ namespace LightInject
             }
 
             var proxyType = CreateProxyType(registration.ImplementingType, additionalInterfaces, serviceFactory, defineProxyType, registration);
-            registration.ImplementingType = proxyType;
+            registration.ImplementingType = proxyType;            
             return registration;
 
         }
@@ -1506,7 +1506,7 @@ namespace LightInject.Interception
             }
             else
             {
-                if (returnType.IsAssignableFrom(proxyDefinition.TargetType))
+                if (returnType.IsAssignableFrom(proxyDefinition.TargetType) && !proxyDefinition.TargetType.GetTypeInfo().IsClass)
                 {
                     PushProxyInstanceIfReturnValueEqualsTargetInstance(il, typeof(object));
                 }

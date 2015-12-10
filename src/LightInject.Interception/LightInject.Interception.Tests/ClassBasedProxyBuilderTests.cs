@@ -12,6 +12,19 @@ namespace LightInject.Interception.Tests
     public class ClassBasedProxyBuilderTests
     {
         [Fact]
+        public void Execute_InterceptedMethodWithTargetReturnType_ReturnsProxy()
+        {
+            var proxyBuilder = CreateProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(typeof(ClassWithTargetReturnType));
+            proxyDefinition.Implement(() => new SampleInterceptor());
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            var instance = (ClassWithTargetReturnType)Activator.CreateInstance(proxyType);
+            Assert.IsAssignableFrom(typeof (IProxy), instance);
+        }
+
+
+
+        [Fact]
         public void GetProxyType_VirtualMethod_ReturnsSubclass()
         {
             var proxyDefinition = new ProxyDefinition(typeof(ClassWithVirtualMethod));

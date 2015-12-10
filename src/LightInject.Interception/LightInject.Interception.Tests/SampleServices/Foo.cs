@@ -148,6 +148,17 @@ namespace LightInject.SampleLibrary
         public IBar Bar { get; private set; }
     }
 
+    public class FooWithConcreteDependency
+    {
+        public Bar Bar { get; private set; }
+
+        public FooWithConcreteDependency(Bar bar)
+        {
+            Bar = bar;
+        }
+    }
+
+
     public class AnotherFooWithDependency : IFoo
     {
         public AnotherFooWithDependency(IBar bar)

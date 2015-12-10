@@ -54,6 +54,15 @@ namespace LightInject.Interception.Tests
         string IClassWithProperty.Value { get; set; }
     }
 
+    public class ClassWithTargetReturnType
+    {
+        public virtual ClassWithTargetReturnType Execute()
+        {
+            return this;
+        }
+    }
+
+
     public interface IClassWithValueTypeProperty
     {
         string Value { get; set; }

@@ -200,6 +200,21 @@ namespace LightInject.Interception.Tests
 
         }
 
+        [Fact]
+        public void issue_201()
+        {
+            var container = new ServiceContainer();
+            container.Register<FooWithConcreteDependency>(new PerContainerLifetime());
+            container.Register<Bar>(new PerContainerLifetime());
+            container.Intercept(sr => sr.ServiceType == typeof(Bar), sf => new SampleInterceptor());
+            var bar = container.GetInstance<Bar>();
+            var foo = container.GetInstance<FooWithConcreteDependency>();
+
+            Assert.IsAssignableFrom(typeof (IProxy), bar);
+            Assert.IsAssignableFrom(typeof (Bar), bar);           
+            Assert.IsAssignableFrom(typeof (FooWithConcreteDependency), foo);
+
+        }
 
 
         private static ClassWithVirtualMethod CreateClassWithVirtualMethod()

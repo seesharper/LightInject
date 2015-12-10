@@ -38,6 +38,9 @@ namespace LightInject.Interception.Tests
         }
     }
 
+    
+
+
     public class ClassWithConstructor
     {
         public string Value { get; set; }
