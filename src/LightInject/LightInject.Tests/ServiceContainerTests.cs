@@ -311,7 +311,7 @@ namespace LightInject.Tests
             container.Register<IFoo, Foo>("foo", new PerContainerLifetime());
             container.GetInstance<IFoo>();
             var instances = container.GetAllInstances<IFoo>();
-
+            Assert.Equal(1, instances.Count());
         }
 
 
