@@ -17,14 +17,6 @@ WriteLine(version);
 private string fileVersion = Regex.Match(version, @"(^[\d\.]+)-?").Groups[1].Captures[0].Value;
 
 
-
-   
-
-
-WriteLine(fileVersion);
-
-throw new Exception();
-
 WriteLine("LightInject.Interception version {0}" , version);
 
 
