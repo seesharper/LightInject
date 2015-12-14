@@ -223,6 +223,19 @@ namespace LightInject.Interception.Tests
         }
 
         [Fact]
+        public void ShouldReturnGetHashCode()
+        {
+            var proxyBuilder = CreateProxyBuilder();
+            var proxyDefinition = new ProxyDefinition(typeof(IFoo), () => null);
+            proxyDefinition.Implement(() => new SampleInterceptor());
+            var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+            var instance1 = (IFoo)Activator.CreateInstance(proxyType);
+            var instance2 = (IFoo)Activator.CreateInstance(proxyType);
+            Assert.NotEqual(instance1.GetHashCode(), instance2.GetHashCode());
+        }
+
+
+        [Fact]
         public void Execute_NonGenericMethod_PassesMethodInfoToInterceptor()
         {
             var interceptorMock = new Mock<IInterceptor>();
@@ -515,6 +528,19 @@ namespace LightInject.Interception.Tests
 
         #endregion
 
+        //[Fact]
+        //public void Test()
+        //{
+        //    var proxyBuilder = CreateProxyBuilder();
+        //    var proxyDefinition = new ProxyDefinition(typeof(ClassWithOneMethod), typeof(IClassWithOneMethod));
+        //    proxyDefinition.Implement(() => new SampleInterceptor());
+        //    var proxyType = proxyBuilder.GetProxyType(proxyDefinition);
+        //    var instance = (IClassWithOneMethod)Activator.CreateInstance(proxyType);
+        //    instance.FirstMethod();
+
+        //}
+
+
         [Fact]
         public void Execute_InterceptedMethodWithTargetReturnType_ReturnsProxy()
         {            
@@ -527,6 +553,21 @@ namespace LightInject.Interception.Tests
 
             Assert.IsAssignableFrom<IProxy>(result);
         }
+
+        [Fact]
+        public void Execute_InterceptedMethodWithObjectReturnType_DoesNotReturnProxy()
+        {            
+            var targetMock = new Mock<IMethodWithObjectReturnType>();
+            var interceptorMock = new Mock<IInterceptor>();
+            interceptorMock.Setup(i => i.Invoke(It.IsAny<IInvocationInfo>())).Returns(targetMock.Object);
+            var instance = CreateProxy(interceptorMock.Object, targetMock.Object);
+
+            var result = instance.Execute();
+
+            Assert.False(result is IProxy);
+        }
+
+
 
         [Fact]
         public void Execute_NonInterceptedMethodWithTargetReturnType_ReturnsProxy()

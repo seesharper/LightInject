@@ -12,6 +12,8 @@ private const string csharpProjectTypeGuid = "{FAE04EC0-301F-11D3-BF4B-00C04F79E
 string pathToSourceFile = @"..\..\LightInject.Interception\LightInject.Interception.cs";
 string pathToBuildDirectory = @"../tmp/";
 private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
+
+WriteLine(version);
 private string fileVersion = Regex.Match(version, @"(^[\d\.]+)-?").Groups[1].Captures[0].Value;
 
 
@@ -20,6 +22,8 @@ private string fileVersion = Regex.Match(version, @"(^[\d\.]+)-?").Groups[1].Cap
 
 
 WriteLine(fileVersion);
+
+throw new Exception();
 
 WriteLine("LightInject.Interception version {0}" , version);
 

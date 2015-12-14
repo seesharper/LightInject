@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.Interception version 1.0.1.0 
+    LightInject.Interception version 1.0.0.9 
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -337,48 +337,6 @@ namespace LightInject.Interception
     }
 
     /// <summary>
-    /// A thread safe class that ensures that a given 
-    /// <see cref="Action"/> is only executed once.
-    /// </summary>
-    public class RunOnce
-    {
-        private Action action;
-        private bool hasExecuted;
-        
-        private readonly object lockObject = new object();
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RunOnce"/> class.
-        /// </summary>
-        /// <param name="action">The <see cref="Action"/> delegate to be executed once.</param>
-        public RunOnce(Action action)
-        {
-            this.action = action;
-        }
-
-        /// <summary>
-        /// Executes the <see cref="Action"/> only if not already executed.
-        /// </summary>
-        public void Run()
-        {
-            if (hasExecuted)
-            {
-                return;
-            }
-            lock (lockObject)
-            {
-                if (hasExecuted)
-                {
-                    return;
-                }            
-                action();  //Takes 10 sekconds
-                hasExecuted = true;                
-            }            
-        }
-    }
-
-
-    /// <summary>
     /// Contains information about the target method being intercepted.
     /// </summary>
     public class TargetMethodInfo
@@ -547,7 +505,7 @@ namespace LightInject.Interception
         }
 
         private static void CallTargetMethod(MethodInfo method, ILGenerator il)
-        {
+        {            
             il.Emit(method.IsAbstract ? OpCodes.Callvirt : OpCodes.Call, method);
         }
 
@@ -1076,7 +1034,7 @@ namespace LightInject.Interception
             {
                 interceptableMethods = targetType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                                           .Concat(targetType.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.IsFamily && !m.IsDeclaredBy<object>()))
-                                          .Where(m => m.IsVirtual)
+                                          .Where(m => m.IsVirtual && !m.IsFinal)
                                           .Concat(additionalInterfaces.SelectMany(i => i.GetMethods()))
                                           .Distinct()
                                           .ToArray();
@@ -1153,8 +1111,6 @@ namespace LightInject.Interception
         private static readonly ConstructorInfo TargetMethodInfoConstructor;
         private static readonly ConstructorInfo OpenGenericTargetMethodInfoConstructor;
         private static readonly ConstructorInfo ObjectConstructor;
-        private static readonly ConstructorInfo ActionConstructor;
-        private static readonly ConstructorInfo RunOnceConstructor;
         private static readonly MethodInfo GetTargetMethod;
         private static readonly MethodInfo CreateMethodInterceptorMethod;
         private static readonly MethodInfo GetMethodFromHandleMethod;
@@ -1163,9 +1119,7 @@ namespace LightInject.Interception
         private static readonly MethodInfo InterceptorInvokeMethod;
         private static readonly MethodInfo GetTargetMethodInfoMethod;
         private static readonly MethodInfo MonitorEnterMethod;
-        private static readonly MethodInfo MonitorExitMethod;
-
-        private static readonly MethodInfo RunMethod; 
+        private static readonly MethodInfo MonitorExitMethod;        
         private readonly Dictionary<string, int> memberNames = new Dictionary<string, int>();
         private readonly ITypeBuilderFactory typeBuilderFactory;
 
@@ -1194,10 +1148,7 @@ namespace LightInject.Interception
             LazyInterceptorGetValueMethod = typeof(Lazy<IInterceptor>).GetProperty("Value").GetGetMethod();
             TargetInvocationInfoConstructor = typeof(TargetInvocationInfo).GetConstructors()[0];
             InterceptorInvokeMethod = typeof(IInterceptor).GetMethod("Invoke");
-            GetTargetMethodInfoMethod = typeof(OpenGenericTargetMethodInfo).GetMethod("GetTargetMethodInfo");
-            RunMethod = typeof (RunOnce).GetMethod("Run");            
-            ActionConstructor = typeof (Action).GetConstructor(new[] { typeof(object), typeof(IntPtr) });
-            RunOnceConstructor = typeof (RunOnce).GetConstructor(new[] {typeof (Action)});
+            GetTargetMethodInfoMethod = typeof(OpenGenericTargetMethodInfo).GetMethod("GetTargetMethodInfo");            
             MonitorEnterMethod =
                 typeof (Monitor).GetMethods().Where(m => m.Name == "Enter" && m.GetParameters().Length == 2).Single();
             MonitorExitMethod = typeof(Monitor).GetMethod("Exit", new Type[] { typeof(object) });
@@ -1506,7 +1457,7 @@ namespace LightInject.Interception
             }
             else
             {
-                if (returnType.IsAssignableFrom(proxyDefinition.TargetType) && !proxyDefinition.TargetType.GetTypeInfo().IsClass)
+                if (returnType.Equals(proxyDefinition.TargetType) && !proxyDefinition.TargetType.GetTypeInfo().IsClass)
                 {
                     PushProxyInstanceIfReturnValueEqualsTargetInstance(il, typeof(object));
                 }
@@ -1839,17 +1790,41 @@ namespace LightInject.Interception
             MethodBuilder methodBuilder = GetMethodBuilder(targetMethod);
             ILGenerator il = methodBuilder.GetILGenerator();
 
-            PushProxyInstance(il);
-            PushTargetInstance(il);
-            PushArguments(il, targetMethod);
-            Call(il, targetMethod);
-
-            if (targetMethod.ReturnType.IsAssignableFrom(proxyDefinition.TargetType))
+            if (targetMethod.IsDeclaredBy<object>() && proxyDefinition.UseLazyTarget)
             {
-                PushProxyInstanceIfReturnValueEqualsTargetInstance(il, targetMethod.ReturnType);
+                var endif = il.DefineLabel();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, targetField);
+                var lazyTargetType = typeof(Lazy<>).MakeGenericType(proxyDefinition.TargetType);
+                var getValueMethod = lazyTargetType.GetMethod("get_Value");
+                il.Emit(OpCodes.Callvirt, getValueMethod);
+                il.Emit(OpCodes.Brfalse, endif);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, targetField);
+                il.Emit(OpCodes.Callvirt, getValueMethod);
+                PushArguments(il, targetMethod);
+                il.Emit(OpCodes.Callvirt, targetMethod);
+                il.Emit(OpCodes.Ret);
+                il.MarkLabel(endif);
+                il.Emit(OpCodes.Ldarg_0);
+                PushArguments(il, targetMethod);
+                il.Emit(OpCodes.Call, targetMethod);
+                il.Emit(OpCodes.Ret);
             }
+            else
+            {
+                PushProxyInstance(il);
+                PushTargetInstance(il);
+                PushArguments(il, targetMethod);
+                Call(il, targetMethod);
 
-            Return(il);
+                if (targetMethod.ReturnType.IsAssignableFrom(proxyDefinition.TargetType))
+                {
+                    PushProxyInstanceIfReturnValueEqualsTargetInstance(il, targetMethod.ReturnType);
+                }
+                Return(il);
+            }
+            
             return methodBuilder;
         }
 

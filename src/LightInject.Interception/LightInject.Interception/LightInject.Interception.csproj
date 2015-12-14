@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="NuGet\LightInject.Interception.nuspec" />
+    <None Include="NuGet\LightInject.Interception.Source.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

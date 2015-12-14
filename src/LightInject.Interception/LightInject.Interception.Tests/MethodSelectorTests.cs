@@ -80,5 +80,14 @@ namespace LightInject.Interception.Tests
 
             Assert.True(!methods.Any(m => m.IsDeclaredBy<ClassWithPrivateMethod>()));
         }
+
+        [Fact]
+        public void ShouldNotSelectFinalMethodsFromInterface()
+        {
+            var methodSelector = new MethodSelector();
+            var methods = methodSelector.Execute(typeof(ClassWithOneMethod), Type.EmptyTypes);
+            Assert.False(methods.Any(m => m.IsFinal));
+            
+        }
     }
 }

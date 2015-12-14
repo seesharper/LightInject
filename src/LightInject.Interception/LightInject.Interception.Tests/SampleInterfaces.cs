@@ -311,6 +311,12 @@ namespace LightInject.Interception.Tests
         IMethodWithTargetReturnType Execute();
     }
 
+    public interface IMethodWithObjectReturnType
+    {
+        object Execute();
+    }
+
+
     public interface IClassWithOverloadedMethods
     {
         void Execute();
