@@ -314,6 +314,20 @@ namespace LightInject.Tests
             Assert.Equal(1, instances.Count());
         }
 
+        [Fact]
+        public void issue_168()
+        {
+            var serviceContainer = new ServiceContainer();
+            serviceContainer.Register<IBar, Bar>("bar");
+            serviceContainer.Register<IBar, AnotherBar>("anotherBar");
+            serviceContainer.Register<Func<string, IBar>>(factory => (s => factory.GetInstance<IBar>(s)) );
+            var barFactory = serviceContainer.GetInstance<Func<string, IBar>>();
+            var bar = barFactory("bar");
+            var anotherBar = barFactory("anotherBar");
+            Assert.IsType<Bar>(bar);
+            Assert.IsType<AnotherBar>(anotherBar);
+        }
+
 
         [Fact]
         public void GetInstance_OneNamedClosedGenericService_ReturnsDefaultService()
