@@ -1,0 +1,31 @@
+{
+  "version": "3.0.0.10",
+  "dependencies": {
+    "LightInject" :  "4.0.2",
+    "xunit.core" : "2.1.0"
+  },
+  "frameworks": {   
+    "dnx451" : 
+    {
+      "dependencies": {        
+        "System.Runtime" : "4.0.20"
+      }
+    },  
+    "dnxcore50": {
+      "dependencies": {
+        "System.Collections": "4.0.10",
+        "System.Collections.Concurrent": "4.0.10",
+        "System.IO": "4.0.10",
+        "System.Linq": "4.0.0",
+        "System.Reflection": "4.0.10",
+        "System.Reflection.Emit": "4.0.0",
+        "System.Reflection.Emit.Lightweight": "4.0.0",
+        "System.Runtime": "4.0.20",
+        "System.Runtime.Extensions": "4.0.10",
+        "System.Diagnostics.Tools": "4.0.0",
+        "System.Reflection.TypeExtensions": "4.0.0",
+        "System.Reflection.Extensions": "4.0.0"
+      }
+    }
+  }
+}

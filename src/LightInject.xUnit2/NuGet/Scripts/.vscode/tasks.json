@@ -1,0 +1,20 @@
+// A task runner that calls the scriptcs compiler (scriptcs) and 
+// compiles the current opened file.
+{
+	"version": "0.1.0",
+		
+	"command": "scriptcs",
+	
+	// The command is a shell script
+	"isShellCommand": true,
+
+	// Show the output window only if unrecognized errors occur. 
+	"showOutput": "silent",
+	
+	// args is the current file to compile
+	"args": ["${file}", "-debug"],
+	
+	// use the standard tsc problem matcher to find compile problems
+	// in the output.
+	"problemMatcher": "$msCompile"
+}
