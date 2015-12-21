@@ -1471,6 +1471,40 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_RegisteredConstructorDependency_PassesRuntimeArgumentsToFactory()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.RegisterConstructorDependency<IBar>((factory, info, arguments ) => (Bar)arguments[0]);
+            var instance = (FooWithDependency)container.GetInstance<IBar, IFoo>(new Bar());
+            Assert.IsAssignableFrom(typeof(Bar), instance.Bar);
+        }
+
+        [Fact]
+        public void GetInstance_RegisteredConstructorDependency_IgnoresAlreadyRegisteredDependency()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IBar, AnotherBar>();
+            container.RegisterConstructorDependency<IBar>((factory, info, arguments) => (Bar)arguments[0]);
+            var instance = (FooWithDependency)container.GetInstance<IBar, IFoo>(new Bar());
+            Assert.IsAssignableFrom(typeof(Bar), instance.Bar);
+        }
+
+        [Fact]
+        public void GetInstance_RegisteredConstructorDependency_CanRedirectToContainerWhenArgumentsAreMissing()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IBar, Bar>();
+            container.RegisterConstructorDependency((factory, info, arguments) => factory.GetInstance<IBar>());
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsAssignableFrom(typeof(Bar), instance.Bar);
+        }
+
+
+
+        [Fact]
         public void GetInstance_RegisteredPropertyDependency_ReturnsInstanceWithDependency()
         {
             var container = CreateContainer();

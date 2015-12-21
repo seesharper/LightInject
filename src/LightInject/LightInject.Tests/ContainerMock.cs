@@ -197,6 +197,11 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
+        public void RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, object[], TDependency> factory)
+        {
+            throw new NotImplementedException();
+        }
+
         public void RegisterPropertyDependency<TDependency>(Func<IServiceFactory, PropertyInfo, TDependency> factory)
         {
             throw new NotImplementedException();

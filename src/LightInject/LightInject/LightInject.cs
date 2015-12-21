@@ -403,6 +403,15 @@ namespace LightInject
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        void RegisterConstructorDependency<TDependency>(
+            Func<IServiceFactory, ParameterInfo, object[], TDependency> factory); 
+            
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
         void RegisterPropertyDependency<TDependency>(
             Func<IServiceFactory, PropertyInfo, TDependency> factory);
 
@@ -1040,7 +1049,36 @@ namespace LightInject
         /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
         ScopeManager GetScopeManager();
     }
-   
+
+    /// <summary>
+    /// This class is not for public use and is used internally
+    /// to load runtime arguments onto the evaluation stack. 
+    /// </summary>
+    public static class RuntimeArgumentsLoader
+    {
+        /// <summary>
+        /// Loads the runtime arguments onto the evaluation stack.
+        /// </summary>
+        /// <param name="constants">A object array representing the dynamic method context.</param>
+        /// <returns>An array containing the runtime arguments supplied when resolving the service.</returns>
+        public static object[] Load(object[] constants)
+        {
+            if (constants.Length == 0)
+            {
+                return new object[] { };
+            }
+
+            object[] arguments = constants[constants.Length - 1] as object[];
+            if (arguments == null)
+            {
+                return new object[] { };
+            }
+
+            return arguments;
+        }
+    }
+
+
     /// <summary>
     /// Contains a set of helper method related to validating
     /// user input.
@@ -1956,7 +1994,7 @@ namespace LightInject
             emitter.Emit(OpCodes.Ldc_I4_1);
             emitter.Emit(OpCodes.Sub);
             emitter.Emit(OpCodes.Ldelem_Ref);
-            emitter.Emit(OpCodes.Castclass, typeof(object[]));
+            emitter.Emit(OpCodes.Castclass, typeof(object[]));            
             emitter.Emit(OpCodes.Stloc, argumentArray);
 
             for (int i = 0; i < parameters.Length; i++)
@@ -2507,6 +2545,20 @@ namespace LightInject
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
         public void RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, TDependency> factory)
+        {
+            GetConstructorDependencyFactories(typeof(TDependency)).AddOrUpdate(
+                string.Empty,
+                s => factory,
+                (s, e) => isLocked ? e : factory);
+        }
+
+        /// <summary>
+        /// Registers a factory delegate to be used when resolving a constructor dependency for
+        /// a implicitly registered service.
+        /// </summary>
+        /// <typeparam name="TDependency">The dependency type.</typeparam>
+        /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
+        public void RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, object[], TDependency> factory)
         {
             GetConstructorDependencyFactories(typeof(TDependency)).AddOrUpdate(
                 string.Empty,
@@ -3872,6 +3924,12 @@ namespace LightInject
                 {
                     actions.Add(e => e.PushConstant(constants.Add(((PropertyDependency)dependency).Property), typeof(PropertyInfo)));
                 }
+
+                if (parameter.ParameterType == typeof (object[]))
+                {
+                   actions.Add(e => PushRuntimeArguments(e));
+                }
+
             }
 
             var factoryDelegateIndex = constants.Add(dependency.FactoryExpression);
@@ -3886,50 +3944,14 @@ namespace LightInject
 
             emitter.Call(invokeMethod);
         }
-
-
-        //private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
-        //{
-        //    var actions = new List<Action<IEmitter>>();
-        //    var parameterExpressions = dependency.FactoryExpression.AsEnumerable().Where(e => e is ParameterExpression).Distinct().Cast<ParameterExpression>().ToList();
-
-        //    Expression factoryExpression = dependency.FactoryExpression;
-
-        //    if (dependency.FactoryExpression.NodeType == ExpressionType.Lambda)
-        //    {
-        //        factoryExpression = ((LambdaExpression)factoryExpression).Body;
-        //    }
-
-        //    foreach (var parametersExpression in parameterExpressions)
-        //    {
-        //        if (parametersExpression.Type == typeof(IServiceFactory))
-        //        {
-        //            actions.Add(e => e.PushConstant(constants.Add(this), typeof(IServiceFactory)));
-        //        }
-
-        //        if (parametersExpression.Type == typeof(ParameterInfo))
-        //        {
-        //            actions.Add(e => e.PushConstant(constants.Add(((ConstructorDependency)dependency).Parameter), typeof(ParameterInfo)));
-        //        }
-
-        //        if (parametersExpression.Type == typeof(PropertyInfo))
-        //        {
-        //            actions.Add(e => e.PushConstant(constants.Add(((PropertyDependency)dependency).Property), typeof(PropertyInfo)));
-        //        }
-        //    }
-
-        //    var lambda = Expression.Lambda(factoryExpression, parameterExpressions.ToArray()).Compile();
-
-        //    MethodInfo methodInfo = lambda.GetType().GetMethod("Invoke");
-        //    emitter.PushConstant(constants.Add(lambda), lambda.GetType());
-        //    foreach (var action in actions)
-        //    {
-        //        action(emitter);
-        //    }
-
-        //    emitter.Call(methodInfo);
-        //}
-
+       
+        private static void PushRuntimeArguments(IEmitter emitter)
+        {
+            MethodInfo loadMethod = typeof (RuntimeArgumentsLoader).GetMethod("Load");            
+            emitter.Emit(OpCodes.Ldarg_0);
+            emitter.Emit(OpCodes.Call, loadMethod);           
+        }
+       
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IEmitter emitter)
         {
             if (constructionInfo.PropertyDependencies.Count == 0)
@@ -4371,7 +4393,7 @@ namespace LightInject
             };
             Register(serviceRegistration);
         }
-
+        
         private class Storage<T>
         {
             public T[] Items = new T[0];
@@ -6391,7 +6413,7 @@ namespace LightInject
                        .Cast<CompositionRootTypeAttribute>().ToArray();
         }
     }
-
+   
     /// <summary>
     /// Extracts concrete <see cref="ICompositionRoot"/> implementations from an <see cref="Assembly"/>.
     /// </summary>
