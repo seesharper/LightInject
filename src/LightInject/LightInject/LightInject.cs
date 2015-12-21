@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.2
+    LightInject version 4.0.3
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3947,7 +3947,7 @@ namespace LightInject
        
         private static void PushRuntimeArguments(IEmitter emitter)
         {
-            MethodInfo loadMethod = typeof (RuntimeArgumentsLoader).GetMethod("Load");            
+            MethodInfo loadMethod = typeof (RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("Load");            
             emitter.Emit(OpCodes.Ldarg_0);
             emitter.Emit(OpCodes.Call, loadMethod);           
         }
