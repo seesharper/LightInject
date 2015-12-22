@@ -48,6 +48,12 @@ namespace LightInject.xUnit2.Tests
             Assert.True(value == "value1" || value == "value2");
         }
 
+        [Theory, InjectData("value1")]
+        public void MethodWithServiceAndValue(IFoo foo, string value)
+        {
+            Assert.IsType<Foo>(foo);
+            Assert.Equal("value1", value);
+        }
 
 
 
