@@ -37,6 +37,24 @@ Services from **LightInject** are injected into methods that are decorated with 
 	    Assert.NotNull(foo);
 	}
  
+
+## Injecting services and data 
+
+Starting with **LightInject.xUnit.2.0.01** we can do a combination of injecting services instances and data.
+
+```
+[Theory]
+[InjectData(0, 0, 0)]
+[InjectData(1, 1, 2)]
+[InjectData(2, 2, 4)]
+[InjectData(5, 5, 10)]
+public void ShouldAddNumbers(ICalculator calculator, int first, int second, int expected)
+{
+	int result = calculator.Add(first, second);		
+	Assert.Equal(expected, result)
+}
+```
+
 ## Configuration ##
 
 **LightInject** will look for an **ICompositionRoot** implementation in the same assembly as the requested service. If it is found, it will be executed and the container gets configured through that composition root.   
