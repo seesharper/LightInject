@@ -71,11 +71,23 @@ namespace LightInject.xUnit2.Tests
             Assert.Throws<InvalidOperationException>(() => attribute.GetData(method));
         }
 
-        internal static void Configure(IServiceContainer container)
+        [Theory]
+        [InjectData(0, 0, 0)]
+        [InjectData(1, 1, 2)]
+        [InjectData(2, 2, 4)]
+        [InjectData(5, 5, 10)]
+        public void ShouldAddNumbers(ICalculator calculator, int first, int second, int expected)
         {
-            Console.WriteLine("Configure" + Thread.CurrentThread.ManagedThreadId);
+            int result = calculator.Add(first, second);
+            Assert.Equal(expected, result);
+        }
+
+
+        internal static void Configure(IServiceContainer container)
+        {            
             container.Register<IFoo, Foo>();
-            container.Register<IBar, Bar>();            
+            container.Register<IBar, Bar>();
+            container.Register<ICalculator, Calculator>();            
         }
     }
 
@@ -117,6 +129,20 @@ namespace LightInject.xUnit2.Tests
         {
             container.Register<IFoo, DisposableFoo>(new PerScopeLifetime());
             container.Register<IBar, Bar>(new PerScopeLifetime());
+        }
+    }
+
+
+    public interface ICalculator
+    {
+        int Add(int first, int second);
+    }
+
+    public class Calculator : ICalculator
+    {
+        public int Add(int first, int second)
+        {
+            return first + second;
         }
     }
 }
