@@ -51,7 +51,7 @@ Starting with **LightInject.xUnit.2.0.01** we can do a combination of injecting 
 public void ShouldAddNumbers(ICalculator calculator, int first, int second, int expected)
 {
 	int result = calculator.Add(first, second);		
-	Assert.Equal(expected, result)
+	Assert.Equal(expected, result);
 }
 ```
 
