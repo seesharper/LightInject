@@ -40,7 +40,7 @@ Services from **LightInject** are injected into methods that are decorated with 
 
 ## Injecting services and data 
 
-Starting with **LightInject.xUnit.2.0.01** we can do a combination of injecting services instances and data.
+Starting with **LightInject.xUnit.2.0.0.1** we can do a combination of injecting services instances and data.
 
 ```
 [Theory]
