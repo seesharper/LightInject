@@ -27,12 +27,10 @@
 ******************************************************************************/
 
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
@@ -43,39 +41,71 @@ using System.Threading;
 
 namespace LightInject.AutoFactory
 {
+    /// <summary>
+    /// Extends the <see cref="IServiceContainer"/> interface with
+    /// a method that makes it possible to register factory interfaces
+    /// that is automatically implemented.
+    /// </summary>
     public static class ContainerExtensions
     {
-        public static void RegisterAutoFactory<TFactory>(this IServiceContainer serviceContainer)
+        /// <summary>
+        /// Registers a factory of type <typeparamref name="TFactory"/> to be implemented.
+        /// </summary>
+        /// <typeparam name="TFactory">The type of factory to be implemented.</typeparam>
+        /// <param name="container">The target <see cref="IServiceContainer"/>.</param>
+        public static void RegisterAutoFactory<TFactory>(this IServiceContainer container)
         {
-            FactoryBuilder builder = new FactoryBuilder();
+            AutoFactoryBuilder builder = new AutoFactoryBuilder(new ServiceNameResolver());
             Type factoryType = builder.GetFactoryType(typeof(TFactory));
-            serviceContainer.RegisterConstructorDependency<IServiceFactory>((factory, info) => serviceContainer);
-            serviceContainer.Register(typeof(TFactory), factoryType);            
+            container.RegisterConstructorDependency<IServiceFactory>((factory, info) => container);
+            container.Register(typeof(TFactory), factoryType);
         }
     }
 
-    
+    /// <summary>
+    /// Represents a class that is capable of creating a
+    /// factory type that implements a given factory interface.
+    /// </summary>
+    public interface IAutoFactoryBuilder
+    {
+        /// <summary>
+        /// Gets a <see cref="Type"/> that implements the given <paramref name="factoryInterface"/>.
+        /// </summary>
+        /// <param name="factoryInterface">The interface to be implemented by the factory type.</param>
+        /// <returns>A factory type that implements the <paramref name="factoryInterface"/>.</returns>
+        Type GetFactoryType(Type factoryInterface);
+    }
 
+    /// <summary>
+    /// Represents a class that is capable of resolving the 
+    /// name of the service to be retrived based on a given method.
+    /// </summary>
+    public interface IServiceNameResolver
+    {
+        /// <summary>
+        /// Resolves the name of the service to be retrieved based on the given <paramref name="method"/>.
+        /// </summary>
+        /// <param name="method">The method for which to resolve the service name.</param>
+        /// <returns>The name of the service if the method represent a named service, otherwise null.</returns>
+        string Resolve(MethodInfo method);
+    }
 
-    public class FactoryBuilder
-    {               
-        private static MethodInfo[] GetInstanceMethods;
-        private static MethodInfo[] NamedGetInstanceMethods;
+    /// <summary>
+    /// A class that is capable of creating a
+    /// factory type that implements a given factory interface.
+    /// </summary>
+    public class AutoFactoryBuilder : IAutoFactoryBuilder
+    {
+        private static readonly MethodInfo[] GetInstanceMethods;
+        private static readonly MethodInfo[] NamedGetInstanceMethods;
+        private static readonly ConstructorInfo ObjectConstructor;
+        private readonly IServiceNameResolver serviceNameResolver;
+        private readonly ITypeBuilderFactory typeBuilderFactory = new TypeBuilderFactory();
 
-        private readonly ITypeBuilderFactory typeBuilderFactory;
-
-        private static ConstructorInfo ObjectConstructor;
-
-
-        public FactoryBuilder()
-        {
-            typeBuilderFactory = new TypeBuilderFactory();
-        }
-
-        static FactoryBuilder()
+        static AutoFactoryBuilder()
         {
             GetInstanceMethods =
-                typeof (IServiceFactory).GetTypeInfo()
+                typeof(IServiceFactory).GetTypeInfo()
                     .DeclaredMethods.Where(m => m.IsGenericMethod && m.GetGenericArguments().Length > 1 && m.GetParameters().Length < m.GetGenericArguments().Length)
                     .OrderBy(m => m.GetGenericArguments().Length)
                     .ToArray();
@@ -87,16 +117,50 @@ namespace LightInject.AutoFactory
                     .ToArray();
 
             ObjectConstructor =
-                typeof (object).GetTypeInfo().DeclaredConstructors.Single(c => c.GetParameters().Length == 0);
+                typeof(object).GetTypeInfo().DeclaredConstructors.Single(c => c.GetParameters().Length == 0);
 
         }
 
-        public Type GetFactoryType(Type interfaceType)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AutoFactoryBuilder"/> class.
+        /// </summary>
+        /// <param name="serviceNameResolver">The <see cref="IServiceNameResolver"/> that is 
+        /// responsible for resolving the service name from a given factory method.</param>
+        public AutoFactoryBuilder(IServiceNameResolver serviceNameResolver)
         {
-            var typeBuilder = typeBuilderFactory.CreateTypeBuilder(interfaceType, Type.EmptyTypes);                       
-            var containerField = ImplementConstructor(typeBuilder);            
-            ImplementMethods(typeBuilder, interfaceType, containerField);
-            return typeBuilderFactory.CreateType(typeBuilder);            
+            this.serviceNameResolver = serviceNameResolver;
+        }
+
+      
+
+        /// <summary>
+        /// Gets a <see cref="Type"/> that implements the given <paramref name="factoryInterface"/>.
+        /// </summary>
+        /// <param name="factoryInterface">The interface to be implemented by the factory type.</param>
+        /// <returns>A factory type that implements the <paramref name="factoryInterface"/>.</returns>
+        public Type GetFactoryType(Type factoryInterface)
+        {
+            var typeBuilder = typeBuilderFactory.CreateTypeBuilder(factoryInterface, Type.EmptyTypes);
+            var containerField = ImplementConstructor(typeBuilder);
+            ImplementMethods(typeBuilder, factoryInterface, containerField);
+            return typeBuilderFactory.CreateType(typeBuilder);
+        }
+
+        private static FieldBuilder ImplementConstructor(TypeBuilder typeBuilder)
+        {
+            var containerField = typeBuilder.DefineField("container", typeof(IServiceFactory), FieldAttributes.Private);
+            const MethodAttributes attributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName
+                                                | MethodAttributes.RTSpecialName;
+            var constructorBuilder = typeBuilder.DefineConstructor(attributes, CallingConventions.Standard, new[] { typeof(IServiceFactory) });
+
+            var il = constructorBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, ObjectConstructor);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Stfld, containerField);
+            il.Emit(OpCodes.Ret);
+            return containerField;
         }
 
         private void ImplementMethods(TypeBuilder typeBuilder, Type interfaceType, FieldBuilder containerField)
@@ -120,8 +184,6 @@ namespace LightInject.AutoFactory
                                             method.ReturnType,
                                             parameterTypes);
 
-            
-            
             var il = methodBuilder.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldfld, containerField);
@@ -135,7 +197,7 @@ namespace LightInject.AutoFactory
             if (string.IsNullOrEmpty(serviceName))
             {
                 var openGenericGetInstanceMethod = GetInstanceMethods[parameterTypes.Length - 1];
-                closedGenericGetInstanceMethod = openGenericGetInstanceMethod.MakeGenericMethod(parameterTypes.Concat(new[] { method.ReturnType }).ToArray());                
+                closedGenericGetInstanceMethod = openGenericGetInstanceMethod.MakeGenericMethod(parameterTypes.Concat(new[] { method.ReturnType }).ToArray());
             }
             else
             {
@@ -143,64 +205,26 @@ namespace LightInject.AutoFactory
                 closedGenericGetInstanceMethod = openGenericGetInstanceMethod.MakeGenericMethod(parameterTypes.Concat(new[] { method.ReturnType }).ToArray());
                 il.Emit(OpCodes.Ldstr, serviceName);
             }
-            
+
             il.Emit(OpCodes.Callvirt, closedGenericGetInstanceMethod);
             il.Emit(OpCodes.Ret);
         }
 
         private string GetServiceName(MethodInfo method)
         {
-            var returnTypeName = ResolveReturnTypeName(method);
-            string serviceName = null;
-            var match = Regex.Match(method.Name, @"Get(?!" + returnTypeName + ")(.+)");
-            if (match.Success)
-            {
-                serviceName = match.Groups[1].Captures[0].Value;
-            }
-
-            return serviceName;
-            
-        }
-
-        private string ResolveReturnTypeName(MethodInfo method)
-        {
-            var returnTypeName = method.ReturnType.Name;
-
-            if (returnTypeName.StartsWith("I"))
-            {
-                return returnTypeName.Substring(1);
-            }
-            return returnTypeName;            
-        }
-
-
-        private FieldBuilder ImplementConstructor(TypeBuilder typeBuilder)
-        {
-            var containerField = typeBuilder.DefineField("container", typeof (IServiceFactory), FieldAttributes.Private);
-            const MethodAttributes attributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName
-                                                | MethodAttributes.RTSpecialName;
-            var constructorBuilder = typeBuilder.DefineConstructor(attributes, CallingConventions.Standard, new[] { typeof(IServiceFactory) });
-
-            var il = constructorBuilder.GetILGenerator();
-            il.Emit(OpCodes.Ldarg_0);    
-            il.Emit(OpCodes.Call, ObjectConstructor);
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldarg_1);                                
-            il.Emit(OpCodes.Stfld, containerField);        
-            il.Emit(OpCodes.Ret);
-            return containerField;
+            return serviceNameResolver.Resolve(method);
         }
     }
 
     /// <summary>
-    /// A class that is capable of creating a <see cref="TypeBuilder"/> that 
+    /// A class that is capable of creating a <see cref="TypeBuilder"/> that
     /// is used to build the proxy type.
     /// </summary>
     public class TypeBuilderFactory : ITypeBuilderFactory
     {
         /// <summary>
-        /// Creates a <see cref="TypeBuilder"/> instance that is used to build a proxy 
-        /// type that inherits/implements the <paramref name="targetType"/> with an optional 
+        /// Creates a <see cref="TypeBuilder"/> instance that is used to build a proxy
+        /// type that inherits/implements the <paramref name="targetType"/> with an optional
         /// set of <paramref name="additionalInterfaces"/>.
         /// </summary>
         /// <param name="targetType">The <see cref="Type"/> that the <see cref="TypeBuilder"/> will inherit/implement.</param>
@@ -249,16 +273,51 @@ namespace LightInject.AutoFactory
         }
     }
 
+    /// <summary>
+    /// A class that is capable of resolving the 
+    /// name of the service to be retrived based on a given method.
+    /// </summary>
+    public class ServiceNameResolver : IServiceNameResolver
+    {
+        /// <summary>
+        /// Resolves the name of the service to be retrieved based on the given <paramref name="method"/>.
+        /// </summary>
+        /// <param name="method">The method for which to resolve the service name.</param>
+        /// <returns>The name of the service if the method represent a named service, otherwise null.</returns>
+        public string Resolve(MethodInfo method)
+        {
+            var returnTypeName = ResolveReturnTypeName(method);
+            string serviceName = null;
+            var match = Regex.Match(method.Name, @"Get(?!" + returnTypeName + ")(.+)");
+            if (match.Success)
+            {
+                serviceName = match.Groups[1].Captures[0].Value;
+            }
+
+            return serviceName;
+        }
+
+        private static string ResolveReturnTypeName(MethodInfo method)
+        {
+            var returnTypeName = method.ReturnType.Name;
+
+            if (returnTypeName.StartsWith("I"))
+            {
+                return returnTypeName.Substring(1);
+            }
+            return returnTypeName;
+        }
+    }
 
     /// <summary>
-    /// Represents a class that is capable of creating a <see cref="TypeBuilder"/> that 
+    /// Represents a class that is capable of creating a <see cref="TypeBuilder"/> that
     /// is used to build the proxy type.
     /// </summary>
     public interface ITypeBuilderFactory
     {
         /// <summary>
-        /// Creates a <see cref="TypeBuilder"/> instance that is used to build a proxy 
-        /// type that inherits/implements the <paramref name="targetType"/> with an optional 
+        /// Creates a <see cref="TypeBuilder"/> instance that is used to build a proxy
+        /// type that inherits/implements the <paramref name="targetType"/> with an optional
         /// set of <paramref name="additionalInterfaces"/>.
         /// </summary>
         /// <param name="targetType">The <see cref="Type"/> that the <see cref="TypeBuilder"/> will inherit/implement.</param>

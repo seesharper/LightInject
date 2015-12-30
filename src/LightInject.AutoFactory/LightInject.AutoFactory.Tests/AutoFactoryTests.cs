@@ -34,8 +34,8 @@ namespace LightInject.AutoFactory.Tests
 
         private TFactory CreateFactory<TFactory>()
         {
-            FactoryBuilder factoryBuilder = CreateFactoryBuilder();
-            var factoryType = factoryBuilder.GetFactoryType(typeof (TFactory));
+            AutoFactoryBuilder autoFactoryBuilder = CreateFactoryBuilder();
+            var factoryType = autoFactoryBuilder.GetFactoryType(typeof (TFactory));
             var container = new ServiceContainer();
             container.RegisterConstructorDependency((factory, parameter, arguments) => (int)arguments[0]);
             container.Register<IFoo, Foo>();
@@ -45,9 +45,9 @@ namespace LightInject.AutoFactory.Tests
             return factoryInstance;
         }
 
-        protected virtual FactoryBuilder CreateFactoryBuilder()
+        protected virtual AutoFactoryBuilder CreateFactoryBuilder()
         {
-            return new FactoryBuilder();
+            return new AutoFactoryBuilder(new ServiceNameResolver());
         }
     }
 
