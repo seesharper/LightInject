@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.AutoFactory", "LightInject.AutoFactory\LightInject.AutoFactory.csproj", "{8046E25E-926F-4B7A-B8C9-4B4A3EAD6DDC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.AutoFactory.Tests", "LightInject.AutoFactory.Tests\LightInject.AutoFactory.Tests.csproj", "{9D3DC275-71AB-4757-A3CA-D64F0142035F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8046E25E-926F-4B7A-B8C9-4B4A3EAD6DDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8046E25E-926F-4B7A-B8C9-4B4A3EAD6DDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8046E25E-926F-4B7A-B8C9-4B4A3EAD6DDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8046E25E-926F-4B7A-B8C9-4B4A3EAD6DDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D3DC275-71AB-4757-A3CA-D64F0142035F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D3DC275-71AB-4757-A3CA-D64F0142035F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D3DC275-71AB-4757-A3CA-D64F0142035F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D3DC275-71AB-4757-A3CA-D64F0142035F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
