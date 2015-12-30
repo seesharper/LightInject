@@ -30,6 +30,11 @@ namespace LightInject.AutoFactory.Tests
             Assert.IsType<AnotherFoo>(instance);
         }
 
+        [Fact]
+        public void ShouldThrowMeaningfulExceptionWhenFactoryIsNotAnInterface()
+        {
+            var exception = Assert.Throws<InvalidOperationException>(() => CreateFactory<Foo>());            
+        }
 
 
         private TFactory CreateFactory<TFactory>()
@@ -58,7 +63,7 @@ namespace LightInject.AutoFactory.Tests
 
         IFoo GetAnotherFoo(int value);
     }
-  
+
     public interface IFoo { }
 
     public class Foo : IFoo

@@ -31,6 +31,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
+using LightInject.AutoFactory;
 
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
@@ -38,8 +39,9 @@ using System.Text.RegularExpressions;
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Product name starts with lowercase letter.")]
-
-namespace LightInject.AutoFactory
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("MaintainabilityRules", "SA1403", Justification = "One source file")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("DocumentationRules", "SA1649", Justification = "One source file")]
+namespace LightInject
 {
     /// <summary>
     /// Extends the <see cref="IServiceContainer"/> interface with
@@ -61,7 +63,10 @@ namespace LightInject.AutoFactory
             container.Register(typeof(TFactory), factoryType);
         }
     }
+}
 
+namespace LightInject.AutoFactory
+{
     /// <summary>
     /// Represents a class that is capable of creating a
     /// factory type that implements a given factory interface.
@@ -77,7 +82,31 @@ namespace LightInject.AutoFactory
     }
 
     /// <summary>
-    /// Represents a class that is capable of resolving the 
+    /// Represents a class that is capable of creating a <see cref="TypeBuilder"/> that
+    /// is used to build the proxy type.
+    /// </summary>
+    public interface ITypeBuilderFactory
+    {
+        /// <summary>
+        /// Creates a <see cref="TypeBuilder"/> instance that is used to build a proxy
+        /// type that inherits/implements the <paramref name="targetType"/> with an optional
+        /// set of <paramref name="additionalInterfaces"/>.
+        /// </summary>
+        /// <param name="targetType">The <see cref="Type"/> that the <see cref="TypeBuilder"/> will inherit/implement.</param>
+        /// <param name="additionalInterfaces">A set of additional interfaces to be implemented.</param>
+        /// <returns>A <see cref="TypeBuilder"/> instance for which to build the proxy type.</returns>
+        TypeBuilder CreateTypeBuilder(Type targetType, Type[] additionalInterfaces);
+
+        /// <summary>
+        /// Creates a proxy <see cref="Type"/> based on the given <paramref name="typeBuilder"/>.
+        /// </summary>
+        /// <param name="typeBuilder">The <see cref="TypeBuilder"/> that represents the proxy type.</param>
+        /// <returns>The proxy <see cref="Type"/>.</returns>
+        Type CreateType(TypeBuilder typeBuilder);
+    }
+
+    /// <summary>
+    /// Represents a class that is capable of resolving the
     /// name of the service to be retrived based on a given method.
     /// </summary>
     public interface IServiceNameResolver
@@ -118,20 +147,17 @@ namespace LightInject.AutoFactory
 
             ObjectConstructor =
                 typeof(object).GetTypeInfo().DeclaredConstructors.Single(c => c.GetParameters().Length == 0);
-
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AutoFactoryBuilder"/> class.
         /// </summary>
-        /// <param name="serviceNameResolver">The <see cref="IServiceNameResolver"/> that is 
+        /// <param name="serviceNameResolver">The <see cref="IServiceNameResolver"/> that is
         /// responsible for resolving the service name from a given factory method.</param>
         public AutoFactoryBuilder(IServiceNameResolver serviceNameResolver)
         {
             this.serviceNameResolver = serviceNameResolver;
         }
-
-      
 
         /// <summary>
         /// Gets a <see cref="Type"/> that implements the given <paramref name="factoryInterface"/>.
@@ -140,6 +166,10 @@ namespace LightInject.AutoFactory
         /// <returns>A factory type that implements the <paramref name="factoryInterface"/>.</returns>
         public Type GetFactoryType(Type factoryInterface)
         {
+            if (!factoryInterface.IsInterface)
+            {
+                throw new InvalidOperationException("The factory interface type must be an interface");
+            }
             var typeBuilder = typeBuilderFactory.CreateTypeBuilder(factoryInterface, Type.EmptyTypes);
             var containerField = ImplementConstructor(typeBuilder);
             ImplementMethods(typeBuilder, factoryInterface, containerField);
@@ -274,7 +304,7 @@ namespace LightInject.AutoFactory
     }
 
     /// <summary>
-    /// A class that is capable of resolving the 
+    /// A class that is capable of resolving the
     /// name of the service to be retrived based on a given method.
     /// </summary>
     public class ServiceNameResolver : IServiceNameResolver
@@ -305,31 +335,8 @@ namespace LightInject.AutoFactory
             {
                 return returnTypeName.Substring(1);
             }
+
             return returnTypeName;
         }
-    }
-
-    /// <summary>
-    /// Represents a class that is capable of creating a <see cref="TypeBuilder"/> that
-    /// is used to build the proxy type.
-    /// </summary>
-    public interface ITypeBuilderFactory
-    {
-        /// <summary>
-        /// Creates a <see cref="TypeBuilder"/> instance that is used to build a proxy
-        /// type that inherits/implements the <paramref name="targetType"/> with an optional
-        /// set of <paramref name="additionalInterfaces"/>.
-        /// </summary>
-        /// <param name="targetType">The <see cref="Type"/> that the <see cref="TypeBuilder"/> will inherit/implement.</param>
-        /// <param name="additionalInterfaces">A set of additional interfaces to be implemented.</param>
-        /// <returns>A <see cref="TypeBuilder"/> instance for which to build the proxy type.</returns>
-        TypeBuilder CreateTypeBuilder(Type targetType, Type[] additionalInterfaces);
-
-        /// <summary>
-        /// Creates a proxy <see cref="Type"/> based on the given <paramref name="typeBuilder"/>.
-        /// </summary>
-        /// <param name="typeBuilder">The <see cref="TypeBuilder"/> that represents the proxy type.</param>
-        /// <returns>The proxy <see cref="Type"/>.</returns>
-        Type CreateType(TypeBuilder typeBuilder);
     }
 }
