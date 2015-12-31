@@ -52,7 +52,7 @@ namespace LightInject.AutoFactory.Tests
 
         protected virtual AutoFactoryBuilder CreateFactoryBuilder()
         {
-            return new AutoFactoryBuilder(new ServiceNameResolver());
+            return new AutoFactoryBuilder(new TypeBuilderFactory(),  new ServiceNameResolver());
         }
     }
 

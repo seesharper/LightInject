@@ -8,10 +8,7 @@ namespace LightInject.AutoFactory.Tests
     {
         protected override AutoFactoryBuilder CreateFactoryBuilder()
         {
-            var factoryBuilder = new AutoFactoryBuilder(new ServiceNameResolver());
-            var field = typeof(AutoFactoryBuilder).GetField(
-                "typeBuilderFactory", BindingFlags.Instance | BindingFlags.NonPublic);
-            field.SetValue(factoryBuilder, new VerifiableTypeBuilderFactory());
+            var factoryBuilder = new AutoFactoryBuilder(new VerifiableTypeBuilderFactory(),  new ServiceNameResolver());            
             return factoryBuilder;
         }
     }
