@@ -4,28 +4,25 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using LightInject.xUnit2;
 using Xunit;
 
 namespace LightInject.AutoFactory.Tests
 {
     public class AutoFactoryTests
     {
-        [Fact]
-        public void ShoudGetInstanceUsingFactory()
+        [Theory, InjectData]
+        public void ShoudGetInstanceUsingFactory(IFooFactory fooFactory)
         {
-            var factoryInstance = CreateFactory<IFooFactory>();
-
-            var instance = factoryInstance.GetFoo(42);
+            var instance = fooFactory.GetFoo(42);
 
             Assert.IsType<Foo>(instance);
         }
 
-        [Fact]
-        public void ShouldGetNamedInstanceUsingFactory()
-        {
-            var factoryInstance = CreateFactory<IFooFactory>();
-
-            var instance = factoryInstance.GetAnotherFoo(42);
+        [Theory, InjectData]
+        public void ShouldGetNamedInstanceUsingFactory(IFooFactory fooFactory)
+        {         
+            var instance = fooFactory.GetAnotherFoo(42);
 
             Assert.IsType<AnotherFoo>(instance);
         }
@@ -33,21 +30,15 @@ namespace LightInject.AutoFactory.Tests
         [Fact]
         public void ShouldThrowMeaningfulExceptionWhenFactoryIsNotAnInterface()
         {
-            var exception = Assert.Throws<InvalidOperationException>(() => CreateFactory<Foo>());            
+            AutoFactoryBuilder builder = new AutoFactoryBuilder(new TypeBuilderFactory(), new ServiceNameResolver());
+            Assert.Throws<InvalidOperationException>(() => builder.GetFactoryType(typeof(Foo)));            
         }
 
-
-        private TFactory CreateFactory<TFactory>()
+        public static void Configure(IServiceContainer container)
         {
-            AutoFactoryBuilder autoFactoryBuilder = CreateFactoryBuilder();
-            var factoryType = autoFactoryBuilder.GetFactoryType(typeof (TFactory));
-            var container = new ServiceContainer();
-            container.RegisterConstructorDependency((factory, parameter, arguments) => (int)arguments[0]);
-            container.Register<IFoo, Foo>();
-            container.Register<IFoo, AnotherFoo>("AnotherFoo");
-
-            var factoryInstance = (TFactory) Activator.CreateInstance(factoryType, container);
-            return factoryInstance;
+            container.Register<int, IFoo>((factory, value) => new Foo(value));                                    
+            container.EnableAutoFactories();
+            container.RegisterAutoFactory<IFooFactory>();
         }
 
         protected virtual AutoFactoryBuilder CreateFactoryBuilder()

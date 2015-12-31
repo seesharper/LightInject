@@ -27,7 +27,6 @@
 ******************************************************************************/
 
 using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -52,6 +51,10 @@ namespace LightInject
     /// </summary>
     public static class ContainerExtensions
     {
+        /// <summary>
+        /// Enables LightInject to automatically implement factory interfaces.
+        /// </summary>
+        /// <param name="container">The target <see cref="IServiceContainer"/>.</param>
         public static void EnableAutoFactories(this IServiceContainer container)
         {
             container.RegisterConstructorDependency<IServiceFactory>((factory, info) => container);
@@ -59,7 +62,6 @@ namespace LightInject
             container.Register<ITypeBuilderFactory, TypeBuilderFactory>(new PerContainerLifetime());
             container.Register<IServiceNameResolver, ServiceNameResolver>(new PerContainerLifetime());
             container.RegisterConstructorDependency<IServiceFactory>((factory, info) => container);
-            container.Decorate<IAutoFactoryBuilder, CachedAutoFactoryBuilder>();
         }
 
         /// <summary>
@@ -69,7 +71,7 @@ namespace LightInject
         /// <param name="container">The target <see cref="IServiceContainer"/>.</param>
         public static void RegisterAutoFactory<TFactory>(this IServiceContainer container)
         {
-            container.Register(CreateFactoryInstance<TFactory>);
+            container.Register(CreateFactoryInstance<TFactory>, new PerContainerLifetime());
         }
 
         private static TFactory CreateFactoryInstance<TFactory>(IServiceFactory container)
@@ -145,7 +147,7 @@ namespace LightInject.AutoFactory
         private static readonly MethodInfo[] NamedGetInstanceMethods;
         private static readonly ConstructorInfo ObjectConstructor;
         private readonly IServiceNameResolver serviceNameResolver;
-        private readonly ITypeBuilderFactory typeBuilderFactory = new TypeBuilderFactory();
+        private readonly ITypeBuilderFactory typeBuilderFactory;
 
         static AutoFactoryBuilder()
         {
@@ -168,13 +170,14 @@ namespace LightInject.AutoFactory
         /// <summary>
         /// Initializes a new instance of the <see cref="AutoFactoryBuilder"/> class.
         /// </summary>
-        /// <param name="typeBuilderFactory">The <see cref="ITypeBuilderFactory"/> that is responsible for 
+        /// <param name="typeBuilderFactory">The <see cref="ITypeBuilderFactory"/> that is responsible for
         /// creating a <see cref="TypeBuilder"/> instance.</param>
         /// <param name="serviceNameResolver">The <see cref="IServiceNameResolver"/> that is
         /// responsible for resolving the service name from a given factory method.</param>
         public AutoFactoryBuilder(ITypeBuilderFactory typeBuilderFactory, IServiceNameResolver serviceNameResolver)
         {
             this.serviceNameResolver = serviceNameResolver;
+            this.typeBuilderFactory = typeBuilderFactory;
         }
 
         /// <summary>
@@ -188,6 +191,7 @@ namespace LightInject.AutoFactory
             {
                 throw new InvalidOperationException("The factory interface type must be an interface");
             }
+
             var typeBuilder = typeBuilderFactory.CreateTypeBuilder(factoryInterface, Type.EmptyTypes);
             var containerField = ImplementConstructor(typeBuilder);
             ImplementMethods(typeBuilder, factoryInterface, containerField);
@@ -261,23 +265,6 @@ namespace LightInject.AutoFactory
         private string GetServiceName(MethodInfo method)
         {
             return serviceNameResolver.Resolve(method);
-        }
-    }
-
-    public class CachedAutoFactoryBuilder : IAutoFactoryBuilder
-    {
-        private static readonly ConcurrentDictionary<Type, Type> Cache = new ConcurrentDictionary<Type, Type>();
-
-        private readonly IAutoFactoryBuilder builder;
-
-        public CachedAutoFactoryBuilder(IAutoFactoryBuilder builder)
-        {
-            this.builder = builder;
-        }
-
-        public Type GetFactoryType(Type factoryInterface)
-        {
-            return Cache.GetOrAdd(factoryInterface, type => builder.GetFactoryType(type));
         }
     }
 

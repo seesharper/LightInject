@@ -37,6 +37,10 @@
       <HintPath>..\packages\LightInject.4.0.3\lib\net46\LightInject.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="LightInject.xUnit2, Version=2.0.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LightInject.xUnit.2.0.0.1\lib\net46\LightInject.xUnit2.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
