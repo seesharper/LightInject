@@ -103,9 +103,9 @@ The name of the factory method is used to identify named services.
 		IFoo<T> GetFoo<T>();	
 	}
 
-The generic type arguments from the factory method are used to 
+The generic type arguments from the factory method are used to create the service instance.
 
 	container.Register(typeof(IFoo<>), typeof(Foo<>));
 	container.RegisterFactory<IFooFactory>();
 	var factory = container.GetInstance<IFooFactory>();
-	var foo = factory.GetFoo<in>
+	var foo = factory.GetFoo<int>();
