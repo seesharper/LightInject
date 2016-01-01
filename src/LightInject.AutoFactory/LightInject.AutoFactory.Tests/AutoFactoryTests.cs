@@ -36,12 +36,13 @@ namespace LightInject.AutoFactory.Tests
 
         public static void Configure(IServiceContainer container)
         {
-            container.Register<int, IFoo>((factory, value) => new Foo(value));                                    
+            container.Register<int, IFoo>((factory, value) => new Foo(value));
+            container.Register<int, IFoo>((factory, value) => new AnotherFoo(value), "AnotherFoo");
             container.EnableAutoFactories();
-            container.RegisterAutoFactory<IFooFactory>();
+            container.RegisterAutoFactory<IFooFactory>();           
         }
 
-        protected virtual AutoFactoryBuilder CreateFactoryBuilder()
+        internal virtual AutoFactoryBuilder CreateFactoryBuilder()
         {
             return new AutoFactoryBuilder(new TypeBuilderFactory(),  new ServiceNameResolver());
         }
@@ -70,7 +71,7 @@ namespace LightInject.AutoFactory.Tests
         {
         }
     }
-
+  
     public class FooFactory : IFooFactory
     {
         private readonly IServiceFactory serviceFactory;

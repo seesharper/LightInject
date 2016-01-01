@@ -26,13 +26,6 @@
     http://twitter.com/bernhardrichter
 ******************************************************************************/
 
-using System;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Text.RegularExpressions;
-using LightInject.AutoFactory;
-
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
@@ -44,6 +37,9 @@ using LightInject.AutoFactory;
 
 namespace LightInject
 {
+    using System;
+    using AutoFactory;
+
     /// <summary>
     /// Extends the <see cref="IServiceContainer"/> interface with
     /// a method that makes it possible to register factory interfaces
@@ -85,6 +81,12 @@ namespace LightInject
 
 namespace LightInject.AutoFactory
 {
+    using System;
+    using System.Linq;
+    using System.Reflection;
+    using System.Reflection.Emit;
+    using System.Text.RegularExpressions;
+
     /// <summary>
     /// Represents a class that is capable of creating a
     /// factory type that implements a given factory interface.
@@ -187,7 +189,7 @@ namespace LightInject.AutoFactory
         /// <returns>A factory type that implements the <paramref name="factoryInterface"/>.</returns>
         public Type GetFactoryType(Type factoryInterface)
         {
-            if (!factoryInterface.IsInterface)
+            if (!factoryInterface.GetTypeInfo().IsInterface)
             {
                 throw new InvalidOperationException("The factory interface type must be an interface");
             }

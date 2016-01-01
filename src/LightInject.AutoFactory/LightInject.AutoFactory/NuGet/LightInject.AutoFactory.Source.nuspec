@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>LightInject.AutoFactory.Source</id>
+        <version>1.0.0.1</version>
+        <authors>Bernhard Richter</authors>
+        <owners>Bernhard Richter</owners>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+        <projectUrl>http://seesharper.github.io/LightInject/</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+       <description>An extension to the LightInject service container that enables automatic implementation of factory interfaces.</description>
+        <releaseNotes>http://www.lightinject.net/#whatsnew</releaseNotes>
+        <copyright>Bernhard Richter</copyright>
+        <tags>Ioc Dependency-Injection Inversion-of-Control LightInject Aspect-Oriented-Programming AOP Interception</tags>
+        <dependencies>
+            <dependency id="LightInject.Source" version="4.0.2" />
+        </dependencies>
+    </metadata>
+    <files>        
+        <file src="content\net45\LightInject.AutoFactory\LightInject.AutoFactory.cs.pp" target="content\net45\LightInject.AutoFactory\LightInject.AutoFactory.cs.pp" />
+        <file src="content\net46\LightInject.AutoFactory\LightInject.AutoFactory.cs.pp" target="content\net46\LightInject.AutoFactory\LightInject.AutoFactory.cs.pp" />
+    </files>
+</package>
