@@ -86,7 +86,7 @@ namespace LightInject.xUnit2
         /// <returns>A list of argument data resolved using an <see cref="IServiceContainer"/> instance.</returns>
         public override IEnumerable<object[]> GetData(MethodInfo methodUnderTest)
         {
-            var container = GetContainer(methodUnderTest.DeclaringType);
+            var container = GetContainer(methodUnderTest.ReflectedType);
             ParameterInfo[] parameters = methodUnderTest.GetParameters();
             if (ShouldStartScope(methodUnderTest))
             {

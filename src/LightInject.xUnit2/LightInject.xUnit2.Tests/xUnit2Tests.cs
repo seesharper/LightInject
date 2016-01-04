@@ -4,6 +4,7 @@ using System.Text;
 namespace LightInject.xUnit2.Tests
 {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -101,7 +102,37 @@ namespace LightInject.xUnit2.Tests
         }
     }
 
-    
+    public class XunitBaseClassWithTest
+    {
+        [Theory, InjectData]
+        public void ShouldUseConfiguredService(IFoo foo)
+        {
+            if (this is XunitTestsWithInheritedTestMethod)
+            {
+                Assert.IsType<AnotherFoo>(foo);
+            }
+            else
+            {
+                Assert.IsType<Foo>(foo);
+            }                       
+        }
+        
+        internal static void Configure(IServiceContainer container)
+        {
+            container.Register<IFoo, Foo>();
+        }
+    }
+
+    public class XunitTestsWithInheritedTestMethod : XunitBaseClassWithTest
+    {
+        internal static void Configure(IServiceContainer container)
+        {
+            container.Register<IFoo, AnotherFoo>();
+        }
+    }
+
+
+
     public class XunitTestsWithConfigureMethodInDerivedClass : XunitBaseClass
     {
         [Theory, InjectData]

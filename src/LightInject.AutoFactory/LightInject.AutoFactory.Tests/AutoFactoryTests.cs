@@ -51,7 +51,7 @@ namespace LightInject.AutoFactory.Tests
             var test = container.GetInstance<int, IFoo<string>>(42);
 
             container.EnableAutoFactories();
-            container.RegisterAutoFactory<IFooFactory>();           
+            container.RegisterAutoFactory<IFooFactory>();
         }
 
         internal virtual AutoFactoryBuilder CreateFactoryBuilder()

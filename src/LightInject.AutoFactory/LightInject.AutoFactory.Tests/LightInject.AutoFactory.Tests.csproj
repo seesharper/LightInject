@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NET46</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -35,10 +35,6 @@
   <ItemGroup>
     <Reference Include="LightInject, Version=4.0.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\LightInject.4.0.3\lib\net46\LightInject.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="LightInject.xUnit2, Version=2.0.0.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\LightInject.xUnit.2.0.0.1\lib\net46\LightInject.xUnit2.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -74,6 +70,7 @@
     <Compile Include="VerifiableTypeBuilderFactory.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LightInject.xUnit.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

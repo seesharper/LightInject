@@ -13,8 +13,8 @@ namespace LightInject.AutoFactory.Tests
         }
 
         public static void Configure(IServiceContainer container)
-        {
-            
+        { 
+
         }
     }
 }
