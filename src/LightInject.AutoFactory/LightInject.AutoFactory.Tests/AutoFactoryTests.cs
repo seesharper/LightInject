@@ -27,6 +27,14 @@ namespace LightInject.AutoFactory.Tests
             Assert.IsType<AnotherFoo>(instance);
         }
 
+        [Theory, InjectData]
+        public void ShouldGetGenericInstanceUsingFactory(IFooFactory fooFactory)
+        {
+            var instance = fooFactory.GetFoo<string>(42);
+
+            Assert.IsType<Foo<string>>(instance);
+        }
+
         [Fact]
         public void ShouldThrowMeaningfulExceptionWhenFactoryIsNotAnInterface()
         {
@@ -37,7 +45,11 @@ namespace LightInject.AutoFactory.Tests
         public static void Configure(IServiceContainer container)
         {
             container.Register<int, IFoo>((factory, value) => new Foo(value));
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
+            container.RegisterConstructorDependency((factory, info, args) => (int)args[0]);
             container.Register<int, IFoo>((factory, value) => new AnotherFoo(value), "AnotherFoo");
+            var test = container.GetInstance<int, IFoo<string>>(42);
+
             container.EnableAutoFactories();
             container.RegisterAutoFactory<IFooFactory>();           
         }
@@ -54,6 +66,8 @@ namespace LightInject.AutoFactory.Tests
         IFoo GetFoo(int value);
 
         IFoo GetAnotherFoo(int value);
+
+        IFoo<T> GetFoo<T>(int value);
     }
 
     public interface IFoo { }
@@ -64,6 +78,19 @@ namespace LightInject.AutoFactory.Tests
         {
         }
     }
+
+    public interface IFoo<T>
+    {
+        
+    }
+
+    public class Foo<T> : IFoo<T>
+    {
+        public Foo(int value)
+        {
+        }
+    }
+
 
     public class AnotherFoo : IFoo
     {
@@ -89,6 +116,11 @@ namespace LightInject.AutoFactory.Tests
         public IFoo GetAnotherFoo(int value)
         {
             return serviceFactory.GetInstance<int, IFoo>(value, "AnotherFoo");
+        }
+
+        public IFoo<T> GetFoo<T>(int value)
+        {
+            return serviceFactory.GetInstance<int, IFoo<T>>(value);
         }
     }
 }

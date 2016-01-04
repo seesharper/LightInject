@@ -155,13 +155,16 @@ namespace LightInject.AutoFactory
         {
             GetInstanceMethods =
                 typeof(IServiceFactory).GetTypeInfo()
-                    .DeclaredMethods.Where(m => m.IsGenericMethod && m.GetGenericArguments().Length > 1 && m.GetParameters().Length < m.GetGenericArguments().Length)
+                    .DeclaredMethods.Where(m => m.Name == "GetInstance" && m.IsGenericMethod && m.GetParameters().Length < m.GetGenericArguments().Length)
                     .OrderBy(m => m.GetGenericArguments().Length)
                     .ToArray();
 
             NamedGetInstanceMethods =
                 typeof(IServiceFactory).GetTypeInfo()
-                    .DeclaredMethods.Where(m => m.IsGenericMethod && m.GetGenericArguments().Length > 1 && m.GetParameters().Length == m.GetGenericArguments().Length)
+                    .DeclaredMethods.Where(
+                        m =>
+                            m.Name == "GetInstance" && m.IsGenericMethod && m.GetParameters().Length > 0 &&
+                            m.GetParameters().Last().ParameterType == typeof(string))
                     .OrderBy(m => m.GetGenericArguments().Length)
                     .ToArray();
 
@@ -217,6 +220,24 @@ namespace LightInject.AutoFactory
             return containerField;
         }
 
+        private static void DefineGenericParameters(MethodInfo targetMethod, MethodBuilder methodBuilder)
+        {
+            Type[] genericArguments = targetMethod.GetGenericArguments().ToArray();
+            GenericTypeParameterBuilder[] genericTypeParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(a => a.Name).ToArray());
+            for (int i = 0; i < genericArguments.Length; i++)
+            {
+                genericTypeParameters[i].SetGenericParameterAttributes(genericArguments[i].GetTypeInfo().GenericParameterAttributes);
+                ApplyGenericConstraints(genericArguments[i], genericTypeParameters[i]);
+            }
+        }
+
+        private static void ApplyGenericConstraints(Type genericArgument, GenericTypeParameterBuilder genericTypeParameter)
+        {
+            var genericConstraints = genericArgument.GetTypeInfo().GetGenericParameterConstraints();
+            genericTypeParameter.SetInterfaceConstraints(genericConstraints.Where(gc => gc.GetTypeInfo().IsInterface).ToArray());
+            genericTypeParameter.SetBaseTypeConstraint(genericConstraints.FirstOrDefault(t => t.GetTypeInfo().IsClass));
+        }
+
         private void ImplementMethods(TypeBuilder typeBuilder, Type interfaceType, FieldBuilder containerField)
         {
             var methods = interfaceType.GetTypeInfo().DeclaredMethods;
@@ -238,6 +259,11 @@ namespace LightInject.AutoFactory
                                             method.ReturnType,
                                             parameterTypes);
 
+            if (method.IsGenericMethod)
+            {
+                DefineGenericParameters(method, methodBuilder);
+            }
+
             var il = methodBuilder.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldfld, containerField);
@@ -250,12 +276,12 @@ namespace LightInject.AutoFactory
 
             if (string.IsNullOrEmpty(serviceName))
             {
-                var openGenericGetInstanceMethod = GetInstanceMethods[parameterTypes.Length - 1];
+                var openGenericGetInstanceMethod = GetInstanceMethods[parameterTypes.Length];
                 closedGenericGetInstanceMethod = openGenericGetInstanceMethod.MakeGenericMethod(parameterTypes.Concat(new[] { method.ReturnType }).ToArray());
             }
             else
             {
-                var openGenericGetInstanceMethod = NamedGetInstanceMethods[parameterTypes.Length - 1];
+                var openGenericGetInstanceMethod = NamedGetInstanceMethods[parameterTypes.Length];
                 closedGenericGetInstanceMethod = openGenericGetInstanceMethod.MakeGenericMethod(parameterTypes.Concat(new[] { method.ReturnType }).ToArray());
                 il.Emit(OpCodes.Ldstr, serviceName);
             }

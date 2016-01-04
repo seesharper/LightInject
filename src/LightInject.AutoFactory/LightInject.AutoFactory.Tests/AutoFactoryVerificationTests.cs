@@ -11,5 +11,10 @@ namespace LightInject.AutoFactory.Tests
             var factoryBuilder = new AutoFactoryBuilder(new VerifiableTypeBuilderFactory(),  new ServiceNameResolver());            
             return factoryBuilder;
         }
+
+        public static void Configure(IServiceContainer container)
+        {
+            
+        }
     }
 }
