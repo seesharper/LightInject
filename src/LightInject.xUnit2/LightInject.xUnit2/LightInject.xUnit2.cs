@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.xUnit version 2.0.0.1
+    LightInject.xUnit version 2.0.0.2
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -182,13 +182,32 @@ namespace LightInject.xUnit2
 
         private static void InvokeConfigureMethodIfPresent(Type type, IServiceContainer container)
         {
+            var callSequence = new Stack<Action>();
+
+            while (type != typeof(object))
+            {
+                var method = GetConfigureMethod(type);
+                if (method != null)
+                {
+                    callSequence.Push(() => method.Invoke(null, new object[] { container }));
+                }
+
+                type = type.BaseType;
+            }
+
+            while (callSequence.Count > 0)
+            {
+                var action = callSequence.Pop();
+                action();
+            }
+        }
+
+        private static MethodInfo GetConfigureMethod(Type type)
+        {
             var composeMethod = type.GetMethod(
                 "Configure",
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
-            if (composeMethod != null)
-            {
-                composeMethod.Invoke(null, new object[] { container });
-            }
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            return composeMethod;
         }
 
         private IEnumerable<object[]> ResolveParameters(IServiceFactory factory, IEnumerable<ParameterInfo> parameters)

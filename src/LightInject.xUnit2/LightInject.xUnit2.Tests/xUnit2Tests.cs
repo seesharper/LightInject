@@ -101,6 +101,22 @@ namespace LightInject.xUnit2.Tests
         }
     }
 
+    
+    public class XunitTestsWithConfigureMethodInDerivedClass : XunitBaseClass
+    {
+        [Theory, InjectData]
+        public void ShouldBeAbleToReconfigureContainer(IFoo foo)
+        {
+            Assert.IsType<AnotherFoo>(foo);
+        }
+
+        internal new static void Configure(IServiceContainer container)
+        {
+            container.Register<IFoo, AnotherFoo>();
+        }
+
+    }
+
     public class XunitTestsWithConfigureMethodInBaseClass : XunitBaseClass
     {
         [Theory, InjectData]
