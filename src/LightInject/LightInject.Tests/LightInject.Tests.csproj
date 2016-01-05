@@ -81,6 +81,7 @@
     <Compile Include="ImmutableTreeTests.cs" />
     <Compile Include="Issue237.cs" />
     <Compile Include="Issue237Verification.cs" />
+    <Compile Include="Issue245.cs" />
     <Compile Include="LazyCompositionRootTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="PropertySelectorTests.cs" />

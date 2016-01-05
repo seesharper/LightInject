@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.3
+    LightInject version 4.0.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3784,12 +3784,11 @@ namespace LightInject
 
         private void EmitNewInstanceUsingFactoryDelegate(ServiceRegistration serviceRegistration, IEmitter emitter)
         {
-
             var factoryDelegateIndex = constants.Add(serviceRegistration.FactoryExpression);
             Type funcType = serviceRegistration.FactoryExpression.GetType();
             MethodInfo invokeMethod = funcType.GetTypeInfo().GetDeclaredMethod("Invoke");
-            emitter.PushConstant(factoryDelegateIndex, funcType);
-            var parameters = serviceRegistration.FactoryExpression.GetMethodInfo().GetParameters();
+            emitter.PushConstant(factoryDelegateIndex, funcType);            
+            var parameters = invokeMethod.GetParameters();
             if (parameters.Length == 1 && parameters[0].ParameterType == typeof(ServiceRequest))
             {
                 var serviceRequest = new ServiceRequest(serviceRegistration.ServiceType, serviceRegistration.ServiceName, this);
