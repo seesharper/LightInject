@@ -378,15 +378,20 @@ namespace LightInject.AutoFactory
         }
 
         private static string ResolveReturnTypeName(MethodInfo method)
-        {            
-            var returnTypeName = Regex.Match(method.ReturnType.Name, @"([a-zA-Z]+)").Groups[1].Captures[0].Value;
-            
+        {
+            var returnTypeName = GetFriendlyTypeName(method);
+
             if (returnTypeName.StartsWith("I"))
             {
                 return returnTypeName.Substring(1);
             }
 
             return returnTypeName;
+        }
+
+        private static string GetFriendlyTypeName(MethodInfo method)
+        {
+            return Regex.Match(method.ReturnType.Name, @"([a-zA-Z]+)").Groups[1].Captures[0].Value;
         }
     }
 }
