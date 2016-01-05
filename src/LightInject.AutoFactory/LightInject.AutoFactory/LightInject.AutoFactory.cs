@@ -378,9 +378,9 @@ namespace LightInject.AutoFactory
         }
 
         private static string ResolveReturnTypeName(MethodInfo method)
-        {
-            var returnTypeName = method.ReturnType.Name;
-
+        {            
+            var returnTypeName = Regex.Match(method.ReturnType.Name, @"([a-zA-Z]+)").Groups[1].Captures[0].Value;
+            
             if (returnTypeName.StartsWith("I"))
             {
                 return returnTypeName.Substring(1);

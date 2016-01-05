@@ -47,9 +47,7 @@ namespace LightInject.AutoFactory.Tests
             container.Register<int, IFoo>((factory, value) => new Foo(value));
             container.Register(typeof(IFoo<>), typeof(Foo<>));
             container.RegisterConstructorDependency((factory, info, args) => (int)args[0]);
-            container.Register<int, IFoo>((factory, value) => new AnotherFoo(value), "AnotherFoo");
-            var test = container.GetInstance<int, IFoo<string>>(42);
-
+            container.Register<int, IFoo>((factory, value) => new AnotherFoo(value), "AnotherFoo");            
             container.EnableAutoFactories();
             container.RegisterAutoFactory<IFooFactory>();
         }

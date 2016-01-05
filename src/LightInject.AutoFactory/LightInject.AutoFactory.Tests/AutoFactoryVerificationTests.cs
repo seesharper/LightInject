@@ -14,7 +14,7 @@ namespace LightInject.AutoFactory.Tests
 
         public static void Configure(IServiceContainer container)
         { 
-
+            container.Register<ITypeBuilderFactory, VerifiableTypeBuilderFactory>();
         }
     }
 }
