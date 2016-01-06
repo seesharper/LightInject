@@ -154,7 +154,7 @@ public static void PatchAssemblyVersionInfo(string version, string fileVersion, 
 public static string GetVersionNumberFromSourceFile(string pathToSourceFile)
 {
     var source = ReadFile(pathToSourceFile);
-    var versionNumber = Regex.Match(source, @"version\s(.+)\r\n").Groups[1].Value;
+    var versionNumber = Regex.Match(source, @"version\s(\d\.\d\.\d\.\d)").Groups[1].Value;
     return versionNumber;
 }
 

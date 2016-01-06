@@ -16,6 +16,7 @@ private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
 WriteLine(version);
 private string fileVersion = Regex.Match(version, @"(^[\d\.]+)-?").Groups[1].Captures[0].Value;
 
+WriteLine(fileVersion);
 
 WriteLine("LightInject.xUnit2 version {0}" , version);
 
