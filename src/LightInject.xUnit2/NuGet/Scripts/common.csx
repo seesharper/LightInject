@@ -145,6 +145,7 @@ public static void PatchAssemblyVersionInfo(string version, string fileVersion, 
     patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"((?<=AssemblyFileVersion\(.)[\d\.]+)", fileVersion);
     patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"((?<=AssemblyInformationalVersion\(.)[\d\.]+)", version);        
     patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"(AssemblyCopyright\(""\D+)(\d*)", "${1}" + DateTime.Now.Year);        
+    Console.WriteLine(patchedAssemblyInfo);
     WriteFile(pathToAssemblyInfo, patchedAssemblyInfo);    
 }
 

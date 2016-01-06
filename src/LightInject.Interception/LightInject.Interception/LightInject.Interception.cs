@@ -413,7 +413,12 @@ namespace LightInject.Interception
 
         private TargetMethodInfo CreateTargetMethodInfo(Type[] types)
         {
-            var closedGenericMethod = openGenericMethod.MakeGenericMethod(types);
+            var openGenericMethodGenericMethodDefinitionReference = openGenericMethod;
+            if (!openGenericMethod.IsGenericMethodDefinition)
+                openGenericMethodGenericMethodDefinitionReference = openGenericMethod.GetGenericMethodDefinition();
+
+            var closedGenericMethod = openGenericMethodGenericMethodDefinitionReference.MakeGenericMethod(types);
+
             return new TargetMethodInfo(closedGenericMethod);
         }
     }

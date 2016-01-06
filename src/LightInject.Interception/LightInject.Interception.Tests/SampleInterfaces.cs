@@ -478,4 +478,22 @@ namespace LightInject.Interception.Tests
         void B();
         void C();
     }
+
+    public interface IMethodWithCovariantTypeParameterAndGenericArgument<out TEntity>
+    {
+        TEntity GetById<TId>(TId id);
+    }
+
+    public class Retval
+    {
+        public string Value { get { return "value"; } }
+    }
+
+    public class MethodWithCovariantTypeParameterAndGenericArgument : IMethodWithCovariantTypeParameterAndGenericArgument<Retval>
+    {
+        public Retval GetById<TId>(TId arg)
+        {
+            return new Retval();
+        }
+    }
 }
