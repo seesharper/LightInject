@@ -648,6 +648,16 @@ namespace LightInject.Interception.Tests
         }
 
         [TestMethod]
+        public void Execute_MethodWithCovariantTypeParameterAndGenericArgument_PassesValueToInterceptor()
+        {
+            var instance = CreateProxy<IMethodWithCovariantTypeParameterAndGenericArgument<Retval>>(new MethodWithCovariantTypeParameterAndGenericArgument(), "GetById");
+            var retval = instance.GetById(It.IsAny<object>());
+
+            Assert.IsNotNull(retval);
+            Assert.AreEqual(retval.Value, "value");
+        }
+
+        [TestMethod]
         public void Execute_MethodWithGenericValueType_ReturnsValueFromInterceptor()
         {
             var interceptorMock = new Mock<IInterceptor>();
@@ -812,6 +822,15 @@ namespace LightInject.Interception.Tests
             var proxyDefinition = new ProxyDefinition(typeof(T));
             var interceptor = CreateProceedingInterceptor();
             proxyDefinition.Implement(() => interceptor, m => m.Name == "Execute");
+            Type proxyType = CreateProxyBuilder().GetProxyType(proxyDefinition);
+            return (T)Activator.CreateInstance(proxyType, new Lazy<T>(() => target));
+        }
+
+        private T CreateProxy<T>(T target, string methodName)
+        {
+            var proxyDefinition = new ProxyDefinition(typeof(T));
+            var interceptor = CreateProceedingInterceptor();
+            proxyDefinition.Implement(() => interceptor, m => m.Name == methodName);
             Type proxyType = CreateProxyBuilder().GetProxyType(proxyDefinition);
             return (T)Activator.CreateInstance(proxyType, new Lazy<T>(() => target));
         }
