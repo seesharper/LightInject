@@ -165,8 +165,9 @@ private void RunAllUnitTests()
 private void RunUnitTests(string frameworkMoniker)
 {
 	string pathToTestAssembly = Path.Combine(pathToBuildDirectory, frameworkMoniker + @"/Binary/LightInject.xUnit2.Tests/bin/Release/LightInject.xUnit2.Tests.dll");
-	string pathToTestAdapter = ResolveDirectory("../../packages/", "xunit.runner.visualstudio.testadapter.dll");
-	MsTest.Run(pathToTestAssembly, pathToTestAdapter);	
+	string testAdapterSearchDirectory = Path.Combine(pathToBuildDirectory, frameworkMoniker, @"Binary/packages/");
+    string pathToTestAdapterDirectory = ResolveDirectory(testAdapterSearchDirectory, "xunit.runner.visualstudio.testadapter.dll");
+	MsTest.Run(pathToTestAssembly, pathToTestAdapterDirectory);	
 }
 
 private void AnalyzeTestCoverage()

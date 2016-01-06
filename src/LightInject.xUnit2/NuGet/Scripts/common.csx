@@ -100,6 +100,12 @@ public static string ResolveDirectory(string path, string filePattern)
     return Path.GetDirectoryName(pathToFile);
 }
 
+public static string GetFile(string path, string filename)
+{
+    string pathToFile = Directory.GetFiles(path, filename, SearchOption.AllDirectories).Single();
+    return pathToFile;    
+}
+
 
 private static string CopyToNuGetBuildDirectory(string projectPath)
 {
@@ -233,7 +239,7 @@ public static class PathResolver
 public static class MsTest
 {    
     public static void Run(string pathToTestAssembly, string pathToTestAdapter)
-    {
+    {         
         string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
         string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /TestAdapterPath:" + pathToTestAdapter, @"(Total tests:.*)|(Test execution time:.*)|(Failed.*)");
     }
