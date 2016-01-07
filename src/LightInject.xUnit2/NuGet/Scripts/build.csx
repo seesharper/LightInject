@@ -1,7 +1,4 @@
 
-
-
-
 #load "common.csx"
 
 private const string projectName = "LightInject.xUnit2";
@@ -13,13 +10,9 @@ string pathToSourceFile = @"..\..\LightInject.xUnit2\LightInject.xUnit2.cs";
 string pathToBuildDirectory = @"../tmp/";
 private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
 
-WriteLine(version);
 private string fileVersion = Regex.Match(version, @"(^[\d\.]+)-?").Groups[1].Captures[0].Value;
 
-WriteLine(fileVersion);
-
 WriteLine("LightInject.xUnit2 version {0}" , version);
-
 
 Execute(() => InitializBuildDirectories(), "Preparing build directories");
 Execute(() => RenameSolutionFiles(), "Renaming solution files");
@@ -31,12 +24,9 @@ Execute(() => RestoreNuGetPackages(), "NuGet");
 Execute(() => BuildAllFrameworks(), "Building all frameworks");
 Execute(() => RunAllUnitTests(), "Running unit tests");
 //Execute(() => AnalyzeTestCoverage(), "Analyzing test coverage");
-Execute(() => InitializeNuGetPackageDirectories(), "Preparing NuGet build directories");
+Execute(() => CreateNugetPackages(), "Creating NuGet packages");
 
-
-
-
-private void InitializeNuGetPackageDirectories()
+private void CreateNugetPackages()
 {
 	string pathToNuGetBuildDirectory = Path.Combine(pathToBuildDirectory, "NuGetPackages");
 	DirectoryUtils.Delete(pathToNuGetBuildDirectory);
@@ -46,7 +36,9 @@ private void InitializeNuGetPackageDirectories()
 	Execute(() => CopyBinaryFilesToNuGetLibDirectory(), "Copy binary files to NuGet lib directory");
 	
 	Execute(() => CreateSourcePackage(), "Creating source package");		
-	Execute(() => CreateBinaryPackage(), "Creating binary package");		
+	Execute(() => CreateBinaryPackage(), "Creating binary package");
+    string myDocumentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+    RoboCopy(pathToBuildDirectory, myDocumentsFolder, "*.nupkg");		
 }
 
 private void CopySourceFilesToNuGetLibDirectory()
@@ -66,19 +58,17 @@ private void CopyBinaryFilesToNuGetLibDirectory()
 }
 
 private void CreateSourcePackage()
-{
-	string outputDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+{	    
 	string pathToMetadataFile = Path.Combine(pathToBuildDirectory, "NugetPackages/Source/package/LightInject.xUnit2.Source.nuspec");
 	PatchNugetVersionInfo(pathToMetadataFile, version);		
-	NuGet.CreatePackage(pathToMetadataFile, outputDirectory);		
+	NuGet.CreatePackage(pathToMetadataFile, pathToBuildDirectory);   		
 }
 
 private void CreateBinaryPackage()
-{
-	string outputDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+{	    
 	string pathToMetadataFile = Path.Combine(pathToBuildDirectory, "NugetPackages/Binary/package/LightInject.xUnit2.nuspec");
 	PatchNugetVersionInfo(pathToMetadataFile, version);
-	NuGet.CreatePackage(pathToMetadataFile, outputDirectory);
+	NuGet.CreatePackage(pathToMetadataFile, pathToBuildDirectory);
 }
 
 private void CopySourceFile(string frameworkMoniker, string packageDirectoryName)
@@ -108,7 +98,6 @@ private string ResolvePathToBinaryFile(string frameworkMoniker)
 	var pathToBinaryFile = Directory.GetFiles("../tmp/" + frameworkMoniker + "/Binary/LightInject.xUnit2/bin/Release","LightInject.xUnit2.dll", SearchOption.AllDirectories).First();
 	return Path.GetDirectoryName(pathToBinaryFile);		
 }
-
 
 private void BuildAllFrameworks()
 {	
@@ -152,7 +141,6 @@ private void RestoreNuGetPackages(string frameworkMoniker)
 	pathToProjectDirectory = Path.Combine(pathToBuildDirectory, frameworkMoniker + @"/Source/LightInject.xUnit2.Tests");
 	NuGet.Restore(pathToProjectDirectory);
 }
-
 
 private void RunAllUnitTests()
 {	
@@ -275,7 +263,6 @@ private void PatchPackagesConfig()
 	PatchPackagesConfig("net45");	
 }
 
-
 private void PatchPackagesConfig(string frameworkMoniker)
 {
 	string pathToPackagesConfig = Path.Combine(pathToBuildDirectory, frameworkMoniker + @"/Binary/LightInject.xUnit2/packages.config");
@@ -329,9 +316,7 @@ private void PatchProjectFile(string frameworkMoniker, string frameworkVersion, 
 {
 	WriteLine("Patching {0} ", pathToProjectFile);	
 	SetProjectFrameworkMoniker(frameworkMoniker, pathToProjectFile);
-	SetProjectFrameworkVersion(frameworkVersion, pathToProjectFile);
-	
-	
+	SetProjectFrameworkVersion(frameworkVersion, pathToProjectFile);		
 	SetHintPath(frameworkMoniker, pathToProjectFile);	
 }
 
@@ -363,7 +348,6 @@ private void SetHintPath(string frameworkMoniker, string pathToProjectFile)
 	ReplaceInFile(@"(.*\\packages\\LightInject.*\\lib\\).*(\\.*)","$1"+ frameworkMoniker + "$2", pathToProjectFile);	
 }
 
-
 private void SetTargetFrameworkProfile()
 {
 	
@@ -384,7 +368,6 @@ private void SetTargetFrameworkProfile()
 	importElement.Attributes().First().Value = @"$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets";	
 	xmlDocument.Save(pathToProjectFile);
 }
-
 
 private void PatchTestProjectFile(string frameworkMoniker)
 {

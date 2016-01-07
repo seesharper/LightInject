@@ -10,10 +10,6 @@ private static int depth = 0;
 
 private static string lastWriteOperation;
 
-
-
-
-
 public static class DNU
 {
     public static void Build(string pathToProjectFile, string frameworkMoniker)
@@ -106,7 +102,6 @@ public static string GetFile(string path, string filename)
     return pathToFile;    
 }
 
-
 private static string CopyToNuGetBuildDirectory(string projectPath)
 {
     var projectDirectory = Path.GetDirectoryName(projectPath);
@@ -150,12 +145,9 @@ public static void PatchAssemblyVersionInfo(string version, string fileVersion, 
     var patchedAssemblyInfo = Regex.Replace(assemblyInfo, @"((?<=AssemblyVersion\(.)[\d\.]+)", fileVersion);
     patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"((?<=AssemblyFileVersion\(.)[\d\.]+)", fileVersion);
     patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"((?<=AssemblyInformationalVersion\(.)[\d\.]+)", version);        
-    patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"(AssemblyCopyright\(""\D+)(\d*)", "${1}" + DateTime.Now.Year);        
-    Console.WriteLine(patchedAssemblyInfo);
+    patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"(AssemblyCopyright\(""\D+)(\d*)", "${1}" + DateTime.Now.Year);            
     WriteFile(pathToAssemblyInfo, patchedAssemblyInfo);    
 }
-
-
 
 public static string GetVersionNumberFromSourceFile(string pathToSourceFile)
 {
@@ -255,7 +247,6 @@ public static class MsTest
         CreateSummaryFile(pathToCoverageXmlFile, directory, includedAssemblies);
         ValidateCodeCoverage(directory);        
     }
-
 
     private static void ValidateCodeCoverage(string directory)
     {
