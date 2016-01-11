@@ -205,29 +205,6 @@ namespace LightInject.xUnit2
 
             throw new InvalidOperationException(string.Format("No value specified for parameter: {0}", parameter));
         }
-
-#if NET45 || DNX451
-        [Serializable]
-        private class ContainerWrapper : MarshalByRefObject
-        {
-            [NonSerialized]
-            private IServiceContainer value;
-
-            public IServiceContainer Value
-            {
-                get
-                {
-                    return value;
-                }
-
-                set
-                {
-                    this.value = value;
-                }
-            }
-        }
-#endif
-
     }
 
     /// <summary>
