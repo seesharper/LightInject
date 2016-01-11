@@ -21,13 +21,10 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject.xUnit version 2.0.0.3
+    LightInject.xUnit version 2.0.0.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
-
-using System.Diagnostics;
-using System.Threading;
 
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
@@ -35,16 +32,14 @@ using System.Threading;
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Product name starts with lowercase letter.")]
-
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1649:FileHeaderFileNameDocumentationMustMatchTypeName", Justification = "Single source file deployment")]
 namespace LightInject.xUnit2
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-#if NET45 || DNX451
-    using System.Runtime.Remoting.Messaging;
-#endif
     using LightInject;
     using Xunit.Sdk;
 
@@ -54,13 +49,20 @@ namespace LightInject.xUnit2
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class InjectDataAttribute : DataAttribute
     {
-#if NET46 || DNXCORE50
-        private static readonly AsyncLocal<IServiceContainer> ContainerAsyncLocal = new AsyncLocal<IServiceContainer>();
-#endif
+        private static readonly ConcurrentDictionary<MethodInfo, Scope> Scopes =
+            new ConcurrentDictionary<MethodInfo, Scope>();
+
+        private static readonly ConcurrentDictionary<Type, IServiceContainer> Containers =
+            new ConcurrentDictionary<Type, IServiceContainer>();
+
         private readonly Stack<object> data;
-#if NET45 || DNXCORE50
-        private const string Key = "XunitServiceContainer";
-#endif
+
+        static InjectDataAttribute()
+        {
+            // Since the GetData method is also executed during test discovery
+            // we need to ensure that we close all existing scopes.
+            AppDomain.CurrentDomain.DomainUnload += (sender, args) => EndAllScopes();
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InjectDataAttribute"/> class.
@@ -80,6 +82,15 @@ namespace LightInject.xUnit2
         }
 
         /// <summary>
+        /// Ends the <see cref="Scope"/> represented by the given <paramref name="method"/>.
+        /// </summary>
+        /// <param name="method">The <see cref="MethodInfo"/> representing the method for which to end the <see cref="Scope"/>.</param>
+        public static void EndScope(MethodInfo method)
+        {
+            Scopes[method].Dispose();
+        }
+
+        /// <summary>
         /// Gets a list of argument data resolved using an <see cref="IServiceContainer"/> instance.
         /// </summary>
         /// <param name="methodUnderTest">The test method currently being executed.</param>
@@ -90,84 +101,36 @@ namespace LightInject.xUnit2
             ParameterInfo[] parameters = methodUnderTest.GetParameters();
             if (ShouldStartScope(methodUnderTest))
             {
-                container.BeginScope();
+                Scopes.TryAdd(methodUnderTest, container.BeginScope());
             }
 
             return ResolveParameters(container, parameters);
         }
 
-#if NET46 || DNXCORE50
-        internal static void Release(Type type)
+        private static void EndAllScopes()
         {
-            var container = ContainerAsyncLocal.Value;
-
-            if (container != null)
+            foreach (var scope in Scopes)
             {
-                container.EndCurrentScope();
+                scope.Value.Dispose();
             }
         }
 
-#endif
-
-#if NET45 || DNX451
-        /// <summary>
-        /// Releases the current <see cref="Scope"/>.
-        /// </summary>
-        /// <param name="type">The test class <see cref="Type"/> for which to release the current <see cref="Scope"/>.</param>
-        internal static void Release(Type type)
-        {
-            var key = CreateContainerKey(type);
-            var containerWrapper = (ContainerWrapper)CallContext.LogicalGetData(key);
-
-            if (containerWrapper != null)
-            {
-                containerWrapper.Value.EndCurrentScope();
-            }
-        }
-
-        private static string CreateContainerKey(Type type)
-        {
-            return Key + type.AssemblyQualifiedName;
-        }
-#endif
         private static bool ShouldStartScope(MethodInfo methodUnderTest)
         {
             return methodUnderTest.IsDefined(typeof(ScopedAttribute), true);
         }
 
-#if NET46 || DNXCORE50 || DNX451
         private static IServiceContainer GetContainer(Type type)
         {
-            var container = ContainerAsyncLocal.Value;
+            return Containers.GetOrAdd(type, CreateContainer);
+        }
 
-            if (container == null)
-            {
-                container = new ServiceContainer();
-                InvokeConfigureMethodIfPresent(type, container);
-                ContainerAsyncLocal.Value = container;
-            }
-
+        private static IServiceContainer CreateContainer(Type type)
+        {
+            var container = new ServiceContainer();
+            InvokeConfigureMethodIfPresent(type, container);
             return container;
         }
-
-#endif
-
-#if NET45
-
-        private static IServiceContainer GetContainer(Type type)
-        {            
-            var key = CreateContainerKey(type);
-            var containerWrapper = (ContainerWrapper)CallContext.LogicalGetData(key);
-            if (containerWrapper == null)
-            {
-                containerWrapper = new ContainerWrapper { Value = new ServiceContainer() };
-                InvokeConfigureMethodIfPresent(type, containerWrapper.Value);
-                CallContext.LogicalSetData(key, containerWrapper);
-            }
-
-            return containerWrapper.Value;
-        }
-#endif
 
         private static object GetInstance(IServiceFactory factory, ParameterInfo parameter)
         {
@@ -264,6 +227,7 @@ namespace LightInject.xUnit2
             }
         }
 #endif
+
     }
 
     /// <summary>
@@ -277,8 +241,7 @@ namespace LightInject.xUnit2
         /// <param name="methodUnderTest">The method under test</param>
         public override void After(MethodInfo methodUnderTest)
         {
-            Debug.WriteLine("TEST");
-            InjectDataAttribute.Release(methodUnderTest.DeclaringType);
+            InjectDataAttribute.EndScope(methodUnderTest);
         }
     }
 }

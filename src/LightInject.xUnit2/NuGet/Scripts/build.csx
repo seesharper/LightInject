@@ -23,7 +23,7 @@ Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
 Execute(() => RestoreNuGetPackages(), "NuGet");
 Execute(() => BuildAllFrameworks(), "Building all frameworks");
 Execute(() => RunAllUnitTests(), "Running unit tests");
-//Execute(() => AnalyzeTestCoverage(), "Analyzing test coverage");
+Execute(() => AnalyzeTestCoverage(), "Analyzing test coverage");
 Execute(() => CreateNugetPackages(), "Creating NuGet packages");
 
 private void CreateNugetPackages()
@@ -59,8 +59,8 @@ private void CopyBinaryFilesToNuGetLibDirectory()
 
 private void CreateSourcePackage()
 {	    
-	string pathToMetadataFile = Path.Combine(pathToBuildDirectory, "NugetPackages/Source/package/LightInject.xUnit2.Source.nuspec");
-	PatchNugetVersionInfo(pathToMetadataFile, version);		
+	string pathToMetadataFile = Path.Combine(pathToBuildDirectory, "NugetPackages/Source/package/LightInject.xUnit2.Source.nuspec");	
+    PatchNugetVersionInfo(pathToMetadataFile, version);		    
 	NuGet.CreatePackage(pathToMetadataFile, pathToBuildDirectory);   		
 }
 
@@ -140,6 +140,7 @@ private void RestoreNuGetPackages(string frameworkMoniker)
 	NuGet.Restore(pathToProjectDirectory);
 	pathToProjectDirectory = Path.Combine(pathToBuildDirectory, frameworkMoniker + @"/Source/LightInject.xUnit2.Tests");
 	NuGet.Restore(pathToProjectDirectory);
+    NuGet.Update(GetFile(Path.Combine(pathToBuildDirectory, frameworkMoniker, "Binary"), "*.sln"));        
 }
 
 private void RunAllUnitTests()
@@ -147,7 +148,7 @@ private void RunAllUnitTests()
 	DirectoryUtils.Delete("TestResults");
 	Execute(() => RunUnitTests("Net45"), "Running unit tests for Net45");
 	Execute(() => RunUnitTests("Net46"), "Running unit tests for Net46");
-	//Execute(() => AnalyzeTestCoverage("Net40"), "Analysing test coverage for Net40");			
+		
 }
 
 private void RunUnitTests(string frameworkMoniker)
@@ -166,9 +167,10 @@ private void AnalyzeTestCoverage()
 
 private void AnalyzeTestCoverage(string frameworkMoniker)
 {	
-	string pathToTestAdapter = ResolveDirectory("../../packages/", "xunit.runner.visualstudio.testadapter.dll");
-	string pathToTestAssembly = Path.Combine(pathToBuildDirectory, frameworkMoniker + @"/Binary/LightInject.xUnit2.Tests/bin/Release/LightInject.xUnit2.Tests.dll");
-	MsTest.RunWithCodeCoverage(pathToTestAssembly, pathToTestAdapter, "LightInject.xUnit2.dll");
+    string pathToTestAssembly = Path.Combine(pathToBuildDirectory, frameworkMoniker + @"/Binary/LightInject.xUnit2.Tests/bin/Release/LightInject.xUnit2.Tests.dll");
+	string pathToPackagesFolder = Path.Combine(pathToBuildDirectory, frameworkMoniker, @"Binary/packages/");
+    string pathToTestAdapterDirectory = ResolveDirectory(pathToPackagesFolder, "xunit.runner.visualstudio.testadapter.dll");		
+    MsTest.RunWithCodeCoverage(pathToTestAssembly, pathToPackagesFolder,pathToTestAdapterDirectory, "LightInject.xUnit2.dll");
 }
 
 private void InitializBuildDirectories()

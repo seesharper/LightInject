@@ -163,19 +163,43 @@ namespace LightInject.xUnit2.Tests
         [Theory, Scoped, InjectData]
         public void MethodWithScopedArgument(IFoo foo)
         {
-            Assert.NotNull(foo);
+            Assert.IsType<DisposableFoo>(foo);
         }
 
         [Theory, Scoped, InjectData]
         public void MethodWithTwoScopedArguments(IFoo foo, IBar bar)
         {
-            Assert.NotNull(foo);
+            Assert.IsType<DisposableFoo>(foo);
+            Assert.IsType<Bar>(bar);
         }
 
         internal static void Configure(IServiceContainer container)
         {
             container.Register<IFoo, DisposableFoo>(new PerScopeLifetime());
             container.Register<IBar, Bar>(new PerScopeLifetime());
+        }
+    }
+
+    public class XunitTestsWithMissingDependencies
+    {
+        public void MethodWithMissingDependency(IFoo foo)
+        {
+            
+        }
+
+        [Fact]
+        public void MissingDependencyThrowsException()
+        {
+            var attribute = new InjectDataAttribute();
+            var method = typeof(XunitTestsWithMissingDependencies).GetMethod("MethodWithMissingDependency");
+
+            Assert.Throws<InvalidOperationException>(() => attribute.GetData(method));
+        }
+
+
+        public static void Configure(IServiceContainer container)
+        {
+            container.Register<IFoo, FooWithDependency>();
         }
     }
 
@@ -192,4 +216,6 @@ namespace LightInject.xUnit2.Tests
             return first + second;
         }
     }
+
+    
 }

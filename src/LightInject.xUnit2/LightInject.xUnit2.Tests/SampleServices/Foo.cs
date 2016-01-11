@@ -4,6 +4,7 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
+    using System.Diagnostics;
     using System.Threading.Tasks;
 
     public interface IFooWithProperty
@@ -69,7 +70,7 @@ namespace LightInject.SampleLibrary
         public static int Instances { get; set; }
         
         public Foo()
-        {
+        {           
             Instances++;
         }
     }
