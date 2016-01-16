@@ -25,6 +25,7 @@
     http://seesharper.github.io/LightInject/
     http://twitter.com/bernhardrichter    
 ******************************************************************************/
+
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
@@ -38,6 +39,7 @@ namespace LightInject
     using System.Reflection;
     using System.Web.Mvc;
     using LightInject.Mvc;
+	
 
     /// <summary>
     /// Extends the <see cref="IServiceContainer"/> interface with a method that 
@@ -81,6 +83,9 @@ namespace LightInject
             ((ServiceContainer)serviceContainer).EnablePerWebRequestScope();
             SetDependencyResolver(serviceContainer);
             InitializeFilterAttributeProvider(serviceContainer);
+
+			ModelValidatorProviders.Providers.Remove(ModelValidatorProviders.Providers.OfType<DataAnnotationsModelValidatorProvider>().First());
+			ModelValidatorProviders.Providers.Add(new LightInjectModelValidatorProvider(serviceContainer));
         }
 
         private static void SetDependencyResolver(IServiceContainer serviceContainer)
@@ -113,6 +118,7 @@ namespace LightInject.Mvc
     using System.Collections.Generic;
     using System.Linq;
     using System.Web.Mvc;
+	using System.Reflection;
     
     /// <summary>
     /// An <see cref="IDependencyResolver"/> adapter for the LightInject service container.
@@ -193,5 +199,49 @@ namespace LightInject.Mvc
 
             return filters;
         }                
+    }
+
+	/// <summary>
+	/// A Model Validator Provider for Light Inject
+	/// </summary>
+	internal class LightInjectModelValidatorProvider: DataAnnotationsModelValidatorProvider
+	{
+		/// <summary>
+		/// An Instance of a service container
+		/// </summary>
+		private readonly IServiceContainer _serviceContainer;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="LightInjectModelValidatorProvider"/> class.
+        /// </summary>
+		internal LightInjectModelValidatorProvider(IServiceContainer serviceContainer)
+        {
+	        _serviceContainer = serviceContainer;
+        }
+
+        /// <summary>
+        /// Gets a list of validators.
+        /// </summary>
+        /// <param name="metadata">The metadata.</param>
+        /// <param name="context">The context.</param>
+        /// <param name="attributes">The list of validation attributes.</param>
+        /// <returns>A list of validators.</returns>
+        protected override IEnumerable<ModelValidator> GetValidators(ModelMetadata metadata, ControllerContext context, IEnumerable<Attribute> attributes)
+        {
+			var attributeMethodInfo =
+				typeof(DataAnnotationsModelValidator).GetMethod("get_Attribute", BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Instance);
+			
+            var validators = base.GetValidators(metadata, context, attributes).ToList();
+            foreach (var modelValidator in validators.OfType<DataAnnotationsModelValidator>())
+            {
+	            var attribute = attributeMethodInfo.Invoke(modelValidator, new object[0]);
+
+				if (attribute.GetType().GetConstructors().Any(x => !x.GetParameters().Any()))
+				{
+					_serviceContainer.InjectProperties(attribute);
+				}
+            }
+            return validators;
+        }
     }
 }
