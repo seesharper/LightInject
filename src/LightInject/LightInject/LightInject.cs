@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.4
+    LightInject version 4.0.5
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -32,6 +32,9 @@
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "All public members are documented.")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("MaintainabilityRules", "SA1403", Justification = "One source file")]
+[module: System.Diagnostics.CodeAnalysis.SuppressMessage("DocumentationRules", "SA1649", Justification = "One source file")]
+
 namespace LightInject
 {
     using System;
@@ -1271,390 +1274,6 @@ namespace LightInject
         }
     }
 
-    internal static class LazyTypeExtensions
-    {
-        private static readonly ThreadSafeDictionary<Type, ConstructorInfo> Constructors = new ThreadSafeDictionary<Type, ConstructorInfo>();
-
-        public static ConstructorInfo GetLazyConstructor(this Type type)
-        {
-            return Constructors.GetOrAdd(type, GetConstructor);
-        }
-
-        private static ConstructorInfo GetConstructor(Type type)
-        {
-            Type closedGenericLazyType = typeof(Lazy<>).MakeGenericType(type);
-            return closedGenericLazyType.GetTypeInfo().DeclaredConstructors.Where(c => c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == type.GetFuncType()).Single();
-        }
-    }
-
-    internal static class EnumerableTypeExtensions
-    {
-        private static readonly ThreadSafeDictionary<Type, Type> EnumerableTypes = new ThreadSafeDictionary<Type, Type>();
-
-        public static Type GetEnumerableType(this Type returnType)
-        {
-            return EnumerableTypes.GetOrAdd(returnType, CreateEnumerableType);
-        }
-
-        private static Type CreateEnumerableType(Type type)
-        {
-            return typeof(IEnumerable<>).MakeGenericType(type);
-        }
-    }
-
-    internal static class FuncTypeExtensions
-    {
-        private static readonly ThreadSafeDictionary<Type, Type> FuncTypes = new ThreadSafeDictionary<Type, Type>();
-
-        public static Type GetFuncType(this Type returnType)
-        {
-            return FuncTypes.GetOrAdd(returnType, CreateFuncType);
-        }
-
-        private static Type CreateFuncType(Type type)
-        {
-            return typeof(Func<>).MakeGenericType(type);
-        }
-    }
-
-    internal static class LifetimeHelper
-    {
-        static LifetimeHelper()
-        {
-            GetInstanceMethod = typeof(ILifetime).GetTypeInfo().GetDeclaredMethod("GetInstance");
-            GetCurrentScopeMethod = typeof(ScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
-            GetScopeManagerMethod = typeof(IScopeManagerProvider).GetTypeInfo().GetDeclaredMethod("GetScopeManager");
-        }
-
-        public static MethodInfo GetInstanceMethod { get; private set; }
-
-        public static MethodInfo GetCurrentScopeMethod { get; private set; }
-
-        public static MethodInfo GetScopeManagerMethod { get; private set; }
-    }
-
-    internal static class DelegateTypeExtensions
-    {
-        private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
-            typeof(IServiceFactory).GetTypeInfo().DeclaredMethods.Where(m => m.Name == "GetInstance" & m.GetParameters().Length == 0).Single();
-
-        private static readonly ThreadSafeDictionary<Type, MethodInfo> GetInstanceMethods =
-            new ThreadSafeDictionary<Type, MethodInfo>();
-
-        public static Delegate CreateGetInstanceDelegate(this Type serviceType, IServiceFactory serviceFactory)
-        {
-            Type delegateType = serviceType.GetFuncType();
-            MethodInfo getInstanceMethod = GetInstanceMethods.GetOrAdd(serviceType, CreateGetInstanceMethod);
-            return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
-        }
-
-        private static MethodInfo CreateGetInstanceMethod(Type type)
-        {
-            return OpenGenericGetInstanceMethodInfo.MakeGenericMethod(type);
-        }
-    }
-
-    internal static class NamedDelegateTypeExtensions
-    {
-        private static readonly MethodInfo CreateInstanceDelegateMethodInfo =
-            typeof(NamedDelegateTypeExtensions).GetTypeInfo().GetDeclaredMethod("CreateInstanceDelegate");
-
-        private static readonly ThreadSafeDictionary<Type, MethodInfo> CreateInstanceDelegateMethods =
-            new ThreadSafeDictionary<Type, MethodInfo>();
-
-        public static Delegate CreateNamedGetInstanceDelegate(this Type serviceType, string serviceName, IServiceFactory factory)
-        {
-            MethodInfo createInstanceDelegateMethodInfo = CreateInstanceDelegateMethods.GetOrAdd(
-                serviceType,
-                CreateClosedGenericCreateInstanceDelegateMethod);
-
-            return (Delegate)createInstanceDelegateMethodInfo.Invoke(null, new object[] { factory, serviceName });
-        }
-
-        private static MethodInfo CreateClosedGenericCreateInstanceDelegateMethod(Type type)
-        {
-            return CreateInstanceDelegateMethodInfo.MakeGenericMethod(type);
-        }
-
-        // ReSharper disable UnusedMember.Local
-        private static Func<TService> CreateInstanceDelegate<TService>(IServiceFactory factory, string serviceName)
-
-        // ReSharper restore UnusedMember.Local
-        {
-            return () => factory.GetInstance<TService>(serviceName);
-        }
-    }
-
-    internal static class ReflectionHelper
-    {
-        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceWithParametersMethods;
-
-        static ReflectionHelper()
-        {
-            GetInstanceWithParametersMethods = CreateLazyGetInstanceWithParametersMethods();
-        }
-
-        public static MethodInfo GetGetInstanceWithParametersMethod(Type serviceType)
-        {
-            return GetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateGetInstanceWithParametersMethod);
-        }
-
-        public static Delegate CreateGetNamedInstanceWithParametersDelegate(IServiceFactory factory, Type delegateType, string serviceName)
-        {
-            Type[] genericTypeArguments = delegateType.GetTypeInfo().GenericTypeArguments;
-            var openGenericMethod =
-                typeof(ReflectionHelper).GetTypeInfo().DeclaredMethods
-                    .Single(
-                        m =>
-                        m.GetGenericArguments().Length == genericTypeArguments.Length
-                        && m.Name == "CreateGenericGetNamedParameterizedInstanceDelegate");
-            var closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
-            return (Delegate)closedGenericMethod.Invoke(null, new object[] { factory, serviceName });
-        }
-
-        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetInstanceWithParametersMethods()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
-                () => new ThreadSafeDictionary<Type, MethodInfo>());
-        }
-
-        private static MethodInfo CreateGetInstanceWithParametersMethod(Type serviceType)
-        {
-            Type[] genericTypeArguments = serviceType.GetTypeInfo().GenericTypeArguments;
-            MethodInfo openGenericMethod =
-                typeof(IServiceFactory).GetTypeInfo().DeclaredMethods.Single(m => m.Name == "GetInstance"
-                    && m.GetGenericArguments().Length == genericTypeArguments.Length && m.GetParameters().All(p => p.Name != "serviceName"));
-
-            MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
-
-            return closedGenericMethod;
-        }
-
-        // ReSharper disable UnusedMember.Local
-        private static Func<TArg, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg, TService>(IServiceFactory factory, string serviceName)
-
-        // ReSharper restore UnusedMember.Local
-        {
-            return arg => factory.GetInstance<TArg, TService>(arg, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
-        private static Func<TArg1, TArg2, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TService>(IServiceFactory factory, string serviceName)
-
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
-        private static Func<TArg1, TArg2, TArg3, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TService>(IServiceFactory factory, string serviceName)
-
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
-        private static Func<TArg1, TArg2, TArg3, TArg4, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TArg4, TService>(IServiceFactory factory, string serviceName)
-
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
-        }
-    }
-
-    /// <summary>
-    /// Contains a set of extension method that represents
-    /// a compability layer for reflection methods.
-    /// </summary>
-    internal static class TypeHelper
-    {
-#if NET40 || NET45 || DNX451 || NET46
-
-        /// <summary>
-        /// Gets the method represented by the delegate.
-        /// </summary>
-        /// <param name="del">The target <see cref="Delegate"/>.</param>
-        /// <returns>The method represented by the delegate.</returns>
-        public static MethodInfo GetMethodInfo(this Delegate del)
-        {
-            return del.Method;
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the private method.</param>
-        /// <returns>A <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.</returns>
-        public static MethodInfo GetPrivateMethod(this Type type, string name)
-        {
-            return type.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the private method.</param>
-        /// <returns>A <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.</returns>
-        public static MethodInfo GetPrivateStaticMethod(this Type type, string name)
-        {
-            return type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic);
-        }
-
-        /// <summary>
-        /// Gets an array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>An array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.</returns>
-        public static MethodInfo[] GetPrivateStaticMethods(this Type type)
-        {
-            return type.GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
-        }
-
-        /// <summary>
-        /// Gets the custom attributes for this <paramref name="assembly"/>.
-        /// </summary>
-        /// <param name="assembly">The target <see cref="Assembly"/>.</param>
-        /// <param name="attributeType">The type of <see cref="Attribute"/> objects to return.</param>
-        /// <returns></returns>
-        public static IEnumerable<Attribute> GetCustomAttributes(this Assembly assembly, Type attributeType)
-        {
-            return assembly.GetCustomAttributes(attributeType, false).Cast<Attribute>();
-        }
-#endif
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IEnumerable{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IEnumerable{T}"/>; otherwise, false.</returns>
-        public static bool IsEnumerableOfT(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IEnumerable<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IList{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IList{T}"/>; otherwise, false.</returns>
-        public static bool IsListOfT(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IList<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="ICollection{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="ICollection{T}"/>; otherwise, false.</returns>
-        public static bool IsCollectionOfT(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(ICollection<>);
-        }
-#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/>; otherwise, false.</returns>
-        public static bool IsReadOnlyCollectionOfT(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyList{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IReadOnlyList{T}"/>; otherwise, false.</returns>
-        public static bool IsReadOnlyListOfT(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
-        }
-#endif
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Lazy{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="Lazy{T}"/>; otherwise, false.</returns>
-        public static bool IsLazy(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(Lazy<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Func{T1}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="Func{T1}"/>; otherwise, false.</returns>
-        public static bool IsFunc(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(Func<>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Func{T1, TResult}"/>,
-        /// <see cref="Func{T1,T2,TResult}"/>, <see cref="Func{T1,T2,T3, TResult}"/> or an <see cref="Func{T1,T2,T3,T4 ,TResult}"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="Func{T1, TResult}"/>, <see cref="Func{T1,T2,TResult}"/>, <see cref="Func{T1,T2,T3, TResult}"/> or an <see cref="Func{T1,T2,T3,T4 ,TResult}"/>; otherwise, false.</returns>
-        public static bool IsFuncWithParameters(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            if (!typeInfo.IsGenericType)
-            {
-                return false;
-            }
-
-            Type genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
-
-            return genericTypeDefinition == typeof(Func<,>) || genericTypeDefinition == typeof(Func<,,>)
-                || genericTypeDefinition == typeof(Func<,,,>) || genericTypeDefinition == typeof(Func<,,,,>);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is a closed generic type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is a closed generic type; otherwise, false.</returns>
-        public static bool IsClosedGeneric(this Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericType && !typeInfo.IsGenericTypeDefinition;
-        }
-
-        /// <summary>
-        /// Returns the <see cref="Type"/> of the object encompassed or referred to by the current array, pointer or reference type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>The <see cref="Type"/> of the object encompassed or referred to by the current array, pointer, or reference type,
-        /// or null if the current Type is not an array or a pointer, or is not passed by reference,
-        /// or represents a generic type or a type parameter in the definition of a generic type or generic method.</returns>
-        public static Type GetElementType(Type type)
-        {
-            var typeInfo = type.GetTypeInfo();
-            var genericTypeArguments = typeInfo.GenericTypeArguments;
-            if (typeInfo.IsGenericType && genericTypeArguments.Length == 1)
-            {
-                return genericTypeArguments[0];
-            }
-
-            return type.GetElementType();
-        }
-    }
-
     /// <summary>
     /// Extends the <see cref="IEmitter"/> interface with a set of methods
     /// that optimizes and simplifies emitting MSIL instructions.
@@ -1975,7 +1594,7 @@ namespace LightInject
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
-    public class ServiceContainer : IServiceContainer, ICloneable
+    public class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
@@ -2007,8 +1626,6 @@ namespace LightInject
 
         private bool isLocked;
         private Type defaultLifetimeType;
-
-        private ILifetime DefaultLifetime => (ILifetime)(defaultLifetimeType != null ? Activator.CreateInstance(defaultLifetimeType) : null);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
@@ -2119,6 +1736,8 @@ namespace LightInject
                 return availableServices.Values.SelectMany(t => t.Values);
             }
         }
+
+        private ILifetime DefaultLifetime => (ILifetime)(defaultLifetimeType != null ? Activator.CreateInstance(defaultLifetimeType) : null);
 
         /// <summary>
         /// Returns <b>true</b> if the container can create the requested service, otherwise <b>false</b>.
@@ -3095,7 +2714,7 @@ namespace LightInject
         /// Creates a clone of the current <see cref="ServiceContainer"/>.
         /// </summary>
         /// <returns>A new <see cref="ServiceContainer"/> instance.</returns>
-        public object Clone()
+        public ServiceContainer Clone()
         {
             return new ServiceContainer(
                 options,
@@ -3186,7 +2805,14 @@ namespace LightInject
             }
         }
 
-        private void EmitEnumerable(IList<Action<IEmitter>> serviceEmitters, Type elementType, IEmitter emitter)
+        private static void PushRuntimeArguments(IEmitter emitter)
+        {
+            MethodInfo loadMethod = typeof(RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("Load");
+            emitter.Emit(OpCodes.Ldarg_0);
+            emitter.Emit(OpCodes.Call, loadMethod);
+        }
+
+        private static void EmitEnumerable(IList<Action<IEmitter>> serviceEmitters, Type elementType, IEmitter emitter)
         {
             EmitNewArray(serviceEmitters, elementType, emitter);
         }
@@ -3716,13 +3342,6 @@ namespace LightInject
             }
 
             emitter.Call(invokeMethod);
-        }
-
-        private static void PushRuntimeArguments(IEmitter emitter)
-        {
-            MethodInfo loadMethod = typeof(RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("Load");
-            emitter.Emit(OpCodes.Ldarg_0);
-            emitter.Emit(OpCodes.Call, loadMethod);
         }
 
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IEmitter emitter)
@@ -5320,7 +4939,6 @@ namespace LightInject
         /// </summary>
         public int LocalIndex { get; private set; }
     }
-
 #endif
 
     /// <summary>
@@ -7507,4 +7125,388 @@ namespace LightInject
         }
     }
 #endif
+
+    internal static class LifetimeHelper
+    {
+        static LifetimeHelper()
+        {
+            GetInstanceMethod = typeof(ILifetime).GetTypeInfo().GetDeclaredMethod("GetInstance");
+            GetCurrentScopeMethod = typeof(ScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
+            GetScopeManagerMethod = typeof(IScopeManagerProvider).GetTypeInfo().GetDeclaredMethod("GetScopeManager");
+        }
+
+        public static MethodInfo GetInstanceMethod { get; private set; }
+
+        public static MethodInfo GetCurrentScopeMethod { get; private set; }
+
+        public static MethodInfo GetScopeManagerMethod { get; private set; }
+    }
+
+    internal static class DelegateTypeExtensions
+    {
+        private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
+            typeof(IServiceFactory).GetTypeInfo().DeclaredMethods.Where(m => m.Name == "GetInstance" & m.GetParameters().Length == 0).Single();
+
+        private static readonly ThreadSafeDictionary<Type, MethodInfo> GetInstanceMethods =
+            new ThreadSafeDictionary<Type, MethodInfo>();
+
+        public static Delegate CreateGetInstanceDelegate(this Type serviceType, IServiceFactory serviceFactory)
+        {
+            Type delegateType = serviceType.GetFuncType();
+            MethodInfo getInstanceMethod = GetInstanceMethods.GetOrAdd(serviceType, CreateGetInstanceMethod);
+            return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
+        }
+
+        private static MethodInfo CreateGetInstanceMethod(Type type)
+        {
+            return OpenGenericGetInstanceMethodInfo.MakeGenericMethod(type);
+        }
+    }
+
+    internal static class NamedDelegateTypeExtensions
+    {
+        private static readonly MethodInfo CreateInstanceDelegateMethodInfo =
+            typeof(NamedDelegateTypeExtensions).GetTypeInfo().GetDeclaredMethod("CreateInstanceDelegate");
+
+        private static readonly ThreadSafeDictionary<Type, MethodInfo> CreateInstanceDelegateMethods =
+            new ThreadSafeDictionary<Type, MethodInfo>();
+
+        public static Delegate CreateNamedGetInstanceDelegate(this Type serviceType, string serviceName, IServiceFactory factory)
+        {
+            MethodInfo createInstanceDelegateMethodInfo = CreateInstanceDelegateMethods.GetOrAdd(
+                serviceType,
+                CreateClosedGenericCreateInstanceDelegateMethod);
+
+            return (Delegate)createInstanceDelegateMethodInfo.Invoke(null, new object[] { factory, serviceName });
+        }
+
+        private static MethodInfo CreateClosedGenericCreateInstanceDelegateMethod(Type type)
+        {
+            return CreateInstanceDelegateMethodInfo.MakeGenericMethod(type);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TService> CreateInstanceDelegate<TService>(IServiceFactory factory, string serviceName)
+
+        // ReSharper restore UnusedMember.Local
+        {
+            return () => factory.GetInstance<TService>(serviceName);
+        }
+    }
+
+    internal static class ReflectionHelper
+    {
+        private static readonly Lazy<ThreadSafeDictionary<Type, MethodInfo>> GetInstanceWithParametersMethods;
+
+        static ReflectionHelper()
+        {
+            GetInstanceWithParametersMethods = CreateLazyGetInstanceWithParametersMethods();
+        }
+
+        public static MethodInfo GetGetInstanceWithParametersMethod(Type serviceType)
+        {
+            return GetInstanceWithParametersMethods.Value.GetOrAdd(serviceType, CreateGetInstanceWithParametersMethod);
+        }
+
+        public static Delegate CreateGetNamedInstanceWithParametersDelegate(IServiceFactory factory, Type delegateType, string serviceName)
+        {
+            Type[] genericTypeArguments = delegateType.GetTypeInfo().GenericTypeArguments;
+            var openGenericMethod =
+                typeof(ReflectionHelper).GetTypeInfo().DeclaredMethods
+                    .Single(
+                        m =>
+                        m.GetGenericArguments().Length == genericTypeArguments.Length
+                        && m.Name == "CreateGenericGetNamedParameterizedInstanceDelegate");
+            var closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
+            return (Delegate)closedGenericMethod.Invoke(null, new object[] { factory, serviceName });
+        }
+
+        private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetInstanceWithParametersMethods()
+        {
+            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
+                () => new ThreadSafeDictionary<Type, MethodInfo>());
+        }
+
+        private static MethodInfo CreateGetInstanceWithParametersMethod(Type serviceType)
+        {
+            Type[] genericTypeArguments = serviceType.GetTypeInfo().GenericTypeArguments;
+            MethodInfo openGenericMethod =
+                typeof(IServiceFactory).GetTypeInfo().DeclaredMethods.Single(m => m.Name == "GetInstance"
+                    && m.GetGenericArguments().Length == genericTypeArguments.Length && m.GetParameters().All(p => p.Name != "serviceName"));
+
+            MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
+
+            return closedGenericMethod;
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TArg, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg, TService>(IServiceFactory factory, string serviceName)
+
+        // ReSharper restore UnusedMember.Local
+        {
+            return arg => factory.GetInstance<TArg, TService>(arg, serviceName);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TArg1, TArg2, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TService>(IServiceFactory factory, string serviceName)
+
+        // ReSharper restore UnusedMember.Local
+        {
+            return (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TArg1, TArg2, TArg3, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TService>(IServiceFactory factory, string serviceName)
+
+        // ReSharper restore UnusedMember.Local
+        {
+            return (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
+        }
+
+        // ReSharper disable UnusedMember.Local
+        private static Func<TArg1, TArg2, TArg3, TArg4, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TArg4, TService>(IServiceFactory factory, string serviceName)
+
+        // ReSharper restore UnusedMember.Local
+        {
+            return (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
+        }
+    }
+
+    /// <summary>
+    /// Contains a set of extension method that represents
+    /// a compability layer for reflection methods.
+    /// </summary>
+    internal static class TypeHelper
+    {
+#if NET40 || NET45 || DNX451 || NET46
+
+        /// <summary>
+        /// Gets the method represented by the delegate.
+        /// </summary>
+        /// <param name="del">The target <see cref="Delegate"/>.</param>
+        /// <returns>The method represented by the delegate.</returns>
+        public static MethodInfo GetMethodInfo(this Delegate del)
+        {
+            return del.Method;
+        }
+
+        /// <summary>
+        /// Gets a <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <param name="name">The name of the private method.</param>
+        /// <returns>A <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.</returns>
+        public static MethodInfo GetPrivateMethod(this Type type, string name)
+        {
+            return type.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <param name="name">The name of the private method.</param>
+        /// <returns>A <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.</returns>
+        public static MethodInfo GetPrivateStaticMethod(this Type type, string name)
+        {
+            return type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic);
+        }
+
+        /// <summary>
+        /// Gets an array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>An array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.</returns>
+        public static MethodInfo[] GetPrivateStaticMethods(this Type type)
+        {
+            return type.GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
+        }
+
+        /// <summary>
+        /// Gets the custom attributes for this <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The target <see cref="Assembly"/>.</param>
+        /// <param name="attributeType">The type of <see cref="Attribute"/> objects to return.</param>
+        /// <returns>The custom attributes for this <paramref name="assembly"/>.</returns>
+        public static IEnumerable<Attribute> GetCustomAttributes(this Assembly assembly, Type attributeType)
+        {
+            return assembly.GetCustomAttributes(attributeType, false).Cast<Attribute>();
+        }
+#endif
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IEnumerable{T}"/> type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is an <see cref="IEnumerable{T}"/>; otherwise, false.</returns>
+        public static bool IsEnumerableOfT(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IEnumerable<>);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IList{T}"/> type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is an <see cref="IList{T}"/>; otherwise, false.</returns>
+        public static bool IsListOfT(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IList<>);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="ICollection{T}"/> type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is an <see cref="ICollection{T}"/>; otherwise, false.</returns>
+        public static bool IsCollectionOfT(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(ICollection<>);
+        }
+#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/> type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/>; otherwise, false.</returns>
+        public static bool IsReadOnlyCollectionOfT(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyList{T}"/> type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is an <see cref="IReadOnlyList{T}"/>; otherwise, false.</returns>
+        public static bool IsReadOnlyListOfT(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
+        }
+#endif
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Lazy{T}"/> type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is an <see cref="Lazy{T}"/>; otherwise, false.</returns>
+        public static bool IsLazy(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(Lazy<>);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Func{T1}"/> type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is an <see cref="Func{T1}"/>; otherwise, false.</returns>
+        public static bool IsFunc(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(Func<>);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Func{T1, TResult}"/>,
+        /// <see cref="Func{T1,T2,TResult}"/>, <see cref="Func{T1,T2,T3, TResult}"/> or an <see cref="Func{T1,T2,T3,T4 ,TResult}"/>.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is an <see cref="Func{T1, TResult}"/>, <see cref="Func{T1,T2,TResult}"/>, <see cref="Func{T1,T2,T3, TResult}"/> or an <see cref="Func{T1,T2,T3,T4 ,TResult}"/>; otherwise, false.</returns>
+        public static bool IsFuncWithParameters(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            if (!typeInfo.IsGenericType)
+            {
+                return false;
+            }
+
+            Type genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
+
+            return genericTypeDefinition == typeof(Func<,>) || genericTypeDefinition == typeof(Func<,,>)
+                || genericTypeDefinition == typeof(Func<,,,>) || genericTypeDefinition == typeof(Func<,,,,>);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="Type"/> is a closed generic type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>true if the <see cref="Type"/> is a closed generic type; otherwise, false.</returns>
+        public static bool IsClosedGeneric(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericType && !typeInfo.IsGenericTypeDefinition;
+        }
+
+        /// <summary>
+        /// Returns the <see cref="Type"/> of the object encompassed or referred to by the current array, pointer or reference type.
+        /// </summary>
+        /// <param name="type">The target <see cref="Type"/>.</param>
+        /// <returns>The <see cref="Type"/> of the object encompassed or referred to by the current array, pointer, or reference type,
+        /// or null if the current Type is not an array or a pointer, or is not passed by reference,
+        /// or represents a generic type or a type parameter in the definition of a generic type or generic method.</returns>
+        public static Type GetElementType(Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            var genericTypeArguments = typeInfo.GenericTypeArguments;
+            if (typeInfo.IsGenericType && genericTypeArguments.Length == 1)
+            {
+                return genericTypeArguments[0];
+            }
+
+            return type.GetElementType();
+        }
+    }
+
+    internal static class LazyTypeExtensions
+    {
+        private static readonly ThreadSafeDictionary<Type, ConstructorInfo> Constructors = new ThreadSafeDictionary<Type, ConstructorInfo>();
+
+        public static ConstructorInfo GetLazyConstructor(this Type type)
+        {
+            return Constructors.GetOrAdd(type, GetConstructor);
+        }
+
+        private static ConstructorInfo GetConstructor(Type type)
+        {
+            Type closedGenericLazyType = typeof(Lazy<>).MakeGenericType(type);
+            return closedGenericLazyType.GetTypeInfo().DeclaredConstructors.Where(c => c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == type.GetFuncType()).Single();
+        }
+    }
+
+    internal static class EnumerableTypeExtensions
+    {
+        private static readonly ThreadSafeDictionary<Type, Type> EnumerableTypes = new ThreadSafeDictionary<Type, Type>();
+
+        public static Type GetEnumerableType(this Type returnType)
+        {
+            return EnumerableTypes.GetOrAdd(returnType, CreateEnumerableType);
+        }
+
+        private static Type CreateEnumerableType(Type type)
+        {
+            return typeof(IEnumerable<>).MakeGenericType(type);
+        }
+    }
+
+    internal static class FuncTypeExtensions
+    {
+        private static readonly ThreadSafeDictionary<Type, Type> FuncTypes = new ThreadSafeDictionary<Type, Type>();
+
+        public static Type GetFuncType(this Type returnType)
+        {
+            return FuncTypes.GetOrAdd(returnType, CreateFuncType);
+        }
+
+        private static Type CreateFuncType(Type type)
+        {
+            return typeof(Func<>).MakeGenericType(type);
+        }
+    }
 }

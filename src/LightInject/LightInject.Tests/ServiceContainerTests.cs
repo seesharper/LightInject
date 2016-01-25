@@ -1677,6 +1677,15 @@ namespace LightInject.Tests
             Assert.Same(bar1, bar2);
         }
 
+        [Fact]
+        public void ShouldBeAbleToCloneContainer()
+        {
+            var container = new ServiceContainer();
+            var clonedContainer = container.Clone();
+            Assert.IsType<ServiceContainer>(clonedContainer);
+        }
+
+
         #region Internal Classes
 
         [Fact]
