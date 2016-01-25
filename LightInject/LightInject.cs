@@ -6781,7 +6781,7 @@ namespace LightInject
         {
             if (scope == null)
             {
-                throw new InvalidOperationException("Attempt to create a disposable instance without a current scope.");
+                throw new InvalidOperationException("Attempt to create a disposable instance without a current scope. Put your GetInstance call in a 'using (var scope = container.BeginScope())' { ... } block.");
             }
 
             scope.TrackInstance(disposable);
@@ -7371,9 +7371,19 @@ namespace LightInject
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');
-                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
+                foreach (string pattern in searchPatterns)
                 {
-                    yield return Assembly.LoadFrom(file);
+                    if(File.Exists(pattern))
+                    {
+                        yield return Assembly.LoadFrom(pattern);
+                    }
+                    else
+                    {
+                        foreach(string file in searchPattern.SelectMany(sp => Directory.GetFiles(directory, pattern)).Where(CanLoad))
+                        {
+                            yield return Assembly.LoadFrom(file);
+                        }
+                    }
                 }
             }
         }

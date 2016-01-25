@@ -224,6 +224,7 @@
             mockContext.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue), Invoked.Once);
         }
 #if NET || NET45
+
         [TestMethod]
         public void Register_SearchPattern_CallsAssemblyScanner()
         {
@@ -232,6 +233,17 @@
             var serviceContainer = new ServiceContainer();
             serviceContainer.AssemblyScanner = scannerMock;
             serviceContainer.RegisterAssembly("LightInject.SampleLibrary.dll");
+            mockContext.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue), Invoked.Once);
+        }
+
+        [TestMethod]
+        public void Register_SearchPattern_CallsAssemblyScanner_FromFullPath()
+        {
+            var mockContext = new MockContext<IAssemblyScanner>();
+            var scannerMock = new AssemblyScannerMock(mockContext);            
+            var serviceContainer = new ServiceContainer();
+            serviceContainer.AssemblyScanner = scannerMock;
+            serviceContainer.RegisterAssembly(Environment.CurrentDirectory + "\\LightInject.SampleLibrary.dll");
             mockContext.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue), Invoked.Once);
         }
 #endif
