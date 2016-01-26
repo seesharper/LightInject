@@ -14,7 +14,7 @@ namespace LightInject.Tests
     using LightInject;
     using LightInject.SampleLibrary;
     using Xunit;
-
+    using Xunit.Sdk;
     using Foo = LightInject.SampleLibrary.Foo;
     using IFoo = LightInject.SampleLibrary.IFoo;
     using IBar = LightInject.SampleLibrary.IBar;
@@ -1120,7 +1120,7 @@ namespace LightInject.Tests
             }
         }
  
-        [Fact]
+        //[Fact]
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
         {
             var container = CreateContainer();
