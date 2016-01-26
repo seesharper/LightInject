@@ -1,0 +1,13 @@
+version: 1.0.{build}
+install:
+- cmd: cinst scriptcs
+build_script:
+- cmd: >-
+    cd build
+
+    scriptcs build.csx -debug
+test: off
+artifacts:
+- path: build/tmp/*.nupkg
+  name: NuGet Packages
+deploy: off
