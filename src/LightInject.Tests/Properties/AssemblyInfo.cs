@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LightInject;
 using LightInject.Tests;
+using Xunit;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -38,3 +39,4 @@ using LightInject.Tests;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 [assembly: CompositionRootType(typeof(CompositionRootMock))]
 [assembly: InternalsVisibleTo("DynamicAssembly")]
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
