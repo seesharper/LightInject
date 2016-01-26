@@ -1120,7 +1120,7 @@ namespace LightInject.Tests
             }
         }
  
-        //[Fact]
+        [Fact]
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
         {
             var container = CreateContainer();
