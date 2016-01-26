@@ -151,7 +151,7 @@ private void RunAllUnitTests()
 {	
 	DirectoryUtils.Delete("TestResults");
 	// Execute(() => RunUnitTests("Net45"), "Running unit tests for Net45");
-	Execute(() => RunUnitTests("Net46"), "Running unit tests for Net46");
+	// Execute(() => RunUnitTests("Net46"), "Running unit tests for Net46");
 		
 }
 
