@@ -388,5 +388,10 @@ namespace LightInject.Tests
         {
             throw new NotImplementedException();
         }
+
+        public IServiceContainer Clone()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

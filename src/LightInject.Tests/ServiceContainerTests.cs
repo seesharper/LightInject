@@ -1685,6 +1685,17 @@ namespace LightInject.Tests
             Assert.IsType<ServiceContainer>(clonedContainer);
         }
 
+        [Fact]
+        public void ClonedContainrterShouldReturnSingletonFromRootContainer()
+        {
+            var container = new ServiceContainer();
+            container.Register<IFoo,Foo>(new PerContainerLifetime());
+            var firstInstance = container.GetInstance<IFoo>();            
+            var clonedContainer = container.Clone();
+            var secondInstance = clonedContainer.GetInstance<IFoo>();
+            Assert.Same(firstInstance, secondInstance);
+        }
+
 
         #region Internal Classes
 

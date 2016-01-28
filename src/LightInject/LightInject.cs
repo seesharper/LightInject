@@ -743,6 +743,12 @@ namespace LightInject
         /// <param name="instance">The target instance for which to inject its property dependencies.</param>
         /// <returns>The <paramref name="instance"/> with its property dependencies injected.</returns>
         object InjectProperties(object instance);
+
+        /// <summary>
+        /// Creates a clone of the current <see cref="IServiceContainer"/>.
+        /// </summary>
+        /// <returns>A new <see cref="IServiceContainer"/> instance.</returns>
+        IServiceContainer Clone();
     }
 
     /// <summary>
@@ -1667,15 +1673,19 @@ namespace LightInject
           Storage<ServiceOverride> overrides,
           Storage<FactoryRule> factoryRules,
           Storage<Initializer> initializers)
+            : this(options)
         {
             this.options = options;
             this.constructorDependencyFactories = constructorDependencyFactories;
             this.propertyDependencyFactories = propertyDependencyFactories;
-            this.availableServices = availableServices;
             this.decorators = decorators;
             this.overrides = overrides;
             this.factoryRules = factoryRules;
             this.initializers = initializers;
+            foreach (var availableService in availableServices.Values.SelectMany(t => t.Values))
+            {
+                Register(availableService);
+            }
         }
 
         /// <summary>
@@ -2711,10 +2721,10 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Creates a clone of the current <see cref="ServiceContainer"/>.
+        /// Creates a clone of the current <see cref="IServiceContainer"/>.
         /// </summary>
-        /// <returns>A new <see cref="ServiceContainer"/> instance.</returns>
-        public ServiceContainer Clone()
+        /// <returns>A new <see cref="IServiceContainer"/> instance.</returns>
+        public IServiceContainer Clone()
         {
             return new ServiceContainer(
                 options,
