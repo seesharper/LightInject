@@ -25,7 +25,8 @@ namespace LightInject.Tests
     {
         public Task ComposeAsync(IServiceRegistry serviceRegistry)
         {
-            return ((IInvocationContext<IAsyncCompositionRoot>)this).Invoke(c => c.ComposeAsync(serviceRegistry));
+            ((IInvocationContext<IAsyncCompositionRoot>)this).Invoke(c => c.ComposeAsync(serviceRegistry));
+            return Task.CompletedTask;
         }
     }
 }

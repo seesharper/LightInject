@@ -14,7 +14,8 @@ namespace LightInject.Tests
 
         public Task ExecuteAsync(Type compositionRootType)
         {
-            return ((IInvocationContext<ICompositionRootExecutor>) this).Invoke(c => c.ExecuteAsync(compositionRootType));
+            ((IInvocationContext<ICompositionRootExecutor>) this).Invoke(c => c.ExecuteAsync(compositionRootType));
+            return Task.CompletedTask;
         }
     }
 }
