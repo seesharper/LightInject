@@ -47,7 +47,7 @@ private void CopySourceFilesToNuGetLibDirectory()
 	CopySourceFile("NET46", "net46");		
 	CopySourceFile("DNX451", "dnx451");		
 	CopySourceFile("DNXCORE50", "dnxcore50");	
-    CopySourceFile("PCL_111", "portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10");
+    CopySourceFile("PCL_111", "portable-net45+netcore45+wpa81");
 }
 
 private void CopyBinaryFilesToNuGetLibDirectory()
@@ -56,7 +56,9 @@ private void CopyBinaryFilesToNuGetLibDirectory()
 	CopyBinaryFile("NET46", "net46");	
 	CopyBinaryFile("DNX451", "dnx451");
 	CopyBinaryFile("DNXCORE50", "dnxcore50");
-    CopyBinaryFile("PCL_111", "portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10");		
+    CopyBinaryFile("PCL_111", "portable-net45+netcore45+wpa81");
+    
+   		
 }
 
 private void CreateSourcePackage()
@@ -152,7 +154,7 @@ private void RunAllUnitTests()
 	DirectoryUtils.Delete("TestResults");
 	Execute(() => RunUnitTests("Net45"), "Running unit tests for Net45");
 	Execute(() => RunUnitTests("Net46"), "Running unit tests for Net46");
-		
+	Execute(() => RunUnitTests("PCL_111"), "Running unit tests for PCL_111");	
 }
 
 private void RunUnitTests(string frameworkMoniker)
@@ -359,7 +361,7 @@ private void SetHintPath(string frameworkMoniker, string pathToProjectFile)
 {
 	if (frameworkMoniker == "PCL_111")
 	{
-		frameworkMoniker = "portable-net45+win81+wpa81+MonoAndroid10+MonoTouch10+Xamarin.iOS10";
+		frameworkMoniker = "portable-net45+netcore45+wpa81";
 	}
 	ReplaceInFile(@"(.*\\packages\\LightInject.*\\lib\\).*(\\.*)","$1"+ frameworkMoniker + "$2", pathToProjectFile);	
 }
