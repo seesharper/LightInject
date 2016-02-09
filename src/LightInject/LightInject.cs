@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.7
+    LightInject version 4.0.8
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -4762,7 +4762,7 @@ namespace LightInject
         {
             if (code == OpCodes.Ldc_I4_S)
             {
-                stack.Push(Expression.Constant(arg, typeof(sbyte)));
+                stack.Push(Expression.Constant((int)arg, typeof(int)));
             }
             else
             {
@@ -6842,14 +6842,14 @@ namespace LightInject
         {
             if (code == OpCodes.Ldc_I4_S)
             {
-                stack.Push(typeof(sbyte));
+                stack.Push(typeof(int));
             }
             else
             {
                 throw new NotSupportedException(code.ToString());
             }
 
-            instructions.Add(new Instruction<sbyte>(code, arg, il => il.Emit(code, arg)));
+            instructions.Add(new Instruction<int>(code, arg, il => il.Emit(code, arg)));
         }
 
         /// <summary>

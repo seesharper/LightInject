@@ -598,7 +598,7 @@ namespace LightInject.Tests
 
             emitter.Push(9);
 
-            Assert.Equal(typeof(sbyte), emitter.StackType);
+            Assert.Equal(typeof(int), emitter.StackType);
         }
 
         [Fact]
@@ -608,7 +608,7 @@ namespace LightInject.Tests
 
             emitter.Push(sbyte.MaxValue);
 
-            Assert.Equal(typeof(sbyte), emitter.StackType);
+            Assert.Equal(typeof(int), emitter.StackType);
         }
 
         [Fact]
@@ -628,7 +628,7 @@ namespace LightInject.Tests
 
             emitter.Push(sbyte.MinValue);
 
-            Assert.Equal(typeof(sbyte), emitter.StackType);
+            Assert.Equal(typeof(int), emitter.StackType);
         }
 
         [Fact]
@@ -684,7 +684,7 @@ namespace LightInject.Tests
             
             for (int i = 0; i < count; i++)
             {
-                localBuilders[i] = emitter.DeclareLocal(typeof(sbyte));
+                localBuilders[i] = emitter.DeclareLocal(typeof(int));
             }
 
             return localBuilders;
