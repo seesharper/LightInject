@@ -1,5 +1,11 @@
 # Issues #
 
-* Provide an example that demonstrates the problem that you are having. This could be a simple console application or a simple web application. It is often easier to find the actual problem if taken out of the context of a large application.
+Always provide the following information.
 
-* If it is impossible to re-create the problem in a simple application, please state the type of application and what version you are using of LightInject. In general provide so much information about the environment as possible.    
+* Version Information 
+* Platform
+* An example that shows the issue.
+
+If it is possible to re-create the issue in a console application, paste the entire code inside the issue.
+For more complicated issues, create a minimal repo here on GitHub that we can PR into when resolving the issue.
+
