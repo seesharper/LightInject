@@ -6169,7 +6169,12 @@ namespace LightInject
         /// <returns>A list of properties that represents a dependency to the target <paramref name="type"/></returns>
         public IEnumerable<PropertyInfo> Execute(Type type)
         {
-            return type.GetRuntimeProperties().Where(IsInjectable).ToList();
+#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
+            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+#else
+            var properties = type.GetRuntimeProperties();
+#endif
+            return properties.Where(IsInjectable).ToList();
         }
 
         /// <summary>
