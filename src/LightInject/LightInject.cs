@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.8
+    LightInject version 4.0.9
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -1145,7 +1145,7 @@ namespace LightInject
         /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
         public static TValue Search<TValue>(this ImmutableHashTable<Type, TValue> hashTable, Type key)
         {
-            var hashCode = RuntimeHelpers.GetHashCode(key);
+            var hashCode = key.GetHashCode();
             var bucketIndex = hashCode & (hashTable.Divisor - 1);
             ImmutableHashTree<Type, TValue> tree = hashTable.Buckets[bucketIndex];
             return tree.Search(key);
