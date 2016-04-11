@@ -1,3 +1,0 @@
-### Version
-
-### Application Type
