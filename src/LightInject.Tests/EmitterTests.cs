@@ -2,7 +2,7 @@ namespace LightInject.Tests
 {
     using System;
     using System.Reflection;
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
+#if NET40 || NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
     using System.Reflection.Emit;
 #endif
 
@@ -493,7 +493,7 @@ namespace LightInject.Tests
             Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));            
         }
 
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
+#if NET40 || NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
         [Fact]        
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {
@@ -665,7 +665,7 @@ namespace LightInject.Tests
             Assert.Equal("ldarg 1", instruction.ToString(), StringComparer.InvariantCultureIgnoreCase);
         }
       
-#if NET40 || NET45 || NET46 || DNX451 || DNXCORE50
+#if NET40 || NET45 || NET46 || NETSTANDARD11 || NETSTANDARD13
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();

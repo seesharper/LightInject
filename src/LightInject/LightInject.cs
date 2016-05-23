@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.9
+    LightInject version 4.0.10-rc2
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -41,17 +41,17 @@ namespace LightInject
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
     using System.IO;
 #endif
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
     using System.Reflection.Emit;
 #endif
     using System.Runtime.CompilerServices;
-#if NET45 || DNX451
+#if NET45
     using System.Runtime.Remoting.Messaging;
 #endif
     using System.Text;
@@ -423,7 +423,7 @@ namespace LightInject
         void RegisterPropertyDependency<TDependency>(
             Func<IServiceFactory, PropertyInfo, TDependency> factory);
 
-#if NET40 || NET45 || NET46 || DNX451
+#if NET45 || NET46 || NETSTANDARD11
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -906,7 +906,7 @@ namespace LightInject
         /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
         ConstructorInfo Execute(Type implementingType);
     }
-#if NET40 || NET45 || NET46 || DNX451
+#if NET45 || NET46 || NETSTANDARD11
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -1649,7 +1649,7 @@ namespace LightInject
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-#if NET40 || NET45 || DNX451 || NET46
+#if NET45 || NET46
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
@@ -1728,7 +1728,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET40 || NET45 || DNX451 || NET46
+#if NET45 || NETSTANDARD11 || NET46
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
@@ -1962,7 +1962,7 @@ namespace LightInject
                 (s, e) => isLocked ? e : factory);
         }
 
-#if NET40 || NET45 || DNX451 || NET46
+#if NET45 || NETSTANDARD11 || NET46
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -3394,7 +3394,7 @@ namespace LightInject
             {
                 emitter = CreateEmitMethodForArrayServiceRequest(serviceType);
             }
-#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
             else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
                 emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
@@ -3498,7 +3498,7 @@ namespace LightInject
                 ms.Emit(OpCodes.Call, closedGenericToListMethod);
             };
         }
-#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
 
         private Action<IEmitter> CreateEmitMethodForReadOnlyCollectionServiceRequest(Type serviceType)
         {
@@ -3880,7 +3880,7 @@ namespace LightInject
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
-#if NET45 || DNX451 || DNXCORE50 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
@@ -3943,7 +3943,7 @@ namespace LightInject
         }
     }
 
-#if NET45 || DNX451 || DNXCORE50 || NET46
+#if NET45 || NETSTANDARD13 || NET46
     /// <summary>
     /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> across
     /// async points.
@@ -5908,7 +5908,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-#if NET40 || NET45 || DNX451 || NET46
+#if NET45 || NET46
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
@@ -5937,7 +5937,7 @@ namespace LightInject
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));
-#if NET45 || DNX451 || NET46 || DNXCORE50
+#if NET45 || NET46 || NETSTANDARD13
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif
@@ -6187,7 +6187,7 @@ namespace LightInject
             return propertyInfo.SetMethod == null || propertyInfo.SetMethod.IsStatic || propertyInfo.SetMethod.IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
         }
     }
-#if NET40 || NET45 || DNX451 || NET46
+#if NET45 || NET46
 
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
@@ -7013,7 +7013,7 @@ namespace LightInject
             return localBuilder;
         }
     }
-#if NET45 || DNX451
+#if NET45
 
     /// <summary>
     /// Provides storage per logical thread of execution.
@@ -7088,7 +7088,7 @@ namespace LightInject
         }
     }
 #endif
-#if DNXCORE50 || NET46
+#if NETSTANDARD13 || NET46
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>
@@ -7288,7 +7288,7 @@ namespace LightInject
     /// </summary>
     internal static class TypeHelper
     {
-#if NET40 || NET45 || DNX451 || NET46
+#if NET45 || NET46
 
         /// <summary>
         /// Gets the method represented by the delegate.
@@ -7376,7 +7376,7 @@ namespace LightInject
             var typeInfo = type.GetTypeInfo();
             return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(ICollection<>);
         }
-#if NET45 || DNX451 || DNXCORE50 || PCL_111 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/> type.

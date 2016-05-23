@@ -8,20 +8,17 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyTitle("LightInject")]
-#if NET40
-    [assembly: AssemblyProduct("LightInject (NET40)")]
-#endif
 #if NET45
     [assembly: AssemblyProduct("LightInject (NET45)")]
 #endif
 #if NET46
     [assembly: AssemblyProduct("LightInject (NET46)")]
 #endif
-#if DNX451
-    [assembly: AssemblyProduct("LightInject (DNX451)")]
+#if NETSTANDARD11
+    [assembly: AssemblyProduct("LightInject (NETSTANDARD11)")]
 #endif
-#if DNXCORE50
-    [assembly: AssemblyProduct("LightInject (DNXCORE50)")]
+#if NETSTANDARD13
+    [assembly: AssemblyProduct("LightInject (NETSTANDARD13)")]
 #endif
 #if PCL_111
     [assembly: AssemblyProduct("LightInject (PCL Profile 111))")]

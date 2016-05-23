@@ -10,14 +10,14 @@ private static int depth = 0;
 
 private static string lastWriteOperation;
 
-public static class DNU
+public static class DotNet
 {
     public static void Build(string pathToProjectFile, string frameworkMoniker)
-    {        
-        Command.Execute("cmd.exe","/C dnu.cmd --version " , ".");
-        Command.Execute("cmd.exe","/C dnu.cmd restore " + pathToProjectFile, ".");        
-        Command.Execute("cmd.exe","/C dnu.cmd build " + pathToProjectFile + " --framework " + frameworkMoniker + " --configuration Release" , ".");   
-    }        
+    {
+        Command.Execute("dotnet.exe","--version", ".");
+        Command.Execute("dotnet.exe","restore " + pathToProjectFile, ".");        
+        Command.Execute("dotnet.exe","build " + pathToProjectFile + " --framework " + frameworkMoniker + " --configuration Release" , ".");   
+    }
 }
 
 public static void RoboCopy(string source, string destination, string arguments = null)
@@ -167,7 +167,7 @@ public static void PatchAssemblyVersionInfo(string version, string fileVersion, 
 public static string GetVersionNumberFromSourceFile(string pathToSourceFile)
 {
     var source = ReadFile(pathToSourceFile);
-    var versionNumber = Regex.Match(source, @"version\s(\d+\.\d+\.\d+)").Groups[1].Value;
+    var versionNumber = Regex.Match(source, @"version\s(\d\.\d\.\d\S*)").Groups[1].Value;
     return versionNumber;
 }
 

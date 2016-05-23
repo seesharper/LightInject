@@ -1,4 +1,4 @@
-#if NET40 || NET45 || DNX451 || DNXCORE50 || NET46
+#if NET40 || NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
 namespace LightInject.Tests
 {
     using System;
