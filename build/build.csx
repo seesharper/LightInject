@@ -48,6 +48,9 @@ private void CopySourceFilesToNuGetLibDirectory()
 	CopySourceFile("NETSTANDARD11", "netstandard1.1");		
 	CopySourceFile("NETSTANDARD13", "netstandard1.3");	
     CopySourceFile("PCL_111", "portable-net45+netcore45+wpa81");
+	CopySourceFile("PCL_111", "Xamarin.iOS");
+	CopySourceFile("PCL_111", "monoandroid");
+	CopySourceFile("PCL_111", "monotouch");
 }
 
 private void CopyBinaryFilesToNuGetLibDirectory()
@@ -57,7 +60,9 @@ private void CopyBinaryFilesToNuGetLibDirectory()
 	CopyBinaryFile("NETSTANDARD11", "netstandard1.1");
 	CopyBinaryFile("NETSTANDARD13", "netstandard1.3");
     CopyBinaryFile("PCL_111", "portable-net45+netcore45+wpa81");
-    
+    CopyBinaryFile("PCL_111", "Xamarin.iOS");
+	CopyBinaryFile("PCL_111", "monoandroid");
+	CopyBinaryFile("PCL_111", "monotouch");
    		
 }
 
@@ -94,7 +99,7 @@ private void CopyBinaryFile(string frameworkMoniker, string packageDirectoryName
 	RoboCopy(pathToMetadata, pathToPackageDirectory, "LightInject.nuspec");
 	string pathToBinaryFile =  ResolvePathToBinaryFile(frameworkMoniker);
 	string pathToDestination = Path.Combine(pathToPackageDirectory, "lib/" + packageDirectoryName);
-	RoboCopy(pathToBinaryFile, pathToDestination, "LightInject.*");
+	RoboCopy(pathToBinaryFile, pathToDestination, "LightInject.* /xf *.json");
 }
 
 private string ResolvePathToBinaryFile(string frameworkMoniker)
