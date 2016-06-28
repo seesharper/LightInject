@@ -18,40 +18,40 @@
         <group targetFramework="Xamarin.iOS" />
         <group targetFramework="monoandroid" />        
         <group targetFramework="monotouch" />
-        <group targetFramework=".NETStandard1.1">
-          <dependency id="System.Collections" version="4.0.11-rc2-24027" />
-          <dependency id="System.Collections.Concurrent" version="4.0.12-rc2-24027" />
-          <dependency id="System.IO" version="4.1.0-rc2-24027" />
-          <dependency id="System.Linq" version="4.1.0-rc2-24027" />
-          <dependency id="System.Linq.Expressions" version="4.0.11-rc2-24027" />
-          <dependency id="System.Reflection" version="4.1.0-rc2-24027" />
-          <dependency id="System.Reflection.Emit" version="4.0.1-rc2-24027" />
-          <dependency id="System.Reflection.Emit.Lightweight" version="4.0.1-rc2-24027" />
-          <dependency id="System.Reflection.Extensions" version="4.0.1-rc2-24027" />
-          <dependency id="System.Runtime" version="4.1.0-rc2-24027" />
-          <dependency id="System.Runtime.Extensions" version="4.1.0-rc2-24027" />
-          <dependency id="System.Text.Encoding" version="4.0.11-rc2-24027" />
-          <dependency id="System.Text.RegularExpressions" version="4.0.12-rc2-24027" />
-          <dependency id="System.Threading" version="4.0.11-rc2-24027" />
-          <dependency id="System.Diagnostics.Tools" version="4.0.1-rc2-24027" />
+        <group targetFramework="netstandard1.1">
+          <dependency id="System.Collections" version="4.0.11" />
+          <dependency id="System.Collections.Concurrent" version="4.0.12" />
+          <dependency id="System.IO" version="4.1.0" />
+          <dependency id="System.Linq" version="4.1.0" />
+          <dependency id="System.Linq.Expressions" version="4.1.0" />
+          <dependency id="System.Reflection" version="4.1.0" />
+          <dependency id="System.Reflection.Emit" version="4.0.1" />
+          <dependency id="System.Reflection.Emit.Lightweight" version="4.0.1" />
+          <dependency id="System.Reflection.Extensions" version="4.0.1" />
+          <dependency id="System.Runtime" version="4.1.0" />
+          <dependency id="System.Runtime.Extensions" version="4.1.0" />
+          <dependency id="System.Text.Encoding" version="4.0.11" />
+          <dependency id="System.Text.RegularExpressions" version="4.1.0" />
+          <dependency id="System.Threading" version="4.0.11" />
+          <dependency id="System.Diagnostics.Tools" version="4.0.1" />
         </group>
-        <group targetFramework=".NETStandard1.3">
-          <dependency id="System.Collections" version="4.0.11-rc2-24027" />
-          <dependency id="System.Collections.Concurrent" version="4.0.12-rc2-24027" />
-          <dependency id="System.IO" version="4.1.0-rc2-24027" />
-          <dependency id="System.Linq" version="4.1.0-rc2-24027" />
-          <dependency id="System.Linq.Expressions" version="4.0.11-rc2-24027" />
-          <dependency id="System.Reflection" version="4.1.0-rc2-24027" />
-          <dependency id="System.Reflection.Emit" version="4.0.1-rc2-24027" />
-          <dependency id="System.Reflection.Emit.Lightweight" version="4.0.1-rc2-24027" />
-          <dependency id="System.Reflection.Extensions" version="4.0.1-rc2-24027" />
-          <dependency id="System.Reflection.TypeExtensions" version="4.1.0-rc2-24027" />
-          <dependency id="System.Runtime" version="4.1.0-rc2-24027" />
-          <dependency id="System.Runtime.Extensions" version="4.1.0-rc2-24027" />
-          <dependency id="System.Text.Encoding" version="4.0.11-rc2-24027" />
-          <dependency id="System.Text.RegularExpressions" version="4.0.12-rc2-24027" />
-          <dependency id="System.Threading" version="4.0.11-rc2-24027" />
-          <dependency id="System.Diagnostics.Tools" version="4.0.1-rc2-24027" />
+        <group targetFramework="netstandard1.3">
+          <dependency id="System.Collections" version="4.0.11" />
+          <dependency id="System.Collections.Concurrent" version="4.0.12" />
+          <dependency id="System.IO" version="4.1.0" />
+          <dependency id="System.Linq" version="4.1.0" />
+          <dependency id="System.Linq.Expressions" version="4.1.0" />
+          <dependency id="System.Reflection" version="4.1.0" />
+          <dependency id="System.Reflection.Emit" version="4.0.1" />
+          <dependency id="System.Reflection.Emit.Lightweight" version="4.0.1" />
+          <dependency id="System.Reflection.Extensions" version="4.0.1" />
+          <dependency id="System.Reflection.TypeExtensions" version="4.1.0" />
+          <dependency id="System.Runtime" version="4.1.0" />
+          <dependency id="System.Runtime.Extensions" version="4.1.0" />
+          <dependency id="System.Text.Encoding" version="4.0.11" />
+          <dependency id="System.Text.RegularExpressions" version="4.1.0" />
+          <dependency id="System.Threading" version="4.0.11" />
+          <dependency id="System.Diagnostics.Tools" version="4.0.1" />
         </group>
       </dependencies>
     </metadata>   
