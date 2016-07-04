@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.10
+    LightInject version 4.0.11
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/

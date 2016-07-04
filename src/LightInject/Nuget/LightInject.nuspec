@@ -17,6 +17,7 @@
         <group targetFramework=".NETFramework4.6" />
         <group targetFramework="Xamarin.iOS" />
         <group targetFramework="monoandroid" />        
+        <group targetFramework="portable-net45+netcore45+wpa81" />                
         <group targetFramework="monotouch" />
         <group targetFramework="netstandard1.1">
           <dependency id="System.Collections" version="4.0.11" />
