@@ -1,33 +1,32 @@
-using System.Management.Instrumentation;
 using System.Reflection;
 
 namespace LightInject.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
 
     using LightInject;
     using LightInject.SampleLibrary;
-    
+
     using LightMock;
 
     using Xunit;
-    
-    
-    
+
+
+
     public class AssemblyScannerTests
     {                
         private MockContext<IServiceContainer> GetContainerMock(Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {            
             var containerMock = new ContainerMock();
             var compositionRootMock = new CompositionRootMock();     
+            var asyncCompositionRootMock = new AsyncCompositionRootMock();
             
             var compositionRootTypeExtractorMock = new TypeExtractorMock();
             compositionRootTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(Type.EmptyTypes);
                    
-            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock, new CompositionRootExecutor(containerMock,t => compositionRootMock));
+            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock, new CompositionRootExecutor(containerMock,t => compositionRootMock,t => asyncCompositionRootMock));
             assemblyScanner.Scan(typeof(IFoo).Assembly, containerMock, lifetimeFactory, shouldRegister);
             return containerMock;
         }
@@ -101,12 +100,13 @@ namespace LightInject.Tests
         public void Scan_SampleAssemblyWithCompositionRoot_CallsComposeMethodOnce()
         {
             var compositionRootMock = new CompositionRootMock();
+            var asyncCompositionRootMock = new AsyncCompositionRootMock();
             var containerMock = new ContainerMock();
             var compositionRootExtractorMock = new TypeExtractorMock();
             compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new []{typeof(CompositionRootMock)});
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(),
                 compositionRootExtractorMock,
-                new CompositionRootExecutor(containerMock, t => compositionRootMock));
+                new CompositionRootExecutor(containerMock, t => compositionRootMock, t => asyncCompositionRootMock));
             
             assemblyScanner.Scan(typeof(AssemblyScannerTests).Assembly, containerMock);
 
@@ -117,10 +117,11 @@ namespace LightInject.Tests
         public void ScanUsingPredicate_SampleAssemblyWithCompositionRoot_DoesNotCallCompositionRoot()
         {
             var compositionRootMock = new CompositionRootMock();
+            var asyncCompositionRootMock = new AsyncCompositionRootMock();
             var containerMock = new ContainerMock();
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(),
                 new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()),
-                new CompositionRootExecutor(containerMock, t => compositionRootMock));
+                new CompositionRootExecutor(containerMock, t => compositionRootMock, t => asyncCompositionRootMock));
 
             assemblyScanner.Scan(typeof(AssemblyScannerTests).Assembly, containerMock, () => null, (s, t) => true);
             

@@ -21,13 +21,14 @@ namespace LightInject.Tests
         {
             var container = new ServiceContainer();
             var compositionRootMock = new CompositionRootMock();
+            var asyncCompositionRootMock = new AsyncCompositionRootMock();
             compositionRootMock.Arrange(c => c.Compose(container)).Callback<IServiceContainer>(c => c.Register<IFoo, Foo>());
 
             var compositionRootTypeExtractorMock = new TypeExtractorMock();
             compositionRootTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new[] {typeof(CompositionRootMock)});
 
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock,
-                new CompositionRootExecutor(container, t => compositionRootMock));
+                new CompositionRootExecutor(container, t => compositionRootMock, t => asyncCompositionRootMock));
 
             container.AssemblyScanner = assemblyScanner;
 

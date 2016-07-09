@@ -57,6 +57,7 @@ namespace LightInject
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// A delegate that represent the dynamic method compiled to resolved service instances.
@@ -395,6 +396,14 @@ namespace LightInject
         /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
         void RegisterFrom<TCompositionRoot>()
             where TCompositionRoot : ICompositionRoot, new();
+
+        /// <summary>
+        /// Asynchronously registers services from the given <typeparamref name="TAsyncCompositionRoot"/> type.
+        /// </summary>
+        /// <typeparam name="TAsyncCompositionRoot">The type of <see cref="IAsyncCompositionRoot"/> to register from.</typeparam>
+        /// <returns>A Task indicating registration has completed.</returns>
+        Task RegisterFromAsync<TAsyncCompositionRoot>()
+            where TAsyncCompositionRoot : IAsyncCompositionRoot, new();
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
@@ -778,6 +787,19 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a class that acts as an asynchronous composition root for an <see cref="IServiceRegistry"/> instance.
+    /// </summary>
+    public interface IAsyncCompositionRoot
+    {
+        /// <summary>
+        /// Composes services by adding services to the <paramref name="serviceRegistry"/>.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// /// <returns>A Task indicating composition has completed.</returns>
+        Task ComposeAsync(IServiceRegistry serviceRegistry);
+    }
+
+    /// <summary>
     /// Represents a class that extracts a set of types from an <see cref="Assembly"/>.
     /// </summary>
     public interface ITypeExtractor
@@ -954,6 +976,13 @@ namespace LightInject
         /// </summary>
         /// <param name="compositionRootType">The concrete <see cref="ICompositionRoot"/> type to be instantiated and executed.</param>
         void Execute(Type compositionRootType);
+
+        /// <summary>
+        /// Creates an instance of the <paramref name="asyncCompositionRootType"/> and executes the <see cref="IAsyncCompositionRoot.ComposeAsync"/> method.
+        /// </summary>
+        /// <param name="asyncCompositionRootType">The concrete <see cref="IAsyncCompositionRoot"/> type to be instantiated and executed.</param>
+        /// <returns>A task indicating the IAsyncCompositionRoot execution has completed.</returns>
+        Task ExecuteAsync(Type asyncCompositionRootType);
     }
 
     /// <summary>
@@ -1644,7 +1673,7 @@ namespace LightInject
             options = ContainerOptions.Default;
             var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
             CompositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()));
-            CompositionRootExecutor = new CompositionRootExecutor(this, type => (ICompositionRoot)Activator.CreateInstance(type));
+            CompositionRootExecutor = new CompositionRootExecutor(this, type => (ICompositionRoot)Activator.CreateInstance(type), type => (IAsyncCompositionRoot)Activator.CreateInstance(type));
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor);
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
             ConstructorDependencySelector = new ConstructorDependencySelector();
@@ -1921,6 +1950,17 @@ namespace LightInject
             where TCompositionRoot : ICompositionRoot, new()
         {
             CompositionRootExecutor.Execute(typeof(TCompositionRoot));
+        }
+
+        /// <summary>
+        /// Asynchronously registers services from the given <typeparamref name="TAsyncCompositionRoot"/> type.
+        /// </summary>
+        /// <typeparam name="TAsyncCompositionRoot">The type of <see cref="IAsyncCompositionRoot"/> to register from.</typeparam>
+        /// <returns>A Task indicating the composition has completed.</returns>
+        public Task RegisterFromAsync<TAsyncCompositionRoot>()
+            where TAsyncCompositionRoot : IAsyncCompositionRoot, new()
+        {
+            return CompositionRootExecutor.ExecuteAsync(typeof(TAsyncCompositionRoot));
         }
 
         /// <summary>
@@ -5987,6 +6027,7 @@ namespace LightInject
     {
         private readonly IServiceRegistry serviceRegistry;
         private readonly Func<Type, ICompositionRoot> activator;
+        private readonly Func<Type, IAsyncCompositionRoot> asyncActivator;
 
         private readonly IList<Type> executedCompositionRoots = new List<Type>();
 
@@ -5997,10 +6038,12 @@ namespace LightInject
         /// </summary>
         /// <param name="serviceRegistry">The <see cref="IServiceRegistry"/> to be configured by the <see cref="ICompositionRoot"/>.</param>
         /// <param name="activator">The function delegate that is responsible for creating an instance of the <see cref="ICompositionRoot"/>.</param>
-        public CompositionRootExecutor(IServiceRegistry serviceRegistry, Func<Type, ICompositionRoot> activator)
+        /// <param name="asyncActivator">The function delegate that is responsible for creating an instance of the <see cref="IAsyncCompositionRoot"/>.</param>
+        public CompositionRootExecutor(IServiceRegistry serviceRegistry, Func<Type, ICompositionRoot> activator, Func<Type, IAsyncCompositionRoot> asyncActivator)
         {
             this.serviceRegistry = serviceRegistry;
             this.activator = activator;
+            this.asyncActivator = asyncActivator;
         }
 
         /// <summary>
@@ -6019,6 +6062,34 @@ namespace LightInject
                         var compositionRoot = activator(compositionRootType);
                         compositionRoot.Compose(serviceRegistry);
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates an instance of the <paramref name="asyncCompositionRootType"/> and executes the <see cref="IAsyncCompositionRoot.ComposeAsync"/> method.
+        /// </summary>
+        /// <param name="asyncCompositionRootType">The concrete <see cref="ICompositionRoot"/> type to be instantiated and executed.</param>
+        /// <returns>A task indicating composition has completed.</returns>
+        public async Task ExecuteAsync(Type asyncCompositionRootType)
+        {
+            if (!executedCompositionRoots.Contains(asyncCompositionRootType))
+            {
+                var wasAdded = false;
+
+                lock (syncRoot)
+                {
+                    if (!executedCompositionRoots.Contains(asyncCompositionRootType))
+                    {
+                        wasAdded = true;
+                        executedCompositionRoots.Add(asyncCompositionRootType);
+                    }
+                }
+
+                if (wasAdded)
+                {
+                    var asyncCompositionRoot = asyncActivator(asyncCompositionRootType);
+                    await asyncCompositionRoot.ComposeAsync(serviceRegistry);
                 }
             }
         }

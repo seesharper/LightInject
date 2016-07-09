@@ -2,8 +2,8 @@ namespace LightInject.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq.Expressions;
     using System.Reflection;
+    using System.Threading.Tasks;
     using LightMock;
 
     internal class ContainerMock : MockContext<IServiceContainer>, IServiceContainer
@@ -188,6 +188,11 @@ namespace LightInject.Tests
         }
 
         public void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RegisterFromAsync<TAsyncCompositionRoot>() where TAsyncCompositionRoot : IAsyncCompositionRoot, new()
         {
             throw new NotImplementedException();
         }

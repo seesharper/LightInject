@@ -5,21 +5,17 @@ namespace LightInject.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;    
-    using System.Security;
-    
+    using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-
     using LightInject;
     using LightInject.SampleLibrary;
     using Xunit;
-    using Xunit.Sdk;
-    using Foo = LightInject.SampleLibrary.Foo;
-    using IFoo = LightInject.SampleLibrary.IFoo;
-    using IBar = LightInject.SampleLibrary.IBar;
     using Bar = LightInject.SampleLibrary.Bar;
-    
+    using Foo = LightInject.SampleLibrary.Foo;
+    using IBar = LightInject.SampleLibrary.IBar;
+    using IFoo = LightInject.SampleLibrary.IFoo;
+
     public class ServiceContainerTests : TestBase
     {
         #region InputValidation
@@ -1600,7 +1596,20 @@ namespace LightInject.Tests
 
             compositionRootExecutorMock.Assert(c => c.Execute(typeof(CompositionRootMock)), Invoked.Once);
         }
-#endif        
+#endif
+
+        [Fact]
+        public async Task RegisterFromAsync_CompositionRoot_CallsCompositionRootExecutor()
+        {
+            var container = (ServiceContainer)CreateContainer();
+            var compositionRootExecutorMock = new CompositionRootExecutorMock();
+            container.CompositionRootExecutor = compositionRootExecutorMock;
+
+            await container.RegisterFromAsync<AsyncCompositionRootMock>();
+
+            compositionRootExecutorMock.Assert(c => c.ExecuteAsync(typeof(AsyncCompositionRootMock)), Invoked.Once);
+        }
+
         [Fact]
         public void GetInstance_SingletonInstance_EmitterIsProperlyPoppedOnConstructorException()
         {
