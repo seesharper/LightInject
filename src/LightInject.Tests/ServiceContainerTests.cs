@@ -1696,6 +1696,18 @@ namespace LightInject.Tests
             Assert.Same(firstInstance, secondInstance);
         }
 
+        [Fact]
+        public void Can_chain_register_calls_and_get_same_instance_back()
+        {
+            var container = CreateContainer();
+            var chainedContainer = container
+                .Register<IFoo, Foo>()
+                .Register<IBar, Bar>();
+
+            Assert.Same(container, chainedContainer);
+            Assert.IsType<Foo>(container.GetInstance<IFoo>());
+            Assert.IsType<Bar>(container.GetInstance<IBar>());
+        }
 
         #region Internal Classes
 
