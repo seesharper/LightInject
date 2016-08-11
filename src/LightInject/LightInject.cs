@@ -3030,12 +3030,6 @@ namespace LightInject
 
         private void EmitNewInstanceWithDecorators(ServiceRegistration serviceRegistration, IEmitter emitter)
         {
-            var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
-            foreach (var serviceOverride in serviceOverrides)
-            {
-                serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
-            }
-
             var serviceDecorators = GetDecorators(serviceRegistration);
             if (serviceDecorators.Length > 0)
             {
@@ -3474,12 +3468,8 @@ namespace LightInject
                 FactoryExpression = rule.Factory,
                 Lifetime = CloneLifeTime(rule.LifeTime) ?? DefaultLifetime
             };
-            if (rule.LifeTime != null)
-            {
-                return emitter => EmitLifetime(serviceRegistration, e => EmitNewInstanceWithDecorators(serviceRegistration, e), emitter);
-            }
 
-            return emitter => EmitNewInstanceWithDecorators(serviceRegistration, emitter);
+            return ResolveEmitMethod(serviceRegistration);
         }
 
         private Action<IEmitter> CreateEmitMethodForArrayServiceRequest(Type serviceType)
@@ -3671,14 +3661,31 @@ namespace LightInject
             Register(serviceRegistration);
         }
 
-        private Action<IEmitter> ResolveEmitMethod(ServiceRegistration serviceRegistration)
+        private ServiceRegistration ProcessServiceRegistrationOverrides(ServiceRegistration serviceRegistration)
         {
-            if (serviceRegistration.Lifetime == null)
+            var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToList();
+            foreach (var serviceOverride in serviceOverrides)
             {
-                return methodSkeleton => EmitNewInstanceWithDecorators(serviceRegistration, methodSkeleton);
+                serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
             }
 
-            return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstanceWithDecorators(serviceRegistration, ms), methodSkeleton);
+            return serviceRegistration;
+        }
+
+        private Action<IEmitter> ResolveEmitMethod(ServiceRegistration serviceRegistration)
+        {
+            return methodSkeleton =>
+            {
+                serviceRegistration = ProcessServiceRegistrationOverrides(serviceRegistration);
+                if (serviceRegistration.Lifetime == null)
+                {
+                    EmitNewInstanceWithDecorators(serviceRegistration, methodSkeleton);
+                }
+                else
+                {
+                    EmitLifetime(serviceRegistration, ms => EmitNewInstanceWithDecorators(serviceRegistration, ms), methodSkeleton);
+                }
+            };
         }
 
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)

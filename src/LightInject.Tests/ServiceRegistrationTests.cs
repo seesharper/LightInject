@@ -78,5 +78,25 @@ namespace LightInject.Tests
 
             Assert.IsAssignableFrom(typeof(AnotherFoo), instance);
         }
+
+        [Fact]
+        public void GetInstance_OverrideServiceLifetime_CreateInstanceWithOverriddenLifetime()
+        {
+            var container = new ServiceContainer();
+            container.Register<IFoo, Foo>();
+
+            container.Override(
+                sr => sr.ServiceType == typeof(IFoo),
+                (factory, registration) =>
+                {
+                    registration.Lifetime = new PerContainerLifetime();
+                    return registration;
+                });
+
+            var instance1 = container.GetInstance<IFoo>();
+            var instance2 = container.GetInstance<IFoo>();
+
+            Assert.Same(instance1, instance2);
+        }
     }
 }
