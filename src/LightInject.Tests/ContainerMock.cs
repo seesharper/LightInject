@@ -11,243 +11,242 @@ namespace LightInject.Tests
 
         public IEnumerable<ServiceRegistration> AvailableServices { get; private set; }
 
-        public void Register(Type serviceType, Type implementingType)
+        public IServiceRegistry Register(Type serviceType, Type implementingType)
         {
             throw new NotImplementedException();
         }
 
-        public void Register(Type serviceType, Type implementingType, ILifetime lifetime)
+        public IServiceRegistry Register(Type serviceType, Type implementingType, ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
 
-        public void Register(Type serviceType, Type implementingType, string serviceName)
+        public IServiceRegistry Register(Type serviceType, Type implementingType, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register(Type serviceType, Type implementingType, string serviceName, ILifetime lifetime)
+        public IServiceRegistry Register(Type serviceType, Type implementingType, string serviceName, ILifetime lifetime)
         {
-
-            ((IInvocationContext<IServiceContainer>)this).Invoke(c => c.Register(serviceType, implementingType, serviceName, lifetime));
+            return ((IInvocationContext<IServiceContainer>)this).Invoke(c => c.Register(serviceType, implementingType, serviceName, lifetime));
         }
 
-        public void Register<TService, TImplementation>() where TImplementation : TService
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Register<TService, TImplementation>(ILifetime lifetime) where TImplementation : TService
+        public IServiceRegistry Register<TService, TImplementation>() where TImplementation : TService
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService, TImplementation>(string serviceName) where TImplementation : TService
+        public IServiceRegistry Register<TService, TImplementation>(ILifetime lifetime) where TImplementation : TService
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService, TImplementation>(string serviceName, ILifetime lifetime) where TImplementation : TService
+        public IServiceRegistry Register<TService, TImplementation>(string serviceName) where TImplementation : TService
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterInstance<TService>(TService instance)
+        public IServiceRegistry Register<TService, TImplementation>(string serviceName, ILifetime lifetime) where TImplementation : TService
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterInstance<TService>(TService instance, string serviceName)
+        public IServiceRegistry RegisterInstance<TService>(TService instance)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterInstance(Type serviceType, object instance)
+        public IServiceRegistry RegisterInstance<TService>(TService instance, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterInstance(Type serviceType, object instance, string serviceName)
+        public IServiceRegistry RegisterInstance(Type serviceType, object instance)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>()
+        public IServiceRegistry RegisterInstance(Type serviceType, object instance, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(ILifetime lifetime)
+        public IServiceRegistry Register<TService>()
         {
             throw new NotImplementedException();
         }
 
-        public void Register(Type serviceType)
+        public IServiceRegistry Register<TService>(ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
 
-        public void Register(Type serviceType, ILifetime lifetime)
+        public IServiceRegistry Register(Type serviceType)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(Func<IServiceFactory, TService> factory)
+        public IServiceRegistry Register(Type serviceType, ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T, TService>(Func<IServiceFactory, T, TService> factory)
+        public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T, TService>(Func<IServiceFactory, T, TService> factory, string serviceName)
+        public IServiceRegistry Register<T, TService>(Func<IServiceFactory, T, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory)
+        public IServiceRegistry Register<T, TService>(Func<IServiceFactory, T, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory, string serviceName)
+        public IServiceRegistry Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory)
+        public IServiceRegistry Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory, string serviceName)
+        public IServiceRegistry Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory)
+        public IServiceRegistry Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory, string serviceName)
+        public IServiceRegistry Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(Func<IServiceFactory, TService> factory, ILifetime lifetime)
+        public IServiceRegistry Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName)
+        public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
 
-        public void Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime)
+        public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
+        public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory, ILifetime lifetime)
+        public IServiceRegistry RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Register(ServiceRegistration serviceRegistration)
+        public IServiceRegistry RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory, ILifetime lifetime)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterAssembly(Assembly assembly)
-        {
-            ((IInvocationContext<IServiceContainer>)this).Invoke(c => c.RegisterAssembly(assembly));            
-        }
-
-        public void RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister)
+        public IServiceRegistry Register(ServiceRegistration serviceRegistration)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory)
+        public IServiceRegistry RegisterAssembly(Assembly assembly)
+        {
+            return ((IInvocationContext<IServiceContainer>)this).Invoke(c => c.RegisterAssembly(assembly));            
+        }
+
+        public IServiceRegistry RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
+        public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new()
+        public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, TDependency> factory)
+        public IServiceRegistry RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new()
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, object[], TDependency> factory)
+        public IServiceRegistry RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, TDependency> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterPropertyDependency<TDependency>(Func<IServiceFactory, PropertyInfo, TDependency> factory)
+        public IServiceRegistry RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, object[], TDependency> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void RegisterAssembly(string searchPattern)
+        public IServiceRegistry RegisterPropertyDependency<TDependency>(Func<IServiceFactory, PropertyInfo, TDependency> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate)
+        public IServiceRegistry RegisterAssembly(string searchPattern)
         {
             throw new NotImplementedException();
         }
 
-        public void Decorate(Type serviceType, Type decoratorType)
+        public IServiceRegistry Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate)
         {
             throw new NotImplementedException();
         }
 
-        public void Decorate<TService, TDecorator>() where TDecorator : TService
+        public IServiceRegistry Decorate(Type serviceType, Type decoratorType)
         {
             throw new NotImplementedException();
         }
 
-        public void Decorate<TService>(Func<IServiceFactory, TService, TService> factory)
+        public IServiceRegistry Decorate<TService, TDecorator>() where TDecorator : TService
         {
             throw new NotImplementedException();
         }
 
-        public void Decorate(DecoratorRegistration decoratorRegistration)
+        public IServiceRegistry Decorate<TService>(Func<IServiceFactory, TService, TService> factory)
         {
             throw new NotImplementedException();
         }
 
-        public void Override(Func<ServiceRegistration, bool> serviceSelector, Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory)
+        public IServiceRegistry Decorate(DecoratorRegistration decoratorRegistration)
         {
             throw new NotImplementedException();
         }
 
-        public void Initialize(Func<ServiceRegistration, bool> predicate, Action<IServiceFactory, object> processor)
+        public IServiceRegistry Override(Func<ServiceRegistration, bool> serviceSelector, Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory)
         {
             throw new NotImplementedException();
         }
 
-        public void SetDefaultLifetime<T>() where T : ILifetime, new()
+        public IServiceRegistry Initialize(Func<ServiceRegistration, bool> predicate, Action<IServiceFactory, object> processor)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IServiceRegistry SetDefaultLifetime<T>() where T : ILifetime, new()
         {
             throw new NotImplementedException();
         }
