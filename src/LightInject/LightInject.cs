@@ -1,7 +1,7 @@
 /*********************************************************************************
     The MIT License (MIT)
 
-    Copyright (c) 2015 bernhard.richter@gmail.com
+    Copyright (c) 2016 bernhard.richter@gmail.com
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.0.11
+    LightInject version 4.1.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
