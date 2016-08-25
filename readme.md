@@ -400,7 +400,7 @@ We can also do a combination of supplied values and dependencies.
 
     container.Register<IBar, Bar>();
     container.Register<int, IFoo>((factory, value) => new Foo(value, factory.GetInstance<IBar>()));
-    var foo = (Foo)container.GetInstance<int, IFoo>();
+    var foo = (Foo)container.GetInstance<int, IFoo>(42);
     Assert.AreEqual(42, foo.Value);
     Assert.IsNotNull(foo.Bar);
 
