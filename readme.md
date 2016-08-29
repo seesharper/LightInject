@@ -1,3 +1,7 @@
+[![AppVeyor](https://img.shields.io/appveyor/ci/seesharper/lightinject.svg?maxAge=2592000)]()
+[![NuGet](https://img.shields.io/nuget/v/LightInject.svg?maxAge=2592000)]()
+[![GitHub tag](https://img.shields.io/github/tag/seesharper/lightinject.svg?maxAge=2592000)]()
+
 ## Installing ##
 
 **LightInject** provides two distribution models via NuGet
