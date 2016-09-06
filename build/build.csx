@@ -51,6 +51,7 @@ private void CopySourceFilesToNuGetLibDirectory()
 	CopySourceFile("PCL_111", "Xamarin.iOS");
 	CopySourceFile("PCL_111", "monoandroid");
 	CopySourceFile("PCL_111", "monotouch");
+	CopySourceFile("PCL_111", "uap");
 }
 
 private void CopyBinaryFilesToNuGetLibDirectory()
@@ -63,6 +64,7 @@ private void CopyBinaryFilesToNuGetLibDirectory()
     CopyBinaryFile("PCL_111", "Xamarin.iOS");
 	CopyBinaryFile("PCL_111", "monoandroid");
 	CopyBinaryFile("PCL_111", "monotouch");
+	CopyBinaryFile("PCL_111", "uap");
    		
 }
 
