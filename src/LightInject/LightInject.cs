@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.1.1
+    LightInject version 4.1.2
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -5499,6 +5499,16 @@ namespace LightInject
 
             var result = ServiceName == other.ServiceName && ServiceType == other.ServiceType;
             return result;
+        }
+
+        /// <summary>
+        /// Returns a string representation of the <see cref="ServiceRegistration"/>.
+        /// </summary>
+        /// <returns>A string representation of the <see cref="ServiceRegistration"/>.</returns>
+        public override string ToString()
+        {
+            var lifeTime = Lifetime?.ToString() ?? "Transient";
+            return $"ServiceType: '{ServiceType}', ServiceName: '{ServiceName}', ImplementingType: '{ImplementingType}', Lifetime: '{lifeTime}'";
         }
     }
 

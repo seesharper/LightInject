@@ -1,9 +1,7 @@
 namespace LightInject.Tests
 {
-    using LightInject.SampleLibrary;
-
+    using SampleLibrary;
     using Xunit;
-
     
     public class ServiceRegistrationTests
     {
@@ -77,6 +75,28 @@ namespace LightInject.Tests
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsAssignableFrom(typeof(AnotherFoo), instance);
+        }
+
+        [Fact]
+        public void ToString_WithAllProperties_ReturnsEasyToReadRepresentation()
+        {
+            var sr = new ServiceRegistration();
+            sr.ServiceType = typeof (IFoo);
+            sr.ServiceName = "AnotherFoo";
+            sr.ImplementingType = typeof (AnotherFoo);
+            var toString = sr.ToString();
+            Assert.Equal("ServiceType: 'LightInject.SampleLibrary.IFoo', ServiceName: 'AnotherFoo', ImplementingType: 'LightInject.SampleLibrary.AnotherFoo', Lifetime: 'Transient'", toString);
+        }
+
+        [Fact]
+        public void ToString_WithNullProperty_ReturnsEasyToReadRepresentation()
+        {
+            var sr = new ServiceRegistration();
+            sr.ServiceType = typeof(IFoo);
+            sr.ServiceName = "AnotherFoo";
+            sr.ImplementingType = null;
+            var toString = sr.ToString();
+            Assert.Equal("ServiceType: 'LightInject.SampleLibrary.IFoo', ServiceName: 'AnotherFoo', ImplementingType: '', Lifetime: 'Transient'", toString);
         }
     }
 }
