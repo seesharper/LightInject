@@ -41,6 +41,7 @@ namespace LightInject
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
 #if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
     using System.IO;
 #endif
@@ -920,12 +921,6 @@ namespace LightInject
         /// <param name="registration">The <see cref="Registration"/> for which to get a <see cref="ConstructionInfo"/> instance.</param>
         /// <returns>The <see cref="ConstructionInfo"/> instance that describes how to create an instance of the given <paramref name="registration"/>.</returns>
         ConstructionInfo GetConstructionInfo(Registration registration);
-
-        /// <summary>
-        /// Invalidates the <see cref="IConstructionInfoProvider"/> and causes new <see cref="ConstructionInfo"/> instances
-        /// to be created when the <see cref="GetConstructionInfo"/> method is called.
-        /// </summary>
-        void Invalidate();
     }
 
     /// <summary>
@@ -2886,19 +2881,6 @@ namespace LightInject
                 initializers);
         }
 
-        /// <summary>
-        /// Invalidates the container and causes the compiler to "recompile".
-        /// </summary>
-        public void Invalidate()
-        {
-            Interlocked.Exchange(ref delegates, ImmutableHashTable<Type, GetInstanceDelegate>.Empty);
-            Interlocked.Exchange(ref namedDelegates, ImmutableHashTable<Tuple<Type, string>, GetInstanceDelegate>.Empty);
-            Interlocked.Exchange(ref propertyInjectionDelegates, ImmutableHashTree<Type, Func<object[], object, object>>.Empty);
-            constants.Clear();
-            constructionInfoProvider.Value.Invalidate();
-            isLocked = false;
-        }
-
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
         {
             LocalBuilder array = emitter.DeclareLocal(elementType.MakeArrayType());
@@ -3161,14 +3143,13 @@ namespace LightInject
 
         private ServiceRegistration UpdateServiceRegistration(ServiceRegistration existingRegistration, ServiceRegistration newRegistration)
         {
-            if (existingRegistration.IsReadOnly || isLocked)
+            if (isLocked)
             {
+                Trace.TraceWarning($"{typeof(ServiceContainer)}: Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.");
                 return existingRegistration;
             }
 
-            Invalidate();
             Action<IEmitter> emitMethod = ResolveEmitMethod(newRegistration);
-
             var serviceEmitters = GetEmitMethods(newRegistration.ServiceType);
             serviceEmitters[newRegistration.ServiceName] = emitMethod;
             return newRegistration;
@@ -5345,15 +5326,6 @@ namespace LightInject
         {
             return cache.GetOrAdd(registration, constructionInfoBuilder.Execute);
         }
-
-        /// <summary>
-        /// Invalidates the <see cref="IConstructionInfoProvider"/> and causes new <see cref="ConstructionInfo"/> instances
-        /// to be created when the <see cref="IConstructionInfoProvider.GetConstructionInfo"/> method is called.
-        /// </summary>
-        public void Invalidate()
-        {
-            cache.Clear();
-        }
     }
 
     /// <summary>
@@ -5463,12 +5435,6 @@ namespace LightInject
         /// Gets or sets the value that represents the instance of the service.
         /// </summary>
         public object Value { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether this <see cref="ServiceRegistration"/> can be overridden
-        /// by another registration.
-        /// </summary>
-        public bool IsReadOnly { get; set; }
 
         /// <summary>
         /// Serves as a hash function for a particular type.

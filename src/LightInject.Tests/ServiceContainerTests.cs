@@ -1570,24 +1570,7 @@ namespace LightInject.Tests
             Assert.IsAssignableFrom(typeof(Bar), foo.Bar);
         }
 
-        [Fact]
-        public void GetInstance_ReadOnlyRegistration_ReturnsOriginalRegistration()
-        {
-            var container = CreateContainer();
-            var registration = new ServiceRegistration();
-            registration.ServiceType = typeof (IFoo);
-            registration.ServiceName = "";
-            registration.ImplementingType = typeof (Foo);
-            registration.IsReadOnly = true;
-            container.Register(registration);
-
-            container.Register<IFoo, AnotherFoo>();
-
-            var instance = container.GetInstance<IFoo>();
-
-            Assert.IsType(typeof (Foo), instance);
-        }
-
+        
 #if NET45 || NET40 || NET46
         [Fact]
         public void RegisterFrom_CompositionRoot_CallsCompositionRootExecutor()

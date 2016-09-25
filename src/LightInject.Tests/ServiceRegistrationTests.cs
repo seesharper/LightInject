@@ -1,5 +1,7 @@
 namespace LightInject.Tests
 {
+    using System;
+    using System.Diagnostics;
     using SampleLibrary;
     using Xunit;
     
@@ -97,6 +99,47 @@ namespace LightInject.Tests
             sr.ImplementingType = null;
             var toString = sr.ToString();
             Assert.Equal("ServiceType: 'LightInject.SampleLibrary.IFoo', ServiceName: 'AnotherFoo', ImplementingType: '', Lifetime: 'Transient'", toString);
+        }
+
+        [Fact]
+        public void Register_ServiceAfterFirstGetInstance_TracesWarning()
+        {
+            var container = new ServiceContainer();
+            string message = null;
+            SampleTraceListener sampleTraceListener = new SampleTraceListener(m => message = m);
+            try
+            {                
+                Trace.Listeners.Add(sampleTraceListener);
+                container.Register<IFoo, Foo>();
+                container.GetInstance<IFoo>();
+                container.Register<IFoo, Foo>();
+                Assert.True(message.StartsWith("LightInject.ServiceContainer: Cannot overwrite existing serviceregistration"));
+            }
+            finally
+            {
+                Trace.Listeners.Remove(sampleTraceListener);
+            }
+            
+        }
+    }
+
+    public class SampleTraceListener : TraceListener
+    {
+        private readonly Action<string> listener;
+
+        public SampleTraceListener(Action<string> listener)
+        {
+            this.listener = listener;
+        }
+
+        public override void Write(string message)
+        {
+            listener(message);
+        }
+
+        public override void WriteLine(string message)
+        {
+            listener(message);
         }
     }
 }
