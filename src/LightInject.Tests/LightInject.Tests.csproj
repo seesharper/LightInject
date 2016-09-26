@@ -90,6 +90,7 @@
     <Compile Include="Issue257.cs" />
     <Compile Include="Issue257Verification.cs" />
     <Compile Include="LazyCompositionRootTests.cs" />
+    <Compile Include="LoggingTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
     <Compile Include="PropertyInjectionVerificationTests.cs" />
     <Compile Include="PropertySelectorTests.cs" />

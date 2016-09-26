@@ -67,6 +67,22 @@ namespace LightInject
     internal delegate object GetInstanceDelegate(object[] args);
 
     /// <summary>
+    /// Describes the logging level/severity.
+    /// </summary>
+    public enum LogLevel
+    {
+        /// <summary>
+        /// Indicates the <see cref="LogEntry"/> represents an information message.
+        /// </summary>
+        Info,
+
+        /// <summary>
+        /// Indicates the <see cref="LogEntry"/> represents a warning message.
+        /// </summary>
+        Warning
+    }
+
+    /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
     public interface IServiceRegistry
@@ -1159,6 +1175,32 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Extends the log delegate to simplify creating log entries.
+    /// </summary>
+    public static class LogExtensions
+    {
+        /// <summary>
+        /// Logs a new entry with the <see cref="LogLevel.Info"/> level.
+        /// </summary>
+        /// <param name="logAction">The log delegate.</param>
+        /// <param name="message">The message to be logged.</param>
+        public static void Info(this Action<LogEntry> logAction, string message)
+        {
+            logAction(new LogEntry(LogLevel.Info, message));
+        }
+
+        /// <summary>
+        /// Logs a new entry with the <see cref="LogLevel.Warning"/> level.
+        /// </summary>
+        /// <param name="logAction">The log delegate.</param>
+        /// <param name="message">The message to be logged.</param>
+        public static void Warning(this Action<LogEntry> logAction, string message)
+        {
+            logAction(new LogEntry(LogLevel.Warning, message));
+        }
+    }
+
+    /// <summary>
     /// Extends the <see cref="ImmutableHashTable{TKey,TValue}"/> class.
     /// </summary>
     public static class ImmutableHashTableExtensions
@@ -1619,6 +1661,15 @@ namespace LightInject
             new Lazy<ContainerOptions>(CreateDefaultContainerOptions);
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ContainerOptions"/> class.
+        /// </summary>
+        public ContainerOptions()
+        {
+            EnableVariance = true;
+            LogFactory = t => message => { };
+        }
+
+        /// <summary>
         /// Gets the default <see cref="ContainerOptions"/> used across all <see cref="ServiceContainer"/> instances.
         /// </summary>
         public static ContainerOptions Default
@@ -1637,10 +1688,42 @@ namespace LightInject
         /// </remarks>
         public bool EnableVariance { get; set; }
 
+        /// <summary>
+        /// Gets or sets the log factory that crates the delegate used for logging.
+        /// </summary>
+        public Func<Type, Action<LogEntry>> LogFactory { get; set; }
+
         private static ContainerOptions CreateDefaultContainerOptions()
         {
-            return new ContainerOptions { EnableVariance = true };
+            return new ContainerOptions();
         }
+    }
+
+    /// <summary>
+    /// Represents a log entry.
+    /// </summary>
+    public class LogEntry
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LogEntry"/> class.
+        /// </summary>
+        /// <param name="level">The <see cref="System.LogLevel"/> of this entry.</param>
+        /// <param name="message">The log message.</param>
+        public LogEntry(LogLevel level, string message)
+        {
+            Level = level;
+            Message = message;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="LogLevel"/> for this entry.
+        /// </summary>
+        public LogLevel Level { get; private set; }
+
+        /// <summary>
+        /// Gets the log message for this entry.
+        /// </summary>
+        public string Message { get; private set; }
     }
 
     /// <summary>
@@ -1649,6 +1732,7 @@ namespace LightInject
     public class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
+        private readonly Action<LogEntry> log;
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
         private readonly ServiceRegistry<Delegate> constructorDependencyFactories = new ServiceRegistry<Delegate>();
@@ -1683,8 +1767,18 @@ namespace LightInject
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
         public ServiceContainer()
+            : this(ContainerOptions.Default)
         {
-            options = ContainerOptions.Default;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
+        /// </summary>
+        /// <param name="options">The <see cref="ContainerOptions"/> instances that represents the configurable options.</param>
+        public ServiceContainer(ContainerOptions options)
+        {
+            this.options = options;
+            log = options.LogFactory(typeof(ServiceContainer));
             var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
             CompositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()));
             CompositionRootExecutor = new CompositionRootExecutor(this, type => (ICompositionRoot)Activator.CreateInstance(type));
@@ -1698,16 +1792,6 @@ namespace LightInject
 #if NET45 || NET46
             AssemblyLoader = new AssemblyLoader();
 #endif
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
-        /// </summary>
-        /// <param name="options">The <see cref="ContainerOptions"/> instances that represents the configurable options.</param>
-        public ServiceContainer(ContainerOptions options)
-            : this()
-        {
-            this.options = options;
         }
 
         private ServiceContainer(
@@ -1920,6 +2004,7 @@ namespace LightInject
             {
                 AssemblyScanner.Scan(assembly, this);
             }
+
             return this;
         }
 
@@ -2044,6 +2129,7 @@ namespace LightInject
             {
                 RegisterAssembly(assembly);
             }
+
             return this;
         }
 #endif
@@ -2842,6 +2928,7 @@ namespace LightInject
         /// Sets the default lifetime for types registered without an explicit lifetime. Will only affect new registrations (after this call).
         /// </summary>
         /// <typeparam name="T">The default lifetime type</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry SetDefaultLifetime<T>()
             where T : ILifetime, new()
         {
@@ -3145,7 +3232,7 @@ namespace LightInject
         {
             if (isLocked)
             {
-                Trace.TraceWarning($"{typeof(ServiceContainer)}: Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.");
+                    log.Warning($"Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.");
                 return existingRegistration;
             }
 

@@ -104,8 +104,9 @@ namespace LightInject.Tests
         [Fact]
         public void Register_ServiceAfterFirstGetInstance_TracesWarning()
         {
-            var container = new ServiceContainer();
             string message = null;
+            var container = new ServiceContainer(new ContainerOptions {LogFactory = t => m => message = m.Message});
+            
             SampleTraceListener sampleTraceListener = new SampleTraceListener(m => message = m);
             try
             {                
@@ -113,7 +114,7 @@ namespace LightInject.Tests
                 container.Register<IFoo, Foo>();
                 container.GetInstance<IFoo>();
                 container.Register<IFoo, Foo>();
-                Assert.True(message.StartsWith("LightInject.ServiceContainer: Cannot overwrite existing serviceregistration"));
+                Assert.True(message.StartsWith("Cannot overwrite existing serviceregistration"));
             }
             finally
             {
