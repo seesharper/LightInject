@@ -1672,13 +1672,7 @@ namespace LightInject
         /// <summary>
         /// Gets the default <see cref="ContainerOptions"/> used across all <see cref="ServiceContainer"/> instances.
         /// </summary>
-        public static ContainerOptions Default
-        {
-            get
-            {
-                return DefaultOptions.Value;
-            }
-        }
+        public static ContainerOptions Default => DefaultOptions.Value;
 
         /// <summary>
         /// Gets or sets a value indicating whether variance is applied when resolving an <see cref="IEnumerable{T}"/>.
@@ -1692,6 +1686,8 @@ namespace LightInject
         /// Gets or sets the log factory that crates the delegate used for logging.
         /// </summary>
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
+
+        public bool WarningsAsErrors { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions()
         {
@@ -3232,7 +3228,10 @@ namespace LightInject
         {
             if (isLocked)
             {
-                    log.Warning($"Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.");
+                var message = $"Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.";
+                log.Warning(message);
+                if (options.WarningsAsErrors)
+                    throw new InvalidOperationException(message);
                 return existingRegistration;
             }
 
