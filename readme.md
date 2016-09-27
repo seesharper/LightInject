@@ -763,3 +763,9 @@ The only requirement is that the internal class exposes a public constructor.
     {
         public InternalFooWithPublicConstructor () {}
     }
+
+## Logging ##
+
+Sometimes it might be useful to obtain information about what is going on inside the container 
+and **LightInject** provides a very simple log abstraction that is used to log information and warnings from within the container
+
