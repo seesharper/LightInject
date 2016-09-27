@@ -22,7 +22,7 @@ Execute(() => PatchPackagesConfig(), "Patching packages config");
 Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
 Execute(() => RestoreNuGetPackages(), "NuGet");
 Execute(() => BuildAllFrameworks(), "Building all frameworks");
-//Execute(() => RunAllUnitTests(), "Running unit tests");
+Execute(() => RunAllUnitTests(), "Running unit tests");
 //Execute(() => AnalyzeTestCoverage(), "Analyzing test coverage");
 Execute(() => CreateNugetPackages(), "Creating NuGet packages");
 

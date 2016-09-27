@@ -9,14 +9,15 @@ namespace LightInject.Tests
     
 
     
-    public class ScopeTests
+    public class PerThreadScopeManagerTests
     {
         //private readonly ThreadLocal<PerLogicalCallContextScopeManager> scopeManagers = new ThreadLocal<PerLogicalCallContextScopeManager>(() => new PerLogicalCallContextScopeManager());
 
         [Fact]
         public void BeginScope_NoParentScope_ParentScopeIsNull()
         {
-            var scopeManager = new PerThreadScopeManager();
+            var container = new ServiceContainer();
+            var scopeManager = new PerThreadScopeManager(container);
 
             using (var scope = scopeManager.BeginScope())
             {
@@ -27,7 +28,8 @@ namespace LightInject.Tests
         [Fact]
         public void BeginScope_WithParentScope_ParentScopeIsOuterScope()
         {
-            var scopeManager = new PerThreadScopeManager();
+            var container = new ServiceContainer();
+            var scopeManager = new PerThreadScopeManager(container);
 
             using (var outerScope = scopeManager.BeginScope())
             {
@@ -41,7 +43,8 @@ namespace LightInject.Tests
         [Fact]
         public void BeginScope_WithParentScope_ParentScopeHasInnerScopeAsChild()
         {
-            var scopeManager = new PerThreadScopeManager();
+            var container = new ServiceContainer();
+            var scopeManager = new PerThreadScopeManager(container);
             using (var outerScope = scopeManager.BeginScope())
             {
                 using (var scope = scopeManager.BeginScope())
@@ -54,7 +57,8 @@ namespace LightInject.Tests
         [Fact]
         public void EndScope_BeforeInnerScopeHasCompleted_ThrowsException()
         {
-            var scopeManager = new PerThreadScopeManager();
+            var container = new ServiceContainer();
+            var scopeManager = new PerThreadScopeManager(container);
 
             using (var outerScope = scopeManager.BeginScope())
             {
@@ -65,21 +69,26 @@ namespace LightInject.Tests
             }
         }
 
-        [Fact]
-        public void Dispose_OnAnotherThread_UpdateCurrentScope()
-        {
-            var scopeManager = new PerThreadScopeManager();
-            Scope scope = scopeManager.BeginScope();
-            Thread thread = new Thread(scope.Dispose);
-            thread.Start();
-            thread.Join();
-            Assert.Null(scopeManager.CurrentScope);
-        }
+        //[Fact]
+        //public void Dispose_OnAnotherThread_ThrowsException()
+        //{
+        //    var container = new ServiceContainer();
+        //    var scopeManager = new PerThreadScopeManager(container);
+        //    Scope scope = scopeManager.BeginScope();
+        //    Thread thread = new Thread(scope.Dispose);
+
+        //    Assert.Throws<InvalidOperationException>(() =>
+        //    {
+        //        thread.Start();
+        //        thread.Join();
+        //    });
+        //}
 
         [Fact]
         public void Dispose_WithTrackedInstances_DisposesTrackedInstances()
         {
-            var scopeManager = new PerThreadScopeManager();
+            var container = new ServiceContainer();
+            var scopeManager = new PerThreadScopeManager(container);
             var disposable = new DisposableFoo();
             Scope scope = scopeManager.BeginScope();
             scope.TrackInstance(disposable);
@@ -91,12 +100,12 @@ namespace LightInject.Tests
         public void EndCurrentScope_InScope_EndsScope()
         {
             var container = new ServiceContainer();
-            IScopeManager manager = container.ScopeManagerProvider.GetScopeManager();
+            IScopeManager manager = container.ScopeManagerProvider.GetScopeManager(container);
             
             container.BeginScope();
             container.EndCurrentScope();
 
             Assert.Null(manager.CurrentScope);
-        }
+        }        
     }
 }

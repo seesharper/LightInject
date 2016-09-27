@@ -981,6 +981,8 @@ namespace LightInject
         /// </summary>
         /// <returns>A new <see cref="Scope"/>.</returns>
         Scope BeginScope();
+
+        IServiceFactory ServiceFactory { get; }
     }
 
 #if NET45 || NET46 || NETSTANDARD11
@@ -1140,7 +1142,7 @@ namespace LightInject
         /// Returns the <see cref="IScopeManager"/> that is responsible for managing scopes.
         /// </summary>
         /// <returns>The <see cref="IScopeManager"/> that is responsible for managing scopes.</returns>
-        IScopeManager GetScopeManager();
+        IScopeManager GetScopeManager(IServiceFactory serviceFactory);        
     }
 
     /// <summary>
@@ -1910,7 +1912,7 @@ namespace LightInject
         /// <returns><see cref="Scope"/></returns>
         public Scope BeginScope()
         {
-            return ScopeManagerProvider.GetScopeManager().BeginScope();
+            return ScopeManagerProvider.GetScopeManager(this).BeginScope();
         }
 
         /// <summary>
@@ -1918,7 +1920,7 @@ namespace LightInject
         /// </summary>
         public void EndCurrentScope()
         {
-            Scope currentScope = ScopeManagerProvider.GetScopeManager().CurrentScope;
+            Scope currentScope = ScopeManagerProvider.GetScopeManager(this).CurrentScope;
             currentScope.Dispose();
         }
 
@@ -3926,12 +3928,11 @@ namespace LightInject
             {
                 int instanceDelegateIndex = CreateInstanceDelegateIndex(emitMethod);
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
-                int scopeManagerProviderIndex = CreateScopeManagerProviderIndex();
+                int scopeManagerIndex = CreateScopeManagerIndex();
                 var getInstanceMethod = LifetimeHelper.GetInstanceMethod;
                 emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
                 emitter.PushConstant(instanceDelegateIndex, typeof(Func<object>));
-                emitter.PushConstant(scopeManagerProviderIndex, typeof(IScopeManagerProvider));
-                emitter.Call(LifetimeHelper.GetScopeManagerMethod);
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));                
                 emitter.Call(LifetimeHelper.GetCurrentScopeMethod);
                 emitter.Call(getInstanceMethod);
             }
@@ -3940,6 +3941,11 @@ namespace LightInject
         private int CreateScopeManagerProviderIndex()
         {
             return constants.Add(ScopeManagerProvider);
+        }
+
+        private int CreateScopeManagerIndex()
+        {
+            return constants.Add(ScopeManagerProvider.GetScopeManager(this));
         }
 
         private int CreateInstanceDelegateIndex(Action<IEmitter> emitMethod)
@@ -4161,19 +4167,26 @@ namespace LightInject
 
     public abstract class ScopeManagerProvider : IScopeManagerProvider
     {
-        private Lazy<IScopeManager> scopemanager;
+        private object lockObject = new object();
 
-        protected ScopeManagerProvider()
+        private IScopeManager scopeManager;
+        
+        public IScopeManager GetScopeManager(IServiceFactory serviceFactory)
         {
-            scopemanager = new Lazy<IScopeManager>(CreateScopeManager);
+            if (scopeManager == null)
+            {
+                lock (lockObject)
+                {
+                    if (scopeManager == null)
+                    {
+                        scopeManager = CreateScopeManager(serviceFactory);
+                    }
+                }
+            }
+            return scopeManager;
         }
 
-        public IScopeManager GetScopeManager()
-        {
-            return scopemanager.Value;
-        }
-
-        protected abstract IScopeManager CreateScopeManager();
+        protected abstract IScopeManager CreateScopeManager(IServiceFactory serviceFactory);
 
     }
 
@@ -4184,9 +4197,9 @@ namespace LightInject
     /// </summary>
     public class PerThreadScopeManagerProvider : ScopeManagerProvider
     {
-        protected override IScopeManager CreateScopeManager()
+        protected override IScopeManager CreateScopeManager(IServiceFactory serviceFactory)
         {
-            return new PerThreadScopeManager();
+            return new PerThreadScopeManager(serviceFactory);
         }
     }
 
@@ -4200,6 +4213,11 @@ namespace LightInject
         private readonly object syncRoot = new object();
 
         private readonly LogicalThreadStorage<Scope> currentScope = new LogicalThreadStorage<Scope>();
+
+        public PerLogicalCallContextScopeManager(IServiceFactory serviceFactory)
+        {
+            ServiceFactory = serviceFactory;
+        }
 
         /// <summary>
         /// Gets the current <see cref="Scope"/>.
@@ -4228,6 +4246,8 @@ namespace LightInject
                 return scope;
             }
         }
+
+        public IServiceFactory ServiceFactory { get; }
     }
 
     /// <summary>
@@ -4236,9 +4256,9 @@ namespace LightInject
     /// </summary>
     public class PerLogicalCallContextScopeManagerProvider : ScopeManagerProvider
     {
-        protected override IScopeManager CreateScopeManager()
+        protected override IScopeManager CreateScopeManager(IServiceFactory serviceFactory)
         {
-            return new PerLogicalCallContextScopeManager();
+            return new PerLogicalCallContextScopeManager(serviceFactory);
         }
     }
 
@@ -5920,6 +5940,11 @@ namespace LightInject
     {
         private ThreadLocal<Scope> threadLocalScope = new ThreadLocal<Scope>();
 
+        public PerThreadScopeManager(IServiceFactory serviceFactory)
+        {
+            this.ServiceFactory = serviceFactory;
+        }
+
         public Scope CurrentScope
         {
             get { return threadLocalScope.Value; }
@@ -5937,6 +5962,8 @@ namespace LightInject
             threadLocalScope.Value = scope;
             return scope;
         }
+
+        public IServiceFactory ServiceFactory { get; }
     }
 
 
@@ -5950,7 +5977,8 @@ namespace LightInject
         private readonly IList<IDisposable> disposableObjects = new List<IDisposable>();
 
         private readonly IScopeManager scopeManager;
-      
+        private readonly IServiceFactory serviceFactory;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
         /// </summary>
@@ -5959,6 +5987,7 @@ namespace LightInject
         public Scope(IScopeManager scopeManager, Scope parentScope)
         {
             this.scopeManager = scopeManager;
+            this.serviceFactory = serviceFactory;
             ParentScope = parentScope;
         }
 
@@ -6023,6 +6052,25 @@ namespace LightInject
                           
             var completedHandler = Completed;
             completedHandler?.Invoke(this, new EventArgs());
+        }
+
+        public object GetInstance(Type serviceType)
+        {
+            var previosScope = scopeManager.CurrentScope;
+            scopeManager.CurrentScope = this;
+            try
+            {
+                return scopeManager.ServiceFactory.GetInstance(serviceType);
+            }
+            finally
+            {
+                scopeManager.CurrentScope = previosScope;
+            }            
+        }
+
+        public TService GetInstance<TService>()
+        {
+            return (TService)GetInstance(typeof (TService));
         }
     }
 

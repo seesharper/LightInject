@@ -99,7 +99,8 @@
     <Compile Include="SampleServices\Foo.cs" />
     <Compile Include="SampleServices\IInternalsVisibleToDummy.cs" />
     <Compile Include="SampleServices\SampleService.cs" />
-    <Compile Include="ScopeTests.cs" />
+    <Compile Include="PerThreadScopeManagerTests.cs" />
+    <Compile Include="ScopeGetInstanceTests.cs" />
     <Compile Include="ServiceContainerVerificationTests.cs" />
     <Compile Include="ServiceRegistrationTests.cs" />
     <Compile Include="TypeExtractorMock.cs" />
