@@ -92,6 +92,7 @@
     <Compile Include="LazyCompositionRootTests.cs" />
     <Compile Include="LoggingTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
+    <Compile Include="PerLogicalCallContextTests.cs" />
     <Compile Include="PropertyInjectionVerificationTests.cs" />
     <Compile Include="PropertySelectorTests.cs" />
     <Compile Include="SampleServices\Bar.cs" />
