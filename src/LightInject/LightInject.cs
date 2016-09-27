@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.1.2
+    LightInject version 5.0.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -790,7 +790,7 @@ namespace LightInject
     {
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible
-        /// for providing the <see cref="ScopeManager"/> used to manage scopes.
+        /// for providing the <see cref="IScopeManager"/> used to manage scopes.
         /// </summary>
         IScopeManagerProvider ScopeManagerProvider { get; set; }
 
@@ -965,6 +965,24 @@ namespace LightInject
         /// when creating a new instance of the <paramref name="implementingType"/>.</returns>
         ConstructorInfo Execute(Type implementingType);
     }
+
+    /// <summary>
+    /// Represents a class that manages <see cref="Scope"/> instances.
+    /// </summary>
+    public interface IScopeManager
+    {
+        /// <summary>
+        /// Gets the current <see cref="Scope"/>.
+        /// </summary>
+        Scope CurrentScope { get; set; }
+
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns>A new <see cref="Scope"/>.</returns>
+        Scope BeginScope();
+    }
+
 #if NET45 || NET46 || NETSTANDARD11
 
     /// <summary>
@@ -1114,15 +1132,15 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a class that is capable of providing the current <see cref="ScopeManager"/>.
+    /// Represents a class that is capable of providing a <see cref="IScopeManager"/>.
     /// </summary>
     public interface IScopeManagerProvider
     {
         /// <summary>
-        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// Returns the <see cref="IScopeManager"/> that is responsible for managing scopes.
         /// </summary>
-        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
-        ScopeManager GetScopeManager();
+        /// <returns>The <see cref="IScopeManager"/> that is responsible for managing scopes.</returns>
+        IScopeManager GetScopeManager();
     }
 
     /// <summary>
@@ -1816,7 +1834,7 @@ namespace LightInject
 
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible
-        /// for providing the <see cref="ScopeManager"/> used to manage scopes.
+        /// for providing the <see cref="IScopeManager"/> used to manage scopes.
         /// </summary>
         public IScopeManagerProvider ScopeManagerProvider { get; set; }
 
@@ -4141,43 +4159,90 @@ namespace LightInject
         }
     }
 
-    /// <summary>
-    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> per thread.
-    /// </summary>
-    public class PerThreadScopeManagerProvider : IScopeManagerProvider
+    public abstract class ScopeManagerProvider : IScopeManagerProvider
     {
-        private readonly ThreadLocal<ScopeManager> scopeManagers =
-            new ThreadLocal<ScopeManager>(() => new ScopeManager());
+        private Lazy<IScopeManager> scopemanager;
 
-        /// <summary>
-        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
-        /// </summary>
-        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
-        public ScopeManager GetScopeManager()
+        protected ScopeManagerProvider()
         {
-            return scopeManagers.Value;
+            scopemanager = new Lazy<IScopeManager>(CreateScopeManager);
+        }
+
+        public IScopeManager GetScopeManager()
+        {
+            return scopemanager.Value;
+        }
+
+        protected abstract IScopeManager CreateScopeManager();
+
+    }
+
+
+
+    /// <summary>
+    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="PerThreadScopeManager"/> per thread.
+    /// </summary>
+    public class PerThreadScopeManagerProvider : ScopeManagerProvider
+    {
+        protected override IScopeManager CreateScopeManager()
+        {
+            return new PerThreadScopeManager();
         }
     }
 
 #if NET45 || NETSTANDARD13 || NET46
+
     /// <summary>
-    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="ScopeManager"/> across
-    /// async points.
+    /// Manages a set of <see cref="Scope"/> instances.
     /// </summary>
-    public class PerLogicalCallContextScopeManagerProvider : IScopeManagerProvider
+    public class PerLogicalCallContextScopeManager : IScopeManager
     {
-        private readonly LogicalThreadStorage<ScopeManager> scopeManagers =
-            new LogicalThreadStorage<ScopeManager>(() => new ScopeManager());
+        private readonly object syncRoot = new object();
+
+        private readonly LogicalThreadStorage<Scope> currentScope = new LogicalThreadStorage<Scope>();
 
         /// <summary>
-        /// Returns the <see cref="ScopeManager"/> that is responsible for managing scopes.
+        /// Gets the current <see cref="Scope"/>.
         /// </summary>
-        /// <returns>The <see cref="ScopeManager"/> that is responsible for managing scopes.</returns>
-        public ScopeManager GetScopeManager()
+        public Scope CurrentScope
         {
-            return scopeManagers.Value;
+            get { return currentScope.Value; }
+            set { currentScope.Value = value; }
+        }
+
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns>A new <see cref="Scope"/>.</returns>
+        public Scope BeginScope()
+        {
+            lock (syncRoot)
+            {
+                var scope = new Scope(this, currentScope.Value);
+                if (currentScope.Value != null)
+                {
+                    currentScope.Value.ChildScope = scope;
+                }
+
+                currentScope.Value = scope;
+                return scope;
+            }
         }
     }
+
+    /// <summary>
+    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="PerLogicalCallContextScopeManager"/> across
+    /// async points.
+    /// </summary>
+    public class PerLogicalCallContextScopeManagerProvider : ScopeManagerProvider
+    {
+        protected override IScopeManager CreateScopeManager()
+        {
+            return new PerLogicalCallContextScopeManager();
+        }
+    }
+
+
 
 #endif
 
@@ -5849,69 +5914,33 @@ namespace LightInject
         }
     }
 
-    /// <summary>
-    /// Manages a set of <see cref="Scope"/> instances.
-    /// </summary>
-    public class ScopeManager
+
+
+    public class PerThreadScopeManager : IScopeManager
     {
-        private readonly object syncRoot = new object();
+        private ThreadLocal<Scope> threadLocalScope = new ThreadLocal<Scope>();
 
-        private Scope currentScope;
-
-        /// <summary>
-        /// Gets the current <see cref="Scope"/>.
-        /// </summary>
         public Scope CurrentScope
         {
-            get
-            {
-                lock (syncRoot)
-                {
-                    return currentScope;
-                }
-            }
+            get { return threadLocalScope.Value; }
+            set { threadLocalScope.Value = value; }
         }
 
-        /// <summary>
-        /// Starts a new <see cref="Scope"/>.
-        /// </summary>
-        /// <returns>A new <see cref="Scope"/>.</returns>
         public Scope BeginScope()
         {
-            lock (syncRoot)
+            var scope = new Scope(this, threadLocalScope.Value);
+            if (threadLocalScope.Value != null)
             {
-                var scope = new Scope(this, currentScope);
-                if (currentScope != null)
-                {
-                    currentScope.ChildScope = scope;
-                }
-
-                currentScope = scope;
-                return scope;
+                threadLocalScope.Value.ChildScope = scope;
             }
-        }
 
-        /// <summary>
-        /// Ends the given <paramref name="scope"/> and updates the <see cref="CurrentScope"/> property.
-        /// </summary>
-        /// <param name="scope">The scope that is completed.</param>
-        public void EndScope(Scope scope)
-        {
-            lock (syncRoot)
-            {
-                if (scope.ChildScope != null)
-                {
-                    throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
-                }
-
-                currentScope = scope.ParentScope;
-                if (currentScope != null)
-                {
-                    currentScope.ChildScope = null;
-                }
-            }
+            threadLocalScope.Value = scope;
+            return scope;
         }
     }
+
+
+  
 
     /// <summary>
     /// Represents a scope.
@@ -5920,14 +5949,14 @@ namespace LightInject
     {
         private readonly IList<IDisposable> disposableObjects = new List<IDisposable>();
 
-        private readonly ScopeManager scopeManager;
-
+        private readonly IScopeManager scopeManager;
+      
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
         /// </summary>
         /// <param name="scopeManager">The <see cref="scopeManager"/> that manages this <see cref="Scope"/>.</param>
         /// <param name="parentScope">The parent <see cref="Scope"/>.</param>
-        public Scope(ScopeManager scopeManager, Scope parentScope)
+        public Scope(IScopeManager scopeManager, Scope parentScope)
         {
             this.scopeManager = scopeManager;
             ParentScope = parentScope;
@@ -5976,12 +6005,24 @@ namespace LightInject
 
         private void OnCompleted()
         {
-            scopeManager.EndScope(this);
-            var completedHandler = Completed;
-            if (completedHandler != null)
+            if (ChildScope != null)
             {
-                completedHandler(this, new EventArgs());
+                throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
             }
+            
+            if (!ReferenceEquals(scopeManager.CurrentScope, this))
+            {
+                throw new InvalidOperationException("Attempt to end a scope that is currently not the current scope.");
+            }
+
+            scopeManager.CurrentScope = ParentScope;
+            if (scopeManager.CurrentScope != null)
+            {
+                scopeManager.CurrentScope.ChildScope = null;
+            }
+                          
+            var completedHandler = Completed;
+            completedHandler?.Invoke(this, new EventArgs());
         }
     }
 
@@ -6111,8 +6152,7 @@ namespace LightInject
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
             InternalTypes.Add(typeof(Scope));
             InternalTypes.Add(typeof(PerContainerLifetime));
-            InternalTypes.Add(typeof(PerScopeLifetime));
-            InternalTypes.Add(typeof(ScopeManager));
+            InternalTypes.Add(typeof(PerScopeLifetime));            
             InternalTypes.Add(typeof(ServiceRegistration));
             InternalTypes.Add(typeof(DecoratorRegistration));
             InternalTypes.Add(typeof(ServiceRequest));
@@ -6150,6 +6190,7 @@ namespace LightInject
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));
 #if NET45 || NET46 || NETSTANDARD13
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
+            InternalTypes.Add(typeof(PerLogicalCallContextScopeManager));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif
 #if PCL_111
@@ -7231,23 +7272,9 @@ namespace LightInject
     /// </summary>
     /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
     public class LogicalThreadStorage<T>
-    {
-        private readonly Func<T> valueFactory;
-
-        private readonly string key;
-
-        private readonly object lockObject = new object();
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LogicalThreadStorage{T}"/> class.
-        /// </summary>
-        /// <param name="valueFactory">The value factory used to create an instance of <typeparamref name="T"/>.</param>
-        public LogicalThreadStorage(Func<T> valueFactory)
-        {
-            this.valueFactory = valueFactory;
-            key = Guid.NewGuid().ToString();
-        }
-
+    {        
+        private readonly string key = Guid.NewGuid().ToString();
+               
         /// <summary>
         /// Gets the value for the current logical thread of execution.
         /// </summary>
@@ -7258,23 +7285,18 @@ namespace LightInject
         {
             get
             {
-                var holder = (LogicalThreadValue)CallContext.LogicalGetData(key);
-                if (holder != null)
+                var logicalThreadValue = (LogicalThreadValue)CallContext.LogicalGetData(key);
+                return logicalThreadValue != null ? logicalThreadValue.Value : default(T);
+            }
+            set
+            {
+                LogicalThreadValue logicalThreadValue = null;
+                if (value != null)
                 {
-                    return holder.Value;
+                    logicalThreadValue = new LogicalThreadValue { Value = value };
                 }
 
-                lock (lockObject)
-                {
-                    holder = (LogicalThreadValue)CallContext.LogicalGetData(key);
-                    if (holder == null)
-                    {
-                        holder = new LogicalThreadValue { Value = valueFactory() };
-                        CallContext.LogicalSetData(key, holder);
-                    }
-                }
-
-                return holder.Value;
+                CallContext.LogicalSetData(key, logicalThreadValue);
             }
         }
 
@@ -7305,44 +7327,21 @@ namespace LightInject
     /// </summary>
     /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
     public class LogicalThreadStorage<T>
-    {
-        private readonly Func<T> valueFactory;
-
-        private readonly AsyncLocal<T> asyncLocal;
+    {        
+        private readonly AsyncLocal<T> asyncLocal = new AsyncLocal<T>();
 
         private readonly object lockObject = new object();
-
+        
         /// <summary>
-        /// Initializes a new instance of the <see cref="LogicalThreadStorage{T}"/> class.
-        /// </summary>
-        /// <param name="valueFactory">The value factory used to create an instance of <typeparamref name="T"/>.</param>
-        public LogicalThreadStorage(Func<T> valueFactory)
-        {
-            asyncLocal = new AsyncLocal<T>();
-            this.valueFactory = valueFactory;
-        }
-
-        /// <summary>
-        /// Gets the value for the current logical thread of execution.
+        /// Gets or sets the value for the current logical thread of execution.
         /// </summary>
         /// <value>
         /// The value for the current logical thread of execution.
         /// </value>
         public T Value
         {
-            get
-            {
-                lock (lockObject)
-                {
-                    T value = asyncLocal.Value;
-                    if (value == null)
-                    {
-                        asyncLocal.Value = valueFactory();
-                    }
-
-                    return asyncLocal.Value;
-                }
-            }
+            get { return asyncLocal.Value; }
+            set { asyncLocal.Value = value; }
         }
     }
 #endif
@@ -7352,7 +7351,7 @@ namespace LightInject
         static LifetimeHelper()
         {
             GetInstanceMethod = typeof(ILifetime).GetTypeInfo().GetDeclaredMethod("GetInstance");
-            GetCurrentScopeMethod = typeof(ScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
+            GetCurrentScopeMethod = typeof(IScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
             GetScopeManagerMethod = typeof(IScopeManagerProvider).GetTypeInfo().GetDeclaredMethod("GetScopeManager");
         }
 

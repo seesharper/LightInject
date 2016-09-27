@@ -11,12 +11,14 @@ namespace LightInject.Tests
     
     public class ScopeTests
     {
-        private readonly ThreadLocal<ScopeManager> scopeManagers = new ThreadLocal<ScopeManager>(() => new ScopeManager());
+        //private readonly ThreadLocal<PerLogicalCallContextScopeManager> scopeManagers = new ThreadLocal<PerLogicalCallContextScopeManager>(() => new PerLogicalCallContextScopeManager());
 
         [Fact]
         public void BeginScope_NoParentScope_ParentScopeIsNull()
         {
-            using (var scope = scopeManagers.Value.BeginScope())
+            var scopeManager = new PerThreadScopeManager();
+
+            using (var scope = scopeManager.BeginScope())
             {
                 Assert.Null(scope.ParentScope);
             }
@@ -25,9 +27,11 @@ namespace LightInject.Tests
         [Fact]
         public void BeginScope_WithParentScope_ParentScopeIsOuterScope()
         {
-            using (var outerScope = scopeManagers.Value.BeginScope())
+            var scopeManager = new PerThreadScopeManager();
+
+            using (var outerScope = scopeManager.BeginScope())
             {
-                using (var scope = scopeManagers.Value.BeginScope())
+                using (var scope = scopeManager.BeginScope())
                 {
                     Assert.Same(scope.ParentScope, outerScope);
                 }
@@ -37,9 +41,10 @@ namespace LightInject.Tests
         [Fact]
         public void BeginScope_WithParentScope_ParentScopeHasInnerScopeAsChild()
         {
-            using (var outerScope = scopeManagers.Value.BeginScope())
+            var scopeManager = new PerThreadScopeManager();
+            using (var outerScope = scopeManager.BeginScope())
             {
-                using (var scope = scopeManagers.Value.BeginScope())
+                using (var scope = scopeManager.BeginScope())
                 {
                     Assert.Same(scope, outerScope.ChildScope);
                 }
@@ -49,11 +54,13 @@ namespace LightInject.Tests
         [Fact]
         public void EndScope_BeforeInnerScopeHasCompleted_ThrowsException()
         {
-            using (var outerScope = scopeManagers.Value.BeginScope())
+            var scopeManager = new PerThreadScopeManager();
+
+            using (var outerScope = scopeManager.BeginScope())
             {
-                using (scopeManagers.Value.BeginScope())
+                using (var innerScope = scopeManager.BeginScope())
                 {
-                    Assert.Throws<InvalidOperationException>(() => scopeManagers.Value.EndScope(outerScope));
+                    Assert.Throws<InvalidOperationException>(() => outerScope.Dispose());
                 }
             }
         }
@@ -61,18 +68,20 @@ namespace LightInject.Tests
         [Fact]
         public void Dispose_OnAnotherThread_UpdateCurrentScope()
         {
-            Scope scope = scopeManagers.Value.BeginScope();
+            var scopeManager = new PerThreadScopeManager();
+            Scope scope = scopeManager.BeginScope();
             Thread thread = new Thread(scope.Dispose);
             thread.Start();
             thread.Join();
-            Assert.Null(scopeManagers.Value.CurrentScope);
+            Assert.Null(scopeManager.CurrentScope);
         }
 
         [Fact]
         public void Dispose_WithTrackedInstances_DisposesTrackedInstances()
         {
+            var scopeManager = new PerThreadScopeManager();
             var disposable = new DisposableFoo();
-            Scope scope = scopeManagers.Value.BeginScope();
+            Scope scope = scopeManager.BeginScope();
             scope.TrackInstance(disposable);
             scope.Dispose();
             Assert.True(disposable.IsDisposed);
@@ -82,7 +91,7 @@ namespace LightInject.Tests
         public void EndCurrentScope_InScope_EndsScope()
         {
             var container = new ServiceContainer();
-            ScopeManager manager = container.ScopeManagerProvider.GetScopeManager();
+            IScopeManager manager = container.ScopeManagerProvider.GetScopeManager();
             
             container.BeginScope();
             container.EndCurrentScope();
