@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.0.0
+    LightInject version 5.0.0-RC1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -972,9 +972,14 @@ namespace LightInject
     public interface IScopeManager
     {
         /// <summary>
-        /// Gets the current <see cref="Scope"/>.
+        /// Gets or sets the current <see cref="Scope"/>.
         /// </summary>
         Scope CurrentScope { get; set; }
+
+        /// <summary>
+        /// Gets the <see cref="IServiceFactory"/> that is associated with this <see cref="IScopeManager"/>.
+        /// </summary>
+        IServiceFactory ServiceFactory { get; }
 
         /// <summary>
         /// Starts a new <see cref="Scope"/>.
@@ -982,7 +987,7 @@ namespace LightInject
         /// <returns>A new <see cref="Scope"/>.</returns>
         Scope BeginScope();
 
-        IServiceFactory ServiceFactory { get; }
+        void EndScope(Scope scope);
     }
 
 #if NET45 || NET46 || NETSTANDARD11
@@ -1141,8 +1146,9 @@ namespace LightInject
         /// <summary>
         /// Returns the <see cref="IScopeManager"/> that is responsible for managing scopes.
         /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with this <see cref="ScopeManager"/>.</param> 
         /// <returns>The <see cref="IScopeManager"/> that is responsible for managing scopes.</returns>
-        IScopeManager GetScopeManager(IServiceFactory serviceFactory);        
+        IScopeManager GetScopeManager(IServiceFactory serviceFactory);
     }
 
     /// <summary>
@@ -1707,6 +1713,10 @@ namespace LightInject
         /// </summary>
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether warnings
+        /// should be treated as errors.
+        /// </summary>
         public bool WarningsAsErrors { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions()
@@ -3251,7 +3261,10 @@ namespace LightInject
                 var message = $"Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.";
                 log.Warning(message);
                 if (options.WarningsAsErrors)
+                {
                     throw new InvalidOperationException(message);
+                }
+                    
                 return existingRegistration;
             }
 
@@ -3932,7 +3945,7 @@ namespace LightInject
                 var getInstanceMethod = LifetimeHelper.GetInstanceMethod;
                 emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
                 emitter.PushConstant(instanceDelegateIndex, typeof(Func<object>));
-                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));                
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
                 emitter.Call(LifetimeHelper.GetCurrentScopeMethod);
                 emitter.Call(getInstanceMethod);
             }
@@ -4170,7 +4183,7 @@ namespace LightInject
         private object lockObject = new object();
 
         private IScopeManager scopeManager;
-        
+
         public IScopeManager GetScopeManager(IServiceFactory serviceFactory)
         {
             if (scopeManager == null)
@@ -4183,14 +4196,17 @@ namespace LightInject
                     }
                 }
             }
+
             return scopeManager;
         }
 
+        /// <summary>
+        /// Creates a new <see cref="IScopeManager"/> instance.
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with the <see cref="IScopeManager"/>.</param> 
+        /// <returns><see cref="IScopeManager"/>.</returns>
         protected abstract IScopeManager CreateScopeManager(IServiceFactory serviceFactory);
-
     }
-
-
 
     /// <summary>
     /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="PerThreadScopeManager"/> per thread.
@@ -4208,51 +4224,32 @@ namespace LightInject
     /// <summary>
     /// Manages a set of <see cref="Scope"/> instances.
     /// </summary>
-    public class PerLogicalCallContextScopeManager : IScopeManager
+    public class PerLogicalCallContextScopeManager : ScopeManager
     {
-        private readonly object syncRoot = new object();
-
         private readonly LogicalThreadStorage<Scope> currentScope = new LogicalThreadStorage<Scope>();
 
-        public PerLogicalCallContextScopeManager(IServiceFactory serviceFactory)
-        {
-            ServiceFactory = serviceFactory;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PerLogicalCallContextScopeManager"/> class.        
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with this <see cref="ScopeManager"/>.</param>
+        public PerLogicalCallContextScopeManager(IServiceFactory serviceFactory) 
+            : base(serviceFactory)
+        {            
         }
 
         /// <summary>
-        /// Gets the current <see cref="Scope"/>.
+        /// Gets or sets the current <see cref="Scope"/>.
         /// </summary>
-        public Scope CurrentScope
+        public override Scope CurrentScope
         {
             get { return currentScope.Value; }
             set { currentScope.Value = value; }
-        }
-
-        /// <summary>
-        /// Starts a new <see cref="Scope"/>.
-        /// </summary>
-        /// <returns>A new <see cref="Scope"/>.</returns>
-        public Scope BeginScope()
-        {
-            lock (syncRoot)
-            {
-                var scope = new Scope(this, currentScope.Value);
-                if (currentScope.Value != null)
-                {
-                    currentScope.Value.ChildScope = scope;
-                }
-
-                currentScope.Value = scope;
-                return scope;
-            }
-        }
-
-        public IServiceFactory ServiceFactory { get; }
+        }               
     }
 
     /// <summary>
-    /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="PerLogicalCallContextScopeManager"/> across
-    /// async points.
+    /// A <see cref="IScopeManagerProvider"/> that creates an <see cref="IScopeManager"/>
+    /// that is capable of managing scopes across async points.
     /// </summary>
     public class PerLogicalCallContextScopeManagerProvider : ScopeManagerProvider
     {
@@ -4261,9 +4258,6 @@ namespace LightInject
             return new PerLogicalCallContextScopeManager(serviceFactory);
         }
     }
-
-
-
 #endif
 
     /// <summary>
@@ -5934,40 +5928,94 @@ namespace LightInject
         }
     }
 
-
-
-    public class PerThreadScopeManager : IScopeManager
+    /// <summary>
+    /// A base class for implementing <see cref="IScopeManager"/>.
+    /// </summary>
+    public abstract class ScopeManager : IScopeManager
     {
-        private ThreadLocal<Scope> threadLocalScope = new ThreadLocal<Scope>();
-
-        public PerThreadScopeManager(IServiceFactory serviceFactory)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ScopeManager"/> class.        
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with this <see cref="ScopeManager"/>.</param>
+        protected ScopeManager(IServiceFactory serviceFactory)
         {
-            this.ServiceFactory = serviceFactory;
+            ServiceFactory = serviceFactory;
+        }
+        
+        /// <summary>
+        /// Gets or sets the current <see cref="Scope"/>.
+        /// </summary>
+        public abstract Scope CurrentScope { get; set; }
+
+        /// <summary>
+        /// Gets the <see cref="IServiceFactory"/> that is associated with this <see cref="IScopeManager"/>.
+        /// </summary>
+        public IServiceFactory ServiceFactory { get; }
+
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns>A new <see cref="Scope"/>.</returns>
+        public Scope BeginScope()
+        {
+            var currentScope = CurrentScope;
+            var scope = new Scope(this, currentScope);
+            if (currentScope != null)
+            {
+                currentScope.ChildScope = scope;
+            }
+
+            CurrentScope = scope;
+            return scope;
         }
 
-        public Scope CurrentScope
+        public void EndScope(Scope scope)
+        {
+            if (scope.ChildScope != null)
+            {
+                throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
+            }
+
+            if (!ReferenceEquals(CurrentScope, scope))
+            {
+                throw new InvalidOperationException("Attempt to end a scope that is currently not the current scope.");
+            }
+
+            var currentScope = scope.ParentScope;
+            if (currentScope != null)
+            {
+                currentScope.ChildScope = null;
+            }
+
+            CurrentScope = currentScope;
+        }
+    }
+
+    /// <summary>
+    /// A <see cref="IScopeManager"/> that manages scopes per thread.
+    /// </summary>
+    public class PerThreadScopeManager : ScopeManager
+    {
+        private readonly ThreadLocal<Scope> threadLocalScope = new ThreadLocal<Scope>();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PerThreadScopeManager"/> class.        
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with this <see cref="ScopeManager"/>.</param>
+        public PerThreadScopeManager(IServiceFactory serviceFactory)
+            : base(serviceFactory)
+        {
+        }
+
+        /// <summary>
+        /// Gets or sets the current <see cref="Scope"/>.
+        /// </summary>
+        public override Scope CurrentScope
         {
             get { return threadLocalScope.Value; }
             set { threadLocalScope.Value = value; }
         }
-
-        public Scope BeginScope()
-        {
-            var scope = new Scope(this, threadLocalScope.Value);
-            if (threadLocalScope.Value != null)
-            {
-                threadLocalScope.Value.ChildScope = scope;
-            }
-
-            threadLocalScope.Value = scope;
-            return scope;
-        }
-
-        public IServiceFactory ServiceFactory { get; }
     }
-
-
-  
 
     /// <summary>
     /// Represents a scope.
@@ -5977,8 +6025,7 @@ namespace LightInject
         private readonly IList<IDisposable> disposableObjects = new List<IDisposable>();
 
         private readonly IScopeManager scopeManager;
-        private readonly IServiceFactory serviceFactory;
-
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
         /// </summary>
@@ -5986,8 +6033,7 @@ namespace LightInject
         /// <param name="parentScope">The parent <see cref="Scope"/>.</param>
         public Scope(IScopeManager scopeManager, Scope parentScope)
         {
-            this.scopeManager = scopeManager;
-            this.serviceFactory = serviceFactory;
+            this.scopeManager = scopeManager;            
             ParentScope = parentScope;
         }
 
@@ -6034,22 +6080,7 @@ namespace LightInject
 
         private void OnCompleted()
         {
-            if (ChildScope != null)
-            {
-                throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
-            }
-            
-            if (!ReferenceEquals(scopeManager.CurrentScope, this))
-            {
-                throw new InvalidOperationException("Attempt to end a scope that is currently not the current scope.");
-            }
-
-            scopeManager.CurrentScope = ParentScope;
-            if (scopeManager.CurrentScope != null)
-            {
-                scopeManager.CurrentScope.ChildScope = null;
-            }
-                          
+            scopeManager.EndScope(this);            
             var completedHandler = Completed;
             completedHandler?.Invoke(this, new EventArgs());
         }
@@ -6065,12 +6096,12 @@ namespace LightInject
             finally
             {
                 scopeManager.CurrentScope = previosScope;
-            }            
+            }
         }
 
         public TService GetInstance<TService>()
         {
-            return (TService)GetInstance(typeof (TService));
+            return (TService)GetInstance(typeof(TService));
         }
     }
 
@@ -6200,7 +6231,7 @@ namespace LightInject
             InternalTypes.Add(typeof(ThreadSafeDictionary<,>));
             InternalTypes.Add(typeof(Scope));
             InternalTypes.Add(typeof(PerContainerLifetime));
-            InternalTypes.Add(typeof(PerScopeLifetime));            
+            InternalTypes.Add(typeof(PerScopeLifetime));
             InternalTypes.Add(typeof(ServiceRegistration));
             InternalTypes.Add(typeof(DecoratorRegistration));
             InternalTypes.Add(typeof(ServiceRequest));
@@ -7375,11 +7406,11 @@ namespace LightInject
     /// </summary>
     /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
     public class LogicalThreadStorage<T>
-    {        
+    {
         private readonly AsyncLocal<T> asyncLocal = new AsyncLocal<T>();
 
         private readonly object lockObject = new object();
-        
+
         /// <summary>
         /// Gets or sets the value for the current logical thread of execution.
         /// </summary>
