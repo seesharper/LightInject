@@ -569,12 +569,7 @@ namespace LightInject
         /// </summary>
         /// <returns><see cref="Scope"/></returns>
         Scope BeginScope();
-
-        /// <summary>
-        /// Ends the current <see cref="Scope"/>.
-        /// </summary>
-        void EndCurrentScope();
-
+       
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
@@ -608,121 +603,6 @@ namespace LightInject
         object GetInstance(Type serviceType, string serviceName);
 
         /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/> type.
-        /// </summary>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<TService>();
-
-        /// <summary>
-        /// Gets a named instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<TService>(string serviceName);
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T">The type of the argument.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="value">The argument value.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<T, TService>(T value);
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T">The type of the parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="value">The argument value.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<T, TService>(T value, string serviceName);
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2);
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2, string serviceName);
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="T3">The type of the third parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="arg3">The third argument value.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3);
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="T3">The type of the third parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="arg3">The third argument value.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3, string serviceName);
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="T3">The type of the third parameter.</typeparam>
-        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="arg3">The third argument value.</param>
-        /// <param name="arg4">The fourth argument value.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4);
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="T3">The type of the third parameter.</typeparam>
-        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="arg3">The third argument value.</param>
-        /// <param name="arg4">The fourth argument value.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, string serviceName);
-
-        /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
@@ -738,42 +618,11 @@ namespace LightInject
         object TryGetInstance(Type serviceType, string serviceName);
 
         /// <summary>
-        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
-        /// </summary>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <returns>The requested service instance if available, otherwise default(T).</returns>
-        TService TryGetInstance<TService>();
-
-        /// <summary>
-        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
-        /// </summary>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance if available, otherwise default(T).</returns>
-        TService TryGetInstance<TService>(string serviceName);
-
-        /// <summary>
         /// Gets all instances of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of services to resolve.</param>
         /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
         IEnumerable<object> GetAllInstances(Type serviceType);
-
-        /// <summary>
-        /// Gets all instances of type <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="TService">The type of services to resolve.</typeparam>
-        /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
-        IEnumerable<TService> GetAllInstances<TService>();
-
-        /// <summary>
-        /// Creates an instance of a concrete class.
-        /// </summary>
-        /// <typeparam name="TService">The type of class for which to create an instance.</typeparam>
-        /// <returns>An instance of <typeparamref name="TService"/>.</returns>
-        /// <remarks>The concrete type will be registered if not already registered with the container.</remarks>
-        TService Create<TService>()
-            where TService : class;
 
         /// <summary>
         /// Creates an instance of a concrete class.
@@ -987,6 +836,10 @@ namespace LightInject
         /// <returns>A new <see cref="Scope"/>.</returns>
         Scope BeginScope();
 
+        /// <summary>
+        /// Ends the given <paramref name="scope"/>.
+        /// </summary>
+        /// <param name="scope">The scope to be ended.</param>
         void EndScope(Scope scope);
     }
 
@@ -1197,6 +1050,214 @@ namespace LightInject
             {
                 throw new ArgumentNullException(paramName);
             }
+        }
+    }
+
+    /// <summary>
+    /// Extends the <see cref="IServiceFactory"/> interface.
+    /// </summary>
+    public static class ServiceFactoryExtensions
+    {
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>   
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<TService>(this IServiceFactory factory)
+        {
+            return (TService)factory.GetInstance(typeof(TService));
+        }
+
+        /// <summary>
+        /// Gets a named instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<TService>(this IServiceFactory factory, string serviceName)
+        {
+            return (TService)factory.GetInstance(typeof(TService), serviceName);
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the argument.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>             
+        /// <param name="value">The argument value.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<T, TService>(this IServiceFactory factory, T value)
+        {
+            return (TService)factory.GetInstance(typeof(TService), new object[] { value });
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="value">The argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<T, TService>(this IServiceFactory factory, T value, string serviceName)
+        {
+            return (TService)factory.GetInstance(typeof(TService), serviceName, new object[] { value });
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<T1, T2, TService>(this IServiceFactory factory, T1 arg1, T2 arg2)
+        {
+            return (TService)factory.GetInstance(typeof(TService), new object[] { arg1, arg2 });
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<T1, T2, TService>(this IServiceFactory factory, T1 arg1, T2 arg2, string serviceName)
+        {
+            return (TService)factory.GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2 });
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<T1, T2, T3, TService>(this IServiceFactory factory, T1 arg1, T2 arg2, T3 arg3)
+        {
+            return (TService)factory.GetInstance(typeof(TService), new object[] { arg1, arg2, arg3 });
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<T1, T2, T3, TService>(this IServiceFactory factory, T1 arg1, T2 arg2, T3 arg3, string serviceName)
+        {
+            return (TService)factory.GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2, arg3 });
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <param name="arg4">The fourth argument value.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<T1, T2, T3, T4, TService>(this IServiceFactory factory, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        {
+            return (TService)factory.GetInstance(typeof(TService), new object[] { arg1, arg2, arg3, arg4 });
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="arg1">The first argument value.</param>
+        /// <param name="arg2">The second argument value.</param>
+        /// <param name="arg3">The third argument value.</param>
+        /// <param name="arg4">The fourth argument value.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        public static TService GetInstance<T1, T2, T3, T4, TService>(this IServiceFactory factory, T1 arg1, T2 arg2, T3 arg3, T4 arg4, string serviceName)
+        {
+            return (TService)factory.GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2, arg3, arg4 });
+        }
+
+        /// <summary>
+        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <returns>The requested service instance if available, otherwise default(T).</returns>
+        public static TService TryGetInstance<TService>(this IServiceFactory factory)
+        {
+            return (TService)factory.TryGetInstance(typeof(TService));
+        }
+
+        /// <summary>
+        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
+        /// </summary>
+        /// <typeparam name="TService">The type of the requested service.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise default(T).</returns>
+        public static TService TryGetInstance<TService>(this IServiceFactory factory, string serviceName)
+        {
+            return (TService)factory.TryGetInstance(typeof(TService), serviceName);
+        }
+
+        /// <summary>
+        /// Gets all instances of type <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="TService">The type of services to resolve.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
+        public static IEnumerable<TService> GetAllInstances<TService>(this IServiceFactory factory)
+        {
+            return factory.GetInstance<IEnumerable<TService>>();
+        }
+
+        /// <summary>
+        /// Creates an instance of a concrete class.
+        /// </summary>
+        /// <typeparam name="TService">The type of class for which to create an instance.</typeparam>
+        /// <param name="factory">The target <see cref="IServiceFactory"/>.</param>     
+        /// <returns>An instance of <typeparamref name="TService"/>.</returns>
+        /// <remarks>The concrete type will be registered if not already registered with the container.</remarks>
+        public static TService Create<TService>(this IServiceFactory factory)
+            where TService : class
+        {
+            return (TService)factory.Create(typeof(TService));
         }
     }
 
@@ -1924,16 +1985,7 @@ namespace LightInject
         {
             return ScopeManagerProvider.GetScopeManager(this).BeginScope();
         }
-
-        /// <summary>
-        /// Ends the current <see cref="Scope"/>.
-        /// </summary>
-        public void EndCurrentScope()
-        {
-            Scope currentScope = ScopeManagerProvider.GetScopeManager(this).CurrentScope;
-            currentScope.Dispose();
-        }
-
+        
         /// <summary>
         /// Injects the property dependencies for a given <paramref name="instance"/>.
         /// </summary>
@@ -2689,151 +2741,6 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/> type.
-        /// </summary>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<TService>()
-        {
-            return (TService)GetInstance(typeof(TService));
-        }
-
-        /// <summary>
-        /// Gets a named instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<TService>(string serviceName)
-        {
-            return (TService)GetInstance(typeof(TService), serviceName);
-        }
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T">The type of the argument.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="value">The argument value.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<T, TService>(T value)
-        {
-            return (TService)GetInstance(typeof(TService), new object[] { value });
-        }
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T">The type of the parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="value">The argument value.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<T, TService>(T value, string serviceName)
-        {
-            return (TService)GetInstance(typeof(TService), serviceName, new object[] { value });
-        }
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2)
-        {
-            return (TService)GetInstance(typeof(TService), new object[] { arg1, arg2 });
-        }
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<T1, T2, TService>(T1 arg1, T2 arg2, string serviceName)
-        {
-            return (TService)GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2 });
-        }
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="T3">The type of the third parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="arg3">The third argument value.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3)
-        {
-            return (TService)GetInstance(typeof(TService), new object[] { arg1, arg2, arg3 });
-        }
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="T3">The type of the third parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="arg3">The third argument value.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<T1, T2, T3, TService>(T1 arg1, T2 arg2, T3 arg3, string serviceName)
-        {
-            return (TService)GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2, arg3 });
-        }
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="T3">The type of the third parameter.</typeparam>
-        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="arg3">The third argument value.</param>
-        /// <param name="arg4">The fourth argument value.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-        {
-            return (TService)GetInstance(typeof(TService), new object[] { arg1, arg2, arg3, arg4 });
-        }
-
-        /// <summary>
-        /// Gets an instance of the given <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="T1">The type of the first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the second parameter.</typeparam>
-        /// <typeparam name="T3">The type of the third parameter.</typeparam>
-        /// <typeparam name="T4">The type of the fourth parameter.</typeparam>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="arg1">The first argument value.</param>
-        /// <param name="arg2">The second argument value.</param>
-        /// <param name="arg3">The third argument value.</param>
-        /// <param name="arg4">The fourth argument value.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
-        public TService GetInstance<T1, T2, T3, T4, TService>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, string serviceName)
-        {
-            return (TService)GetInstance(typeof(TService), serviceName, new object[] { arg1, arg2, arg3, arg4 });
-        }
-
-        /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
@@ -2868,27 +2775,6 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
-        /// </summary>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <returns>The requested service instance if available, otherwise default(T).</returns>
-        public TService TryGetInstance<TService>()
-        {
-            return (TService)TryGetInstance(typeof(TService));
-        }
-
-        /// <summary>
-        /// Tries to get an instance of the given <typeparamref name="TService"/> type.
-        /// </summary>
-        /// <typeparam name="TService">The type of the requested service.</typeparam>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance if available, otherwise default(T).</returns>
-        public TService TryGetInstance<TService>(string serviceName)
-        {
-            return (TService)TryGetInstance(typeof(TService), serviceName);
-        }
-
-        /// <summary>
         /// Gets a named instance of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
@@ -2914,29 +2800,6 @@ namespace LightInject
         public IEnumerable<object> GetAllInstances(Type serviceType)
         {
             return (IEnumerable<object>)GetInstance(serviceType.GetEnumerableType());
-        }
-
-        /// <summary>
-        /// Gets all instances of type <typeparamref name="TService"/>.
-        /// </summary>
-        /// <typeparam name="TService">The type of services to resolve.</typeparam>
-        /// <returns>A list that contains all implementations of the <typeparamref name="TService"/> type.</returns>
-        public IEnumerable<TService> GetAllInstances<TService>()
-        {
-            return GetInstance<IEnumerable<TService>>();
-        }
-
-        /// <summary>
-        /// Creates an instance of a concrete class.
-        /// </summary>
-        /// <typeparam name="TService">The type of class for which to create an instance.</typeparam>
-        /// <returns>An instance of <typeparamref name="TService"/>.</returns>
-        /// <remarks>The concrete type will be registered if not already registered with the container.</remarks>
-        public TService Create<TService>()
-            where TService : class
-        {
-            Register(typeof(TService));
-            return GetInstance<TService>();
         }
 
         /// <summary>
@@ -4178,12 +4041,21 @@ namespace LightInject
         }
     }
 
+    /// <summary>
+    /// A base class for implementing <see cref="IScopeManagerProvider"/>
+    /// that ensures that only one <see cref="IScopeManager"/> is created.
+    /// </summary>
     public abstract class ScopeManagerProvider : IScopeManagerProvider
     {
-        private object lockObject = new object();
+        private readonly object lockObject = new object();
 
         private IScopeManager scopeManager;
 
+        /// <summary>
+        /// Returns the <see cref="IScopeManager"/> that is responsible for managing scopes.
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with this <see cref="ScopeManager"/>.</param> 
+        /// <returns>The <see cref="IScopeManager"/> that is responsible for managing scopes.</returns>
         public IScopeManager GetScopeManager(IServiceFactory serviceFactory)
         {
             if (scopeManager == null)
@@ -4213,6 +4085,11 @@ namespace LightInject
     /// </summary>
     public class PerThreadScopeManagerProvider : ScopeManagerProvider
     {
+        /// <summary>
+        /// Creates a new <see cref="IScopeManager"/> instance.
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with the <see cref="IScopeManager"/>.</param> 
+        /// <returns><see cref="IScopeManager"/>.</returns>
         protected override IScopeManager CreateScopeManager(IServiceFactory serviceFactory)
         {
             return new PerThreadScopeManager(serviceFactory);
@@ -4253,6 +4130,11 @@ namespace LightInject
     /// </summary>
     public class PerLogicalCallContextScopeManagerProvider : ScopeManagerProvider
     {
+        /// <summary>
+        /// Creates a new <see cref="IScopeManager"/> instance.
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> to be associated with the <see cref="IScopeManager"/>.</param> 
+        /// <returns><see cref="IScopeManager"/>.</returns>
         protected override IScopeManager CreateScopeManager(IServiceFactory serviceFactory)
         {
             return new PerLogicalCallContextScopeManager(serviceFactory);
@@ -5969,6 +5851,10 @@ namespace LightInject
             return scope;
         }
 
+        /// <summary>
+        /// Ends the given <paramref name="scope"/>.
+        /// </summary>
+        /// <param name="scope">The scope to be ended.</param>
         public void EndScope(Scope scope)
         {
             if (scope.ChildScope != null)
@@ -6020,12 +5906,13 @@ namespace LightInject
     /// <summary>
     /// Represents a scope.
     /// </summary>
-    public class Scope : IDisposable
+    public class Scope : IServiceFactory, IDisposable
     {
         private readonly IList<IDisposable> disposableObjects = new List<IDisposable>();
 
         private readonly IScopeManager scopeManager;
-        
+        private readonly IServiceFactory serviceFactory;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
         /// </summary>
@@ -6033,7 +5920,8 @@ namespace LightInject
         /// <param name="parentScope">The parent <see cref="Scope"/>.</param>
         public Scope(IScopeManager scopeManager, Scope parentScope)
         {
-            this.scopeManager = scopeManager;            
+            this.scopeManager = scopeManager;
+            serviceFactory = scopeManager.ServiceFactory;
             ParentScope = parentScope;
         }
 
@@ -6069,6 +5957,114 @@ namespace LightInject
             DisposeTrackedInstances();
             OnCompleted();
         }
+      
+        /// <summary>
+        /// Starts a new <see cref="Scope"/>.
+        /// </summary>
+        /// <returns><see cref="Scope"/></returns>
+        public Scope BeginScope()
+        {
+            return WithThisScope(() => serviceFactory.BeginScope());
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        public object GetInstance(Type serviceType)
+        {
+            return WithThisScope(() => serviceFactory.GetInstance(serviceType));            
+        }
+
+        /// <summary>
+        /// Gets a named instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        public object GetInstance(Type serviceType, string serviceName)
+        {
+            return WithThisScope(() => serviceFactory.GetInstance(serviceType, serviceName));
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="arguments">The arguments to be passed to the target instance.</param>
+        /// <returns>The requested service instance.</returns>
+        public object GetInstance(Type serviceType, object[] arguments)
+        {
+            return WithThisScope(() => serviceFactory.GetInstance(serviceType, arguments));            
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <param name="arguments">The arguments to be passed to the target instance.</param>
+        /// <returns>The requested service instance.</returns>
+        public object GetInstance(Type serviceType, string serviceName, object[] arguments)
+        {
+            return WithThisScope(() => serviceFactory.GetInstance(serviceType, serviceName, arguments));
+        }
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise null.</returns>
+        public object TryGetInstance(Type serviceType)
+        {
+            return WithThisScope(() => serviceFactory.TryGetInstance(serviceType));
+        }
+
+        /// <summary>
+        /// Gets a named instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise null.</returns>
+        public object TryGetInstance(Type serviceType, string serviceName)
+        {
+            return WithThisScope(() => serviceFactory.TryGetInstance(serviceType, serviceName));
+        }
+
+        /// <summary>
+        /// Gets all instances of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of services to resolve.</param>
+        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
+        public IEnumerable<object> GetAllInstances(Type serviceType)
+        {
+            return WithThisScope(() => serviceFactory.GetAllInstances(serviceType));
+        }
+
+        /// <summary>
+        /// Creates an instance of a concrete class.
+        /// </summary>
+        /// <param name="serviceType">The type of class for which to create an instance.</param>
+        /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
+        public object Create(Type serviceType)
+        {
+            return WithThisScope(() => serviceFactory.Create(serviceType));
+        }
+
+        private T WithThisScope<T>(Func<T> function)
+        {
+            var previosScope = scopeManager.CurrentScope;
+            scopeManager.CurrentScope = this;
+            try
+            {
+                return function();
+            }
+            finally
+            {
+                scopeManager.CurrentScope = previosScope;
+            }
+        }
 
         private void DisposeTrackedInstances()
         {
@@ -6080,28 +6076,9 @@ namespace LightInject
 
         private void OnCompleted()
         {
-            scopeManager.EndScope(this);            
+            scopeManager.EndScope(this);
             var completedHandler = Completed;
             completedHandler?.Invoke(this, new EventArgs());
-        }
-
-        public object GetInstance(Type serviceType)
-        {
-            var previosScope = scopeManager.CurrentScope;
-            scopeManager.CurrentScope = this;
-            try
-            {
-                return scopeManager.ServiceFactory.GetInstance(serviceType);
-            }
-            finally
-            {
-                scopeManager.CurrentScope = previosScope;
-            }
-        }
-
-        public TService GetInstance<TService>()
-        {
-            return (TService)GetInstance(typeof(TService));
         }
     }
 
@@ -7444,7 +7421,7 @@ namespace LightInject
     internal static class DelegateTypeExtensions
     {
         private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
-            typeof(IServiceFactory).GetTypeInfo().DeclaredMethods.Where(m => m.Name == "GetInstance" & m.GetParameters().Length == 0).Single();
+            typeof(ServiceFactoryExtensions).GetTypeInfo().DeclaredMethods.Where(m => m.Name == "GetInstance" & m.GetParameters().Length == 1).Single();
 
         private static readonly ThreadSafeDictionary<Type, MethodInfo> GetInstanceMethods =
             new ThreadSafeDictionary<Type, MethodInfo>();
@@ -7530,7 +7507,7 @@ namespace LightInject
         {
             Type[] genericTypeArguments = serviceType.GetTypeInfo().GenericTypeArguments;
             MethodInfo openGenericMethod =
-                typeof(IServiceFactory).GetTypeInfo().DeclaredMethods.Single(m => m.Name == "GetInstance"
+                typeof(ServiceFactoryExtensions).GetTypeInfo().DeclaredMethods.Single(m => m.Name == "GetInstance"
                     && m.GetGenericArguments().Length == genericTypeArguments.Length && m.GetParameters().All(p => p.Name != "serviceName"));
 
             MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
