@@ -103,7 +103,7 @@ namespace LightInject.Tests
             IScopeManager manager = container.ScopeManagerProvider.GetScopeManager(container);
             
             container.BeginScope();
-            container.EndCurrentScope();
+            container.ScopeManagerProvider.GetScopeManager(container).CurrentScope.Dispose();
 
             Assert.Null(manager.CurrentScope);
         }        
