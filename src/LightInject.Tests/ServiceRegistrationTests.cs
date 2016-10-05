@@ -102,6 +102,18 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void ToString_WithLifetime_ReturnsEasyToReadRepresentation()
+        {
+            var sr = new ServiceRegistration();
+            sr.ServiceType = typeof(IFoo);
+            sr.ServiceName = "AnotherFoo";
+            sr.Lifetime = new PerContainerLifetime();
+            var toString = sr.ToString();
+            Assert.Equal("ServiceType: 'LightInject.SampleLibrary.IFoo', ServiceName: 'AnotherFoo', ImplementingType: '', Lifetime: 'LightInject.PerContainerLifetime'", toString);
+        }
+
+
+        [Fact]
         public void Register_ServiceAfterFirstGetInstance_TracesWarning()
         {
             string message = null;
@@ -120,20 +132,7 @@ namespace LightInject.Tests
             {
                 Trace.Listeners.Remove(sampleTraceListener);
             }
-        }
-        [Fact]
-        public void Register_ServiceAfterFirstGetInstance_ThrowsException_if_WarningsAsErrors()
-        {
-            var container = new ServiceContainer(new ContainerOptions {
-                WarningsAsErrors = true
-            });
-            container.Register<IFoo, Foo>();
-            container.GetInstance<IFoo>();
-
-            var exception = Assert.Throws<InvalidOperationException>(() => container.Register<IFoo, Foo>());
-
-            Assert.True(exception.Message.StartsWith("Cannot overwrite existing serviceregistration"));
-        }
+        }       
     }
 
     public class SampleTraceListener : TraceListener

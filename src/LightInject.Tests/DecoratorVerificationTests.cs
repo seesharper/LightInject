@@ -4,6 +4,7 @@ using Xunit;
 namespace LightInject.Tests
 {
 
+    [Trait("Category", "Verification")]
     [Collection("Verification")]
     public class DecoratorVerificationTests : DecoratorTests
     {

@@ -4,6 +4,7 @@ namespace LightInject.Tests
 {
     using Xunit;
 
+    [Trait("Category", "Verification")]
     [Collection("Verification")]
     public class Issue237Verification : Issue237
     {

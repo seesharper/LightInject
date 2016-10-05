@@ -6,6 +6,7 @@ namespace LightInject.Tests
     using System;
     using System.IO;
 
+    [Trait("Category", "Verification")]
     [Collection("Verification")]
     public class ServiceContainerVerificationTests : ServiceContainerTests
     {

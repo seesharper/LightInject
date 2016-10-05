@@ -32,15 +32,16 @@ namespace LightInject.Tests
             Assert.Equal(typeof(string), constructorInfo.GetParameters()[0].ParameterType);
         }
 
-        //[Fact]
-        //public void Execute_MultipleConstructors_ThrowsException()
-        //{
-        //    var container = CreateContainer();            
-        //    var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
-
-        //    Assert.Throws<InvalidOperationException>(
-        //        () => selector.Execute(typeof(FooWithMultipleParameterizedConstructors)),e => e.Message.StartsWith("No resolvable"));                        
-        //}
+        [Fact]
+        public void Execute_MultipleConstructors_ThrowsException()
+        {
+            var container = CreateContainer();
+            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
+            
+            var message = Assert.Throws<InvalidOperationException>(
+                () => selector.Execute(typeof(FooWithMultipleParameterizedConstructors))).Message;
+            Assert.StartsWith("No resolvable", message); 
+        }
 
         [Fact]
         public void Execute_MultipleConstructors_UsesParameterNameAsServiceName()

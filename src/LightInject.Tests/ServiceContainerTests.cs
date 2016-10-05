@@ -1471,6 +1471,17 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_RegisteredConstructorDependencyWithRuntimeArguments_CanUpdateRegistrationBeforeFirstRequest()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.RegisterConstructorDependency<IBar>((factory, info, args) => new Bar());
+            container.RegisterConstructorDependency<IBar>((factory, info, args) => new AnotherBar());
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsAssignableFrom(typeof(AnotherBar), instance.Bar);
+        }
+
+        [Fact]
         public void GetInstance_RegisteredConstructorDependency_PassesRuntimeArgumentsToFactory()
         {
             var container = CreateContainer();
@@ -1490,6 +1501,59 @@ namespace LightInject.Tests
             var instance = (FooWithDependency)container.GetInstance<IBar, IFoo>(new Bar());
             Assert.IsAssignableFrom(typeof(Bar), instance.Bar);
         }
+       
+        [Fact]
+        public void RegisterConstructorDependency_AfterFirstGetInstance_ShouldLogWarning()
+        {
+            string message = null;
+            var options = new ContainerOptions() {LogFactory = type => (entry => message = entry.Message) };
+            var container = CreateContainer(options);
+            container.Register<IFoo, Foo>();            
+            container.GetInstance<IFoo>();
+            container.RegisterConstructorDependency<IBar>((factory, info) => new AnotherBar());                        
+            Assert.StartsWith("Attempt to register", message);
+        }
+
+        [Fact]
+        public void GetInstance_RegisteredConstructorDependency_PassesEmptyArgumentsArray()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithDependency>();
+            container.Register<IBar, AnotherBar>();
+            container.RegisterConstructorDependency<IBar>((factory, info, arguments) =>
+            {
+                Assert.True(arguments.Length == 0);
+                return new Bar();
+            });
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsAssignableFrom(typeof(Bar), instance.Bar);
+        }
+
+
+        [Fact]
+        public void RegisterConstructorDependencyWithRuntimeArguments_AfterFirstGetInstance_ShouldLogWarning()
+        {
+            string message = null;
+            var options = new ContainerOptions() { LogFactory = type => (entry => message = entry.Message) };
+            var container = CreateContainer(options);
+            container.Register<IFoo, Foo>();
+            container.RegisterConstructorDependency<IBar>((factory, info, arguments) => new Bar());
+            container.GetInstance<IFoo>();
+            container.RegisterConstructorDependency<IBar>((factory, info, arguments) => new Bar());
+            Assert.StartsWith("Attempt to register", message);
+        }
+
+        [Fact]
+        public void RegisterPropertyDependency_AfterFirstGetInstance_ShouldLogWarning()
+        {
+            string message = null;
+            var options = new ContainerOptions() { LogFactory = type => (entry => message = entry.Message) };
+            var container = CreateContainer(options);
+            container.Register<IFoo, Foo>();
+            container.GetInstance<IFoo>();
+            container.RegisterPropertyDependency<IBar>((factory, info) => new Bar());
+            Assert.StartsWith("Attempt to register", message);
+        }
 
         [Fact]
         public void GetInstance_RegisteredConstructorDependency_CanRedirectToContainerWhenArgumentsAreMissing()
@@ -1501,8 +1565,6 @@ namespace LightInject.Tests
             var instance = (FooWithDependency)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom(typeof(Bar), instance.Bar);
         }
-
-
 
         [Fact]
         public void GetInstance_RegisteredPropertyDependency_ReturnsInstanceWithDependency()

@@ -3,6 +3,7 @@ namespace LightInject.Tests
 {
     using Xunit;
 
+    [Trait("Category", "Verification")]
     [Collection("Verification")]
     public class PropertyInjectionVerificationTests : PropertyInjectionTests
     {

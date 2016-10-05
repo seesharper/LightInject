@@ -1020,12 +1020,7 @@ namespace LightInject
         /// <param name="constants">A object array representing the dynamic method context.</param>
         /// <returns>An array containing the runtime arguments supplied when resolving the service.</returns>
         public static object[] Load(object[] constants)
-        {
-            if (constants.Length == 0)
-            {
-                return new object[] { };
-            }
-
+        {            
             object[] arguments = constants[constants.Length - 1] as object[];
             if (arguments == null)
             {
@@ -1777,13 +1772,7 @@ namespace LightInject
         /// Gets or sets the log factory that crates the delegate used for logging.
         /// </summary>
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether warnings
-        /// should be treated as errors.
-        /// </summary>
-        public bool WarningsAsErrors { get; set; }
-
+        
         private static ContainerOptions CreateDefaultContainerOptions()
         {
             return new ContainerOptions();
@@ -2160,13 +2149,22 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, TDependency> factory)
         {
+            if (isLocked)
+            {
+                var message =
+                    $"Attempt to register a constructor dependency {typeof(TDependency)} after the first call to GetInstance." +
+                    $"This might lead to incorrect behaviour if a service with a {typeof(TDependency)} dependency has already been resolved";                              
+
+                log.Warning(message);
+            }
+
             GetConstructorDependencyFactories(typeof(TDependency)).AddOrUpdate(
                 string.Empty,
                 s => factory,
                 (s, e) => isLocked ? e : factory);
             return this;
         }
-
+      
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
         /// a implicitly registered service.
@@ -2176,13 +2174,22 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, object[], TDependency> factory)
         {
+            if (isLocked)
+            {
+                var message =
+                    $"Attempt to register a constructor dependency {typeof(TDependency)} after the first call to GetInstance." +
+                    $"This might lead to incorrect behaviour if a service with a {typeof(TDependency)} dependency has already been resolved";
+
+                log.Warning(message);
+            }
+
             GetConstructorDependencyFactories(typeof(TDependency)).AddOrUpdate(
                 string.Empty,
                 s => factory,
                 (s, e) => isLocked ? e : factory);
             return this;
         }
-
+       
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
         /// a implicitly registered service.
@@ -2192,6 +2199,15 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterPropertyDependency<TDependency>(Func<IServiceFactory, PropertyInfo, TDependency> factory)
         {
+            if (isLocked)
+            {
+                var message =
+                    $"Attempt to register a property dependency {typeof(TDependency)} after the first call to GetInstance." +
+                   $"This might lead to incorrect behaviour if a service with a {typeof(TDependency)} dependency has already been resolved";
+
+                log.Warning(message);
+            }
+
             GetPropertyDependencyFactories(typeof(TDependency)).AddOrUpdate(
                 string.Empty,
                 s => factory,
@@ -3057,7 +3073,8 @@ namespace LightInject
             if (rule != null)
             {
                 emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
-                UpdateEmitMethod(serviceType, serviceName, emitMethod);
+                
+                RegisterEmitMethod(serviceType, serviceName, emitMethod);
             }
 
             return emitMethod;
@@ -3106,19 +3123,17 @@ namespace LightInject
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
-        private void UpdateEmitMethod(Type serviceType, string serviceName, Action<IEmitter> emitMethod)
-        {
-            if (emitMethod != null)
-            {
-                GetEmitMethods(serviceType).AddOrUpdate(serviceName, s => emitMethod, (s, m) => emitMethod);
-            }
-        }
-
         private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
-            var emitDelegate = ResolveEmitMethod(serviceRegistration);
-            GetEmitMethods(serviceRegistration.ServiceType).TryAdd(serviceRegistration.ServiceName, emitDelegate);
+            var emitMethod = ResolveEmitMethod(serviceRegistration);
+            RegisterEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName, emitMethod);
+            
             return serviceRegistration;
+        }
+
+        private void RegisterEmitMethod(Type serviceType, string serviceName, Action<IEmitter> emitMethod)
+        {
+            GetEmitMethods(serviceType).TryAdd(serviceName, emitMethod);
         }
 
         private ServiceRegistration UpdateServiceRegistration(ServiceRegistration existingRegistration, ServiceRegistration newRegistration)
@@ -3126,12 +3141,7 @@ namespace LightInject
             if (isLocked)
             {
                 var message = $"Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.";
-                log.Warning(message);
-                if (options.WarningsAsErrors)
-                {
-                    throw new InvalidOperationException(message);
-                }
-                    
+                log.Warning(message);                                    
                 return existingRegistration;
             }
 
@@ -3817,12 +3827,7 @@ namespace LightInject
                 emitter.Call(getInstanceMethod);
             }
         }
-
-        private int CreateScopeManagerProviderIndex()
-        {
-            return constants.Add(ScopeManagerProvider);
-        }
-
+      
         private int CreateScopeManagerIndex()
         {
             return constants.Add(ScopeManagerProvider.GetScopeManager(this));
@@ -3931,14 +3936,6 @@ namespace LightInject
                 }
 
                 return index;
-            }
-
-            public void Clear()
-            {
-                lock (lockObject)
-                {
-                    Items = new T[0];
-                }
             }
 
             private int TryAddValue(T value)
@@ -5968,7 +5965,7 @@ namespace LightInject
         /// <returns><see cref="Scope"/></returns>
         public Scope BeginScope()
         {
-            return WithThisScope(() => serviceFactory.BeginScope());
+            return serviceFactory.BeginScope();            
         }
 
         /// <summary>
@@ -7412,14 +7409,11 @@ namespace LightInject
         {
             GetInstanceMethod = typeof(ILifetime).GetTypeInfo().GetDeclaredMethod("GetInstance");
             GetCurrentScopeMethod = typeof(IScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
-            GetScopeManagerMethod = typeof(IScopeManagerProvider).GetTypeInfo().GetDeclaredMethod("GetScopeManager");
         }
 
         public static MethodInfo GetInstanceMethod { get; private set; }
 
         public static MethodInfo GetCurrentScopeMethod { get; private set; }
-
-        public static MethodInfo GetScopeManagerMethod { get; private set; }
     }
 
     internal static class DelegateTypeExtensions
@@ -7568,38 +7562,6 @@ namespace LightInject
         public static MethodInfo GetMethodInfo(this Delegate del)
         {
             return del.Method;
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the private method.</param>
-        /// <returns>A <see cref="MethodInfo"/> that represents a private method on the target <paramref name="type"/>.</returns>
-        public static MethodInfo GetPrivateMethod(this Type type, string name)
-        {
-            return type.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic);
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <param name="name">The name of the private method.</param>
-        /// <returns>A <see cref="MethodInfo"/> that represents a private static method on the target <paramref name="type"/>.</returns>
-        public static MethodInfo GetPrivateStaticMethod(this Type type, string name)
-        {
-            return type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic);
-        }
-
-        /// <summary>
-        /// Gets an array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>An array of <see cref="MethodInfo"/> objects that represents private static methods on the target <paramref name="type"/>.</returns>
-        public static MethodInfo[] GetPrivateStaticMethods(this Type type)
-        {
-            return type.GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         /// <summary>
