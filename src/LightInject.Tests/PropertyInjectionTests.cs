@@ -325,5 +325,19 @@ namespace LightInject.Tests
             var description = propertyDependency.ToString();
             Assert.StartsWith("[Target Type", description);
         }
+
+        [Fact]
+        public void Setting_EnablePropertyInjection_false_disables_property_injection()
+        {
+            var container = new ServiceContainer(new ContainerOptions {
+                EnablePropertyInjection = false
+            });
+            container.Register<object, Foo>();
+            container.Register<FooWithObjectProperty>();
+
+            var instance = container.GetInstance<FooWithObjectProperty>();
+
+            Assert.Null(instance.Property);
+        }
     }
 }
