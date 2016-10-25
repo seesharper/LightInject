@@ -39,11 +39,10 @@
     <CodeAnalysisRuleSet>LightInject.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>LightInject.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -55,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="LightInject.ruleset" />
+    <None Include="LightInject.snk" />
     <None Include="NuGet\LightInject.nuspec">
       <SubType>Designer</SubType>
     </None>
