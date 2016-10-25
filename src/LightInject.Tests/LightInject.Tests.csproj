@@ -33,6 +33,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="LightMock, Version=1.0.0.5, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\LightMock.1.0.0.5\lib\portable-net40+sl50+win+wp80\LightMock.dll</HintPath>
@@ -116,6 +119,9 @@
     <Compile Include="VerificationContainerFactory.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\LightInject\LightInject.snk">
+      <Link>LightInject.snk</Link>
+    </None>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
