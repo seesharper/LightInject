@@ -21,11 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-<<<<<<< HEAD
     LightInject version 5.0.0-RC1
-=======
-    LightInject version 4.1.2
->>>>>>> singletonfix
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
