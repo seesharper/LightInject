@@ -547,7 +547,26 @@ namespace LightInject.SampleLibrary
 
     public interface IFoo<T1, T2> { }
 
-    public class FooWithPartiallyClosedGenericInterface<T> : IFoo<T, string> { }
+    public class Foo<T1, T2>
+    {
+    }
+
+    public class HalfClosedFooInhertingFromBaseClass<T1> : Foo<string, T1>
+    {
+        
+    }
+
+
+    public class HalfClosedFoo<T> : IFoo<string, T> { }
+
+    public class HalfClosedFooWithNestedGenericParameter<T> : IFoo<Lazy<T>, string>
+    {
+    }
+
+    public class HalfClosedFooWithDoubleNestedGenericParameter<T> : IFoo<Lazy<Nullable<T>>, string> where T:struct
+    {
+    }
+
 
     public interface IFoo<T> { }
 
