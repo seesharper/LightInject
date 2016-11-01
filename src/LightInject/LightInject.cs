@@ -1748,6 +1748,7 @@ namespace LightInject
         public ContainerOptions()
         {
             EnableVariance = true;
+            EnablePropertyInjection = true;
             LogFactory = t => message => { };
         }
 
@@ -1768,7 +1769,15 @@ namespace LightInject
         /// Gets or sets the log factory that crates the delegate used for logging.
         /// </summary>
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
-        
+
+        /// <summary>
+        /// Gets or sets a value indicating whether property injection is enabled.
+        /// </summary>
+        /// <remarks>
+        /// The default value is true.
+        /// </remarks>
+        public bool EnablePropertyInjection { get; set; }
+
         private static ContainerOptions CreateDefaultContainerOptions()
         {
             return new ContainerOptions();
@@ -1859,7 +1868,9 @@ namespace LightInject
             CompositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()));
             CompositionRootExecutor = new CompositionRootExecutor(this, type => (ICompositionRoot)Activator.CreateInstance(type));
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor);
-            PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
+            PropertyDependencySelector = options.EnablePropertyInjection 
+                ? (IPropertyDependencySelector) new PropertyDependencySelector(new PropertySelector())
+                : new PropertyDependencyDisabler();
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
@@ -4018,6 +4029,14 @@ namespace LightInject
                 var snapshot = new T[Items.Length + 1];
                 Array.Copy(Items, snapshot, Items.Length);
                 return snapshot;
+            }
+        }
+
+        private class PropertyDependencyDisabler : IPropertyDependencySelector
+        {
+            public IEnumerable<PropertyDependency> Execute(Type type)
+            {
+                return new PropertyDependency[0];
             }
         }
 
