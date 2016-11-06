@@ -572,6 +572,10 @@ namespace LightInject.SampleLibrary
 
     public class Foo<T> : IFoo<T> { }
 
+    public class GenericFoo<T> { }
+
+    public class AnotherGenericFoo<T> : GenericFoo<T> { }
+
     public class AnotherFoo<T> : IFoo<T> { }
 
     public class FooWithGenericDependency<T> : IFoo<T>
