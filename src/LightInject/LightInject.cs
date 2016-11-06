@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 4.1.3
+    LightInject version 4.1.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3710,8 +3710,17 @@ namespace LightInject
                 openGenericServiceRegistration.ImplementingType,
                 openGenericServiceType);
 
-            Type[] baseTypeGenericArguments =
-                baseTypeImplementingOpenGenericServiceType.GetTypeInfo().GenericTypeArguments;
+            Type[] baseTypeGenericArguments;
+            if (openGenericServiceRegistration.ImplementingType == baseTypeImplementingOpenGenericServiceType)
+            {
+                baseTypeGenericArguments =
+                    baseTypeImplementingOpenGenericServiceType.GetTypeInfo().GenericTypeParameters;
+            }
+            else
+            {
+                baseTypeGenericArguments =
+                 baseTypeImplementingOpenGenericServiceType.GetTypeInfo().GenericTypeArguments;
+            }            
 
             string[] genericParameterNames =
                 openGenericServiceRegistration.ImplementingType.GetTypeInfo().GenericTypeParameters.Select(t => t.Name).ToArray();

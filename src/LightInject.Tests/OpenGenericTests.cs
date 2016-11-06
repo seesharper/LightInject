@@ -4,7 +4,7 @@
     using SampleLibrary;
     using Xunit;
 
-    public class PartialGenericTests : TestBase
+    public class OpenGenericTests : TestBase
     {
         [Fact]
         public void GetInstance_PartiallyClosedGeneric_ReturnsInstance()
@@ -50,7 +50,26 @@
             Assert.IsType<HalfClosedFooInhertingFromBaseClass<int>>(instance);
         }
 
+        [Fact]
+        public void GetInstance_ConcreteClass_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof (Foo<>));
 
+            var instance = container.GetInstance<Foo<int>>();
 
+            Assert.IsType<Foo<int>>(instance);
+        }
+
+        [Fact]
+        public void GetInstance_InheritFromOpenGeneric_ReturnsInstance()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(GenericFoo<>), typeof(AnotherGenericFoo<>));
+
+            var instance = container.GetInstance<GenericFoo<int>>();
+
+            Assert.IsType<AnotherGenericFoo<int>>(instance);
+        }
     }
 }
