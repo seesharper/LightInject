@@ -3729,7 +3729,13 @@ namespace LightInject
 
             MapGenericArguments(closedGenericArguments, baseTypeGenericArguments, genericArgumentMap);
 
-            var typeArguments = genericParameterNames.Select(parameterName => genericArgumentMap[parameterName]).ToArray();
+            var typeArguments = genericParameterNames.Select(parameterName => {
+                Type typeArgument;
+                if (!genericArgumentMap.TryGetValue(parameterName, out typeArgument)) {
+                    throw new InvalidOperationException($"Generic parameter mismatch. Service type: {closedGenericServiceType}, implementation type: {openGenericServiceRegistration.ImplementingType}, missing generic parameter: {parameterName}");
+                }
+                return typeArgument;
+            }).ToArray();
 
             Type closedGenericImplementingType = TryMakeGenericType(
                 openGenericServiceRegistration.ImplementingType,
@@ -6537,8 +6543,17 @@ namespace LightInject
         private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry, ILifetime lifetime)
         {
             var serviceTypeInfo = serviceType.GetTypeInfo();
+
+            
             if (serviceTypeInfo.IsGenericType && serviceTypeInfo.ContainsGenericParameters)
             {
+                var implementingTypeInfo = implementingType.GetTypeInfo();
+
+                if (implementingTypeInfo.IsGenericType && implementingTypeInfo.ContainsGenericParameters && implementingTypeInfo.GenericTypeParameters.Length > serviceTypeInfo.GenericTypeArguments.Length)
+                {
+                    return;
+                }
+
                 serviceType = serviceTypeInfo.GetGenericTypeDefinition();
             }
 
