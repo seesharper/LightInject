@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
-using LightInject.SampleLibrary;
 using Xunit;
 
 namespace LightInject.Tests
@@ -15,10 +13,7 @@ namespace LightInject.Tests
 
             container.RegisterAssembly(Assembly.GetExecutingAssembly(), (s, t) => t.FullName.Contains(nameof(Issue330)));
 
-            container.GetAllInstances<IFoo>();
-            container.TryGetInstance<IFoo<string>>();
-            container.TryGetInstance<ICollection<string>>();
-            container.TryGetInstance<IList<string>>();
+            Assert.Null(container.TryGetInstance<IFoo<string>>());
         }
 
         [Fact]
