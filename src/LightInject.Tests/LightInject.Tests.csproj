@@ -89,10 +89,11 @@
     <Compile Include="Issue245.cs" />
     <Compile Include="Issue257.cs" />
     <Compile Include="Issue257Verification.cs" />
+    <Compile Include="Issue330.cs" />
     <Compile Include="LazyCompositionRootTests.cs" />
     <Compile Include="LoggingTests.cs" />
     <Compile Include="MethodBuilderMethodSkeleton.cs" />
-    <Compile Include="PerLogicalCallContextTests.cs" />    
+    <Compile Include="PerLogicalCallContextTests.cs" />
     <Compile Include="OpenGenericTests.cs" />
     <Compile Include="PropertyInjectionVerificationTests.cs" />
     <Compile Include="PropertySelectorTests.cs" />
