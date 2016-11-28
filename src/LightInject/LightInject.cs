@@ -3853,13 +3853,13 @@ namespace LightInject
                     GenericArgumentMapper.Map(serviceType, implementingType).GetMappedArguments();
                 }
                 catch (InvalidOperationException ex)
-                {                    
+                {
                     throw new ArgumentOutOfRangeException(nameof(implementingType), ex);
                 }
-                
+
             }
             else
-            if (!serviceType.IsAssignableFrom(implementingType))
+            if (!serviceType.GetTypeInfo().IsAssignableFrom(implementingType.GetTypeInfo()))
             {
                 throw new ArgumentOutOfRangeException(nameof(implementingType), $"The implementing type {implementingType.FullName} is not assignable from {serviceType.FullName}.");
             }
@@ -6303,17 +6303,11 @@ namespace LightInject
         }
 
         private static Dictionary<string, Type> CreateMap(Type genericServiceType, Type openGenericImplementingType, string[] genericParameterNames)
-        {            
+        {
             var genericArgumentMap = new Dictionary<string, Type>(genericParameterNames.Length);
-                        
+
             var genericArguments = GetGenericArgumentsOrParameters(genericServiceType);
-
-            //if (genericArguments.Length != openGenericImplementingType.GetTypeInfo().GenericTypeParameters.Length)
-            //{
-            //    return genericArgumentMap;
-            //}
-
-
+           
             if (genericArguments.Length > 0)
             {
                 genericServiceType = genericServiceType.GetTypeInfo().GetGenericTypeDefinition();
@@ -6345,18 +6339,18 @@ namespace LightInject
         }
 
         private static void MapGenericArguments(Type[] closedGenericArguments, Type[] baseTypeGenericArguments, IDictionary<string, Type> map)
-        {           
+        {
             for (int index = 0; index < baseTypeGenericArguments.Length; index++)
             {
                 var baseTypeGenericArgument = baseTypeGenericArguments[index];
-                var closedGenericArgument = closedGenericArguments[index];               
+                var closedGenericArgument = closedGenericArguments[index];
                 if (baseTypeGenericArgument.GetTypeInfo().IsGenericParameter)
                 {
                     map[baseTypeGenericArgument.Name] = closedGenericArgument;
                 }
                 else if (baseTypeGenericArgument.GetTypeInfo().IsGenericType)
                 {
-                    if (closedGenericArgument.IsGenericType)
+                    if (closedGenericArgument.GetTypeInfo().IsGenericType)
                     {
                         MapGenericArguments(closedGenericArgument.GetTypeInfo().GenericTypeArguments, baseTypeGenericArgument.GetTypeInfo().GenericTypeArguments, map);
                     }
@@ -6364,10 +6358,10 @@ namespace LightInject
                     {
                         MapGenericArguments(closedGenericArguments, baseTypeGenericArgument.GetTypeInfo().GenericTypeArguments, map);
                     }
-                                        
                 }
             }
         }
+
 
         private static Type GetBaseTypeImplementingGenericTypeDefinition(Type implementingType, Type genericTypeDefinition)
         {
