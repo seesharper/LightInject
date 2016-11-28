@@ -1,4 +1,6 @@
-﻿namespace LightInject.Tests
+
+namespace LightInject.Tests
+
 {
     using System;
     using System.Collections;
