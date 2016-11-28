@@ -1,5 +1,6 @@
 namespace LightInject.Tests
 {
+    using System;
     using LightInject.SampleLibrary;
 
     using Xunit;
@@ -77,6 +78,22 @@ namespace LightInject.Tests
             var instance = container.GetInstance<IFoo>();
 
             Assert.IsAssignableFrom(typeof(AnotherFoo), instance);
+        }
+
+        [Fact]
+        public void Register_ImplementingTypeNotImplementingServiceType_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            Assert.Throws<ArgumentOutOfRangeException>("implementingType",
+                () => container.Register(typeof (IFoo), typeof (Bar)));
+
+        }
+
+        [Fact]
+        public void Register_GenericImplementingTypeWithMissingArgument_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof (IFoo), typeof (Foo<>)));
         }
     }
 }
