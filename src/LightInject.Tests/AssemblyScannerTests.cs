@@ -4,6 +4,7 @@ using System.Reflection;
 namespace LightInject.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
@@ -27,10 +28,25 @@ namespace LightInject.Tests
             var compositionRootTypeExtractorMock = new TypeExtractorMock();
             compositionRootTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(Type.EmptyTypes);
                    
-            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock, new CompositionRootExecutor(containerMock,t => compositionRootMock));
+            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock, new CompositionRootExecutor(containerMock,t => compositionRootMock), new GenericArgumentMapper());
             assemblyScanner.Scan(typeof(IFoo).Assembly, containerMock, lifetimeFactory, shouldRegister);
             return containerMock;
         }
+
+        private MockContext<IServiceContainer> GetContainerMock(Type type)
+        {
+            var compositionRootExtractorMock = new TypeExtractorMock();
+            compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(Type.EmptyTypes);
+            var concreteTypeExtractorMock = new TypeExtractorMock();
+            concreteTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new Type[] { type });
+            var scanner = new AssemblyScanner(concreteTypeExtractorMock, compositionRootExtractorMock, null,
+                new GenericArgumentMapper());
+            var containerMock = new ContainerMock();
+
+            scanner.Scan(typeof(IFoo).Assembly, containerMock, () => null, (st, ip) => true);
+            return containerMock;
+        }
+
 
         [Fact]
         public void Scan_SampleAssembly_ConfiguresDefaultService()
@@ -106,7 +122,7 @@ namespace LightInject.Tests
             compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new []{typeof(CompositionRootMock)});
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(),
                 compositionRootExtractorMock,
-                new CompositionRootExecutor(containerMock, t => compositionRootMock));
+                new CompositionRootExecutor(containerMock, t => compositionRootMock), new GenericArgumentMapper());
             
             assemblyScanner.Scan(typeof(AssemblyScannerTests).Assembly, containerMock);
 
@@ -120,7 +136,7 @@ namespace LightInject.Tests
             var containerMock = new ContainerMock();
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(),
                 new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()),
-                new CompositionRootExecutor(containerMock, t => compositionRootMock));
+                new CompositionRootExecutor(containerMock, t => compositionRootMock), new GenericArgumentMapper());
 
             assemblyScanner.Scan(typeof(AssemblyScannerTests).Assembly, containerMock, () => null, (s, t) => true);
             
@@ -244,6 +260,20 @@ namespace LightInject.Tests
             serviceContainer.RegisterAssembly(typeof(IFoo).Assembly);
             scannerMock.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue), Invoked.Once);
         }
+
+        [Fact]
+        public void Register_OpenGeneric_DoesNotRegisterInvalidAbstraction()
+        {
+            GetContainerMock(typeof (List<>))
+                .Assert(
+                    c =>
+                        c.Register(
+                            typeof (ICollection), 
+                            typeof (List<>), 
+                            The<string>.IsAnyValue,
+                            The<ILifetime>.IsAnyValue), Invoked.Never);                        
+        }
+
 
         [Fact]
         public void Register_Assembly_RegistersConcreteTypeWithoutBaseclass()

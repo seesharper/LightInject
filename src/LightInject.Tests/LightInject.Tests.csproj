@@ -81,6 +81,7 @@
     <Compile Include="DynamicMethodTests.cs" />
     <Compile Include="EmitterTests.cs" />
     <Compile Include="FunctionFactoryVerificationTests.cs" />
+    <Compile Include="GenericArgumentMapperTests.cs" />
     <Compile Include="ImmutableHashTableTests.cs" />
     <Compile Include="ImmutableListTests.cs" />
     <Compile Include="ImmutableTreeTests.cs" />

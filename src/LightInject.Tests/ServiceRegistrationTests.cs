@@ -1,8 +1,13 @@
 namespace LightInject.Tests
 {
     using System;
+<<<<<<< HEAD
     using System.Diagnostics;
     using SampleLibrary;
+=======
+    using LightInject.SampleLibrary;
+
+>>>>>>> issue_332
     using Xunit;
     
     public class ServiceRegistrationTests
@@ -133,6 +138,22 @@ namespace LightInject.Tests
                 Trace.Listeners.Remove(sampleTraceListener);
             }
         }       
+
+        
+        public void Register_ImplementingTypeNotImplementingServiceType_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            Assert.Throws<ArgumentOutOfRangeException>("implementingType",
+                () => container.Register(typeof (IFoo), typeof (Bar)));
+
+        }
+
+        [Fact]
+        public void Register_GenericImplementingTypeWithMissingArgument_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof (IFoo), typeof (Foo<>)));
+        }
     }
 
     public class SampleTraceListener : TraceListener
