@@ -1,13 +1,10 @@
 namespace LightInject.Tests
 {
     using System;
-<<<<<<< HEAD
+
     using System.Diagnostics;
     using SampleLibrary;
-=======
-    using LightInject.SampleLibrary;
-
->>>>>>> issue_332
+    
     using Xunit;
     
     public class ServiceRegistrationTests
