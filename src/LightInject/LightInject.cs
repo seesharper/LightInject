@@ -656,13 +656,7 @@ namespace LightInject
         /// </summary>
         /// <param name="instance">The target instance for which to inject its property dependencies.</param>
         /// <returns>The <paramref name="instance"/> with its property dependencies injected.</returns>
-        object InjectProperties(object instance);
-
-        /// <summary>
-        /// Creates a clone of the current <see cref="IServiceContainer"/>.
-        /// </summary>
-        /// <returns>A new <see cref="IServiceContainer"/> instance.</returns>
-        IServiceContainer Clone();
+        object InjectProperties(object instance);        
     }
 
     /// <summary>
@@ -1898,30 +1892,6 @@ namespace LightInject
 #endif
         }
 
-        private ServiceContainer(
-          ContainerOptions options,
-          ServiceRegistry<Delegate> constructorDependencyFactories,
-          ServiceRegistry<Delegate> propertyDependencyFactories,
-          ServiceRegistry<ServiceRegistration> availableServices,
-          Storage<DecoratorRegistration> decorators,
-          Storage<ServiceOverride> overrides,
-          Storage<FactoryRule> factoryRules,
-          Storage<Initializer> initializers)
-            : this(options)
-        {
-            this.options = options;
-            this.constructorDependencyFactories = constructorDependencyFactories;
-            this.propertyDependencyFactories = propertyDependencyFactories;
-            this.decorators = decorators;
-            this.overrides = overrides;
-            this.factoryRules = factoryRules;
-            this.initializers = initializers;
-            foreach (var availableService in availableServices.Values.SelectMany(t => t.Values))
-            {
-                Register(availableService);
-            }
-        }
-
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible
         /// for providing the <see cref="IScopeManager"/> used to manage scopes.
@@ -2888,25 +2858,7 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
-        }
-
-        /// <summary>
-        /// Creates a clone of the current <see cref="IServiceContainer"/>.
-        /// </summary>
-        /// <returns>A new <see cref="IServiceContainer"/> instance.</returns>
-        public IServiceContainer Clone()
-        {
-            return new ServiceContainer(
-                options,
-                constructorDependencyFactories,
-                propertyDependencyFactories,
-                availableServices,
-                decorators,
-                overrides,
-                factoryRules,
-                initializers);
-        }
-
+        }       
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
         {
             LocalBuilder array = emitter.DeclareLocal(elementType.MakeArrayType());
@@ -3836,7 +3788,7 @@ namespace LightInject
                 }
                 catch (InvalidOperationException ex)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(implementingType), ex);
+                    throw new ArgumentOutOfRangeException(nameof(implementingType), ex.Message);
                 }
 
             }

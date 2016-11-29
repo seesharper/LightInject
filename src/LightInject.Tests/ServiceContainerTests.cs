@@ -1722,24 +1722,7 @@ namespace LightInject.Tests
             Assert.Same(bar1, bar2);
         }
 
-        [Fact]
-        public void ShouldBeAbleToCloneContainer()
-        {
-            var container = new ServiceContainer();
-            var clonedContainer = container.Clone();
-            Assert.IsType<ServiceContainer>(clonedContainer);
-        }
-
-        [Fact]
-        public void ClonedContainrterShouldReturnSingletonFromRootContainer()
-        {
-            var container = new ServiceContainer();
-            container.Register<IFoo,Foo>(new PerContainerLifetime());
-            var firstInstance = container.GetInstance<IFoo>();            
-            var clonedContainer = container.Clone();
-            var secondInstance = clonedContainer.GetInstance<IFoo>();
-            Assert.Same(firstInstance, secondInstance);
-        }
+        
 
         [Fact]
         public void Can_chain_register_calls_and_get_same_instance_back()

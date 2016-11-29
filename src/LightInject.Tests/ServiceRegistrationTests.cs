@@ -136,7 +136,7 @@ namespace LightInject.Tests
             }
         }       
 
-        
+        [Fact]
         public void Register_ImplementingTypeNotImplementingServiceType_ThrowsException()
         {
             var container = new ServiceContainer();
@@ -149,7 +149,18 @@ namespace LightInject.Tests
         public void Register_GenericImplementingTypeWithMissingArgument_ThrowsException()
         {
             var container = new ServiceContainer();
-            Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof (IFoo), typeof (Foo<>)));
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof (IFoo), typeof (Foo<>)));
+            Assert.Equal("implementingType", exception.ParamName);
+            Assert.StartsWith("The generic parameter(s) T found in type", exception.Message);
+        }
+
+        [Fact]
+        public void Register_GenericImplementingTypeWithMultipleMissingArguments_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof(object), typeof(Foo<,>)));
+            Assert.Equal("implementingType", exception.ParamName);
+            Assert.StartsWith("The generic parameter(s) T1,T2 found in type", exception.Message);
         }
     }
 
