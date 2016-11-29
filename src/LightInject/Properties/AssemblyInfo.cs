@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
     [assembly: AssemblyProduct("LightInject (NET45)")]
 #endif
 #if NET46
-    [assembly: AssemblyProduct("LightInject (NET46)")]
+[assembly: AssemblyProduct("LightInject (NET46)")]
 #endif
 #if NETSTANDARD11
     [assembly: AssemblyProduct("LightInject (NETSTANDARD11)")]

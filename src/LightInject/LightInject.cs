@@ -1878,7 +1878,7 @@ namespace LightInject
             CompositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()));
             CompositionRootExecutor = new CompositionRootExecutor(this, type => (ICompositionRoot)Activator.CreateInstance(type));
             PropertyDependencySelector = options.EnablePropertyInjection 
-                ? (IPropertyDependencySelector) new PropertyDependencySelector(new PropertySelector())
+                ? (IPropertyDependencySelector)new PropertyDependencySelector(new PropertySelector())
                 : new PropertyDependencyDisabler();
             GenericArgumentMapper = new GenericArgumentMapper();
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor, GenericArgumentMapper);
@@ -2858,7 +2858,8 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
-        }       
+        }    
+           
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
         {
             LocalBuilder array = emitter.DeclareLocal(elementType.MakeArrayType());
@@ -2907,7 +2908,7 @@ namespace LightInject
                 ServiceType = serviceRegistration.ServiceType,
                 ImplementingType = closedGenericDecoratorType,
                 CanDecorate = openGenericDecorator.CanDecorate,
-                Index = openGenericDecorator.Index
+                Index = openGenericDecorator.Index,
             };
             return decoratorInfo;
         }
@@ -3194,7 +3195,7 @@ namespace LightInject
                     ImplementingType =
                         deferredDecorator.ImplementingTypeFactory(this, serviceRegistration),
                     CanDecorate = sr => true,
-                    Index = deferredDecorator.Index
+                    Index = deferredDecorator.Index,
                 };
                 registrations.Add(decoratorRegistration);
             }
@@ -3577,7 +3578,7 @@ namespace LightInject
                 ServiceType = serviceType,
                 ServiceName = serviceName,
                 FactoryExpression = rule.Factory,
-                Lifetime = CloneLifeTime(rule.LifeTime) ?? DefaultLifetime
+                Lifetime = CloneLifeTime(rule.LifeTime) ?? DefaultLifetime,
             };
             if (rule.LifeTime != null)
             {
@@ -3696,7 +3697,7 @@ namespace LightInject
                 ServiceType = closedGenericServiceType,
                 ImplementingType = closedGenericImplementingType,
                 ServiceName = serviceName,
-                Lifetime = CloneLifeTime(openGenericServiceRegistration.Lifetime) ?? DefaultLifetime
+                Lifetime = CloneLifeTime(openGenericServiceRegistration.Lifetime) ?? DefaultLifetime,
             };
             Register(serviceRegistration);
             return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
@@ -3790,7 +3791,6 @@ namespace LightInject
                 {
                     throw new ArgumentOutOfRangeException(nameof(implementingType), ex.Message);
                 }
-
             }
             else
             if (!serviceType.GetTypeInfo().IsAssignableFrom(implementingType.GetTypeInfo()))
@@ -3909,7 +3909,7 @@ namespace LightInject
                 ServiceType = serviceType,
                 ServiceName = serviceName,
                 Value = value,
-                Lifetime = new PerContainerLifetime()
+                Lifetime = new PerContainerLifetime(),
             };
             Register(serviceRegistration);
         }
@@ -3921,7 +3921,7 @@ namespace LightInject
                 ServiceType = typeof(TService),
                 FactoryExpression = factory,
                 ServiceName = serviceName,
-                Lifetime = lifetime ?? DefaultLifetime
+                Lifetime = lifetime ?? DefaultLifetime,
             };
             Register(serviceRegistration);
         }
@@ -5233,7 +5233,7 @@ namespace LightInject
                                        ServiceName = string.Empty,
                                        ServiceType = p.ParameterType,
                                        Parameter = p,
-                                       IsRequired = true
+                                       IsRequired = true,
                                    });
         }
     }
@@ -5596,6 +5596,7 @@ namespace LightInject
                 string message = $"The generic parameter(s) {missingParametersString} found in type {openGenericImplementingType.FullName} cannot be mapped from {genericServiceType.FullName}";
                 throw new InvalidOperationException(message);
             }
+
             return genericParameterNames.Select(parameterName => genericArgumentMap[parameterName]).ToArray();
         }
     }
@@ -6487,7 +6488,6 @@ namespace LightInject
             }
         }
 
-
         private static Type GetBaseTypeImplementingGenericTypeDefinition(Type implementingType, Type genericTypeDefinition)
         {
             Type baseTypeImplementingGenericTypeDefinition = null;
@@ -6505,6 +6505,7 @@ namespace LightInject
                 {
                     baseType = baseType.GetTypeInfo().BaseType;
                 }
+
                 if (baseType != typeof(object))
                 {
                     baseTypeImplementingGenericTypeDefinition = baseType;
@@ -6668,7 +6669,6 @@ namespace LightInject
             {
                 serviceType = serviceTypeInfo.GetGenericTypeDefinition();
             }
-
 
             serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType), lifetime);
         }
