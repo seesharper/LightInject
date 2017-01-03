@@ -10,4 +10,11 @@ test: off
 artifacts:
 - path: build/tmp/*.nupkg
   name: NuGet Packages
-deploy: off
+deploy:
+  provider: NuGet  
+  api_key:
+    secure: ynFcRQX0oim3DdR5Y8s4BtynS/NYRG059GvWGckqhpZGNZVvhvvn5UUWgsyPKLKm
+  skip_symbols: false  
+  artifact: /.*\.nupkg/
+  on:
+    appveyor_repo_tag: true
