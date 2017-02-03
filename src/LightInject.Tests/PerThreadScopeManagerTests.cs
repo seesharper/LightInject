@@ -75,8 +75,7 @@ namespace LightInject.Tests
             var container = new ServiceContainer();                        
             var scope = container.BeginScope();
             WeakReference scopeReference = new WeakReference(scope);
-            container.ScopeManagerProvider.GetScopeManager(container).CurrentScope = null;
-            
+                        
             // Dispose the scope on a different thread
             Thread disposeThread = new Thread(scope.Dispose);
             disposeThread.Start();
@@ -94,11 +93,6 @@ namespace LightInject.Tests
             
         }
 
-        private async Task DisposeScope(Scope scope)
-        {
-            await Task.Delay(100).ConfigureAwait(true);
-            scope.Dispose();
-        }
 
 
         //[Fact]

@@ -5969,6 +5969,9 @@ namespace LightInject
                 scope = scope.ParentScope;
             }
 
+            // Update the current scope so that the previous current 
+            // scope can be garbage collected.
+            CurrentScope = scope;
             return scope;
         }
     }
