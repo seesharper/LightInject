@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.0.0
+    LightInject version 5.0.1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -4133,7 +4133,7 @@ namespace LightInject
         /// </summary>
         public override Scope CurrentScope
         {
-            get { return currentScope.Value; }
+            get { return GetThisScopeOrFirstValidAncestor(currentScope.Value); }
             set { currentScope.Value = value; }
         }               
     }
@@ -5917,6 +5917,7 @@ namespace LightInject
         public Scope BeginScope()
         {
             var currentScope = CurrentScope;
+           
             var scope = new Scope(this, currentScope);
             if (currentScope != null)
             {
@@ -5926,7 +5927,7 @@ namespace LightInject
             CurrentScope = scope;
             return scope;
         }
-
+    
         /// <summary>
         /// Ends the given <paramref name="scope"/>.
         /// </summary>
@@ -5938,18 +5939,37 @@ namespace LightInject
                 throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
             }
 
-            if (!ReferenceEquals(CurrentScope, scope))
+            Scope parentScope = scope.ParentScope;
+
+            // Only update the current scope if the scope being 
+            // ended is the current scope.         
+            if (ReferenceEquals(CurrentScope, scope))
             {
-                throw new InvalidOperationException("Attempt to end a scope that is currently not the current scope.");
+                CurrentScope = parentScope;
             }
 
-            var currentScope = scope.ParentScope;
-            if (currentScope != null)
+            // What to do with the scope reference on the other thread?
+            if (parentScope != null)
             {
-                currentScope.ChildScope = null;
+                parentScope.ChildScope = null;
+            }
+        }
+
+        /// <summary>
+        /// Ensures that we return a valid scope.
+        /// </summary>
+        /// <param name="scope">The scope to be validated.</param>
+        /// <returns>The given <paramref name="scope"/> or the first valid ancestor.</returns>
+        protected Scope GetThisScopeOrFirstValidAncestor(Scope scope)
+        {
+            // The scope could possible been disposed on another thread
+            // or logical thread context.
+            while (scope != null && scope.IsDisposed)
+            {
+                scope = scope.ParentScope;
             }
 
-            CurrentScope = currentScope;
+            return scope;
         }
     }
 
@@ -5974,7 +5994,7 @@ namespace LightInject
         /// </summary>
         public override Scope CurrentScope
         {
-            get { return threadLocalScope.Value; }
+            get { return GetThisScopeOrFirstValidAncestor(threadLocalScope.Value); }
             set { threadLocalScope.Value = value; }
         }
     }
@@ -6000,6 +6020,8 @@ namespace LightInject
             serviceFactory = scopeManager.ServiceFactory;
             ParentScope = parentScope;
         }
+
+        public bool IsDisposed { get; set; }
 
         /// <summary>
         /// Raised when the <see cref="Scope"/> is completed.
@@ -6030,6 +6052,7 @@ namespace LightInject
         /// </summary>
         public void Dispose()
         {
+            IsDisposed = true;
             DisposeTrackedInstances();
             OnCompleted();
         }

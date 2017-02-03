@@ -1,5 +1,10 @@
 
+#r "System.Xml"
 #load "common.csx"
+
+using System.IO;
+
+
 
 private const string projectName = "LightInject";
 
