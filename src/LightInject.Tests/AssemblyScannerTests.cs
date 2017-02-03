@@ -298,6 +298,32 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void Register_Assembly_CallsAssemblyScannerWhenAssemblyScanningEnabled()
+        {
+            var scannerMock = new AssemblyScannerMock();
+            var compositionRootExtractorMock = new TypeExtractorMock();
+            compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(Type.EmptyTypes);
+
+            var serviceContainer = new ServiceContainer(new ContainerOptions { ScanAssembliesWhenRegistrationNotFound = true });
+            serviceContainer.CompositionRootTypeExtractor = compositionRootExtractorMock;
+            serviceContainer.AssemblyScanner = scannerMock;
+            scannerMock.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue), Invoked.Never);
+        }
+
+        [Fact]
+        public void Register_Assembly_DoesNotCallsAssemblyScannerWhenAssemblyScanningDisabled()
+        {
+            var scannerMock = new AssemblyScannerMock();
+            var compositionRootExtractorMock = new TypeExtractorMock();
+            compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(Type.EmptyTypes);
+
+            var serviceContainer = new ServiceContainer(new ContainerOptions { ScanAssembliesWhenRegistrationNotFound = false });
+            serviceContainer.CompositionRootTypeExtractor = compositionRootExtractorMock;
+            serviceContainer.AssemblyScanner = scannerMock;
+            scannerMock.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue), Invoked.Never);
+        }
+
+        [Fact]
         public void Register_AssemblyWithFuncAndLifeCycle_CallsAssemblyScanner()
         {            
             var scannerMock = new AssemblyScannerMock();
