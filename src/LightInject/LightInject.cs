@@ -6744,7 +6744,7 @@ namespace LightInject
         /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
         public IEnumerable<Assembly> Load(string searchPattern)
         {
-            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
+            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.EscapedCodeBase).LocalPath);
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');
