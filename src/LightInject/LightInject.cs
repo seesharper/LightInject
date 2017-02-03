@@ -6051,10 +6051,10 @@ namespace LightInject
         /// Disposes all instances tracked by this scope.
         /// </summary>
         public void Dispose()
-        {
-            IsDisposed = true;
+        {            
             DisposeTrackedInstances();
             OnCompleted();
+            IsDisposed = true;
         }
       
         /// <summary>
