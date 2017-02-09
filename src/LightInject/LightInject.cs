@@ -42,13 +42,13 @@ namespace LightInject
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16 || NET46
     using System.IO;
 #endif
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16 || NET46
     using System.Reflection.Emit;
 #endif
     using System.Runtime.CompilerServices;
@@ -479,7 +479,7 @@ namespace LightInject
         IServiceRegistry RegisterPropertyDependency<TDependency>(
             Func<IServiceFactory, PropertyInfo, TDependency> factory);
 
-#if NET45 || NET46 || NETSTANDARD11
+#if NET45 || NET46 || NETSTANDARD16
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -853,7 +853,7 @@ namespace LightInject
         void EndScope(Scope scope);
     }
 
-#if NET45 || NET46 || NETSTANDARD11
+#if NET45 || NET46 || NETSTANDARD16
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -1887,7 +1887,7 @@ namespace LightInject
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-#if NET45 || NET46
+#if NET45 || NET46 || NETSTANDARD16
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
@@ -1938,7 +1938,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET45 || NETSTANDARD11 || NET46
+#if NET45 || NETSTANDARD16 || NET46
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
@@ -2215,7 +2215,7 @@ namespace LightInject
             return this;
         }
 
-#if NET45 || NETSTANDARD11 || NET46
+#if NET45 || NETSTANDARD16 || NET46
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -3503,7 +3503,7 @@ namespace LightInject
             {
                 emitter = CreateEmitMethodForArrayServiceRequest(serviceType);
             }
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16 || PCL_111 || NET46
             else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
                 emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
@@ -3607,7 +3607,7 @@ namespace LightInject
                 ms.Emit(OpCodes.Call, closedGenericToListMethod);
             };
         }
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16 || PCL_111 || NET46
 
         private Action<IEmitter> CreateEmitMethodForReadOnlyCollectionServiceRequest(Type serviceType)
         {
@@ -4010,7 +4010,7 @@ namespace LightInject
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16 || NET46
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
@@ -4110,7 +4110,7 @@ namespace LightInject
         }
     }
 
-#if NET45 || NETSTANDARD13 || NET46
+#if NET45 || NETSTANDARD13 || NETSTANDARD16 || NET46
 
     /// <summary>
     /// Manages a set of <see cref="Scope"/> instances.
@@ -6317,7 +6317,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-#if NET45 || NET46
+#if NET45 || NET46 || NETSTANDARD16
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
@@ -6346,7 +6346,7 @@ namespace LightInject
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));
-#if NET45 || NET46 || NETSTANDARD13
+#if NET45 || NET46 || NETSTANDARD13 || NETSTANDARD16
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManager));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
@@ -6730,7 +6730,7 @@ namespace LightInject
             return propertyInfo.SetMethod == null || propertyInfo.SetMethod.IsStatic || propertyInfo.SetMethod.IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
         }
     }
-#if NET45 || NET46
+#if NET45 || NET46 || NETSTANDARD16
 
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
@@ -6744,13 +6744,13 @@ namespace LightInject
         /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
         public IEnumerable<Assembly> Load(string searchPattern)
         {
-            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
+            string directory = Path.GetDirectoryName(new Uri(GetAssemblyCodeBasePath()).LocalPath);
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');
                 foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
                 {
-                    yield return Assembly.LoadFrom(file);
+                    yield return LoadAssembly(file);
                 }
             }
         }
@@ -6763,6 +6763,36 @@ namespace LightInject
         protected virtual bool CanLoad(string fileName)
         {
             return true;
+        }
+
+        /// <summary>
+        /// Loads <see cref="Assembly"/> for the file located in <paramref name="filename"/>.
+        /// </summary>
+        /// <param name="filename">Full path to the file.</param>
+        /// <returns><see cref="Assembly"/> of the file.</returns>
+        protected virtual Assembly LoadAssembly(string filename)
+        {
+#if NET45 || NET46
+            return Assembly.LoadFrom(filename);
+#endif
+#if NETSTANDARD16
+            FileInfo fileInfo = new FileInfo(filename);
+            return Assembly.Load(new AssemblyName(fileInfo.Name.Replace(fileInfo.Extension, "")));
+#endif
+        }
+
+        /// <summary>
+        /// Gets the path where the LightInject assembly is located.
+        /// </summary>
+        /// <returns>The path where the LightInject assembly is located.</returns>
+        protected virtual string GetAssemblyCodeBasePath()
+        {
+#if NET45 || NET46
+            return typeof(ServiceContainer).Assembly.CodeBase;
+#endif
+#if NETSTANDARD16
+            return typeof(ServiceContainer).GetTypeInfo().Assembly.CodeBase;
+#endif
         }
     }
 #endif
@@ -7612,7 +7642,7 @@ namespace LightInject
         }
     }
 #endif
-#if NETSTANDARD13 || NET46
+#if NETSTANDARD13 || NETSTANDARD16 || NET46
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>
@@ -7842,7 +7872,7 @@ namespace LightInject
             var typeInfo = type.GetTypeInfo();
             return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(ICollection<>);
         }
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
+#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16 || PCL_111 || NET46
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/> type.
