@@ -20,6 +20,9 @@ using System.Runtime.InteropServices;
 #if NETSTANDARD13
     [assembly: AssemblyProduct("LightInject (NETSTANDARD13)")]
 #endif
+#if NETSTANDARD16
+    [assembly: AssemblyProduct("LightInject (NETSTANDARD16)")]
+#endif
 #if PCL_111
     [assembly: AssemblyProduct("LightInject (PCL Profile 111))")]
 #endif
