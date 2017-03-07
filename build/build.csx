@@ -28,7 +28,7 @@ Execute(() => InternalizeSourceVersions(), "Internalizing source versions");
 Execute(() => RestoreNuGetPackages(), "NuGet");
 Execute(() => BuildAllFrameworks(), "Building all frameworks");
 Execute(() => RunAllUnitTests(), "Running unit tests");
-Execute(() => AnalyzeTestCoverage(), "Analyzing test coverage");
+///Execute(() => AnalyzeTestCoverage(), "Analyzing test coverage");
 Execute(() => CreateNugetPackages(), "Creating NuGet packages");
 
 private void CreateNugetPackages()
@@ -52,6 +52,7 @@ private void CopySourceFilesToNuGetLibDirectory()
 	CopySourceFile("NET46", "net46");		
 	CopySourceFile("NETSTANDARD11", "netstandard1.1");		
 	CopySourceFile("NETSTANDARD13", "netstandard1.3");	
+	CopySourceFile("NETSTANDARD16", "netstandard1.6");	
     CopySourceFile("PCL_111", "portable-net45+netcore45+wpa81");
 	CopySourceFile("PCL_111", "Xamarin.iOS");
 	CopySourceFile("PCL_111", "monoandroid");
@@ -65,6 +66,7 @@ private void CopyBinaryFilesToNuGetLibDirectory()
 	CopyBinaryFile("NET46", "net46");	
 	CopyBinaryFile("NETSTANDARD11", "netstandard1.1");
 	CopyBinaryFile("NETSTANDARD13", "netstandard1.3");
+	CopyBinaryFile("NETSTANDARD16", "netstandard1.6");
     CopyBinaryFile("PCL_111", "portable-net45+netcore45+wpa81");
     CopyBinaryFile("PCL_111", "Xamarin.iOS");
 	CopyBinaryFile("PCL_111", "monoandroid");
@@ -139,6 +141,9 @@ private void BuildDotNet()
 	
 	pathToProjectFile = Path.Combine(pathToBuildDirectory, @"netstandard13/Binary/LightInject/project.json");
 	DotNet.Build(pathToProjectFile, "netstandard13");
+
+	pathToProjectFile = Path.Combine(pathToBuildDirectory, @"netstandard16/Binary/LightInject/project.json");
+	DotNet.Build(pathToProjectFile, "netstandard16");
 }
 
 private void RestoreNuGetPackages()
@@ -198,6 +203,7 @@ private void InitializBuildDirectories()
 	Execute(() => InitializeNugetBuildDirectory("NET46"), "Preparing Net46");
 	Execute(() => InitializeNugetBuildDirectory("NETSTANDARD11"), "Preparing NetStandard1.1");
 	Execute(() => InitializeNugetBuildDirectory("NETSTANDARD13"), "Preparing NetStandard1.3");	
+	Execute(() => InitializeNugetBuildDirectory("NETSTANDARD16"), "Preparing NetStandard1.6");	
     Execute(() => InitializeNugetBuildDirectory("PCL_111"), "Preparing PCL_111");						
 }
 
@@ -243,6 +249,7 @@ private void RenameSolutionFiles()
 	RenameSolutionFile("NET46");
 	RenameSolutionFile("NETSTANDARD11");
 	RenameSolutionFile("NETSTANDARD13");	
+	RenameSolutionFile("NETSTANDARD16");	
     RenameSolutionFile("PCL_111");
 }
 
@@ -277,6 +284,7 @@ private void InternalizeSourceVersions()
 	Execute (()=> Internalize("NET46"), "Internalizing NET46");
 	Execute (()=> Internalize("NETSTANDARD11"), "Internalizing NetStandard1.1");
 	Execute (()=> Internalize("NETSTANDARD13"), "Internalizing NetStandard1.3");
+	Execute (()=> Internalize("NETSTANDARD16"), "Internalizing NetStandard1.6");
 }
 
 private void PatchPackagesConfig()
@@ -300,6 +308,7 @@ private void PatchAssemblyInfo()
 	Execute(() => PatchAssemblyInfo("Net46"), "Patching AssemblyInfo (Net46)");	
 	Execute(() => PatchAssemblyInfo("NETSTANDARD11"), "Patching AssemblyInfo (NetStandard1.1)");
 	Execute(() => PatchAssemblyInfo("NETSTANDARD13"), "Patching AssemblyInfo (NetStandard1.3)");	
+	Execute(() => PatchAssemblyInfo("NETSTANDARD16"), "Patching AssemblyInfo (NetStandard1.6)");	
     Execute(() => PatchAssemblyInfo("PCL_111"), "Patching AssemblyInfo (PCL_111)");
 }
 

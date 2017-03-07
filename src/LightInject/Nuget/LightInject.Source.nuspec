@@ -81,6 +81,7 @@
         <file src="content\net46\LightInject\LightInject.cs.pp" target="content\net46\LightInject\LightInject.cs.pp" />
         <file src="content\netstandard1.1\LightInject\LightInject.cs.pp" target="content\netstandard1.1\LightInject\LightInject.cs.pp" />        
         <file src="content\netstandard1.3\LightInject\LightInject.cs.pp" target="content\netstandard1.3\LightInject\LightInject.cs.pp" />
+        <file src="content\netstandard1.6\LightInject\LightInject.cs.pp" target="content\netstandard1.6\LightInject\LightInject.cs.pp" /> 
         <file src="content\Xamarin.iOS\LightInject\LightInject.cs.pp" target="content\Xamarin.iOS\LightInject\LightInject.cs.pp" />
         <file src="content\monotouch\LightInject\LightInject.cs.pp" target="content\monotouch\LightInject\LightInject.cs.pp" />
         <file src="content\monoandroid\LightInject\LightInject.cs.pp" target="content\monoandroid\LightInject\LightInject.cs.pp" />

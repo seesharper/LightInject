@@ -97,7 +97,7 @@ public static void CreateDirectory(string directory)
 
 public static string ResolveDirectory(string path, string filePattern)
 {
-    string pathToFile = Directory.GetFiles(path, "xunit.runner.visualstudio.testadapter.dll", SearchOption.AllDirectories).Single();
+    string pathToFile = GetFile(path, filePattern);
     return Path.GetDirectoryName(pathToFile);
 }
 
