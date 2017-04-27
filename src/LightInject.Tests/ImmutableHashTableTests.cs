@@ -75,5 +75,55 @@ namespace LightInject.Tests
             var value = hashTable.Search(2);
             Assert.Equal(2, value);
         }
+
+        [Fact]
+        public void Search_TwoObjectsWithSameHashCodeUsingEquals_CanGetFirstObject()
+        {
+            var root = ImmutableHashTable<FooWithSameHashCode, int>.Empty;
+            var node = root.Add(new FooWithSameHashCode(1), 10).Add(new FooWithSameHashCode(2), 20);
+
+            var result = node.Search(new FooWithSameHashCode(1));
+
+            Assert.Equal(10, result);
+        }
+
+        [Fact]
+        public void Search_TwoObjectsWithSameHashCodeUsingReferenceEquals_CanGetFirstObject()
+        {
+            var root = ImmutableHashTable<FooWithSameHashCode, int>.Empty;
+            var firstKey = new FooWithSameHashCode(1);
+            var secondKey = new FooWithSameHashCode(2);
+            var node = root.Add(firstKey, 10).Add(secondKey, 20);
+
+            var result = node.Search(firstKey);
+
+            Assert.Equal(10, result);
+        }
+
+        [Fact]
+        public void Search_TwoObjectsWithSameHashCodeUsingEquals_CanGetLastObject()
+        {
+            var root = ImmutableHashTable<FooWithSameHashCode, int>.Empty;
+            var node = root.Add(new FooWithSameHashCode(1), 10).Add(new FooWithSameHashCode(2), 20);
+
+            var result = node.Search(new FooWithSameHashCode(2));
+
+            Assert.Equal(20, result);
+        }
+
+        [Fact]
+        public void Search_TwoObjectsWithSameHashCodeUsingReferenceEquals_CanGetLastObject()
+        {
+            var root = ImmutableHashTable<FooWithSameHashCode, int>.Empty;
+            var firstKey = new FooWithSameHashCode(1);
+            var secondKey = new FooWithSameHashCode(2);
+            var thirdKey = new FooWithSameHashCode(3);
+
+            var node = root.Add(firstKey, 10).Add(secondKey, 20).Add(thirdKey, 30);
+
+            var result = node.Search(thirdKey);
+
+            Assert.Equal(30, result);
+        }
     }
 }
