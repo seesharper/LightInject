@@ -1336,6 +1336,38 @@ namespace LightInject
             return default(TValue);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static GetInstanceDelegate Search(this ImmutableHashTable<Type, GetInstanceDelegate> hashTable, Type key)
+        {
+            var hashCode = key.GetHashCode();            
+            var bucketIndex = hashCode & (hashTable.Divisor - 1);
+            
+            ImmutableHashTree<Type, GetInstanceDelegate> tree = hashTable.Buckets[bucketIndex];
+
+            while (tree.Height != 0 && tree.HashCode != hashCode)
+            {
+                tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
+            }
+
+            if (tree.Height != 0 && ReferenceEquals(tree.Key, key))
+            {
+                return tree.Value;
+            }
+
+            if (tree.Duplicates.Items.Length > 0)
+            {
+                foreach (var keyValue in tree.Duplicates.Items)
+                {
+                    if (ReferenceEquals(keyValue.Key, key))
+                    {
+                        return keyValue.Value;
+                    }
+                }
+            }
+
+            return default(GetInstanceDelegate);
+        }
+
         /// <summary>
         /// Adds a new element to the <see cref="ImmutableHashTree{TKey,TValue}"/>.
         /// </summary>

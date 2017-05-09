@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "LightInject\LightInject.csproj", "{3D54591B-B055-4EDD-96B6-E6F184E8CA6E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Tests", "LightInject.Tests\LightInject.Tests.csproj", "{4981E9DD-D57F-4191-8A70-65DF6143DA6C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Benchmarks", "LightInject.BenchMarks\LightInject.Benchmarks.csproj", "{3FC6809F-3ECD-40D5-B281-E2FFE1508DFF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{4981E9DD-D57F-4191-8A70-65DF6143DA6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4981E9DD-D57F-4191-8A70-65DF6143DA6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4981E9DD-D57F-4191-8A70-65DF6143DA6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FC6809F-3ECD-40D5-B281-E2FFE1508DFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FC6809F-3ECD-40D5-B281-E2FFE1508DFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FC6809F-3ECD-40D5-B281-E2FFE1508DFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FC6809F-3ECD-40D5-B281-E2FFE1508DFF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
