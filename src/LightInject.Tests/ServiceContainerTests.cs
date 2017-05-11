@@ -408,6 +408,17 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_NamedOpenGenericType_ReturnsClosedGenericInstanceIfPresent()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>), "Foo");
+            container.Register(typeof(IFoo<string>), typeof(FooWithStringTypeParameter), "FooWithStringTypeParameter");
+            var instance = container.GetInstance(typeof(IFoo<string>));
+            Assert.IsAssignableFrom(typeof(FooWithStringTypeParameter), instance);
+        }
+
+
+        [Fact]
         public void GetInstance_DefaultAndNamedOpenGenericType_ReturnsNamedInstance()
         {
             var container = CreateContainer();
@@ -979,7 +990,32 @@ namespace LightInject.Tests
             Assert.IsType<FooCollection<int>>(instance);
         }
 
+        [Fact]
+        public void GetInstance_KnownOpenGenericList_ReturnsKnownList()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IList<>), typeof(FooList<>));
+            var instance = container.GetInstance<IList<int>>();
+            Assert.IsType<FooList<int>>(instance);
+        }
 
+        [Fact]
+        public void GetInstance_KnownOpenGenericReadonlyCollection_ReturnsKnownCollection()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IReadOnlyCollection<>), typeof(FooReadOnlyCollection<>));
+            var instance = container.GetInstance<IReadOnlyCollection<int>>();
+            Assert.IsType<FooReadOnlyCollection<int>>(instance);
+        }
+
+        [Fact]
+        public void GetInstance_KnownOpenGenercEnumerable_ReturnsKnownEnumerable()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IEnumerable<>), typeof(FooList<>));
+            var instance = container.GetInstance<IEnumerable<int>>();
+            Assert.IsType<FooList<int>>(instance);
+        }
 
         [Fact]
         public void GetAllInstances_ClosedAndOpenGenericService_ReturnsAllInstances()

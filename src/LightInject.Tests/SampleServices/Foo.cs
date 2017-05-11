@@ -5,6 +5,8 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
+    using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Threading.Tasks;
 
     public interface IFooWithProperty
@@ -929,6 +931,19 @@ namespace LightInject.SampleLibrary
             return createInstance();
         }
     }
+
+    public class FooList<T> : List<T>
+    {
+        
+    }
+
+    public class FooReadOnlyCollection<T> : ReadOnlyCollection<T>
+    {
+        public FooReadOnlyCollection() : base(Enumerable.Empty<T>().ToList())
+        {
+        }
+    }
+
 
     public class FooCollection<T> : ICollection<T>
     {

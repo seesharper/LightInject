@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.0.3
+    LightInject version 5.0.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -42,6 +42,7 @@ namespace LightInject
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 #if NET45 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16 || NET46
     using System.IO;
 #endif
@@ -1306,6 +1307,9 @@ namespace LightInject
         /// <param name="key">The key for which to search for a value.</param>
         /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
+        // Excluded since this is a duplicate of the ImmutableHashTreeExtensions.Search method.
+        [ExcludeFromCodeCoverage]
         public static TValue Search<TKey, TValue>(this ImmutableHashTable<TKey, TValue> hashTable, TKey key)
         {
             var hashCode = key.GetHashCode();
@@ -1336,9 +1340,11 @@ namespace LightInject
             return default(TValue);
         }
 
+        // Excluded from coverage since it is equal to the generic version.
+        [ExcludeFromCodeCoverage]     
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static GetInstanceDelegate Search(this ImmutableHashTable<Type, GetInstanceDelegate> hashTable, Type key)
-        {
+        {            
             var hashCode = key.GetHashCode();            
             var bucketIndex = hashCode & (hashTable.Divisor - 1);
             
@@ -3136,11 +3142,6 @@ namespace LightInject
             Action<IEmitter> emitMethod;
             var registrations = GetEmitMethods(serviceType);
             registrations.TryGetValue(serviceName, out emitMethod);
-            if (emitMethod == null && serviceType.IsClosedGeneric())
-            {
-                emitMethod = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
-            }
-
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
@@ -3535,7 +3536,11 @@ namespace LightInject
             }
             else if (serviceType.IsEnumerableOfT())
             {
-                emitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (emitter == null)
+                {
+                    emitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
+                }                
             }
             else if (serviceType.IsArray)
             {
@@ -3544,16 +3549,28 @@ namespace LightInject
 #if NET45 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16 || PCL_111 || NET46
             else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
-                emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (emitter == null)
+                {
+                    emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
+                }                
             }
 #endif
             else if (serviceType.IsListOfT())
             {
-                emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (emitter == null)
+                {
+                    emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                }                
             }
             else if (serviceType.IsCollectionOfT())
             {
-                emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (emitter == null)
+                {
+                    emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                }                
             }
             else if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
             {
