@@ -8116,4 +8116,11 @@ namespace LightInject
             return typeof(Func<>).MakeGenericType(type);
         }
     }
+
+#if PCL_111 || NETSTANDARD11 || NETSTANDARD13 || NETSTANDARD16
+    public class ExcludeFromCodeCoverageAttribute : Attribute
+    {
+        
+    }
+#endif
 }

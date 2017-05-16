@@ -49,4 +49,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("4.0.0")]
 [assembly: AssemblyInformationalVersion("4.0.0")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:FileMustHaveHeader", Justification = "Custom header.")]
-[assembly: InternalsVisibleTo("LightInject.BenchMarks")]
+[assembly: InternalsVisibleTo("LightInject.Benchmarks")]

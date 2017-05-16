@@ -2,7 +2,7 @@
 {
     using BenchmarkDotNet.Attributes;
 
-    public class SingletonBenchmarks : ContainerTests
+    internal class SingletonBenchmarks : ContainerTests
     {
         [Benchmark(Baseline = true)]
         public ISingleton1 LightInject()

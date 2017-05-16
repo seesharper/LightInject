@@ -3,7 +3,7 @@
 {
 	"version": "0.1.0",
 		
-	"command": "scriptcs",
+	"command": "C:/Github/csx/src/bin/Release/netcoreapp1.1/win7-x64/publish/csx.exe",
 	
 	// The command is a shell script
 	"isShellCommand": true,
@@ -12,7 +12,7 @@
 	"showOutput": "silent",
 	
 	// args is the current file to compile
-	"args": ["${file}", "-debug"],
+	"args": ["${file}"],
 	
 	// use the standard tsc problem matcher to find compile problems
 	// in the output.

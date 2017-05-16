@@ -5,7 +5,7 @@
     using Grace.DependencyInjection;
     using Grace.Dynamic;
 
-    public class TransientBenchmarks
+    internal class TransientBenchmarks
     {
         private readonly ServiceContainer container = new ServiceContainer();
         private readonly DryIoc.Container dryIocContainer = new Container();

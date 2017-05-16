@@ -1,3 +1,5 @@
+#r "nuget:System.Diagnostics.Process, 4.3.0"
+
 using System.Diagnostics;
 using System.Xml.Linq;
 using System.Text.RegularExpressions;
@@ -5,6 +7,8 @@ using Microsoft.Win32;
 using System.Globalization;
 using System.Collections.ObjectModel;
 using System.Threading;
+
+public static string PathToBuildDirectory;
 
 private static int depth = 0;
 
@@ -85,7 +89,7 @@ public static void RemoveDirectory(string directory)
 {
     if (Directory.Exists(directory))
     {
-        Directory.Delete(directory, true);
+        DirectoryUtils.Delete(directory);        
     }
 }
 
@@ -113,8 +117,14 @@ public static string GetFile(string path, string filePattern)
         WriteLine("Choosing {0}",file.FullName);
         return file.FullName;
     }
-    WriteLine("Found {0}", pathsToFile[0]);    
-    return pathsToFile[0];    
+    else
+    if (pathsToFile.Length == 0)
+    {
+        WriteLine($"File {filePattern} not found in {path}");
+        return null;
+    }    
+    WriteLine($"Found {pathsToFile[0]}");
+    return pathsToFile[0];
 }
 
 private static string CopyToNuGetBuildDirectory(string projectPath)
@@ -204,40 +214,40 @@ public static class MsBuild
 {
     public static void Build(string pathToSolutionFile)
     {
-        string pathToMsBuild = ResolvePathToMsBuild();        
+        string pathToMsBuild = PathResolver.GetPathToMsBuild();      
         Command.Execute(pathToMsBuild, pathToSolutionFile + " /property:Configuration=Release /p:VisualStudioVersion=12.0 /verbosity:minimal",".");     
-    }
-    
-    private static string ResolvePathToMsBuild()
-    {                
-        return Path.Combine(PathResolver.GetPathToMsBuildTools(), "MsBuild.exe");                                                  
-    }
+    }       
 }
 
 public static class PathResolver
 {
-    public static string GetPathToMsBuildTools()
+    public static string GetPathToMsBuild()
+    {        
+        var pathToVisualStudioInstallation = GetPathToVisualStudioInstallation();
+        var pathToMsBuild = Path.Combine(pathToVisualStudioInstallation,@"MSBuild\15.0\Bin\MsBuild.exe");
+        return pathToMsBuild;
+    }
+
+    public static string GetPathToVsTest()
+    {        
+        var pathToVisualStudioInstallation = GetPathToVisualStudioInstallation();
+        var pathToTestConsole = Path.Combine(pathToVisualStudioInstallation,@"Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe");
+        return pathToTestConsole;
+    }
+
+    public static string GetPathToVisualStudioInstallation()
     {
-        string keyName = @"SOFTWARE\Wow6432Node\Microsoft\MSBuild\ToolsVersions";
-        string decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator; 
-        
-        RegistryKey key = Registry.LocalMachine.OpenSubKey(keyName);
-        string[] subKeynames = key.GetSubKeyNames().Select(n => n.Replace(".", decimalSeparator)).ToArray();        
-        Collection<decimal> versionNumbers = new Collection<decimal>();
-        
-        for (int i = 0; i < subKeynames.Length; i++)
+        var pathToVsWhere = GetFile(PathToBuildDirectory,"vswhere.exe");
+        if (pathToVsWhere == null)
         {
-            decimal versionNumber;
-            if (decimal.TryParse(subKeynames[i], out versionNumber))
-            {
-                versionNumbers.Add(versionNumber);
-            }                        
+            NuGet.Install("vswhere", PathToBuildDirectory);
         }
-        
-        decimal latestVersionNumber = versionNumbers.OrderByDescending(n => n).First();
-        RegistryKey latestVersionSubKey = key.OpenSubKey(latestVersionNumber.ToString().Replace(decimalSeparator, "."));
-        string pathToMsBuildTools = (string)latestVersionSubKey.GetValue("MSBuildToolsPath");
-        return pathToMsBuildTools;
+        pathToVsWhere = GetFile(PathToBuildDirectory,"vswhere.exe");
+
+        var result = Command.Execute(pathToVsWhere, "", ".");                
+        var match = Regex.Match(result,@"installationPath:\s*(.*)\r");            
+        var pathToVisualStudioInstallation = match.Groups[1].Captures[0].Value; 
+        return pathToVisualStudioInstallation;
     }
 }
 
@@ -247,13 +257,13 @@ public static class MsTest
 {    
     public static void Run(string pathToTestAssembly, string pathToTestAdapter)
     {         
-        string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
+        string pathToMsTest = PathResolver.GetPathToVsTest();
         string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /TestAdapterPath:" + pathToTestAdapter, @"(Total tests:.*)|(Test execution time:.*)|(Failed.*)");
     }
     
     public static void RunWithCodeCoverage(string pathToTestAssembly, string pathToPackagesFolder, params string[] includedAssemblies)
     {
-        string pathToMsTest = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe";
+        string pathToMsTest = PathResolver.GetPathToVsTest();
         string pathToTestAdapter = ResolveDirectory(pathToPackagesFolder, "xunit.runner.visualstudio.testadapter.dll");
         string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /Enablecodecoverage" + " /TestAdapterPath:" + pathToTestAdapter, @"(Test execution.*)|(Test Run.*)|(Total tests.*)|\s*(.*coverage)|(Attachments:)");        
         var pathToCoverageFile = GetPathToCoverageFile(result);        
@@ -451,6 +461,7 @@ public static class NuGet
     public static void CreatePackage(string pathToMetadata, string outputDirectory)
     {
         string arguments = "pack " + StringUtils.Quote(pathToMetadata) + " -OutputDirectory " + StringUtils.Quote(outputDirectory);
+        WriteLine($"Running NuGet pack with args {arguments}");
         Command.Execute("nuget", arguments, ".");        
     }
     
@@ -465,6 +476,11 @@ public static class NuGet
         WriteLine(result);    
     }
     
+    public static void Install(string packageName, string outputDirectory)
+    {
+        var result = Command.Execute("nuget", $"install {packageName} -OutputDirectory {outputDirectory}", ".");
+    }
+
     public static void BumpDependenciesToLatestVersion(string pathToNuSpecfile, string pathToPackagesFolder)
     {
         var nuSpec = XDocument.Load(pathToNuSpecfile);
