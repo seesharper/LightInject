@@ -9,7 +9,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Text.RegularExpressions;
 
-PathToBuildDirectory = Path.Combine(Path.GetTempPath(),"tmp", projectName);
+PathToBuildDirectory = Path.Combine("../tmp", projectName);
 string pathToSourceFile = @"..\src\LightInject\LightInject.cs";
 private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
 private const string projectName = "LightInject";
