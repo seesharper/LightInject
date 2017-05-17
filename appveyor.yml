@@ -4,6 +4,7 @@ install:
 build_script:
 - cmd: >-
     cd build
+    
     csx build.csx
 test: off
 artifacts:
