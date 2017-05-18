@@ -245,7 +245,7 @@ public static class PathResolver
         pathToVsWhere = GetFile(PathToBuildDirectory,"vswhere.exe");
 
         var result = Command.Execute(pathToVsWhere, "", ".");                
-        var match = Regex.Match(result,@"installationPath:\s*(.*)");            
+        var match = Regex.Match(result,@"installationPath:\s*(.*)\r\n");            
         var pathToVisualStudioInstallation = match.Groups[1].Captures[0].Value; 
         return pathToVisualStudioInstallation;
     }

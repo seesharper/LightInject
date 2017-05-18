@@ -14,6 +14,9 @@ string pathToSourceFile = @"..\src\LightInject\LightInject.cs";
 private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
 private const string projectName = "LightInject";
 
+var test = PathResolver.GetPathToMsBuild();
+WriteLine(test);
+
 CreateDirectory(PathToBuildDirectory);
 
 
