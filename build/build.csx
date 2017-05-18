@@ -10,6 +10,7 @@ using System.Xml.Linq;
 using System.Text.RegularExpressions;
 
 PathToBuildDirectory = "../tmp"; 
+CreateDirectory(PathToBuildDirectory);
 string pathToSourceFile = @"..\src\LightInject\LightInject.cs";
 private string version = GetVersionNumberFromSourceFile(pathToSourceFile);
 private const string projectName = "LightInject";
@@ -17,7 +18,7 @@ private const string projectName = "LightInject";
 var test = PathResolver.GetPathToMsBuild();
 WriteLine(test);
 
-CreateDirectory(PathToBuildDirectory);
+
 
 
 private const string portableClassLibraryProjectTypeGuid = "{786C830F-07A1-408B-BD7F-6EE04809D6DB}";
