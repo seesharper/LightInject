@@ -61,7 +61,7 @@ namespace LightInject
     using System.Threading;
 
     /// <summary>
-    /// A delegate that represent the dynamic method compiled to resolved service instances.
+    /// A delegate that represents the dynamic method compiled to resolved service instances.
     /// </summary>
     /// <param name="args">The arguments used by the dynamic method that this delegate represents.</param>
     /// <returns>A service instance.</returns>
@@ -452,7 +452,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -462,7 +462,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -472,7 +472,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -482,7 +482,7 @@ namespace LightInject
 
 #if NET45 || NET46 || NETSTANDARD16
         /// <summary>
-        /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
+        /// Registers composition roots from assemblies in the base directory that match the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
@@ -6378,8 +6378,6 @@ namespace LightInject
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(MostResolvableConstructorSelector));
-            InternalTypes.Add(typeof(PerContainerLifetime));
-            InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerRequestLifeTime));
             InternalTypes.Add(typeof(PropertySelector));
             InternalTypes.Add(typeof(AssemblyScanner));
