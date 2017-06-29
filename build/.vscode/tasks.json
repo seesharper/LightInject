@@ -3,7 +3,7 @@
 {
 	"version": "0.1.0",
 		
-	"command": "C:/Github/csx/src/bin/Release/netcoreapp1.1/win7-x64/publish/csx.exe",
+	"command": "csx.exe",
 	
 	// The command is a shell script
 	"isShellCommand": true,

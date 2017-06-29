@@ -6,6 +6,7 @@ namespace LightInject.Tests
     using System.Collections;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Reflection;
     using SampleLibrary;
     using Xunit;
 
@@ -21,7 +22,7 @@ namespace LightInject.Tests
         [Fact]
         public void Map_ImplementedInterfaceToImplementingType_IsValid()
         {
-            var result = CreateMapper().Map(typeof(Foo<>).GetInterfaces().Single(), typeof(Foo<>));
+            var result = CreateMapper().Map(typeof(Foo<>).GetTypeInfo().GetInterfaces().Single(), typeof(Foo<>));
             Assert.True(result.IsValid);
         }
 

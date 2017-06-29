@@ -1,4 +1,7 @@
 #r "nuget:System.Diagnostics.Process, 4.3.0"
+#load "context.csx"
+#load "write.csx"
+#load "command.csx"
 
 using System.Diagnostics;
 using System.Xml.Linq;
@@ -8,21 +11,12 @@ using System.Globalization;
 using System.Collections.ObjectModel;
 using System.Threading;
 
-public static string PathToBuildDirectory;
 
-private static int depth = 0;
 
-private static string lastWriteOperation;
 
-public static class DotNet
-{
-    public static void Build(string pathToProjectFile, string frameworkMoniker)
-    {
-        Command.Execute("dotnet.exe","--version", ".");
-        Command.Execute("dotnet.exe","restore " + pathToProjectFile, ".");        
-        Command.Execute("dotnet.exe","build " + pathToProjectFile + " --framework " + frameworkMoniker + " --configuration Release" , ".");   
-    }
-}
+
+
+
 
 public static void RoboCopy(string source, string destination, string arguments = null)
 {    
@@ -32,57 +26,6 @@ public static void RoboCopy(string source, string destination, string arguments 
     }
     
     Command.Execute("robocopy", string.Format("{0} {1} {2}", source, destination, arguments));    
-}
-
-public static void RoboCopy(string source, string destination, string file, string arguments)
-{
-    Command.Execute("robocopy", string.Format("{0} {1} {2} {3}", source, destination, arguments));
-}
-
-
-private static void WriteStart(string message, params object[] arguments)
-{
-    StringBuilder sb = new StringBuilder();    
-    sb.Append("\n");
-    sb.Append(' ', depth);
-    sb.Append(string.Format(message, arguments));            
-    Console.Out.Flush();
-    Console.Write(sb.ToString());
-    Console.Out.Flush();
-    lastWriteOperation = "WriteStart";
-}
-
-private static void WriteLine(string message,  params object[] arguments)
-{
-    if (message == null)
-    {
-        return;
-    }
-    StringBuilder sb = new StringBuilder();    
-    if (lastWriteOperation == "WriteStart")
-    {
-        sb.Append("\n");
-    }
-    sb.Append(' ', depth);
-    sb.Append(string.Format(message, arguments));            
-    Console.WriteLine(sb.ToString());
-    lastWriteOperation = "WriteLine";
-}
-
-private static void WriteEnd(string message, params object[] arguments)
-{
-    if (lastWriteOperation == "WriteStart")
-    {
-        Console.WriteLine(string.Format(message,arguments));
-    }
-    else
-    {
-        StringBuilder sb = new StringBuilder();    
-        sb.Append(' ', depth);
-        sb.Append(string.Format(message, arguments));            
-        Console.WriteLine(sb.ToString());
-        lastWriteOperation = "WriteLine";
-    }
 }
 
 public static void RemoveDirectory(string directory)
@@ -105,39 +48,19 @@ public static string ResolveDirectory(string path, string filePattern)
     return Path.GetDirectoryName(pathToFile);
 }
 
-public static string GetFile(string path, string filePattern)
-{
-    WriteLine("Looking for {0} in {1}", filePattern, path);
-    string[] pathsToFile = Directory.GetFiles(path, filePattern, SearchOption.AllDirectories).ToArray();
-    if (pathsToFile.Length > 1)
-    {
-        WriteLine("Found multiple files");
-        var files = pathsToFile.Select(p => new FileInfo(p));
-        var file = files.OrderBy(f => f.LastWriteTime).Last();
-        WriteLine("Choosing {0}",file.FullName);
-        return file.FullName;
-    }
-    else
-    if (pathsToFile.Length == 0)
-    {
-        WriteLine($"File {filePattern} not found in {path}");
-        return null;
-    }    
-    WriteLine($"Found {pathsToFile[0]}");
-    return pathsToFile[0];
-}
 
-private static string CopyToNuGetBuildDirectory(string projectPath)
-{
-    var projectDirectory = Path.GetDirectoryName(projectPath);
-    var tempSolutionFolder = GetTemporaryDirectory();
-    string projectName = Regex.Match(projectPath, @"..\\(.+)").Groups[1].Value;
-    var tempProjectFolder = Path.Combine(tempSolutionFolder, projectName);
-    RoboCopy(projectPath, tempProjectFolder, "/S /XD obj bin");
-    NuGet.Restore(tempProjectFolder);
-    RemoveInternalsVisibleToAttribute(Path.Combine(tempProjectFolder, @"Properties\AssemblyInfo.cs"));
-    return tempProjectFolder;
-}
+
+// private static string CopyToNuGetBuildDirectory(string projectPath)
+// {
+//     var projectDirectory = Path.GetDirectoryName(projectPath);
+//     var tempSolutionFolder = GetTemporaryDirectory();
+//     string projectName = Regex.Match(projectPath, @"..\\(.+)").Groups[1].Value;
+//     var tempProjectFolder = Path.Combine(tempSolutionFolder, projectName);
+//     RoboCopy(projectPath, tempProjectFolder, "/S /XD obj bin");
+//     NuGet.Restore(tempProjectFolder);
+//     RemoveInternalsVisibleToAttribute(Path.Combine(tempProjectFolder, @"Properties\AssemblyInfo.cs"));
+//     return tempProjectFolder;
+// }
 
 public static string GetTemporaryDirectory()
 {
@@ -152,27 +75,16 @@ public static string RemoveInternalsVisibleToAttribute(string assemblyInfo)
 }
 
 public static void Execute(Action action, string description)
-{
-    int currentIndentation = depth;    
-    WriteStart(description);
-    depth++;              
+{    
+    Write.Start(description);    
     Stopwatch watch = new Stopwatch();
     watch.Start();
     action();
-    watch.Stop();    
-    depth--; 
-    WriteEnd("...Done! ({0} ms)", watch.ElapsedMilliseconds);                      
+    watch.Stop();        
+    Write.End("...Done! ({0} ms)", watch.ElapsedMilliseconds);                      
 }
 
-public static void PatchAssemblyVersionInfo(string version, string fileVersion, string frameworkMoniker, string pathToAssemblyInfo)
-{    
-    var assemblyInfo = ReadFile(pathToAssemblyInfo);    
-    var patchedAssemblyInfo = Regex.Replace(assemblyInfo, @"((?<=AssemblyVersion\(.)[\d\.]+)", fileVersion);
-    patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"((?<=AssemblyFileVersion\(.)[\d\.]+)", fileVersion);
-    patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"((?<=AssemblyInformationalVersion\(.)[\d\.]+)", version);        
-    patchedAssemblyInfo = Regex.Replace(patchedAssemblyInfo, @"(AssemblyCopyright\(""\D+)(\d*)", "${1}" + DateTime.Now.Year);            
-    WriteFile(pathToAssemblyInfo, patchedAssemblyInfo);    
-}
+
 
 public static string GetVersionNumberFromSourceFile(string pathToSourceFile)
 {
@@ -181,34 +93,9 @@ public static string GetVersionNumberFromSourceFile(string pathToSourceFile)
     return versionNumber;
 }
 
-public static void PatchNugetVersionInfo(string pathToNugetSpecification, string version)
-{
-    ReplaceInFile(@"(<version>)(.+)(<\/version>)", "${1}" + version + "$3", pathToNugetSpecification);   
-}
-
-public static void ReplaceInFile(string pattern, string value, string pathToFile)
-{
-    var source = ReadFile(pathToFile);
-    var replacedSource = Regex.Replace(source, pattern, value);
-    WriteFile(pathToFile, replacedSource);
-}
 
 
-public static string ReadFile(string pathToFile)
-{
-    using(var reader = new StreamReader(pathToFile))
-    {
-        return reader.ReadToEnd();
-    }
-}
 
-public static void WriteFile(string pathToFile, string content)
-{
-    using(var writer = new StreamWriter(pathToFile))
-    {
-        writer.Write(content);
-    }
-}
 
 public static class MsBuild
 {
@@ -224,25 +111,25 @@ public static class PathResolver
     public static string GetPathToMsBuild()
     {        
         var pathToVisualStudioInstallation = GetPathToVisualStudioInstallation();
-        var pathToMsBuild = Path.Combine(pathToVisualStudioInstallation,@"MSBuild\15.0\Bin\MsBuild.exe");
+        var pathToMsBuild = Path.Combine(pathToVisualStudioInstallation, @"MSBuild\15.0\Bin\MsBuild.exe");
         return pathToMsBuild;
     }
 
     public static string GetPathToVsTest()
     {        
         var pathToVisualStudioInstallation = GetPathToVisualStudioInstallation();
-        var pathToTestConsole = Path.Combine(pathToVisualStudioInstallation,@"Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe");
+        var pathToTestConsole = Path.Combine(pathToVisualStudioInstallation, @"Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe");
         return pathToTestConsole;
     }
 
     public static string GetPathToVisualStudioInstallation()
     {
-        var pathToVsWhere = GetFile(PathToBuildDirectory,"vswhere.exe");
+        var pathToVsWhere = GetFile(BuildContext.BuildPackagesFolder ,"vswhere.exe");
         if (pathToVsWhere == null)
         {
-            NuGet.Install("vswhere", PathToBuildDirectory);
+            NuGet.Install("vswhere", BuildContext.BuildPackagesFolder);
         }
-        pathToVsWhere = GetFile(PathToBuildDirectory,"vswhere.exe");
+        pathToVsWhere = GetFile(BuildContext.BuildPackagesFolder,"vswhere.exe");
 
         var result = Command.Execute(pathToVsWhere, "", ".");
         WriteLine(result);                
@@ -331,32 +218,7 @@ public static class MsTest
 
 public static class DirectoryUtils
 {   
-    public static void Delete(string path)
-    {
-        if (!Directory.Exists(path))
-        {
-            return;
-        }
-                
-        // http://stackoverflow.com/questions/329355/cannot-delete-directory-with-directory-deletepath-true
-        foreach (string directory in Directory.GetDirectories(path))
-        {
-            Delete(directory);
-        }
-        
-        try
-        {
-            Directory.Delete(path, true);
-        }
-        catch (IOException) 
-        {
-            Directory.Delete(path, true);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            Directory.Delete(path, true);
-        }
-    } 
+    
 }
 
 public class FileUtils
@@ -371,83 +233,7 @@ public class FileUtils
 }
 
 
-public static class Command
-{
-    private static StringBuilder lastProcessOutput = new StringBuilder();
-    
-    private static StringBuilder lastStandardErrorOutput = new StringBuilder();    
-          
-    public static string Execute(string commandPath, string arguments, string capture = null)
-    {
-        lastProcessOutput.Clear();
-        lastStandardErrorOutput.Clear();
-        var startInformation = CreateProcessStartInfo(commandPath, arguments);
-        var process = CreateProcess(startInformation);
-        SetVerbosityLevel(process, capture);        
-        process.Start();        
-        RunAndWait(process);                
-               
-        if (process.ExitCode != 0 && commandPath != "robocopy")
-        {                      
-            WriteLine(lastStandardErrorOutput.ToString());
-            throw new InvalidOperationException("Command failed");
-        }   
-        
-        return lastProcessOutput.ToString();
-    }
 
-    private static ProcessStartInfo CreateProcessStartInfo(string commandPath, string arguments)
-    {
-        var startInformation = new ProcessStartInfo(StringUtils.Quote(commandPath));
-        startInformation.CreateNoWindow = true;
-        startInformation.Arguments =  arguments;
-        startInformation.RedirectStandardOutput = true;
-        startInformation.RedirectStandardError = true;
-        startInformation.UseShellExecute = false;
-        
-        return startInformation;
-    }
-
-    private static void RunAndWait(Process process)
-    {        
-        process.BeginErrorReadLine();
-        process.BeginOutputReadLine();         
-        process.WaitForExit();                
-    }
-
-    private static void SetVerbosityLevel(Process process, string capture = null)
-    {
-        if(capture != null)
-        {
-            process.OutputDataReceived += (s, e) => 
-            {
-                if (e.Data == null)
-                {
-                    return;
-                }
-                              
-                if (Regex.Matches(e.Data, capture,RegexOptions.Multiline).Count > 0)
-                {
-                    lastProcessOutput.AppendLine(e.Data);
-                    WriteLine(e.Data);        
-                }                                             
-            };                        
-        }
-        process.ErrorDataReceived += (s, e) => 
-        {
-            lastStandardErrorOutput.AppendLine();
-            lastStandardErrorOutput.AppendLine(e.Data);                        
-        };
-    }
-
-    private static Process CreateProcess(ProcessStartInfo startInformation)
-    {
-        var process = new Process();
-        process.StartInfo = startInformation;       
-        //process.EnableRaisingEvents = true;
-        return process;
-    }
-}
 
 public static class StringUtils
 {
@@ -457,76 +243,9 @@ public static class StringUtils
     }
 }
 
-public static class NuGet
-{
-    public static void CreatePackage(string pathToMetadata, string outputDirectory)
-    {
-        string arguments = "pack " + StringUtils.Quote(pathToMetadata) + " -OutputDirectory " + StringUtils.Quote(outputDirectory);
-        WriteLine($"Running NuGet pack with args {arguments}");
-        Command.Execute("nuget", arguments, ".");        
-    }
-    
-    public static void Restore(string projectDirectory)
-    {
-        var result = Command.Execute("nuget", "restore " + Path.Combine(projectDirectory, "packages.config") + " -PackagesDirectory " + Path.Combine(projectDirectory, @"..\packages"),".");        
-    }
-    
-    public static void Update(string pathToSolutionFile)
-    {
-        var result = Command.Execute("nuget" , "update " + pathToSolutionFile, ".");
-        WriteLine(result);    
-    }
-    
-    public static void Install(string packageName, string outputDirectory)
-    {
-        var result = Command.Execute("nuget", $"install {packageName} -OutputDirectory {outputDirectory}", ".");
-    }
 
-    public static void BumpDependenciesToLatestVersion(string pathToNuSpecfile, string pathToPackagesFolder)
-    {
-        var nuSpec = XDocument.Load(pathToNuSpecfile);
-        var elements = nuSpec.Descendants("dependency");
-        foreach (var element in elements)
-        {
-            Console.WriteLine(element.Attribute("id").Value);
-        }
-    }
-}
 
-public static class Internalizer
-{
-    public static void Internalize(string pathToSourceFile, string frameworkMoniker, params string[] exceptTheseTypes)
-    {
-        var source = ReadFile(pathToSourceFile);
-        
-        // Include source code that matches the framework moniker.    
-           
-        source = Regex.Replace(source, @"#if.*" + frameworkMoniker + ".*\r\n((.*\r\n)*?)#endif\r\n", "$1");
-                
-        // Exclude source code that does not match the framework moniker.                        
-        source = Regex.Replace(source, @"#if.*\r\n((.*\r\n)*?)#endif\r\n","");
-            
-        string negativeLookahead = string.Empty;                        
-        if (exceptTheseTypes != null)
-        {
-            foreach (var type in exceptTheseTypes)
-            {
-                negativeLookahead += string.Format("(?!{0})", type);
-            }
-        }
-        
-        // Make all public classes internal
-        source = Regex.Replace(source, "public (.*class |struct |interface )" + negativeLookahead, "internal $1");
-                        
-        // Exclude classes from code coverage
-        source = Regex.Replace(source, @"(([^\S\r\n]*)internal.*class.*)", "$2[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\r\n$1");
 
-        // Update version information with the framework moniker.        
-        source = Regex.Replace(source, @"(LightInject version \S*)", "$1 (" + frameworkMoniker + ")");
-                        
-        WriteFile(pathToSourceFile, source);
-    }
-}
 
 
     

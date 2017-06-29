@@ -121,10 +121,10 @@ namespace LightInject.Tests
             string message = null;
             var container = new ServiceContainer(new ContainerOptions {LogFactory = t => m => message = m.Message});
             
-            SampleTraceListener sampleTraceListener = new SampleTraceListener(m => message = m);
+            //SampleTraceListener sampleTraceListener = new SampleTraceListener(m => message = m);
             try
             {                
-                Trace.Listeners.Add(sampleTraceListener);
+              ///  Trace.Listeners.Add(sampleTraceListener);
                 container.Register<IFoo, Foo>();
                 container.GetInstance<IFoo>();
                 container.Register<IFoo, Foo>();
@@ -132,7 +132,7 @@ namespace LightInject.Tests
             }
             finally
             {
-                Trace.Listeners.Remove(sampleTraceListener);
+                //Trace.Listeners.Remove(sampleTraceListener);
             }
         }       
 
@@ -164,23 +164,23 @@ namespace LightInject.Tests
         }
     }
 
-    public class SampleTraceListener : TraceListener
-    {
-        private readonly Action<string> listener;
+    //public class SampleTraceListener : TraceListener
+    //{
+    //    private readonly Action<string> listener;
 
-        public SampleTraceListener(Action<string> listener)
-        {
-            this.listener = listener;
-        }
+    //    public SampleTraceListener(Action<string> listener)
+    //    {
+    //        this.listener = listener;
+    //    }
 
-        public override void Write(string message)
-        {
-            listener(message);
-        }
+    //    public override void Write(string message)
+    //    {
+    //        listener(message);
+    //    }
 
-        public override void WriteLine(string message)
-        {
-            listener(message);
-        }
-    }
+    //    public override void WriteLine(string message)
+    //    {
+    //        listener(message);
+    //    }
+    //}
 }

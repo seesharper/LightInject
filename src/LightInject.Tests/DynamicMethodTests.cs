@@ -1,4 +1,4 @@
-#if PCL_111
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
 using System;
 using System.Collections.Generic;
 using System.Linq;

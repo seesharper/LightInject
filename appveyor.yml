@@ -9,7 +9,7 @@ build_script:
     csx build.csx
 test: off
 artifacts:
-- path: ../tmp/*.nupkg
+- path: /**/*.nupkg
   name: NuGet Packages
 deploy:
   provider: NuGet  

@@ -17,7 +17,7 @@ namespace LightInject.Tests
         {
             var compositionRootTypeExtractorMock = new CompositionRootAttributeExtractorMock();
 
-            var result = compositionRootTypeExtractorMock.GetAttributes(typeof (CompositionRootTypeExtractorTests).Assembly);
+            var result = compositionRootTypeExtractorMock.GetAttributes(typeof (CompositionRootTypeExtractorTests).GetTypeInfo().Assembly);
 
             //var extractor = new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor());
             //var result = extractor.Execute(typeof(CompositionRoot).Assembly);

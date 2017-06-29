@@ -589,7 +589,6 @@ namespace LightInject.Tests
 
         #endregion
 
-#if NET45 || PCL_111 || NET46
         #region ReadOnly Collection
 
         [Fact]
@@ -631,7 +630,6 @@ namespace LightInject.Tests
 
 
         #endregion
-#endif
         #region Func Services
                 
         [Fact]
@@ -1395,7 +1393,7 @@ namespace LightInject.Tests
 
             Assert.IsAssignableFrom(typeof(Foo), instance);
         }
-#if !PCL_111
+
         [Fact]
         public void GetInstance_ServiceWithGenericConstraint_ThrowsException()
         {
@@ -1441,7 +1439,7 @@ namespace LightInject.Tests
 
             Assert.Equal(2, instances.Count());
         }
-#endif
+
         [Fact]
         public void CreateGeneric_ConcreteClass_ReturnsInstance()
         {
@@ -1669,7 +1667,7 @@ namespace LightInject.Tests
         }
 
         
-#if NET45 || NET40 || NET46
+#if NET452 || NET40 || NET46
         [Fact]
         public void RegisterFrom_CompositionRoot_CallsCompositionRootExecutor()
         {
@@ -1733,7 +1731,7 @@ namespace LightInject.Tests
             compositionRootExtractorMock.Arrange(m => m.Execute(The<Assembly>.IsAnyValue)).Returns(new Type[] {});
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
                        
-            container.RegisterAssembly(typeof(Foo).Assembly);
+            container.RegisterAssembly(typeof(Foo).GetTypeInfo().Assembly);
 
             var foo1 = container.GetInstance<IFoo>();
             var foo2 = container.GetInstance<IFoo>();

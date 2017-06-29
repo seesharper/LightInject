@@ -1,6 +1,7 @@
 namespace LightInject.Tests
 {
     using System;
+    using System.Reflection;
     using System.Text;    
     using LightInject;
     using LightInject.SampleLibrary;
@@ -262,7 +263,6 @@ namespace LightInject.Tests
 
             Assert.IsAssignableFrom(typeof(Bar), result.Bar);
         }
-#if NET40 || NET45 || PCL_111  || NET46     
         [Fact]
         public void InjectProperties_FuncFactory_InjectsPropertyDependencies()
         {
@@ -276,7 +276,7 @@ namespace LightInject.Tests
 
             Assert.IsAssignableFrom(typeof(Bar), result.Bar);
         }
-#endif
+
         [Fact]
         public void InjectProperties_RecursiveDependency_ThrowsException()
         {
@@ -321,7 +321,7 @@ namespace LightInject.Tests
         public void ToString_PropertyDependency_ReturnsDescriptiveDescription()
         {
             PropertyDependency propertyDependency = new PropertyDependency();
-            propertyDependency.Property = typeof (FooWithProperyDependency).GetProperty("Bar");
+            propertyDependency.Property = typeof (FooWithProperyDependency).GetTypeInfo().GetProperty("Bar");
             var description = propertyDependency.ToString();
             Assert.StartsWith("[Target Type", description);
         }
