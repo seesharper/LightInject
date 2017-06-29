@@ -26,13 +26,13 @@ This adds a reference to the LightInject.dll in the target project.
 
 This will install a single file (LightInject.cs) into the current project.
 
-### Creating a container###
+### Creating a container ###
 
     var container = new LightInject.ServiceContainer();
     
 The container implements IDisposable and should be disposed after usage has completed. It can also be used inside of a using statement for a constrained scope.
 
-### Default services###
+### Default services ###
 
     public interface IFoo {}
     public class Foo : IFoo {}
@@ -127,7 +127,7 @@ Registers the value as a constant.
     Assert.AreEqual("SomeValue, value);
 
 
-##Lifetime##
+## Lifetime ##
 
 The default behavior in **LightInject** is to treat all objects as transients unless otherwise specified.
 
@@ -136,7 +136,7 @@ The default behavior in **LightInject** is to treat all objects as transients un
 	var secondInstance = container.GetInstance<IFoo>();
 	Assert.AreNotSame(firstInstance, secondInstance);
 
-###PerScopeLifetime###
+### PerScopeLifetime ###
 
 Ensures that only one instance of a given service can exists within a scope.
 The container will call the **Dispose** method on all disposable objects created within the scope.
@@ -152,7 +152,7 @@ The container will call the **Dispose** method on all disposable objects created
 
 **Note:** *An **InvalidOperationException** is thrown if a service registered with the **PerScopeLifetime** is requested outside the scope.*
 
-###PerContainerLifetime###
+### PerContainerLifetime ###
 
 Ensures that only one instance of a given service can exist within the container.
 The container will call the Dispose method on all disposable objects when the container itself is disposed.
@@ -165,7 +165,7 @@ The container will call the Dispose method on all disposable objects when the co
 		Assert.AreSame(firstInstance, secondInstance);
 	}
 
-###PerRequestLifeTime###
+### PerRequestLifeTime ###
 
 A new instance is created for each request and the container calls **Dispose** when the scope ends.
 This lifetime is used when the conrete class implements **IDisposable**.
@@ -181,7 +181,7 @@ This lifetime is used when the conrete class implements **IDisposable**.
 >**Note:** *An **InvalidOperationException** is thrown if a service registered with the **PerRequestLifeTime** is requested outside the scope.*
 
 
-###Custom lifetime###
+### Custom lifetime ###
 
 A custom lifetime is created by implementing the **ILifetime** interface
 
@@ -234,7 +234,7 @@ That is all it takes to create a custom lifetime, but what about disposable serv
 		}
 	}
 
-####Important####
+#### Important ####
  		
 A lifetime object controls the lifetime of a single service and can **never** be shared for multiple service registrations.
 
@@ -421,7 +421,7 @@ We can also do a combination of supplied values and dependencies.
 
 	public class Bar : IBar {}
 
-####Implicit service registration####
+#### Implicit service registration ####
 
 Registers the service without specifying any information about how to resolve the property dependencies.
 
@@ -439,7 +439,7 @@ For fine grained control of the injected property dependencies, we can provide a
 This tells the container to inject a new **Bar** instance whenever it sees an **IBar** property dependency.
 
 
-####Explicit service registration####
+#### Explicit service registration ####
 
 Registers a service by providing explicit information about how to create the service instance and how to resolve the property dependencies.
 
