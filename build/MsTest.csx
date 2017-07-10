@@ -20,7 +20,9 @@ public static class MsTest
         string pathToTestAdapter = FileUtils.FindDirectory(BuildContext.BuildPackagesFolder, "xunit.runner.visualstudio.testadapter.dll");
         var args = $"\"{pathToTestAssembly}\" /Enablecodecoverage /TestAdapterPath:\"{pathToTestAdapter}\" /TestCaseFilter:\"Category!=Verification\"";
         Write.Info("Executing test with code coverage");
-        string result = Command.Execute(pathToMsTest, args, @"(Test execution.*)|(Test Run.*)|(Total tests.*)|\s*(.*coverage)|(Attachments:)");        
+        //string result = Command.Execute(pathToMsTest, args, @"(Test execution.*)|(Test Run.*)|(Total tests.*)|\s*(.*coverage)|(Attachments:)");        
+        string result = Command.Execute(pathToMsTest, args,".");        
+
         Write.Info(result);
         //string result = Command.Execute(pathToMsTest, pathToTestAssembly + " /Enablecodecoverage" + " /TestAdapterPath:" + pathToTestAdapter, @"(Test execution.*)|(Test Run.*)|(Total tests.*)|\s*(.*coverage)|(Attachments:)");        
         var pathToCoverageFile = GetPathToCoverageFile(result);        
