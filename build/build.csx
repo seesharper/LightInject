@@ -24,7 +24,6 @@ Tasks.Execute(Args.ToArray());
 
 
 
-
 private void Compile()
 {
     BuildContext.Initialize("LightInject");

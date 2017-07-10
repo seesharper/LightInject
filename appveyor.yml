@@ -6,7 +6,7 @@ build_script:
 - cmd: >-
     cd build
     
-    csx build.csx
+    csx build.csx pack
 test: off
 artifacts:
 - path: /**/*.nupkg
