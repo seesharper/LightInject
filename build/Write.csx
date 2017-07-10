@@ -36,6 +36,7 @@ public static class Write
 
     public static void End(string message, params object[] arguments)
     {
+        depth--;
         if (lastWriteOperation == "WriteStart")
         {
             Console.WriteLine(string.Format(message,arguments));
@@ -48,6 +49,6 @@ public static class Write
             Console.WriteLine(sb.ToString());
             lastWriteOperation = "WriteLine";
         }
-        depth--;
+        
     }
 }

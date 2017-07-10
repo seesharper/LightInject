@@ -59,6 +59,14 @@ public static class FileUtils
         return pathsToFile[0];
     }
 
+    public static string FindDirectory(string path, string filePattern)
+    {
+        string pathToFile = FindFile(path, filePattern);
+        return Path.GetDirectoryName(pathToFile);
+    }
+
+
+
     public static void RemoveDirectory(string path)
     {
         if (!Directory.Exists(path))

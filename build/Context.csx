@@ -49,7 +49,7 @@ public static class BuildContext
         SourceProjectFolder = Path.Combine(SourceBuildFolder,ProjectName);
         BuildPackagesFolder = Path.Combine(BuildFolder, "packages");        
         SolutionFolder = @"..\src";
-        SourceFolder = @"..\src\LightInject";
+        SourceFolder = $@"..\src\{projectName}";
         PackageOutputFolder = Path.Combine(BuildFolder, "NuGetPackages");
         SourceFileName = Path.Combine(SourceProjectFolder,$"{ProjectName}.cs");
         ReadVersionFile((Path.Combine(SourceFolder, "version.txt")));        

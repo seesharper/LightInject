@@ -1,4 +1,6 @@
+#load "Write.csx"
 #r "nuget:Microsoft.Extensions.CommandLineUtils, 1.1.1"
+
 
 using Microsoft.Extensions.CommandLineUtils;
 
@@ -12,7 +14,7 @@ public static class Tasks
         cli = new CommandLineApplication(true);        
     }
 
-    public static void Add(Expression<Action> action)
+    private static void AddSingle(Expression<Action> action)
     {        
         var actionName = GetActionName(action);
         var compiledAction = action.Compile();
@@ -20,7 +22,23 @@ public static class Tasks
         cli.Commands.Add(command);   
         actions.Add(GetActionName(action), compiledAction);        
     }
-    public static void Add(Expression<Action> action, Expression<Action> beforeAction)
+    public static void Add(params Expression<Action>[] actions)
+    {
+        for (int i = 0; i < actions.Length; i++)
+        {
+            if (i >= 1)
+            {
+                AddWithBeforeAction(actions[i], actions[i-1]);
+            }
+            else            
+            {
+                AddSingle(actions[i]);
+            }
+
+        }
+    }
+    
+    private static void AddWithBeforeAction(Expression<Action> action, Expression<Action> beforeAction)
     {        
         var compiledAction = action.Compile();
         Action compositeAction = () => 
@@ -35,7 +53,19 @@ public static class Tasks
 
     public static void Execute(Expression<Action> action)
     {
-         actions[GetActionName(action)]();        
+       var actionName = GetActionName(action);
+       Action compiledAction = null;
+       if (!actions.TryGetValue(actionName, out compiledAction))
+       {
+            compiledAction = action.Compile();
+       }
+
+        Write.Start(actionName);    
+        Stopwatch watch = new Stopwatch();
+        watch.Start();
+        compiledAction();
+        watch.Stop();        
+        Write.End("...Done! ({0} ms)", watch.ElapsedMilliseconds);                             
     }
 
     public static void Execute(params string[] args)
@@ -44,7 +74,7 @@ public static class Tasks
         {
             cli.Execute(args);
         }
-        catch (CommandParsingException ex)
+        catch (CommandParsingException)
         {
             cli.ShowHelp();            
         }
