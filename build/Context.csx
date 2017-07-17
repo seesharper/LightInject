@@ -1,4 +1,6 @@
 #load "FileUtils.csx"
+#load "CsProj.csx"
+
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -57,7 +59,8 @@ public static class BuildContext
 
     private static void ReadVersionFile(string pathToVersionFile)
     {
-        var version = FileUtils.ReadFile(pathToVersionFile);
+        var pathToProjectFile = Path.Combine(SourceFolder, $"{ProjectName}.csproj");
+        var version = CsProj.ReadVersion(pathToProjectFile);                
         FileVersion = Regex.Match(version, @"(^[\d\.]+)-?").Groups[1].Captures[0].Value;
         Version = Regex.Match(version, @"(\d\.\d\.\d\S*)").Groups[1].Value;
     }

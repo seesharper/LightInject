@@ -1,6 +1,7 @@
 #load "Command.csx"
 #load "Write.csx"
 #load "FileUtils.csx"
+#load "Context.csx"
 public static class NuGet
 {
     public static void Pack(string pathToMetadata, string outputDirectory)
@@ -20,8 +21,12 @@ public static class NuGet
         Command.Execute("nuget", "update " + pathToSolutionFile, ".");
     }
 
-    public static void Install(string packageName, string outputDirectory)
-    {
+    public static void Install(string packageName, string outputDirectory = null)
+    {        
+        if (outputDirectory == null)
+        {
+            outputDirectory = BuildContext.BuildPackagesFolder;
+        }
         Command.Execute("nuget", $"install {packageName} -OutputDirectory {outputDirectory}", ".");
     }
 
