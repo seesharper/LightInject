@@ -5590,6 +5590,7 @@ namespace LightInject
     /// </summary>
     public class Scope : IServiceFactory, IDisposable
     {
+        private static readonly object disposableObjectsLock = new object();
         private readonly HashSet<IDisposable> disposableObjects = new HashSet<IDisposable>(ReferenceEqualityComparer<IDisposable>.Default);
         private readonly IScopeManager scopeManager;
         private readonly IServiceFactory serviceFactory;
@@ -5629,7 +5630,10 @@ namespace LightInject
         /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
         public void TrackInstance(IDisposable disposable)
         {
-            disposableObjects.Add(disposable);
+            lock (disposableObjectsLock)
+            {
+                disposableObjects.Add(disposable);
+            }
         }
 
         /// <summary>
