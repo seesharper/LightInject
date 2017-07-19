@@ -91,7 +91,8 @@ private void Pack()
 
 private void AnalyzeTestCoverage()
 {	
-	AnalyzeTestCoverage("NET452");
+	AnalyzeTestCoverage("netcoreapp1.1");
+    AnalyzeTestCoverage("NET452");
     AnalyzeTestCoverage("NET46");	
 }
 
