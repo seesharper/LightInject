@@ -1756,7 +1756,22 @@ namespace LightInject.Tests
             Assert.Same(bar1, bar2);
         }
 
-        
+        [Fact]
+        public void RegisterFallback_uses_DefaultLifetime_if_set()
+        {
+            var container = CreateContainer();
+            container.RegisterFallback((type, name) => type == typeof(IFoo), request => new Foo());
+            container.SetDefaultLifetime<PerContainerLifetime>();
+            container.RegisterFallback((type, name) => type == typeof(IBar), request => new Bar());
+
+            var foo1 = container.GetInstance<IFoo>();
+            var foo2 = container.GetInstance<IFoo>();
+            var bar1 = container.GetInstance<IBar>();
+            var bar2 = container.GetInstance<IBar>();
+
+            Assert.NotSame(foo1, foo2);
+            Assert.Same(bar1, bar2);
+        }
 
         [Fact]
         public void Can_chain_register_calls_and_get_same_instance_back()

@@ -2062,8 +2062,7 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
         {
-            factoryRules.Add(new FactoryRule { CanCreateInstance = predicate, Factory = factory });
-            return this;
+            return RegisterFallback(predicate, factory, DefaultLifetime);
         }
 
         /// <summary>
