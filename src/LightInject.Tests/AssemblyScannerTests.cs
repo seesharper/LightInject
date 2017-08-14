@@ -70,7 +70,7 @@ namespace LightInject.Tests
         [Fact]
         public void Scan_SampleAssembly_ConfiguresNamedService()
         {
-            this.GetContainerMock(() => null, (s,t) => true).Assert(sc => sc.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo", null), Invoked.Once);
+            this.GetContainerMock(() => null, (s,t) => true).Assert(sc => sc.Register(typeof(IFoo), typeof(AnotherFoo), "LightInject.SampleLibrary.AnotherFoo", null), Invoked.Once);
         }
 
         [Fact]
@@ -82,7 +82,7 @@ namespace LightInject.Tests
         [Fact]
         public void Scan_SampleAssembly_ConfiguresNamedOpenGenericType()
         {
-            this.GetContainerMock(() => null, (s,t) => true).Assert(sc => sc.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo", null), Invoked.Once);
+            this.GetContainerMock(() => null, (s,t) => true).Assert(sc => sc.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "LightInject.SampleLibrary.AnotherFoo", null), Invoked.Once);
         }
 
         [Fact]
@@ -278,13 +278,13 @@ namespace LightInject.Tests
         [Fact]
         public void Register_Assembly_RegistersConcreteTypeWithoutBaseclass()
         {            
-            GetContainerMock(() => null, (s, t) => true).Assert(r => r.Register(typeof(ConcreteFoo), typeof(ConcreteFoo), "ConcreteFoo", null));
+            GetContainerMock(() => null, (s, t) => true).Assert(r => r.Register(typeof(ConcreteFoo), typeof(ConcreteFoo), "LightInject.SampleLibrary.ConcreteFoo", null));
         }
 
         [Fact]
         public void Register_Assembly_RegistersConcreteTypeWithBaseclass()
         {           
-            GetContainerMock(() => null, (s, t) => true).Assert(r => r.Register(typeof(Foo), typeof(ConcreteFooWithBaseClass), "ConcreteFooWithBaseClass", null));
+            GetContainerMock(() => null, (s, t) => true).Assert(r => r.Register(typeof(Foo), typeof(ConcreteFooWithBaseClass), "LightInject.SampleLibrary.ConcreteFooWithBaseClass", null));
         }
 
         [Fact]
