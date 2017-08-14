@@ -6212,16 +6212,16 @@ namespace LightInject
 
         private static string GetServiceName(Type serviceType, Type implementingType)
         {
-            string implementingTypeName = implementingType.Name;
-            string serviceTypeName = serviceType.Name;
+            string implementingTypeName = implementingType.FullName;
+            string serviceTypeName = serviceType.FullName;
             if (implementingType.GetTypeInfo().IsGenericTypeDefinition)
             {
-                var regex = new Regex("((?:[a-z][a-z]+))", RegexOptions.IgnoreCase);
+                var regex = new Regex("((?:[a-z][a-z.]+))", RegexOptions.IgnoreCase);
                 implementingTypeName = regex.Match(implementingTypeName).Groups[1].Value;
                 serviceTypeName = regex.Match(serviceTypeName).Groups[1].Value;
             }
 
-            if (serviceTypeName.Substring(1) == implementingTypeName)
+            if (serviceTypeName.Split('.').Last().Substring(1) == implementingTypeName.Split('.').Last())
             {
                 implementingTypeName = string.Empty;
             }
