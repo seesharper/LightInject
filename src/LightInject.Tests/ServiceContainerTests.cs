@@ -698,8 +698,13 @@ namespace LightInject.Tests
             var instance2 = factory();
             Assert.NotSame(instance1, instance2);
         }
-  
-        
+
+        //[Fact]
+        //public void GetInstance_Func_FailesWhenUnderlyingServiceIsMissing()
+        //{
+        //    var container = CreateContainer(new ContainerOptions(){EnableStrictDeferredResolution = true});
+        //    Assert.Throws<InvalidOperationException>(() => container.GetInstance<Func<IFoo>>());
+        //}
 
         #endregion
         #region Func Factory

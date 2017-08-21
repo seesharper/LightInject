@@ -10,7 +10,7 @@ namespace LightInject.Tests
     using Xunit;
     
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETCOREAPP1_1
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETCOREAPP2_0
     using LocalBuilder = LightInject.LocalBuilder;
     using ILGenerator = LightInject.ILGenerator;
 #endif
@@ -673,7 +673,7 @@ namespace LightInject.Tests
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();
         }
 #endif
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETCOREAPP1_1
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETCOREAPP2_0
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new LightInject.DynamicMethod(typeof(object), parameterTypes).GetILGenerator();
