@@ -64,8 +64,8 @@ private void Compile()
 
 private void Test()
 {
-    //DotNet.Test(BuildContext.BinaryTestProjectFolder);
-    //DotNet.Test(BuildContext.SourceTestProjectFolder);    
+    DotNet.Test(BuildContext.BinaryTestProjectFolder);
+    DotNet.Test(BuildContext.SourceTestProjectFolder);    
     AnalyzeTestCoverage();    
 }
 
