@@ -1932,6 +1932,26 @@ namespace LightInject
 #endif
         }
 
+        private ServiceContainer(
+            ContainerOptions options,
+            ServiceRegistry<Delegate> constructorDependencyFactories,
+            ServiceRegistry<Delegate> propertyDependencyFactories,
+            ServiceRegistry<ServiceRegistration> availableServices,
+            Storage<DecoratorRegistration> decorators,
+            Storage<ServiceOverride> overrides,
+            Storage<FactoryRule> factoryRules,
+            Storage<Initializer> initializers)
+        {
+            this.options = options;
+            this.constructorDependencyFactories = constructorDependencyFactories;
+            this.propertyDependencyFactories = propertyDependencyFactories;
+            this.availableServices = availableServices;
+            this.decorators = decorators;
+            this.overrides = overrides;
+            this.factoryRules = factoryRules;
+            this.initializers = initializers;
+        }
+
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible
         /// for providing the <see cref="IScopeManager"/> used to manage scopes.
@@ -2903,6 +2923,23 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Creates a clone of the current <see cref="ServiceContainer"/>.
+        /// </summary>
+        /// <returns>A new <see cref="ServiceContainer"/> instance.</returns>
+        public ServiceContainer Clone()
+        {
+            return new ServiceContainer(
+                options,
+                constructorDependencyFactories,
+                propertyDependencyFactories,
+                availableServices,
+                decorators,
+                overrides,
+                factoryRules,
+                initializers);
         }
 
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
