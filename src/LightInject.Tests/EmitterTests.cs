@@ -3,9 +3,6 @@ namespace LightInject.Tests
     using System;
     using System.Reflection;
     using System.Reflection.Emit;
-#if NET452 || NET46
-    using System.Reflection.Emit;
-#endif
 
     using Xunit;
     

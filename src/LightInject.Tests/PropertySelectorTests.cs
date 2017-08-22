@@ -16,7 +16,7 @@ namespace LightInject.Tests
              
             var result = propertySelector.Execute(typeof(FooWithProperyDependency));
 
-            Assert.Equal(1, result.Count());
+            Assert.Single(result);
         }
 
         [Fact]
@@ -26,7 +26,7 @@ namespace LightInject.Tests
 
             var result = propertySelector.Execute(typeof(FooWithDependency));
 
-            Assert.Equal(0, result.Count());
+            Assert.Empty(result);
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace LightInject.Tests
 
             var result = propertySelector.Execute(typeof(FooWithInheritedProperyDepenency));
 
-            Assert.Equal(1, result.Count());
+            Assert.Single(result);
         }
 
         [Fact]
@@ -46,7 +46,7 @@ namespace LightInject.Tests
 
             var result = propertySelector.Execute(typeof(FooWithStaticProperty));
 
-            Assert.Equal(0, result.Count());
+            Assert.Empty(result);
         }
     }
 }

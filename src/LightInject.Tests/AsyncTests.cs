@@ -39,7 +39,7 @@ namespace LightInject.Tests
             {
                 var instance = container.GetInstance<IAsyncFoo>();
                 var bar = instance.GetBar().Result;
-                Assert.IsAssignableFrom(typeof(IBar), bar);
+                Assert.IsAssignableFrom<IBar>(bar);
             }
         }
 

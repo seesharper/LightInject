@@ -78,7 +78,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.IsAssignableFrom(typeof(AnotherFoo), instance);
+            Assert.IsAssignableFrom<AnotherFoo>(instance);
         }
 
         [Fact]
@@ -128,7 +128,7 @@ namespace LightInject.Tests
                 container.Register<IFoo, Foo>();
                 container.GetInstance<IFoo>();
                 container.Register<IFoo, Foo>();
-                Assert.True(message.StartsWith("Cannot overwrite existing serviceregistration"));
+                Assert.StartsWith("Cannot overwrite existing serviceregistration", message);
             }
             finally
             {

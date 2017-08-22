@@ -18,7 +18,7 @@ namespace LightInject.Tests
             container.Register<IFoo, Foo>();
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
         [Fact]
@@ -29,8 +29,8 @@ namespace LightInject.Tests
             container.Register<IBar, Bar>();
             container.Decorate(typeof(IFoo), typeof(FooDecoratorWithDependency));
             var instance = (FooDecoratorWithDependency)container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(IFoo), instance.Foo);
-            Assert.IsAssignableFrom(typeof(IBar), instance.Bar);
+            Assert.IsAssignableFrom<IFoo>(instance.Foo);
+            Assert.IsAssignableFrom<IBar>(instance.Bar);
         }
 
         [Fact]
@@ -41,8 +41,8 @@ namespace LightInject.Tests
             container.Register<IBar, Bar>();
             container.Decorate(typeof(IFoo), typeof(FooDecoratorWithDependencyFirst));
             var instance = (FooDecoratorWithDependencyFirst)container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(IFoo), instance.Foo);
-            Assert.IsAssignableFrom(typeof(IBar), instance.Bar);
+            Assert.IsAssignableFrom<IFoo>(instance.Foo);
+            Assert.IsAssignableFrom<IBar>(instance.Bar);
         }
 
 
@@ -53,7 +53,7 @@ namespace LightInject.Tests
             container.Register<IFoo, Foo>(new PerContainerLifetime());
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
         [Fact]
@@ -64,7 +64,7 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             container.Decorate(typeof(IFoo), typeof(AnotherFooDecorator));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(AnotherFooDecorator), instance);
+            Assert.IsAssignableFrom<AnotherFooDecorator>(instance);
         }
 
         [Fact]
@@ -76,8 +76,8 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo), typeof(FooDecorator), service => service.ServiceName == "AnotherFoo");
             var instance = container.GetInstance<IFoo>();
             var decoratedInstance = container.GetInstance<IFoo>("AnotherFoo");
-            Assert.IsAssignableFrom(typeof(Foo), instance);
-            Assert.IsAssignableFrom(typeof(FooDecorator), decoratedInstance);
+            Assert.IsAssignableFrom<Foo>(instance);
+            Assert.IsAssignableFrom<FooDecorator>(decoratedInstance);
         }
 
         [Fact]
@@ -88,7 +88,7 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             container.Decorate(typeof(IFoo), typeof(AnotherFooDecorator));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(AnotherFooDecorator), instance);
+            Assert.IsAssignableFrom<AnotherFooDecorator>(instance);
         }
 
         [Fact]
@@ -99,8 +99,8 @@ namespace LightInject.Tests
             container.Register<IFoo, AnotherFoo>("AnotherFoo");
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             var instances = container.GetAllInstances<IFoo>();
-            Assert.IsAssignableFrom(typeof(FooDecorator), instances.First());
-            Assert.IsAssignableFrom(typeof(FooDecorator), instances.Last());
+            Assert.IsAssignableFrom<FooDecorator>(instances.First());
+            Assert.IsAssignableFrom<FooDecorator>(instances.Last());
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace LightInject.Tests
             container.Register(typeof(IFoo<>), typeof(Foo<>));
             container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
             var instance = container.GetInstance<IFoo<int>>();
-            Assert.IsAssignableFrom(typeof(FooDecorator<int>), instance);
+            Assert.IsAssignableFrom<FooDecorator<int>>(instance);
         }
 
         [Fact]
@@ -121,7 +121,7 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
             container.Decorate(typeof(IFoo<int>), typeof(ClosedGenericFooDecorator));
             var instance = container.GetInstance<IFoo<int>>();           
-            Assert.IsAssignableFrom(typeof(ClosedGenericFooDecorator), instance);
+            Assert.IsAssignableFrom<ClosedGenericFooDecorator>(instance);
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo<int>), typeof(ClosedGenericFooDecorator));
             container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));            
             var instance = container.GetInstance<IFoo<int>>();
-            Assert.IsAssignableFrom(typeof(FooDecorator<int>), instance);
+            Assert.IsAssignableFrom<FooDecorator<int>>(instance);
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
             container.Decorate(typeof(IFoo<>), typeof(AnotherFooDecorator<>));
             var instance = container.GetInstance<IFoo<int>>();
-            Assert.IsAssignableFrom(typeof(AnotherFooDecorator<int>), instance);
+            Assert.IsAssignableFrom<AnotherFooDecorator<int>>(instance);
         }
 
         [Fact]
@@ -153,7 +153,7 @@ namespace LightInject.Tests
             container.Register(typeof(IFoo<int>), typeof(Foo<int>));
             container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
             var instance = container.GetInstance<IFoo<int>>();
-            Assert.IsAssignableFrom(typeof(FooDecorator<int>), instance);
+            Assert.IsAssignableFrom<FooDecorator<int>>(instance);
         }
 
         [Fact]
@@ -164,8 +164,8 @@ namespace LightInject.Tests
             container.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo");
             container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
             var instances = container.GetAllInstances<IFoo<int>>();
-            Assert.IsAssignableFrom(typeof(FooDecorator<int>), instances.First());
-            Assert.IsAssignableFrom(typeof(FooDecorator<int>), instances.Last());
+            Assert.IsAssignableFrom<FooDecorator<int>>(instances.First());
+            Assert.IsAssignableFrom<FooDecorator<int>>(instances.Last());
         }
 
         [Fact]
@@ -176,8 +176,8 @@ namespace LightInject.Tests
             container.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo");
             container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
             var instances = container.GetAllInstances<IFoo<int>>();
-            Assert.IsAssignableFrom(typeof(FooDecorator<int>), instances.First());
-            Assert.IsAssignableFrom(typeof(FooDecorator<int>), instances.Last());
+            Assert.IsAssignableFrom<FooDecorator<int>>(instances.First());
+            Assert.IsAssignableFrom<FooDecorator<int>>(instances.Last());
         }
 
         [Fact]
@@ -192,7 +192,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<IFoo<int>>();
 
-            Assert.IsAssignableFrom(typeof(AnotherFooDecorator<int>), instance);
+            Assert.IsAssignableFrom<AnotherFooDecorator<int>>(instance);
         }
 
         [Fact]
@@ -207,7 +207,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
         [Fact]
@@ -217,7 +217,7 @@ namespace LightInject.Tests
             container.Register<IFoo, Foo>();
             container.Decorate<IFoo>((serviceFactory, target) => new FooDecorator(target));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
         [Fact]
@@ -229,8 +229,8 @@ namespace LightInject.Tests
             container.Decorate<IFoo>((serviceFactory, target) 
                 => new FooDecoratorWithDependency(target, serviceFactory.GetInstance<IBar>()));
             var instance = (FooDecoratorWithDependency)container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(IFoo), instance.Foo);
-            Assert.IsAssignableFrom(typeof(IBar), instance.Bar);
+            Assert.IsAssignableFrom<IFoo>(instance.Foo);
+            Assert.IsAssignableFrom<IBar>(instance.Bar);
         }
 
         [Fact]
@@ -242,8 +242,8 @@ namespace LightInject.Tests
             container.Decorate<IFoo>((serviceFactory, target)
                 => new FooDecoratorWithDependencyFirst(serviceFactory.GetInstance<IBar>(), target));
             var instance = (FooDecoratorWithDependencyFirst)container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(IFoo), instance.Foo);
-            Assert.IsAssignableFrom(typeof(IBar), instance.Bar);
+            Assert.IsAssignableFrom<IFoo>(instance.Foo);
+            Assert.IsAssignableFrom<IBar>(instance.Bar);
         }
 
         [Fact]
@@ -253,7 +253,7 @@ namespace LightInject.Tests
             container.Register<IFoo, Foo>();
             container.Decorate<IFoo>((serviceFactory, target) => GetFooDecorator(target));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
         [Fact]
@@ -263,7 +263,7 @@ namespace LightInject.Tests
             container.RegisterFallback((serviceType, serviceName) => serviceType == typeof(IFoo), request => new Foo());
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
         [Fact]
@@ -273,7 +273,7 @@ namespace LightInject.Tests
             container.Register<IFoo, Foo>();
             container.Decorate<IFoo>((factory, foo) => new LazyFooDecorator(new Lazy<IFoo>(factory.GetInstance<IFoo>)));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(LazyFooDecorator), instance);
+            Assert.IsAssignableFrom<LazyFooDecorator>(instance);
         }
 
         [Fact]
@@ -295,7 +295,7 @@ namespace LightInject.Tests
             container.Register<IFoo, Foo>();
             container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
             var instance = (LazyFooDecorator)container.GetInstance<IFoo>();                     
-            Assert.IsAssignableFrom(typeof(Foo), instance.Foo.Value);
+            Assert.IsAssignableFrom<Foo>(instance.Foo.Value);
         }
 
         [Fact]
@@ -308,7 +308,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.IsAssignableFrom(typeof(AnotherLazyFooDecorator), instance);
+            Assert.IsAssignableFrom<AnotherLazyFooDecorator>(instance);
         }
 
 
@@ -323,7 +323,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.IsAssignableFrom(typeof(LazyFooDecorator), instance);
+            Assert.IsAssignableFrom<LazyFooDecorator>(instance);
         }
 
         [Fact]
@@ -336,7 +336,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
 
@@ -416,7 +416,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
         [Fact]
@@ -455,7 +455,7 @@ namespace LightInject.Tests
             container.Register<IFoo>(factory => CreateFoo());
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             var instance = container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
         }
 
         [Fact]
@@ -467,7 +467,7 @@ namespace LightInject.Tests
             container.Decorate(typeof(IBar), typeof(BarDecorator));
             var instance = (FooWithDependency)container.GetInstance<IFoo>();
 
-            Assert.IsAssignableFrom(typeof(BarDecorator), instance.Bar);
+            Assert.IsAssignableFrom<BarDecorator>(instance.Bar);
         }
 
         [Fact]
@@ -479,7 +479,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<int, IFoo>(42);
 
-            Assert.IsAssignableFrom(typeof(FooDecorator), instance);
+            Assert.IsAssignableFrom<FooDecorator>(instance);
 
         }
 
