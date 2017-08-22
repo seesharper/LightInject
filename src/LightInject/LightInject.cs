@@ -57,7 +57,7 @@ namespace LightInject
     using System.Threading;
 
     /// <summary>
-    /// A delegate that represent the dynamic method compiled to resolved service instances.
+    /// A delegate that represents the dynamic method compiled to resolved service instances.
     /// </summary>
     /// <param name="args">The arguments used by the dynamic method that this delegate represents.</param>
     /// <returns>A service instance.</returns>
@@ -448,7 +448,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -458,7 +458,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -468,7 +468,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -477,11 +477,11 @@ namespace LightInject
             Func<IServiceFactory, PropertyInfo, TDependency> factory);
 
 #if NET452 || NET46 || NETSTANDARD1_6
-/// <summary>
-/// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
-/// </summary>
-/// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-/// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        /// <summary>
+        /// Registers composition roots from assemblies in the base directory that match the <paramref name="searchPattern"/>.
+        /// </summary>
+        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         IServiceRegistry RegisterAssembly(string searchPattern);
 #endif
 
@@ -852,9 +852,9 @@ namespace LightInject
 
 #if NET452 || NET46 || NETSTANDARD1_6
 
-/// <summary>
-/// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
-/// </summary>
+    /// <summary>
+    /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
+    /// </summary>
     public interface IAssemblyLoader
     {
         /// <summary>
@@ -2000,9 +2000,9 @@ namespace LightInject
         public IAssemblyScanner AssemblyScanner { get; set; }
 #if NET452 || NETSTANDARD1_6 || NET46
 
-/// <summary>
-/// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
-/// </summary>
+        /// <summary>
+        /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
+        /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
 #endif
 
@@ -2280,11 +2280,11 @@ namespace LightInject
         }
 
 #if NET452 || NETSTANDARD1_6 || NET46
-/// <summary>
-/// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
-/// </summary>
-/// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
-/// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        /// <summary>
+        /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
+        /// </summary>
+        /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterAssembly(string searchPattern)
         {
             foreach (Assembly assembly in AssemblyLoader.Load(searchPattern))
@@ -4192,9 +4192,9 @@ namespace LightInject
 
 #if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NET46
 
-/// <summary>
-/// Manages a set of <see cref="Scope"/> instances.
-/// </summary>
+    /// <summary>
+    /// Manages a set of <see cref="Scope"/> instances.
+    /// </summary>
     public class PerLogicalCallContextScopeManager : ScopeManager
     {
         private readonly LogicalThreadStorage<Scope> currentScope = new LogicalThreadStorage<Scope>();
@@ -5962,8 +5962,6 @@ namespace LightInject
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(MostResolvableConstructorSelector));
-            InternalTypes.Add(typeof(PerContainerLifetime));
-            InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerRequestLifeTime));
             InternalTypes.Add(typeof(PropertySelector));
             InternalTypes.Add(typeof(AssemblyScanner));
@@ -6371,9 +6369,9 @@ namespace LightInject
     }
 #if NET452 || NET46 
 
-/// <summary>
-/// Loads all assemblies from the application base directory that matches the given search pattern.
-/// </summary>
+    /// <summary>
+    /// Loads all assemblies from the application base directory that matches the given search pattern.
+    /// </summary>
     public class AssemblyLoader : IAssemblyLoader
     {
         /// <summary>
@@ -6426,9 +6424,9 @@ namespace LightInject
 #endif
 
 #if NETSTANDARD1_6
-/// <summary>
-/// Loads all assemblies from the application base directory that matches the given search pattern.
-/// </summary>
+    /// <summary>
+    /// Loads all assemblies from the application base directory that matches the given search pattern.
+    /// </summary>
     public class AssemblyLoader : IAssemblyLoader
     {
         /// <summary>
@@ -7273,10 +7271,10 @@ namespace LightInject
     }
 #if NET452
 
-/// <summary>
-/// Provides storage per logical thread of execution.
-/// </summary>
-/// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
+    /// <summary>
+    /// Provides storage per logical thread of execution.
+    /// </summary>
+    /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
     public class LogicalThreadStorage<T>
     {        
         private readonly string key = Guid.NewGuid().ToString();
@@ -7328,10 +7326,10 @@ namespace LightInject
     }
 #endif
 #if NETSTANDARD1_3 || NETSTANDARD1_6 || NET46
-/// <summary>
-/// Provides storage per logical thread of execution.
-/// </summary>
-/// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
+    /// <summary>
+    /// Provides storage per logical thread of execution.
+    /// </summary>
+    /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
     public class LogicalThreadStorage<T>
     {
         private readonly AsyncLocal<T> asyncLocal = new AsyncLocal<T>();
@@ -7503,11 +7501,11 @@ namespace LightInject
     {
 #if NET452 || NET46
 
-/// <summary>
-/// Gets the method represented by the delegate.
-/// </summary>
-/// <param name="del">The target <see cref="Delegate"/>.</param>
-/// <returns>The method represented by the delegate.</returns>
+        /// <summary>
+        /// Gets the method represented by the delegate.
+        /// </summary>
+        /// <param name="del">The target <see cref="Delegate"/>.</param>
+        /// <returns>The method represented by the delegate.</returns>
         public static MethodInfo GetMethodInfo(this Delegate del)
         {
             return del.Method;
