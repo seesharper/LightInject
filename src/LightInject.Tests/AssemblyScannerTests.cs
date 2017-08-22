@@ -94,8 +94,8 @@ namespace LightInject.Tests
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
             container.RegisterAssembly(typeof(AssemblyScannerTests).GetTypeInfo().Assembly, (s,i) => s == typeof(IFoo));
 
-            Assert.True(container.AvailableServices.Any(sr => sr.ServiceType == typeof(IFoo)));
-            Assert.False(container.AvailableServices.Any(sr => sr.ServiceType == typeof(IBar)));
+            Assert.Contains(container.AvailableServices, sr => sr.ServiceType == typeof(IFoo));
+            Assert.DoesNotContain(container.AvailableServices, sr => sr.ServiceType == typeof(IBar));
         }
 
         [Fact]
@@ -107,8 +107,8 @@ namespace LightInject.Tests
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
             container.RegisterAssembly(typeof(AssemblyScannerTests).GetTypeInfo().Assembly);
 
-            Assert.True(container.AvailableServices.Any(sr => sr.ServiceType == typeof(IFoo)));
-            Assert.True(container.AvailableServices.Any(sr => sr.ServiceType == typeof(IBar)));
+            Assert.Contains(container.AvailableServices, sr => sr.ServiceType == typeof(IFoo));
+            Assert.Contains(container.AvailableServices, sr => sr.ServiceType == typeof(IBar));
         }
 
 
@@ -161,7 +161,7 @@ namespace LightInject.Tests
             compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new[] { typeof(CompositionRootMock) });
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
             container.RegisterAssembly(typeof(Foo).GetTypeInfo().Assembly);
-            Assert.False(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.GetTypeInfo().IsDefined(typeof(CompilerGeneratedAttribute), false)));
+            Assert.DoesNotContain(container.AvailableServices, si => si.ImplementingType != null && si.ImplementingType.GetTypeInfo().IsDefined(typeof(CompilerGeneratedAttribute), false));
         }
 
         [Fact]
@@ -172,7 +172,7 @@ namespace LightInject.Tests
             compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new[] { typeof(CompositionRootMock) });
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
             container.RegisterAssembly(typeof(Foo).GetTypeInfo().Assembly);
-            Assert.False(container.AvailableServices.Any(si => si.ImplementingType == typeof(AbstractFoo)));
+            Assert.DoesNotContain(container.AvailableServices, si => si.ImplementingType == typeof(AbstractFoo));
         }
 
         [Fact]
@@ -183,7 +183,7 @@ namespace LightInject.Tests
             compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new[] { typeof(CompositionRootMock) });
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
             container.RegisterAssembly(typeof(string).GetTypeInfo().Assembly);
-            Assert.Equal(0, container.AvailableServices.Count());
+            Assert.Empty(container.AvailableServices);
         }
 
         [Fact]
@@ -194,7 +194,7 @@ namespace LightInject.Tests
             compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new[] { typeof(CompositionRootMock) });
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
             container.RegisterAssembly(typeof(Foo).GetTypeInfo().Assembly);
-            Assert.False(container.AvailableServices.Any(si => si.ImplementingType.Name == "NestedPrivateBar"));
+            Assert.DoesNotContain(container.AvailableServices, si => si.ImplementingType.Name == "NestedPrivateBar");
         }
 
 
@@ -207,7 +207,7 @@ namespace LightInject.Tests
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
             container.RegisterAssembly(typeof(ServiceContainer).GetTypeInfo().Assembly);
             var result = container.AvailableServices.Where(si => si.ImplementingType.Namespace == "LightInject");
-            Assert.False(container.AvailableServices.Any(si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject"));
+            Assert.DoesNotContain(container.AvailableServices, si => si.ImplementingType != null && si.ImplementingType.Namespace == "LightInject");
         }
         
         //[Fact]
@@ -329,7 +329,7 @@ namespace LightInject.Tests
 
             var service = container.AvailableServices.FirstOrDefault(sr => sr.ServiceType == typeof(IFoo));
 
-            Assert.IsAssignableFrom(typeof(PerContainerLifetime), service.Lifetime);
+            Assert.IsAssignableFrom<PerContainerLifetime>(service.Lifetime);
         }
     }
 }

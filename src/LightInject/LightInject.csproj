@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.1;netstandard1.3;netstandard1.6;net452;net46</TargetFrameworks>
-    <Version>5.0.4</Version>
+    <TargetFrameworks>;net46;netstandard1.1;netstandard1.3;netstandard1.6;net452</TargetFrameworks>
+    <Version>5.1.0</Version>
     <Authors>Bernhard Richter</Authors>   
     <PackageProjectUrl>http//www.lightinject.net</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>

@@ -15,7 +15,7 @@ namespace LightInject.Tests
             container.Register<IFoo>(factory => new Foo());
             var fooFactory = container.GetInstance<Func<IFoo>>();
             var instance = fooFactory();
-            Assert.IsAssignableFrom(typeof(Foo), instance);
+            Assert.IsAssignableFrom<Foo>(instance);
         }
 
         [Fact]
@@ -25,7 +25,7 @@ namespace LightInject.Tests
             container.Register<IFoo>(factory => new Foo(), "SomeFoo");
             var fooFactory = container.GetInstance<Func<IFoo>>("SomeFoo");
             var instance = fooFactory();
-            Assert.IsAssignableFrom(typeof(Foo), instance);
+            Assert.IsAssignableFrom<Foo>(instance);
         }
        
         [Fact]
@@ -63,7 +63,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();            
             var instance = container.GetInstance<Func<int, IFoo>>();
-            Assert.IsAssignableFrom(typeof(Func<int, IFoo>), instance);
+            Assert.IsAssignableFrom<Func<int, IFoo>>(instance);
         }
 
         [Fact]
@@ -71,7 +71,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             var instance = container.GetInstance<Func<int, int, IFoo>>();
-            Assert.IsAssignableFrom(typeof(Func<int, int, IFoo>), instance);
+            Assert.IsAssignableFrom<Func<int, int, IFoo>>(instance);
         }
 
         [Fact]
@@ -79,7 +79,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             var instance = container.GetInstance<Func<int, int, int, IFoo>>();
-            Assert.IsAssignableFrom(typeof(Func<int, int, int, IFoo>), instance);
+            Assert.IsAssignableFrom<Func<int, int, int, IFoo>>(instance);
         }
 
         [Fact]
@@ -87,7 +87,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             var instance = container.GetInstance<Func<int, int, int, int, IFoo>>();
-            Assert.IsAssignableFrom(typeof(Func<int, int, int, int, IFoo>), instance);
+            Assert.IsAssignableFrom<Func<int, int, int, int, IFoo>>(instance);
         }
 
         [Fact]
@@ -198,7 +198,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<int, IFoo>((factory, i) => new FooWithValueTypeDependency(i), "SomeFoo");
             var instance = container.GetInstance<Func<int, IFoo>>("SomeFoo");
-            Assert.IsAssignableFrom(typeof(Func<int, IFoo>), instance);
+            Assert.IsAssignableFrom<Func<int, IFoo>>(instance);
         }
 
         [Fact]
@@ -209,7 +209,7 @@ namespace LightInject.Tests
             container.Register<int, IFoo>((factory, i) => new AnotherFooWithValueTypeDependency(i), "AnotherFoo");
             var firstFactory = container.GetInstance<Func<int, IFoo>>("SomeFoo");
             var instance = firstFactory(42);
-            Assert.IsAssignableFrom(typeof(FooWithValueTypeDependency), instance);
+            Assert.IsAssignableFrom<FooWithValueTypeDependency>(instance);
         }
 
         [Fact]

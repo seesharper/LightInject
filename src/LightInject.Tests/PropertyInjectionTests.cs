@@ -16,7 +16,7 @@ namespace LightInject.Tests
             container.Register<IBar, Bar>();
             container.Register<IFoo, FooWithProperyDependency>();
             var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom(typeof(Bar), instance.Bar);
+            Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
 
         [Fact]        
@@ -35,7 +35,7 @@ namespace LightInject.Tests
             container.Register<IBar, Bar>();
             container.Register(typeof(IFoo<>), typeof(FooWithGenericPropertyDependency<>));
             var instance = (FooWithGenericPropertyDependency<IBar>)container.GetInstance<IFoo<IBar>>();
-            Assert.IsAssignableFrom(typeof(Bar), instance.Dependency);
+            Assert.IsAssignableFrom<Bar>(instance.Dependency);
         }
         
         [Fact]
@@ -224,7 +224,7 @@ namespace LightInject.Tests
 
             var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
 
-            Assert.IsAssignableFrom(typeof(Bar), result.Bar);
+            Assert.IsAssignableFrom<Bar>(result.Bar);
         }
 
         [Fact]
@@ -249,7 +249,7 @@ namespace LightInject.Tests
 
             var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
 
-            Assert.IsAssignableFrom(typeof(Bar), result.Bar);
+            Assert.IsAssignableFrom<Bar>(result.Bar);
         }
 
         [Fact]
@@ -261,7 +261,7 @@ namespace LightInject.Tests
 
             var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
 
-            Assert.IsAssignableFrom(typeof(Bar), result.Bar);
+            Assert.IsAssignableFrom<Bar>(result.Bar);
         }
         [Fact]
         public void InjectProperties_FuncFactory_InjectsPropertyDependencies()
@@ -274,7 +274,7 @@ namespace LightInject.Tests
 
             var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
 
-            Assert.IsAssignableFrom(typeof(Bar), result.Bar);
+            Assert.IsAssignableFrom<Bar>(result.Bar);
         }
 
         [Fact]

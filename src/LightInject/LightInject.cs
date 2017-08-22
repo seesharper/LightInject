@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.0.4
+    LightInject version 5.1.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -1932,6 +1932,26 @@ namespace LightInject
 #endif
         }
 
+        private ServiceContainer(
+            ContainerOptions options,
+            ServiceRegistry<Delegate> constructorDependencyFactories,
+            ServiceRegistry<Delegate> propertyDependencyFactories,
+            ServiceRegistry<ServiceRegistration> availableServices,
+            Storage<DecoratorRegistration> decorators,
+            Storage<ServiceOverride> overrides,
+            Storage<FactoryRule> factoryRules,
+            Storage<Initializer> initializers)
+        {
+            this.options = options;
+            this.constructorDependencyFactories = constructorDependencyFactories;
+            this.propertyDependencyFactories = propertyDependencyFactories;
+            this.availableServices = availableServices;
+            this.decorators = decorators;
+            this.overrides = overrides;
+            this.factoryRules = factoryRules;
+            this.initializers = initializers;
+        }
+
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible
         /// for providing the <see cref="IScopeManager"/> used to manage scopes.
@@ -2007,6 +2027,11 @@ namespace LightInject
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
+            if (serviceType.IsFunc() || serviceType.IsFuncWithParameters() || serviceType.IsLazy())
+            {
+                var returnType = serviceType.GenericTypeArguments.Last();                
+                return GetEmitMethod(returnType, serviceName) != null || availableServices.ContainsKey(serviceType);
+            }
             return GetEmitMethod(serviceType, serviceName) != null;
         }
 
@@ -2897,6 +2922,23 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Creates a clone of the current <see cref="ServiceContainer"/>.
+        /// </summary>
+        /// <returns>A new <see cref="ServiceContainer"/> instance.</returns>
+        public ServiceContainer Clone()
+        {
+            return new ServiceContainer(
+                options,
+                constructorDependencyFactories,
+                propertyDependencyFactories,
+                availableServices,
+                decorators,
+                overrides,
+                factoryRules,
+                initializers);
         }
 
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
