@@ -1134,7 +1134,59 @@ namespace LightInject.Tests
             container.Register<IFoo, Foo>();
             var canCreateInstance = container.CanGetInstance(typeof(IBar), string.Empty);
             Assert.False(canCreateInstance);
-        }      
+        }
+
+        [Fact]
+        public void CanGetInstance_FuncForKnownService_ReturnsTrue()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+        }
+
+        [Fact]
+        public void CanGetInstance_FuncForUnknownService_ReturnsFalse()
+        {
+            var container = CreateContainer();            
+            Assert.False(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+        }
+
+        [Fact]
+        public void CanGetInstance_ExplicitlyRegisteredFunc_ReturnsTrue()
+        {
+            var container = CreateContainer();
+            container.Register<Func<IFoo>>(f => (() => new Foo()));
+            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+        }
+
+        [Fact]
+        public void CanGetInstance_ParameterizedFuncForKnownService_ReturnsTrue()
+        {
+            var container = CreateContainer();
+            container.Register<int, IFoo>((factory, i) => new FooWithOneParameter(i));
+            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+        }
+
+        [Fact]
+        public void CanGetInstance_ParameterizedFuncForUnknownService_ReturnsFalse()
+        {
+            var container = CreateContainer();            
+            Assert.False(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+        }
+        [Fact]
+        public void CanGetInstance_LazyForKnownService_ReturnsTrue()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            Assert.True(container.CanGetInstance(typeof(Lazy<IFoo>), string.Empty));
+        }
+
+        [Fact]
+        public void CanGetInstance_LazyForUnknownService_ReturnsFalse()
+        {
+            var container = CreateContainer();            
+            Assert.False(container.CanGetInstance(typeof(Lazy<IFoo>), string.Empty));
+        }
 
         [Fact]
         public void GetInstance_RegisterAfterGetInstance_ReturnsDependencyOfSecondRegistration()

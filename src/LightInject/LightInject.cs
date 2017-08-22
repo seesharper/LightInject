@@ -2007,6 +2007,11 @@ namespace LightInject
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
+            if (serviceType.IsFunc() || serviceType.IsFuncWithParameters() || serviceType.IsLazy())
+            {
+                var returnType = serviceType.GenericTypeArguments.Last();                
+                return GetEmitMethod(returnType, serviceName) != null || availableServices.ContainsKey(serviceType);
+            }
             return GetEmitMethod(serviceType, serviceName) != null;
         }
 

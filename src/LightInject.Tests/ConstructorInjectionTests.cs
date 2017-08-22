@@ -45,7 +45,7 @@ namespace LightInject.Tests
             container.Register(typeof(IBar<>), typeof(Bar<>));
             container.Register(typeof(IFoo<>), typeof(FooWithOpenGenericDependency<>));
             var instance = (FooWithOpenGenericDependency<int>)container.GetInstance<IFoo<int>>();
-            Assert.IsAssignableFrom(typeof(Bar<int>), instance.Dependency);
+            Assert.IsAssignableFrom<Bar<int>>(instance.Dependency);
         }
 
         [Fact]
