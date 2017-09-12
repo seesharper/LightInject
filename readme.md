@@ -466,7 +466,7 @@ Property injection is enabled by default in **LightInject**, but it can be disab
 var container = new ServiceContainer(new ContainerOptions { EnablePropertyInjection = false });
 ```
 
-
+> It is actually recommended to turn off property injection unless it is really needed. Backward compatibility is the only reason that this is not the default.
 
 ## Initializers ##
 
