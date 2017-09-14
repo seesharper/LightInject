@@ -2910,17 +2910,23 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Disposes any services registered using the <see cref="PerContainerLifetime"/>.
+        /// Disposes any services registered using a disposable lifetime.
         /// </summary>
         public void Dispose()
         {
             var disposableLifetimeInstances = availableServices.Values.SelectMany(t => t.Values)
-                .Where(sr => sr.Lifetime != null)
+                .Where(sr => sr.Lifetime != null 
+                    && IsNotServiceFactory(sr.ServiceType))
                 .Select(sr => sr.Lifetime)
                 .Where(lt => lt is IDisposable).Cast<IDisposable>();
             foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
             {
                 disposableLifetimeInstance.Dispose();
+            }
+
+            bool IsNotServiceFactory(Type serviceType)
+            {
+                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
             }
         }
 
