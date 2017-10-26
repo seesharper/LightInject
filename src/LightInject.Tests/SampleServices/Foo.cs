@@ -278,6 +278,13 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class FooDecoratorWithClassConstraint<T> : IFoo<T> where T : class
+    {
+        public FooDecoratorWithClassConstraint(IFoo<T> foo)
+        {
+        }
+    }
+
 
     public class ClosedGenericFooDecorator : IFoo<int>
     {
@@ -549,6 +556,25 @@ namespace LightInject.SampleLibrary
 
     public interface IFoo<T1, T2> { }
 
+    public class OpenGenericFoo<T1, T2> : IFoo<T1,T2>
+    {
+        
+    }
+
+    public class HalfClosedOpenGenericFooDecorator<T> : IFoo<string, T>
+    {
+        public HalfClosedOpenGenericFooDecorator(IFoo<string, T> foo)
+        {
+        }
+    }
+
+    public class HalfClosedOpenGenericFooDecorator<T1,T2> : IFoo<string, T1>
+    {
+        public HalfClosedOpenGenericFooDecorator(IFoo<string, T1> foo)
+        {
+        }
+    }
+
     public class Foo<T1, T2>
     {
     }
@@ -567,6 +593,11 @@ namespace LightInject.SampleLibrary
 
     public class HalfClosedFooWithDoubleNestedGenericParameter<T> : IFoo<Lazy<Nullable<T>>, string> where T:struct
     {
+    }
+
+    public class FullyClosedFooWithString : IFoo<string>
+    {
+        
     }
 
 

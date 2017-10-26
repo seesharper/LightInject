@@ -1,6 +1,5 @@
 
 namespace LightInject.Tests
-
 {
     using System;
     using System.Collections;
@@ -30,6 +29,13 @@ namespace LightInject.Tests
         public void Map_ClosedGenericToOpenGenericImplementingType_IsValid()
         {            
             var result = CreateMapper().Map(typeof (IFoo<string>), typeof (Foo<>));
+            Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        public void Map_ClosedGenericTypeToFullyClosedImplementingType_IsValid()
+        {
+            var result = CreateMapper().Map(typeof(IFoo<string>), typeof(FullyClosedFooWithString));
             Assert.True(result.IsValid);
         }
 
@@ -70,9 +76,6 @@ namespace LightInject.Tests
             var result = CreateMapper().Map(typeof(IFoo<,>), typeof(HalfClosedFooWithNestedGenericParameter<>));
             Assert.True(result.IsValid);
         }
-
-
-
 
         [Fact]
         public void Map_PartiallyClosedGenericWithDoubleNestedArgument_ReturnsArgumentForUnClosedParameter()
@@ -119,7 +122,6 @@ namespace LightInject.Tests
             var exception = Assert.Throws<InvalidOperationException>(() => CreateMapper().Map(typeof(Foo<>), typeof(Bar<>)));
             Assert.StartsWith("The generic type definition", exception.Message);
         }
-
 
         private static GenericArgumentMapper CreateMapper()
         {
