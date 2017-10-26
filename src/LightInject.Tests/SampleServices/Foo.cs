@@ -561,7 +561,19 @@ namespace LightInject.SampleLibrary
         
     }
 
+    public class HalfClosedOpenGenericFooDecorator<T> : IFoo<string, T>
+    {
+        public HalfClosedOpenGenericFooDecorator(IFoo<string, T> foo)
+        {
+        }
+    }
 
+    public class HalfClosedOpenGenericFooDecorator<T1,T2> : IFoo<string, T1>
+    {
+        public HalfClosedOpenGenericFooDecorator(IFoo<string, T1> foo)
+        {
+        }
+    }
 
     public class Foo<T1, T2>
     {

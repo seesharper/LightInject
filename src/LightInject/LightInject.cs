@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.1.0
+    LightInject version 5.1.1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3000,6 +3000,11 @@ namespace LightInject
                 return null;
             }
 
+            if (!serviceRegistration.ServiceType.GetTypeInfo().IsAssignableFrom(closedGenericDecoratorType.GetTypeInfo()))
+            {
+                return null;
+            }
+
             var decoratorInfo = new DecoratorRegistration
             {
                 ServiceType = serviceRegistration.ServiceType,
@@ -5178,9 +5183,9 @@ namespace LightInject
             return $"ServiceType: '{ServiceType}', ServiceName: '{ServiceName}', ImplementingType: '{ImplementingType}', Lifetime: '{lifeTime}'";
         }
     }
-
+    
     /// <summary>
-    /// Represents the result from mappng generic arguments.
+    /// Represents the result from mapping generic arguments.
     /// </summary>
     public class GenericMappingResult
     {
@@ -6107,7 +6112,7 @@ namespace LightInject
                 openGenericImplementingType.GetTypeInfo().GenericTypeParameters.Select(t => t.Name).ToArray();
 
             var genericArgumentMap = CreateMap(genericServiceType, openGenericImplementingType, genericParameterNames);
-
+         
             return new GenericMappingResult(genericParameterNames, genericArgumentMap, genericServiceType, openGenericImplementingType);
         }
 
@@ -6131,7 +6136,7 @@ namespace LightInject
                 genericServiceType);
 
             Type[] baseTypeGenericArguments = GetGenericArgumentsOrParameters(baseTypeImplementingOpenGenericServiceType);
-
+          
             MapGenericArguments(genericArguments, baseTypeGenericArguments, genericArgumentMap);
             return genericArgumentMap;
         }
@@ -6147,25 +6152,25 @@ namespace LightInject
             return typeInfo.GenericTypeArguments;
         }
 
-        private static void MapGenericArguments(Type[] closedGenericArguments, Type[] baseTypeGenericArguments, IDictionary<string, Type> map)
+        private static void MapGenericArguments(Type[] serviceTypeGenericArguments, Type[] baseTypeGenericArguments, IDictionary<string, Type> map)
         {
             for (int index = 0; index < baseTypeGenericArguments.Length; index++)
             {
                 var baseTypeGenericArgument = baseTypeGenericArguments[index];
-                var closedGenericArgument = closedGenericArguments[index];
+                var serviceTypeGenericArgument = serviceTypeGenericArguments[index];
                 if (baseTypeGenericArgument.GetTypeInfo().IsGenericParameter)
                 {
-                    map[baseTypeGenericArgument.Name] = closedGenericArgument;
+                    map[baseTypeGenericArgument.Name] = serviceTypeGenericArgument;
                 }
                 else if (baseTypeGenericArgument.GetTypeInfo().IsGenericType)
                 {
-                    if (closedGenericArgument.GetTypeInfo().IsGenericType)
+                    if (serviceTypeGenericArgument.GetTypeInfo().IsGenericType)
                     {
-                        MapGenericArguments(closedGenericArgument.GetTypeInfo().GenericTypeArguments, baseTypeGenericArgument.GetTypeInfo().GenericTypeArguments, map);
+                        MapGenericArguments(serviceTypeGenericArgument.GetTypeInfo().GenericTypeArguments, baseTypeGenericArgument.GetTypeInfo().GenericTypeArguments, map);
                     }
                     else
                     {
-                        MapGenericArguments(closedGenericArguments, baseTypeGenericArgument.GetTypeInfo().GenericTypeArguments, map);
+                        MapGenericArguments(serviceTypeGenericArguments, baseTypeGenericArgument.GetTypeInfo().GenericTypeArguments, map);
                     }
                 }
             }
