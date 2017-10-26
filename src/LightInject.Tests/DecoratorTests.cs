@@ -496,8 +496,35 @@ namespace LightInject.Tests
 
         }
 
+        [Fact]
+        public void GetInstance_DecoratorWithInvalidGenericConstraints_DoesNotApplyDecorator()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
+            container.Decorate(typeof(IFoo<>), typeof(FooDecoratorWithClassConstraint<>));
+            var instance = container.GetInstance<IFoo<int>>();
+            Assert.IsType<Foo<int>>(instance);
+        }
 
+        [Fact]
+        public void GetInstance_DecoratorWithValidGenericConstraints_AppliesDecorator()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
+            container.Decorate(typeof(IFoo<>), typeof(FooDecoratorWithClassConstraint<>));
+            var instance = container.GetInstance<IFoo<string>>();
+            Assert.IsType<FooDecoratorWithClassConstraint<string>>(instance);
+        }
 
+        //[Fact]
+        //public void GetInstance_DecoratorWithMissingGenericArguments_DotNotApplyDecorator()
+        //{
+        //    var container = CreateContainer();
+        //    container.Register(typeof(IFoo<,>), typeof(OpenGenericFoo<,>));
+        //    container.Decorate(typeof(IFoo<,>), typeof(FooDecorator<>));
+        //    var instance = container.GetInstance<IFoo<string, int>>();
+        //    Assert.IsType<Foo<string, int>>(instance);
+        //}
 
 
         private IFoo CreateFooWithDependency(IServiceFactory factory)

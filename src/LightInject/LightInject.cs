@@ -2977,12 +2977,22 @@ namespace LightInject
             return constructorDependency;
         }
 
-        private static DecoratorRegistration CreateClosedGenericDecoratorRegistration(
+        private DecoratorRegistration CreateClosedGenericDecoratorRegistration(
             ServiceRegistration serviceRegistration, DecoratorRegistration openGenericDecorator)
         {
             Type implementingType = openGenericDecorator.ImplementingType;
             Type[] genericTypeArguments = serviceRegistration.ServiceType.GenericTypeArguments;
-            Type closedGenericDecoratorType = implementingType.MakeGenericType(genericTypeArguments);
+            var mapResult = GenericArgumentMapper.Map(serviceRegistration.ServiceType, implementingType);
+            if (!mapResult.IsValid)
+            {
+                return null;
+            }
+
+            Type closedGenericDecoratorType = TryMakeGenericType(implementingType, mapResult.GetMappedArguments());
+            if (closedGenericDecoratorType == null)
+            {
+                return null;
+            }
 
             var decoratorInfo = new DecoratorRegistration
             {
@@ -3250,7 +3260,7 @@ namespace LightInject
                 registrations.AddRange(
                     openGenericDecorators.Select(
                         openGenericDecorator =>
-                            CreateClosedGenericDecoratorRegistration(serviceRegistration, openGenericDecorator)));
+                            CreateClosedGenericDecoratorRegistration(serviceRegistration, openGenericDecorator)).Where(dr => dr != null));
             }
 
             return registrations;
