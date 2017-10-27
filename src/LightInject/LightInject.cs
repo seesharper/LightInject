@@ -2987,21 +2987,13 @@ namespace LightInject
             ServiceRegistration serviceRegistration, DecoratorRegistration openGenericDecorator)
         {
             Type implementingType = openGenericDecorator.ImplementingType;
-            Type[] genericTypeArguments = serviceRegistration.ServiceType.GenericTypeArguments;
-            var mapResult = GenericArgumentMapper.Map(serviceRegistration.ServiceType, implementingType);
-            if (!mapResult.IsValid)
-            {
-                return null;
-            }
+            Type serviceType = serviceRegistration.ServiceType;
+            Type[] genericTypeArguments = serviceType.GenericTypeArguments;
 
-            Type closedGenericDecoratorType = TryMakeGenericType(implementingType, mapResult.GetMappedArguments());
-            if (closedGenericDecoratorType == null)
+            if (!TryCreateClosedGenericDecoratorType(serviceType, implementingType,
+                out var closedGenericDecoratorType))
             {
-                return null;
-            }
-
-            if (!serviceRegistration.ServiceType.GetTypeInfo().IsAssignableFrom(closedGenericDecoratorType.GetTypeInfo()))
-            {
+                log.Info($"Skipping decorator [{implementingType.FullName}] since it is incompatible with the service type [{serviceType.FullName}]");
                 return null;
             }
 
@@ -3013,6 +3005,29 @@ namespace LightInject
                 Index = openGenericDecorator.Index,
             };
             return decoratorInfo;
+        }
+
+        private bool TryCreateClosedGenericDecoratorType(Type serviceType, Type implementingType,
+            out Type closedGenericDecoratorType)
+        {
+            closedGenericDecoratorType = null;
+            var mapResult = GenericArgumentMapper.Map(serviceType, implementingType);
+            if (!mapResult.IsValid)
+            {
+                return false;
+            }
+
+            closedGenericDecoratorType = TryMakeGenericType(implementingType, mapResult.GetMappedArguments());
+            if (closedGenericDecoratorType == null)
+            {
+                return false;
+            }
+
+            if (!serviceType.GetTypeInfo().IsAssignableFrom(closedGenericDecoratorType.GetTypeInfo()))
+            {
+                return false;
+            }
+            return true;
         }
 
         private static Type TryMakeGenericType(Type implementingType, Type[] closedGenericArguments)

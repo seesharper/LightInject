@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace LightInject.Tests
 {
     using System;
@@ -524,27 +526,34 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo<,>), typeof(HalfClosedOpenGenericFooDecorator<>));
             var instance = container.GetInstance<IFoo<string, int>>();
             Assert.IsType<HalfClosedOpenGenericFooDecorator<int>>(instance);
-        }
+        }       
 
         [Fact]
         public void GetInstance_HalfClosedDecoratorWithInvalidGenericArgument_DotNotApplyDecorator()
         {
-            var container = CreateContainer();
+            var options = new ContainerOptions();
+            List<string> logMessages = new List<string>();
+            options.LogFactory = type => (entry => logMessages.Add(entry.Message)); 
+            var container = CreateContainer(options);
             container.Register(typeof(IFoo<,>), typeof(OpenGenericFoo<,>));
             container.Decorate(typeof(IFoo<,>), typeof(HalfClosedOpenGenericFooDecorator<>));
             var instance = container.GetInstance<IFoo<int, int>>();
             Assert.IsType<OpenGenericFoo<int,int>>(instance);
+            Assert.Contains(logMessages, s => s.StartsWith("Skipping decorator"));
         }
 
         [Fact]
         public void GetInstance_HalfClosedDecoratorWithMissingGenericArgument_DotNotApplyDecorator()
         {
-            var container = CreateContainer();
+            var container = CreateContainer();            
             container.Register(typeof(IFoo<,>), typeof(OpenGenericFoo<,>));
             container.Decorate(typeof(IFoo<,>), typeof(HalfClosedOpenGenericFooDecorator<,>));
             var instance = container.GetInstance<IFoo<int, int>>();
             Assert.IsType<OpenGenericFoo<int, int>>(instance);
         }
+
+
+
 
 
         private IFoo CreateFooWithDependency(IServiceFactory factory)
