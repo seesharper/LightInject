@@ -1799,6 +1799,7 @@ namespace LightInject
         {
             EnableVariance = true;
             EnablePropertyInjection = true;
+            ScanAssembliesWhenRegistrationNotFound = true;
             LogFactory = t => message => { };
         }
 
@@ -1827,6 +1828,14 @@ namespace LightInject
         /// The default value is true.
         /// </remarks>
         public bool EnablePropertyInjection { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to scan assemblies when a type is not registered.
+        /// </summary>
+        /// <remarks>
+        /// The default value is true.
+        /// </remarks>
+        public bool ScanAssembliesWhenRegistrationNotFound { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions()
         {
@@ -3152,15 +3161,15 @@ namespace LightInject
                 emitMethod = TryGetFallbackEmitMethod(serviceType, serviceName);
             }
 
-            if (emitMethod == null)
+            if (emitMethod == null && options.ScanAssembliesWhenRegistrationNotFound)
             {
                 AssemblyScanner.Scan(serviceType.GetTypeInfo().Assembly, this);
                 emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);
-            }
 
-            if (emitMethod == null)
-            {
-                emitMethod = TryGetFallbackEmitMethod(serviceType, serviceName);
+                if (emitMethod == null)
+                {
+                    emitMethod = TryGetFallbackEmitMethod(serviceType, serviceName);
+                }
             }
 
             return CreateEmitMethodWrapper(emitMethod, serviceType, serviceName);
