@@ -1,6 +1,6 @@
-[![AppVeyor](https://img.shields.io/appveyor/ci/seesharper/lightinject.svg?maxAge=2592000)]()
-[![NuGet](https://img.shields.io/nuget/v/LightInject.svg?maxAge=2592000)]()
-[![GitHub tag](https://img.shields.io/github/tag/seesharper/lightinject.svg?maxAge=2592000)]()
+[![AppVeyor](https://img.shields.io/appveyor/ci/seesharper/lightinject.svg?maxAge=2592000)](https://ci.appveyor.com/project/seesharper/lightinject/branch/master)
+[![NuGet](https://img.shields.io/nuget/v/LightInject.svg?maxAge=2592000)](https://www.nuget.org/packages/LightInject)
+[![GitHub tag](https://img.shields.io/github/tag/seesharper/lightinject.svg?maxAge=2592000)](https://github.com/seesharper/LightInject/releases/latest)
 
 ## Installing ##
 
