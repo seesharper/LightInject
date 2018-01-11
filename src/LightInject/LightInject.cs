@@ -3839,11 +3839,14 @@ namespace LightInject
 
             if (options.EnableVariance)
             {
-                emitMethods = emitters.Where(kv => actualServiceType.GetTypeInfo().IsAssignableFrom(kv.Key.GetTypeInfo())).SelectMany(kv => kv.Value.Values).ToList();
+                emitMethods = emitters
+                    .Where(kv => actualServiceType.GetTypeInfo().IsAssignableFrom(kv.Key.GetTypeInfo()))
+                    .SelectMany(kv => kv.Value).OrderBy(kv => kv.Key).Select(kv => kv.Value)
+                    .ToList();                
             }
             else
             {
-                emitMethods = GetEmitMethods(actualServiceType).Values.ToList();
+                emitMethods = GetEmitMethods(actualServiceType).OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();                
             }
 
             if (dependencyStack.Count > 0 && emitMethods.Contains(dependencyStack.Peek()))
