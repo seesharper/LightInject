@@ -151,7 +151,13 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
-        public IServiceRegistry RegisteredOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory)
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifeTimeFactory,
+            Func<int, string> serviceNameFormatter)
         {
             throw new NotImplementedException();
         }

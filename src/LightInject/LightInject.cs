@@ -374,7 +374,19 @@ namespace LightInject
         /// <param name="implementingTypes">The implementing types.</param>
         /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
-        IServiceRegistry RegisteredOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory);
+        IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory);
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
+        /// ensures that service instance ordering matches the ordering of the <paramref name="implementingTypes"/>. 
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingTypes">The implementing types.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
+        /// <param name="serviceNameFormatter">The function used to format the service name based on current registration index.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes,
+            Func<Type, ILifetime> lifeTimeFactory, Func<int, string> serviceNameFormatter);
 
         /// <summary>
         /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
@@ -4063,13 +4075,36 @@ namespace LightInject
             Register(serviceRegistration);
         }
 
-        public IServiceRegistry RegisteredOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifeTimeFactory)
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
+        /// ensures that service instance ordering matches the ordering of the <paramref name="implementingTypes"/>. 
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingTypes">The implementing types.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifeTimeFactory)
+        {
+            return RegisterOrdered(serviceType, implementingTypes, lifeTimeFactory, i => i.ToString().PadLeft(3, '0'));
+        }
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
+        /// ensures that service instance ordering matches the ordering of the <paramref name="implementingTypes"/>. 
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingTypes">The implementing types.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
+        /// <param name="serviceNameFormatter">The function used to format the service name based on current registration index.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes,
+            Func<Type, ILifetime> lifeTimeFactory, Func<int, string> serviceNameFormatter)
         {
             var offset = GetAvailableServices(serviceType).Count;
             foreach (var implementingType in implementingTypes)
             {
-                offset++;
-                Register(serviceType, implementingType,offset.ToString(), lifeTimeFactory(implementingType));
+                offset++;                
+                Register(serviceType, implementingType, serviceNameFormatter(offset), lifeTimeFactory(implementingType));
             }
 
             return this;
