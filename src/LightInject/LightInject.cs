@@ -911,6 +911,21 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a class that is capable of providing a service name
+    /// to be used when a service is registered during assembly scanning.
+    /// </summary>
+    public interface IServiceNameProvider
+    {
+        /// <summary>
+        /// Gets the service name for which the given <paramref name="serviceType"/> will be registered.
+        /// </summary>
+        /// <param name="serviceType">The service type for which to provide a service name.</param>
+        /// <param name="implementingType">The implementing type for which to provide a service name.</param>
+        /// <returns>The service name for which the <paramref name="serviceType"/> and <paramref name="implementingType"/> will be registered.</returns>
+        string GetServiceName(Type serviceType, Type implementingType);
+    }
+
+    /// <summary>
     /// Represents a class that is responsible for instantiating and executing an <see cref="ICompositionRoot"/>.
     /// </summary>
     public interface ICompositionRootExecutor
@@ -1939,11 +1954,12 @@ namespace LightInject
             var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
             CompositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()));
             CompositionRootExecutor = new CompositionRootExecutor(this, type => (ICompositionRoot)Activator.CreateInstance(type));
+            ServiceNameProvider = new ServiceNameProvider();
             PropertyDependencySelector = options.EnablePropertyInjection
                 ? (IPropertyDependencySelector)new PropertyDependencySelector(new PropertySelector())
                 : new PropertyDependencyDisabler();
             GenericArgumentMapper = new GenericArgumentMapper();
-            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor, GenericArgumentMapper);
+            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor, GenericArgumentMapper, ServiceNameProvider);
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
@@ -1991,6 +2007,12 @@ namespace LightInject
         /// for extracting composition roots types from an assembly.
         /// </summary>
         public ITypeExtractor CompositionRootTypeExtractor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IServiceNameProvider"/> that is responsible 
+        /// for providing a service name for a given service during assembly scanning.
+        /// </summary>
+        public IServiceNameProvider ServiceNameProvider { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="ICompositionRootExecutor"/> that is responsible
@@ -6298,6 +6320,7 @@ namespace LightInject
         private readonly ITypeExtractor compositionRootTypeExtractor;
         private readonly ICompositionRootExecutor compositionRootExecutor;
         private readonly IGenericArgumentMapper genericArgumentMapper;
+        private readonly IServiceNameProvider _serviceNameProvider;
         private Assembly currentAssembly;
 
         /// <summary>
@@ -6311,12 +6334,15 @@ namespace LightInject
         /// responsible for creating and executing an <see cref="ICompositionRoot"/>.</param>
         /// <param name="genericArgumentMapper">The <see cref="IGenericArgumentMapper"/> that is responsible
         /// for determining if an open generic type can be created from the information provided by a given abstraction.</param>
-        public AssemblyScanner(ITypeExtractor concreteTypeExtractor, ITypeExtractor compositionRootTypeExtractor, ICompositionRootExecutor compositionRootExecutor, IGenericArgumentMapper genericArgumentMapper)
+        /// <param name="serviceNameProvider">The <see cref="IServiceNameProvider"/> that is responsible for providing
+        /// a service name during assembly scanning.</param>
+        public AssemblyScanner(ITypeExtractor concreteTypeExtractor, ITypeExtractor compositionRootTypeExtractor, ICompositionRootExecutor compositionRootExecutor, IGenericArgumentMapper genericArgumentMapper, IServiceNameProvider serviceNameProvider)
         {
             this.concreteTypeExtractor = concreteTypeExtractor;
             this.compositionRootTypeExtractor = compositionRootTypeExtractor;
             this.compositionRootExecutor = compositionRootExecutor;
             this.genericArgumentMapper = genericArgumentMapper;
+            _serviceNameProvider = serviceNameProvider;
         }
 
         /// <summary>
@@ -6350,23 +6376,9 @@ namespace LightInject
             }
         }
 
-        private static string GetServiceName(Type serviceType, Type implementingType)
+        private string GetServiceName(Type serviceType, Type implementingType)
         {
-            string implementingTypeName = implementingType.FullName;
-            string serviceTypeName = serviceType.FullName;
-            if (implementingType.GetTypeInfo().IsGenericTypeDefinition)
-            {
-                var regex = new Regex("((?:[a-z][a-z.]+))", RegexOptions.IgnoreCase);
-                implementingTypeName = regex.Match(implementingTypeName).Groups[1].Value;
-                serviceTypeName = regex.Match(serviceTypeName).Groups[1].Value;
-            }
-
-            if (serviceTypeName.Split('.').Last().Substring(1) == implementingTypeName.Split('.').Last())
-            {
-                implementingTypeName = string.Empty;
-            }
-
-            return implementingTypeName;
+            return _serviceNameProvider.GetServiceName(serviceType, implementingType);
         }
 
         private static IEnumerable<Type> GetBaseTypes(Type concreteType)
@@ -6437,6 +6449,27 @@ namespace LightInject
         }
     }
 
+    public class ServiceNameProvider : IServiceNameProvider
+    {
+        public string GetServiceName(Type serviceType, Type implementingType)
+        {
+            string implementingTypeName = implementingType.FullName;
+            string serviceTypeName = serviceType.FullName;
+            if (implementingType.GetTypeInfo().IsGenericTypeDefinition)
+            {
+                var regex = new Regex("((?:[a-z][a-z.]+))", RegexOptions.IgnoreCase);
+                implementingTypeName = regex.Match(implementingTypeName).Groups[1].Value;
+                serviceTypeName = regex.Match(serviceTypeName).Groups[1].Value;
+            }
+
+            if (serviceTypeName.Split('.').Last().Substring(1) == implementingTypeName.Split('.').Last())
+            {
+                implementingTypeName = string.Empty;
+            }
+
+            return implementingTypeName;
+        }
+    }
     /// <summary>
     /// Selects the properties that represents a dependency to the target <see cref="Type"/>.
     /// </summary>

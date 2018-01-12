@@ -28,7 +28,7 @@ namespace LightInject.Tests
             var compositionRootTypeExtractorMock = new TypeExtractorMock();
             compositionRootTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(Type.EmptyTypes);
                    
-            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock, new CompositionRootExecutor(containerMock,t => compositionRootMock), new GenericArgumentMapper());
+            var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock, new CompositionRootExecutor(containerMock,t => compositionRootMock), new GenericArgumentMapper(), new ServiceNameProvider());
             assemblyScanner.Scan(typeof(IFoo).GetTypeInfo().Assembly, containerMock, lifetimeFactory, shouldRegister);
             return containerMock;
         }
@@ -40,7 +40,7 @@ namespace LightInject.Tests
             var concreteTypeExtractorMock = new TypeExtractorMock();
             concreteTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new Type[] { type });
             var scanner = new AssemblyScanner(concreteTypeExtractorMock, compositionRootExtractorMock, null,
-                new GenericArgumentMapper());
+                new GenericArgumentMapper(), new ServiceNameProvider());
             var containerMock = new ContainerMock();
 
             scanner.Scan(typeof(IFoo).GetTypeInfo().Assembly, containerMock, () => null, (st, ip) => true);
@@ -122,7 +122,7 @@ namespace LightInject.Tests
             compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new []{typeof(CompositionRootMock)});
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(),
                 compositionRootExtractorMock,
-                new CompositionRootExecutor(containerMock, t => compositionRootMock), new GenericArgumentMapper());
+                new CompositionRootExecutor(containerMock, t => compositionRootMock), new GenericArgumentMapper(), new ServiceNameProvider());
             
             assemblyScanner.Scan(typeof(AssemblyScannerTests).GetTypeInfo().Assembly, containerMock);
 
@@ -136,7 +136,7 @@ namespace LightInject.Tests
             var containerMock = new ContainerMock();
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(),
                 new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()),
-                new CompositionRootExecutor(containerMock, t => compositionRootMock), new GenericArgumentMapper());
+                new CompositionRootExecutor(containerMock, t => compositionRootMock), new GenericArgumentMapper(), new ServiceNameProvider());
 
             assemblyScanner.Scan(typeof(AssemblyScannerTests).GetTypeInfo().Assembly, containerMock, () => null, (s, t) => true);
             

@@ -27,7 +27,7 @@ namespace LightInject.Tests
             compositionRootTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new[] {typeof(CompositionRootMock)});
 
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock,
-                new CompositionRootExecutor(container, t => compositionRootMock), new GenericArgumentMapper());
+                new CompositionRootExecutor(container, t => compositionRootMock), new GenericArgumentMapper(), new ServiceNameProvider());
 
             container.AssemblyScanner = assemblyScanner;
 
