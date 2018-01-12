@@ -151,6 +151,17 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifeTimeFactory,
+            Func<int, string> serviceNameFormatter)
+        {
+            throw new NotImplementedException();
+        }
+
         public IServiceRegistry RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
         {
             throw new NotImplementedException();
