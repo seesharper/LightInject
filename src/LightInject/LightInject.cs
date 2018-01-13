@@ -461,6 +461,21 @@ namespace LightInject
         IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister);
 
         /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        /// <param name="serviceNameProvider">A function delegate used to provide the service name for a service during assembly scanning.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this
+        /// will be used to configure the container.
+        /// </remarks>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory,
+            Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider);
+
+        /// <summary>
         /// Registers services from the given <typeparamref name="TCompositionRoot"/> type.
         /// </summary>
         /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
@@ -900,7 +915,8 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister);
+        /// <param name="serviceNameProvider">A function delegate used to provide the service name for a service during assembly scanning.</param>
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider);
 
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and executes composition roots found within the <see cref="Assembly"/>.
@@ -1959,7 +1975,7 @@ namespace LightInject
                 ? (IPropertyDependencySelector)new PropertyDependencySelector(new PropertySelector())
                 : new PropertyDependencyDisabler();
             GenericArgumentMapper = new GenericArgumentMapper();
-            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor, GenericArgumentMapper, ServiceNameProvider);
+            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor, GenericArgumentMapper);
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
@@ -2199,8 +2215,7 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister)
         {
-            AssemblyScanner.Scan(assembly, this, () => DefaultLifetime, shouldRegister);
-            return this;
+            return RegisterAssembly(assembly, () => DefaultLifetime, shouldRegister);                        
         }
 
         /// <summary>
@@ -2215,8 +2230,7 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory)
         {
-            AssemblyScanner.Scan(assembly, this, lifetimeFactory, (serviceType, implementingType) => true);
-            return this;
+            return RegisterAssembly(assembly, lifetimeFactory, (serviceType, implementingType) => true);
         }
 
         /// <summary>
@@ -2232,7 +2246,12 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {
-            AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
+            return RegisterAssembly(assembly, lifetimeFactory, shouldRegister, ServiceNameProvider.GetServiceName);
+        }
+
+        public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister, Func<Type,Type,string> serviceNameProvider)
+        {
+            AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister, serviceNameProvider);
             return this;
         }
 
@@ -6319,8 +6338,7 @@ namespace LightInject
         private readonly ITypeExtractor concreteTypeExtractor;
         private readonly ITypeExtractor compositionRootTypeExtractor;
         private readonly ICompositionRootExecutor compositionRootExecutor;
-        private readonly IGenericArgumentMapper genericArgumentMapper;
-        private readonly IServiceNameProvider _serviceNameProvider;
+        private readonly IGenericArgumentMapper genericArgumentMapper;        
         private Assembly currentAssembly;
 
         /// <summary>
@@ -6336,13 +6354,12 @@ namespace LightInject
         /// for determining if an open generic type can be created from the information provided by a given abstraction.</param>
         /// <param name="serviceNameProvider">The <see cref="IServiceNameProvider"/> that is responsible for providing
         /// a service name during assembly scanning.</param>
-        public AssemblyScanner(ITypeExtractor concreteTypeExtractor, ITypeExtractor compositionRootTypeExtractor, ICompositionRootExecutor compositionRootExecutor, IGenericArgumentMapper genericArgumentMapper, IServiceNameProvider serviceNameProvider)
+        public AssemblyScanner(ITypeExtractor concreteTypeExtractor, ITypeExtractor compositionRootTypeExtractor, ICompositionRootExecutor compositionRootExecutor, IGenericArgumentMapper genericArgumentMapper)
         {
             this.concreteTypeExtractor = concreteTypeExtractor;
             this.compositionRootTypeExtractor = compositionRootTypeExtractor;
             this.compositionRootExecutor = compositionRootExecutor;
-            this.genericArgumentMapper = genericArgumentMapper;
-            _serviceNameProvider = serviceNameProvider;
+            this.genericArgumentMapper = genericArgumentMapper;            
         }
 
         /// <summary>
@@ -6352,12 +6369,13 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
+        /// <param name="serviceNameProvider">A function delegate used to provide the service name for a service during assembly scanning.</param>
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
         {
             Type[] concreteTypes = GetConcreteTypes(assembly);
             foreach (Type type in concreteTypes)
             {
-                BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
+                BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister, serviceNameProvider);
             }
         }
 
@@ -6375,12 +6393,7 @@ namespace LightInject
                 ExecuteCompositionRoots(compositionRootTypes);
             }
         }
-
-        private string GetServiceName(Type serviceType, Type implementingType)
-        {
-            return _serviceNameProvider.GetServiceName(serviceType, implementingType);
-        }
-
+       
         private static IEnumerable<Type> GetBaseTypes(Type concreteType)
         {
             Type baseType = concreteType;
@@ -6409,14 +6422,14 @@ namespace LightInject
             return compositionRootTypeExtractor.Execute(assembly);
         }
 
-        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
+        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
         {
             Type[] interfaces = implementingType.GetTypeInfo().ImplementedInterfaces.ToArray();
             foreach (Type interfaceType in interfaces)
             {
                 if (shouldRegister(interfaceType, implementingType))
                 {
-                    RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory());
+                    RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory(), serviceNameProvider);
                 }
             }
 
@@ -6424,12 +6437,12 @@ namespace LightInject
             {
                 if (shouldRegister(baseType, implementingType))
                 {
-                    RegisterInternal(baseType, implementingType, serviceRegistry, lifetimeFactory());
+                    RegisterInternal(baseType, implementingType, serviceRegistry, lifetimeFactory(), serviceNameProvider);
                 }
             }
         }
 
-        private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry, ILifetime lifetime)
+        private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry, ILifetime lifetime, Func<Type, Type, string> serviceNameProvider)
         {
             var serviceTypeInfo = serviceType.GetTypeInfo();
             if (implementingType.GetTypeInfo().ContainsGenericParameters)
@@ -6445,7 +6458,7 @@ namespace LightInject
                 serviceType = serviceTypeInfo.GetGenericTypeDefinition();
             }
 
-            serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType), lifetime);
+            serviceRegistry.Register(serviceType, implementingType, serviceNameProvider(serviceType, implementingType), lifetime);
         }
     }
 
