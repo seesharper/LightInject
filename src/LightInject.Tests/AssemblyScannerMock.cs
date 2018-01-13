@@ -7,9 +7,9 @@ namespace LightInject.Tests
 
 	internal class AssemblyScannerMock : MockContext<IAssemblyScanner>, IAssemblyScanner
 	{				
-		public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister)
+		public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
 		{
-            ((IInvocationContext<IAssemblyScanner>)this).Invoke(m => m.Scan(assembly, serviceRegistry, lifetime, shouldRegister));            
+            ((IInvocationContext<IAssemblyScanner>)this).Invoke(m => m.Scan(assembly, serviceRegistry, lifetime, shouldRegister, serviceNameProvider));            
 		}
 
 		public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)

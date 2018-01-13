@@ -197,6 +197,12 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
+        public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister,
+            Func<Type, Type, string> serviceNameProvider)
+        {
+            throw new NotImplementedException();
+        }
+
         public IServiceRegistry RegisterFrom<TCompositionRoot>() where TCompositionRoot : ICompositionRoot, new()
         {
             throw new NotImplementedException();

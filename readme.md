@@ -535,16 +535,44 @@ Use the **Initialize** method to perform service instance initialization/post-pr
 
 LightInject is capable of registering services by looking at the types of a given assembly.
 
-    container.RegisterAssembly(typeof(IFoo).Assembly)
+```c#
+container.RegisterAssembly(typeof(IFoo).Assembly)
+```
 
 To filter out the services to be registered with the container, we can provide a predicate that makes it possible to inspect the service type and the implementing type.
 
-	container.RegisterAssembly(typeof(IFoo).Assembly, (serviceType, implementingType) => serviceType.NameSpace == "SomeNamespace");
+```c#
+container.RegisterAssembly(typeof(IFoo).Assembly, (serviceType, implementingType) => serviceType.NameSpace == "SomeNamespace");
+```
 
 It is also possible to scan a set assembly files based on a search pattern.
 
-    container.RegisterAssembly("SomeAssemblyName*.dll");  
+```c#
+container.RegisterAssembly("SomeAssemblyName*.dll");  
+```
+When scanning assemblies, **LightInject** will register services using a service name that by default is the implementing type name. This behavior can be changed by specifying a function delegate to provide the name based on the service type and the implementing type.
 
+```c#
+container.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), (serviceType, implementingType) => serviceType.NameSpace == "SomeNamespace", (serviceType, implementingType) => "Provide custom service name here");
+```
+
+We can also change this behavior globally for all registrations by implementing the **IServiceNameProvider** interface.
+
+```c#
+public class CustomServiceNameProvider : IServiceNameProvider
+{
+	public string GetServiceName(Type serviceType, Type implementingType)
+    {
+    	return "Provide custom service name here";  
+    }
+}
+```
+
+To change the default behavior for all registrations we simply change this dependency on the container before we start scanning assemblies.
+
+```c#
+container.ServiceNameProvider = new CustomServiceNameProvider();
+```
 
 
 
