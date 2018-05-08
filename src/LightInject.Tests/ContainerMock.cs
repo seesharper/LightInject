@@ -404,5 +404,25 @@ namespace LightInject.Tests
         {
             throw new NotImplementedException();
         }
+
+        public void Compile(Func<ServiceRegistration, bool> predicate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Compile()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Compile(Type serviceType, string serviceName = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Compile<TService>(string serviceType = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

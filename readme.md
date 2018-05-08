@@ -163,14 +163,6 @@ Assert.Equal("A002", services[1].ServiceName);
 Assert.Equal("A003", services[2].ServiceName);
 ```
 
-
-
-
-
-
-
-
-
 ### Values ###
 
 Registers the value as a constant.
@@ -178,6 +170,80 @@ Registers the value as a constant.
     container.RegisterInstance<string>("SomeValue");
     var value = container.GetInstance<string>();
     Assert.AreEqual("SomeValue, value);
+
+
+
+### Compilation
+
+**LightInject** uses dynamic code compilation either in the form of System.Reflection.Emit or compiled expression trees. When a service is requested from the container, the code needed for creating the service instance is generated and compiled and a delegate for that code is stored for lookup later on so that we only compile it once. These delegates are stored in an AVL tree that ensures maximal performance when looking up a delegate for a given service type. If fact, looking up these delegates is what sets the top performing containers apart. Most high performance container emits approximately the same code, but the approach to storing these delegates may differ. 
+
+**LightInject** provides lock-free service lookup meaning that no locks are involved for getting a service instance after its initial generation and compilation. The only time **LightInject** actually creates a lock is when generating the code for a given service.  That does however mean a potential lock contention problem when many concurrent requests asks for services for the first time.
+
+**LightInject** deals with this potential problem by providing an API for compilation typically used when an application starts.
+
+The following example shows how to compile all registered services.
+
+```c#
+container.Compile();
+```
+
+One thing to be aware of is that not all services are backed by its own delegate. 
+
+Consider the following service:
+
+```c#
+public class Foo
+{
+	public Foo(Bar bar)
+    {
+    	Bar = bar;
+    }
+} 
+```
+
+Registered and resolved like this:
+
+```c#
+container.Register<Foo>();
+container.Register<Bar>();
+var foo = container.GetInstance<Foo>();
+```
+
+In this case we only create a delegate for resolving `Foo` since that is the only service that is directly requested from the container. The code for creating the `Bar` instance is embedded inside the code for creating the `Foo` instance and hence there is only one delegate created.
+
+We call `Foo` a root service since it is directly requested from the container.	
+
+In fact lets just have a look at the IL generated for creating the `Foo` instance. 
+
+```assembly
+newobj Void .ctor() // Bar
+newobj Void .ctor(LightInject.SampleLibrary.IBar) //Foo
+```
+
+What happens here is that a new instance of `Bar` is created and pushed onto the stack and then we create the `Foo` instance. This is the code that the delegate for `Foo` points to. 
+
+The reason for such a relatively detailed explanation is to illustrate that we don't always create a delegate for a given service and by simply doing a `container.Compile()` we might create a lot of delegates that is never actually executed.  Probably no big deal as long as we don't have tens of thousands of services, but just something to be aware of.
+
+**LightInject** does not attempt to identify root services as that would be very difficult for various reasons.
+
+We can instead use a predicate when compiling services up front.
+
+```C#
+container.Compile(sr => sr.ServiceType == typeof(Foo));
+```
+
+#### Open Generics
+
+**LightInject** cannot compile open generic services since the actual generic arguments are not known at "compile" time. 
+
+We can however specify the generic arguments like this:
+
+```c#
+container.Compile<Foo<int>>()
+```
+
+**LightInject** will create a log entry every time a new delegate is created so that information can be used to identify root services that could be compiled up front. In addition to this, a log entry (warning) is also created when trying to compile an open generic service up front.
+
 
 
 ## Lifetime ##
@@ -464,9 +530,9 @@ We can also do a combination of supplied values and dependencies.
 ### Property Injection ###
 
 	public interface IFoo {}
-
+	
 	public interface IBar {}
-
+	
 	public class Foo : IFoo
 	{
 		public IBar Bar { get; set; }
