@@ -4171,6 +4171,10 @@ namespace LightInject
             return this;
         }
 
+        /// <summary>
+        /// Compiles services that matches the given <paramref name="predicate"/>.
+        /// </summary>
+        /// <param name="predicate">The predicate that determines if a service should be compiled.</param>
         public void Compile(Func<ServiceRegistration, bool> predicate)
         {            
             var rootServices = AvailableServices.Where(predicate).ToArray();
@@ -4203,11 +4207,20 @@ namespace LightInject
             }
         }
 
+        /// <summary>
+        /// Compiles all registered services. 
+        /// </summary>    
         public void Compile()
         {
             Compile(sr => true);
         }
 
+        /// <summary>
+        /// Compiles the service identified by <typeparamref name="TService"/>
+        /// and optionally the <paramref name="serviceName"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to be compiled.</typeparam>
+        /// <param name="serviceType">The service type to be compiled.</param>
         public void Compile<TService>(string serviceName = null)
         {
             if (string.IsNullOrWhiteSpace(serviceName))
