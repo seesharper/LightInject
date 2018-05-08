@@ -1,7 +1,7 @@
 ﻿/*********************************************************************************
     The MIT License (MIT)
 
-    Copyright (c) 2016 bernhard.richter@gmail.com
+    Copyright (c) 2018 bernhard.richter@gmail.com
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.1.2
+    LightInject version 5.1.3
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -691,8 +691,26 @@ namespace LightInject
         /// <param name="instance">The target instance for which to inject its property dependencies.</param>
         /// <returns>The <paramref name="instance"/> with its property dependencies injected.</returns>
         object InjectProperties(object instance);
-    }
 
+        /// <summary>
+        /// Compiles all registered services. 
+        /// </summary>        
+        void Compile();
+
+        /// <summary>
+        /// Compiles services that matches the given <paramref name="predicate"/>.
+        /// </summary>
+        /// <param name="predicate">The predicate that determines if a service should be compiled.</param>
+        void Compile(Func<ServiceRegistration, bool> predicate);
+               
+        /// <summary>
+        /// Compiles the service identified by <typeparamref name="TService"/>
+        /// and optionally the <paramref name="serviceName"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to be compiled.</typeparam>
+        /// <param name="serviceType">The service type to be compiled.</param>
+        void Compile<TService>(string serviceName = null);
+    }
     /// <summary>
     /// Represents a class that manages the lifetime of a service instance.
     /// </summary>
@@ -4040,6 +4058,7 @@ namespace LightInject
 
         private GetInstanceDelegate CreateDefaultDelegate(Type serviceType, bool throwError)
         {
+            log.Info($"Compiling delegate for resolving service : {serviceType}");
             var instanceDelegate = CreateDelegate(serviceType, string.Empty, throwError);
             if (instanceDelegate == null)
             {
@@ -4052,6 +4071,7 @@ namespace LightInject
 
         private GetInstanceDelegate CreateNamedDelegate(Tuple<Type, string> key, bool throwError)
         {
+            log.Info($"Compiling delegate for resolving service : {key.Item1}, name: {key.Item2}");
             var instanceDelegate = CreateDelegate(key.Item1, key.Item2, throwError);
             if (instanceDelegate == null)
             {
@@ -4149,6 +4169,68 @@ namespace LightInject
             }
 
             return this;
+        }
+
+        /// <summary>
+        /// Compiles services that matches the given <paramref name="predicate"/>.
+        /// </summary>
+        /// <param name="predicate">The predicate that determines if a service should be compiled.</param>
+        public void Compile(Func<ServiceRegistration, bool> predicate)
+        {            
+            var rootServices = AvailableServices.Where(predicate).ToArray();
+            foreach (var rootService in rootServices)
+            {
+                if (rootService.ServiceType.GetTypeInfo().IsGenericTypeDefinition)
+                {
+                    log.Warning($"Unable to precompile open generic type '{GetPrettyName(rootService.ServiceType)}'");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(rootService.ServiceName))
+                {
+                    CreateDefaultDelegate(rootService.ServiceType, true);                    
+                }
+                else
+                {
+                    CreateNamedDelegate(Tuple.Create(rootService.ServiceType, rootService.ServiceName), true);
+                }
+            }
+
+            string GetPrettyName(Type type)
+            {
+                if (type.GetTypeInfo().IsGenericType)
+                {
+                    return $"{type.FullName.Substring(0, type.FullName.LastIndexOf("`", StringComparison.OrdinalIgnoreCase))}<{string.Join(", ", type.GetTypeInfo().GenericTypeParameters.Select(GetPrettyName))}>";
+                }
+
+                return type.Name;
+            }
+        }
+
+        /// <summary>
+        /// Compiles all registered services. 
+        /// </summary>    
+        public void Compile()
+        {
+            Compile(sr => true);
+        }
+
+        /// <summary>
+        /// Compiles the service identified by <typeparamref name="TService"/>
+        /// and optionally the <paramref name="serviceName"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to be compiled.</typeparam>
+        /// <param name="serviceType">The service type to be compiled.</param>
+        public void Compile<TService>(string serviceName = null)
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                CreateDefaultDelegate(typeof(TService), true);
+            }
+            else
+            {
+                CreateNamedDelegate(Tuple.Create(typeof(TService), serviceName), true);
+            }
         }
 
         private class Storage<T>
