@@ -305,7 +305,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void issue_231()
+        public void Issue_231()
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>("foo", new PerContainerLifetime());
@@ -315,7 +315,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void issue_168()
+        public void Issue_168()
         {
             var serviceContainer = new ServiceContainer();
             serviceContainer.Register<IBar, Bar>("bar");

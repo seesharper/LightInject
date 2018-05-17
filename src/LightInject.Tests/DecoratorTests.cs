@@ -202,9 +202,11 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            var registration = new DecoratorRegistration();            
-            registration.CanDecorate = serviceRegistration => true;
-            registration.ImplementingTypeFactory = (factory, serviceRegistration) => typeof(FooDecorator);
+            var registration = new DecoratorRegistration
+            {
+                CanDecorate = serviceRegistration => true,
+                ImplementingTypeFactory = (factory, serviceRegistration) => typeof(FooDecorator)
+            };
             container.Decorate(registration);
 
             var instance = container.GetInstance<IFoo>();

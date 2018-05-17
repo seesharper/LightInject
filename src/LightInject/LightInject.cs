@@ -1095,8 +1095,7 @@ namespace LightInject
         /// <returns>An array containing the runtime arguments supplied when resolving the service.</returns>
         public static object[] Load(object[] constants)
         {
-            object[] arguments = constants[constants.Length - 1] as object[];
-            if (arguments == null)
+            if (!(constants[constants.Length - 1] is object[] arguments))
             {
                 return new object[] { };
             }
@@ -3183,15 +3182,13 @@ namespace LightInject
 
         private Delegate GetConstructorDependencyDelegate(Type type, string serviceName)
         {
-            Delegate dependencyDelegate;
-            GetConstructorDependencyFactories(type).TryGetValue(serviceName, out dependencyDelegate);
+            GetConstructorDependencyFactories(type).TryGetValue(serviceName, out Delegate dependencyDelegate);
             return dependencyDelegate;
         }
 
         private Delegate GetPropertyDependencyExpression(Type type, string serviceName)
         {
-            Delegate dependencyDelegate;
-            GetPropertyDependencyFactories(type).TryGetValue(serviceName, out dependencyDelegate);
+            GetPropertyDependencyFactories(type).TryGetValue(serviceName, out Delegate dependencyDelegate);
             return dependencyDelegate;
         }
 
@@ -3293,9 +3290,8 @@ namespace LightInject
 
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
-            Action<IEmitter> emitMethod;
             var registrations = GetEmitMethods(serviceType);
-            registrations.TryGetValue(serviceName, out emitMethod);
+            registrations.TryGetValue(serviceName, out Action<IEmitter> emitMethod);
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
@@ -3864,8 +3860,7 @@ namespace LightInject
                 return null;
             }
 
-            ServiceRegistration openGenericServiceRegistration;
-            services.TryGetValue(serviceName, out openGenericServiceRegistration);
+            services.TryGetValue(serviceName, out ServiceRegistration openGenericServiceRegistration);
             if (openGenericServiceRegistration == null && string.IsNullOrEmpty(serviceName) && services.Count == 1)
             {
                 return services.First().Value;
@@ -5165,8 +5160,10 @@ namespace LightInject
             }
 
             var implementingType = registration.ImplementingType;
-            var constructionInfo = new ConstructionInfo();
-            constructionInfo.ImplementingType = implementingType;
+            var constructionInfo = new ConstructionInfo
+            {
+                ImplementingType = implementingType
+            };
             constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
             constructionInfo.Constructor = constructorSelector.Execute(implementingType);
             constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructionInfo.Constructor));
@@ -5361,8 +5358,7 @@ namespace LightInject
         /// <param name="obj">The <see cref="T:System.Object"/> to compare with the current <see cref="T:System.Object"/>. </param><filterpriority>2</filterpriority>
         public override bool Equals(object obj)
         {
-            var other = obj as ServiceRegistration;
-            if (other == null)
+            if (!(obj is ServiceRegistration other))
             {
                 return false;
             }
@@ -5632,8 +5628,7 @@ namespace LightInject
         /// </summary>
         public void Dispose()
         {
-            var disposable = singleton as IDisposable;
-            if (disposable != null)
+            if (singleton is IDisposable disposable)
             {
                 disposable.Dispose();
             }
@@ -5654,8 +5649,7 @@ namespace LightInject
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
             var instance = createInstance();
-            var disposable = instance as IDisposable;
-            if (disposable != null)
+            if (instance is IDisposable disposable)
             {
                 TrackInstance(scope, disposable);
             }
@@ -5704,8 +5698,7 @@ namespace LightInject
 
         private static void RegisterForDisposal(Scope scope, object instance)
         {
-            var disposable = instance as IDisposable;
-            if (disposable != null)
+            if (instance is IDisposable disposable)
             {
                 scope.TrackInstance(disposable);
             }
@@ -5724,8 +5717,7 @@ namespace LightInject
         {
             var scope = (Scope)sender;
             scope.Completed -= OnScopeCompleted;
-            object removedInstance;
-            instances.TryRemove(scope, out removedInstance);
+            instances.TryRemove(scope, out object removedInstance);
         }
     }
 
