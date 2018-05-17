@@ -575,6 +575,24 @@ namespace LightInject.SampleLibrary
         }
     }
 
+    public class BarBase
+    {
+
+    }
+
+    public class InheritedBar :BarBase
+    {
+
+    }
+
+    public class FooDecoratorWithBarBaseConstraint<T> : IFoo<T> where T:BarBase
+    {
+        public FooDecoratorWithBarBaseConstraint(IFoo<T> foo)
+        {
+
+        }
+    }
+
     public class Foo<T1, T2>
     {
     }

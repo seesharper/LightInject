@@ -202,9 +202,11 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            var registration = new DecoratorRegistration();            
-            registration.CanDecorate = serviceRegistration => true;
-            registration.ImplementingTypeFactory = (factory, serviceRegistration) => typeof(FooDecorator);
+            var registration = new DecoratorRegistration
+            {
+                CanDecorate = serviceRegistration => true,
+                ImplementingTypeFactory = (factory, serviceRegistration) => typeof(FooDecorator)
+            };
             container.Decorate(registration);
 
             var instance = container.GetInstance<IFoo>();
@@ -550,11 +552,18 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo<,>), typeof(HalfClosedOpenGenericFooDecorator<,>));
             var instance = container.GetInstance<IFoo<int, int>>();
             Assert.IsType<OpenGenericFoo<int, int>>(instance);
+
         }
 
-
-
-
+        [Fact]
+        public void GetInstance_DecoratorWithBaseGenericConstraint_AppliesDecorator()
+        {
+            var container = CreateContainer();            
+            container.Register<IFoo<InheritedBar>, Foo<InheritedBar>>();            
+            container.Decorate(typeof(IFoo<>), typeof(FooDecoratorWithBarBaseConstraint<>));            
+            var instance = container.GetInstance<IFoo<InheritedBar>>();
+            Assert.IsType<FooDecoratorWithBarBaseConstraint<InheritedBar>>(instance);
+        }
 
         private IFoo CreateFooWithDependency(IServiceFactory factory)
         {
