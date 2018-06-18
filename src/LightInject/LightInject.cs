@@ -1891,6 +1891,11 @@ namespace LightInject
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
 
         /// <summary>
+        /// Gets or sets 
+        /// </summary>
+        public Func<string[], string> DefaultServiceSelector { get; set; } = services => string.Empty;
+
+        /// <summary>
         /// Gets or sets a value indicating whether property injection is enabled.
         /// </summary>
         /// <remarks>
@@ -3829,6 +3834,10 @@ namespace LightInject
 
         private void EnsureEmitMethodsForOpenGenericTypesAreCreated(Type actualServiceType)
         {
+            if (!actualServiceType.GetTypeInfo().IsGenericType)
+            {
+                return;
+            }
             var openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
             var openGenericServiceEmitters = GetAvailableServices(openGenericServiceType);
             foreach (var openGenericEmitterEntry in openGenericServiceEmitters.Keys)
@@ -3906,11 +3915,9 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)
         {
             Type actualServiceType = TypeHelper.GetElementType(serviceType);
-            if (actualServiceType.GetTypeInfo().IsGenericType)
-            {
-                EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
-            }
-
+            
+            EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
+            
             List<Action<IEmitter>> emitMethods;
 
             if (options.EnableVariance)
@@ -3940,7 +3947,7 @@ namespace LightInject
 
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
-            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1;
+            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1;           
         }
 
         private ConstructionInfo GetConstructionInfo(Registration registration)
@@ -4054,7 +4061,10 @@ namespace LightInject
         private GetInstanceDelegate CreateDefaultDelegate(Type serviceType, bool throwError)
         {
             log.Info($"Compiling delegate for resolving service : {serviceType}");
-            var instanceDelegate = CreateDelegate(serviceType, string.Empty, throwError);
+            //EnsureEmitMethodsForOpenGenericTypesAreCreated(serviceType);
+            var serviceNames = GetAvailableServices(serviceType).Select(kvp => kvp.Key).ToArray();
+            var defaultServiceName = options.DefaultServiceSelector(serviceNames);
+            var instanceDelegate = CreateDelegate(serviceType, defaultServiceName, throwError);
             if (instanceDelegate == null)
             {
                 return c => null;
