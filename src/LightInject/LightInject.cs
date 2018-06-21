@@ -725,6 +725,11 @@ namespace LightInject
         object GetInstance(Func<object> createInstance, Scope scope);
     }
 
+    public interface ICloneableLifeTime
+    {
+        ILifetime Clone();
+    }
+
     /// <summary>
     /// Represents a class that acts as a composition root for an <see cref="IServiceRegistry"/> instance.
     /// </summary>
@@ -1894,6 +1899,7 @@ namespace LightInject
         /// Gets or sets 
         /// </summary>
         public Func<string[], string> DefaultServiceSelector { get; set; } = services => string.Empty;
+        
 
         /// <summary>
         /// Gets or sets a value indicating whether property injection is enabled.
@@ -1947,11 +1953,13 @@ namespace LightInject
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
         private readonly ServiceRegistry<Delegate> constructorDependencyFactories = new ServiceRegistry<Delegate>();
         private readonly ServiceRegistry<Delegate> propertyDependencyFactories = new ServiceRegistry<Delegate>();
+        
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
 
         private readonly object lockObject = new object();
         private readonly ContainerOptions options;
         private readonly Storage<object> constants = new Storage<object>();
+        private readonly Storage<ILifetime> disposableLifeTimes = new Storage<ILifetime>();
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
         private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
@@ -2999,19 +3007,11 @@ namespace LightInject
         /// </summary>
         public void Dispose()
         {
-            var disposableLifetimeInstances = availableServices.Values.SelectMany(t => t.Values)
-                .Where(sr => sr.Lifetime != null 
-                    && IsNotServiceFactory(sr.ServiceType))
-                .Select(sr => sr.Lifetime)
-                .Where(lt => lt is IDisposable).Cast<IDisposable>();
+            var disposableLifetimeInstances = disposableLifeTimes.Items
+                .Where(lt => lt is IDisposable).Cast<IDisposable>().Reverse();
             foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
             {
                 disposableLifetimeInstance.Dispose();
-            }
-
-            bool IsNotServiceFactory(Type serviceType)
-            {
-                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
             }
         }
 
@@ -3053,6 +3053,10 @@ namespace LightInject
 
         private static ILifetime CloneLifeTime(ILifetime lifetime)
         {
+            if (lifetime is ICloneableLifeTime cloneable)
+            {
+                return (ILifetime)cloneable.Clone();
+            }
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
         }
 
@@ -3296,6 +3300,18 @@ namespace LightInject
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
             var registrations = GetEmitMethods(serviceType);
+
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                if (registrations.Count > 1)
+                {
+                    var serviceNames = registrations.Keys.OrderBy(k => k).ToArray();
+                    var defaultServiceName = string.Empty;
+                    serviceName = options.DefaultServiceSelector(serviceNames);                    
+                }
+            }
+
+
             registrations.TryGetValue(serviceName, out Action<IEmitter> emitMethod);
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
@@ -4025,8 +4041,8 @@ namespace LightInject
             {
                 Func<object> instanceDelegate =
                     () => WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod))();
-                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);
-                var instanceIndex = constants.Add(instance);
+                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);                                           
+                var instanceIndex = constants.Add(instance);    
                 emitter.PushConstant(instanceIndex, instance.GetType());
             }
             else
@@ -4040,6 +4056,15 @@ namespace LightInject
                 emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
                 emitter.Call(LifetimeHelper.GetCurrentScopeMethod);
                 emitter.Call(getInstanceMethod);
+            }
+            if (IsNotServiceFactory(serviceRegistration.ServiceType))
+            {
+                disposableLifeTimes.Add(serviceRegistration.Lifetime);
+            }
+
+            bool IsNotServiceFactory(Type serviceType)
+            {
+                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
             }
         }
 
@@ -4060,11 +4085,9 @@ namespace LightInject
 
         private GetInstanceDelegate CreateDefaultDelegate(Type serviceType, bool throwError)
         {
-            log.Info($"Compiling delegate for resolving service : {serviceType}");
-            //EnsureEmitMethodsForOpenGenericTypesAreCreated(serviceType);
-            var serviceNames = GetAvailableServices(serviceType).Select(kvp => kvp.Key).ToArray();
-            var defaultServiceName = options.DefaultServiceSelector(serviceNames);
-            var instanceDelegate = CreateDelegate(serviceType, defaultServiceName, throwError);
+            log.Info($"Compiling delegate for resolving service : {serviceType}");            
+           
+            var instanceDelegate = CreateDelegate(serviceType, string.Empty, throwError);
             if (instanceDelegate == null)
             {
                 return c => null;
@@ -5855,7 +5878,7 @@ namespace LightInject
         private readonly object disposableObjectsLock = new object();
         private readonly HashSet<IDisposable> disposableObjects = new HashSet<IDisposable>(ReferenceEqualityComparer<IDisposable>.Default);
         private readonly IScopeManager scopeManager;
-        private readonly IServiceFactory serviceFactory;
+        private readonly IServiceFactory serviceFactory;        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
@@ -5890,13 +5913,13 @@ namespace LightInject
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
         /// </summary>
         /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
-        public void TrackInstance(IDisposable disposable)
+        public virtual void TrackInstance(IDisposable disposable)
         {
             lock (disposableObjectsLock)
             {
                 disposableObjects.Add(disposable);
             }
-        }
+        }        
 
         /// <summary>
         /// Disposes all instances tracked by this scope.
@@ -6018,7 +6041,7 @@ namespace LightInject
 
         private void DisposeTrackedInstances()
         {
-            foreach (var disposableObject in disposableObjects)
+            foreach (var disposableObject in disposableObjects.Reverse())
             {
                 disposableObject.Dispose();
             }
