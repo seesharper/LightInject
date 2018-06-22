@@ -18,6 +18,9 @@ using System.Runtime.InteropServices;
 #if NETSTANDARD1_6
     [assembly: AssemblyProduct("LightInject (NETSTANDARD16)")]
 #endif
+#if NETCOREAPP2_0
+    [assembly: AssemblyProduct("LightInject (NETCOREAPP20)")]
+#endif
 [assembly: AssemblyCopyright("Copyright © Bernhard Richter 2017")]
 
 

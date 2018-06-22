@@ -1,4 +1,4 @@
-﻿#if NET452 || NET46
+﻿#if NET452 || NET46 
 namespace LightInject.Tests
 {
     using System;
@@ -56,7 +56,7 @@ namespace LightInject.Tests
 
         private void CreateAssemblyBuilder()
         {
-            AppDomain myDomain = AppDomain.CurrentDomain;
+            AppDomain myDomain = AppDomain.CurrentDomain;         
             assemblyBuilder = myDomain.DefineDynamicAssembly(CreateAssemblyName(), AssemblyBuilderAccess.RunAndSave, Path.GetDirectoryName(outputPath));
         }
 
