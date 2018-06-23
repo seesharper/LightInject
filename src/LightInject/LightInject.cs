@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.1.3
+    LightInject version 5.1.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -724,9 +724,17 @@ namespace LightInject
         /// <returns>The requested services instance.</returns>
         object GetInstance(Func<object> createInstance, Scope scope);
     }
-
-    public interface ICloneableLifeTime
+    
+    /// <summary>
+    /// Optinally implemented by <see cref="ILifetime"/> implementations
+    /// to provide a way to clone the lifetime. 
+    /// </summary>    
+    public interface ICloneableLifeTime 
     {
+        /// <summary>
+        /// Returns a clone of this <see cref="ILifetime"/>.
+        /// </summary>
+        /// <returns><see cref="ILifetime"/></returns>
         ILifetime Clone();
     }
 
@@ -1896,7 +1904,8 @@ namespace LightInject
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
 
         /// <summary>
-        /// Gets or sets 
+        /// Gets or sets the function that determines the default service name. 
+        /// The default is to use the service registered without a service name as the default service.
         /// </summary>
         public Func<string[], string> DefaultServiceSelector { get; set; } = services => string.Empty;
         
@@ -5627,7 +5636,7 @@ namespace LightInject
     /// <summary>
     /// Ensures that only one instance of a given service can exist within the current <see cref="IServiceContainer"/>.
     /// </summary>
-    public class PerContainerLifetime : ILifetime, IDisposable
+    public class PerContainerLifetime : ILifetime, IDisposable, ICloneableLifeTime
     {
         private readonly object syncRoot = new object();
         private volatile object singleton;
@@ -5666,12 +5675,17 @@ namespace LightInject
                 disposable.Dispose();
             }
         }
+
+        public ILifetime Clone()
+        {
+            return new PerContainerLifetime();
+        }
     }
 
     /// <summary>
     /// Ensures that a new instance is created for each request in addition to tracking disposable instances.
     /// </summary>
-    public class PerRequestLifeTime : ILifetime
+    public class PerRequestLifeTime : ILifetime, ICloneableLifeTime
     {
         /// <summary>
         /// Returns a service instance according to the specific lifetime characteristics.
@@ -5698,6 +5712,11 @@ namespace LightInject
             }
 
             scope.TrackInstance(disposable);
+        }
+
+        public ILifetime Clone()
+        {
+            return new PerRequestLifeTime();
         }
     }
 
