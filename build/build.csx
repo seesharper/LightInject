@@ -9,8 +9,8 @@ using static ChangeLog;
 using static ReleaseManagement;
 
 Build(projectFolder, Git.Default.GetCurrentCommitHash());
-//Test(testProjectFolder);
-//AnalyzeCodeCoverage(pathToTestAssembly, $"+[{projectName}]*");
+Test(testProjectFolder);
+AnalyzeCodeCoverage(pathToTestAssembly, $"+[{projectName}]*");
 Pack(projectFolder, nuGetArtifactsFolder);
 
 using(var sourceBuildFolder = new DisposableFolder())
