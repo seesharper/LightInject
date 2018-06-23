@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.1.3
+    LightInject version 5.1.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -513,7 +513,7 @@ namespace LightInject
         IServiceRegistry RegisterPropertyDependency<TDependency>(
             Func<IServiceFactory, PropertyInfo, TDependency> factory);
 
-#if NET452 || NET46 || NETSTANDARD1_6
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that match the <paramref name="searchPattern"/>.
         /// </summary>
@@ -724,6 +724,19 @@ namespace LightInject
         /// <returns>The requested services instance.</returns>
         object GetInstance(Func<object> createInstance, Scope scope);
     }
+    
+    /// <summary>
+    /// Optinally implemented by <see cref="ILifetime"/> implementations
+    /// to provide a way to clone the lifetime. 
+    /// </summary>    
+    public interface ICloneableLifeTime 
+    {
+        /// <summary>
+        /// Returns a clone of this <see cref="ILifetime"/>.
+        /// </summary>
+        /// <returns><see cref="ILifetime"/></returns>
+        ILifetime Clone();
+    }
 
     /// <summary>
     /// Represents a class that acts as a composition root for an <see cref="IServiceRegistry"/> instance.
@@ -905,7 +918,7 @@ namespace LightInject
         void EndScope(Scope scope);
     }
 
-#if NET452 || NET46 || NETSTANDARD1_6
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -1891,6 +1904,13 @@ namespace LightInject
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
 
         /// <summary>
+        /// Gets or sets the function that determines the default service name. 
+        /// The default is to use the service registered without a service name as the default service.
+        /// </summary>
+        public Func<string[], string> DefaultServiceSelector { get; set; } = services => string.Empty;
+        
+
+        /// <summary>
         /// Gets or sets a value indicating whether property injection is enabled.
         /// </summary>
         /// <remarks>
@@ -1942,11 +1962,13 @@ namespace LightInject
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
         private readonly ServiceRegistry<Delegate> constructorDependencyFactories = new ServiceRegistry<Delegate>();
         private readonly ServiceRegistry<Delegate> propertyDependencyFactories = new ServiceRegistry<Delegate>();
+        
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
 
         private readonly object lockObject = new object();
         private readonly ContainerOptions options;
         private readonly Storage<object> constants = new Storage<object>();
+        private readonly Storage<ILifetime> disposableLifeTimes = new Storage<ILifetime>();
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
         private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
@@ -1998,7 +2020,7 @@ namespace LightInject
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-#if NET452 || NET46 || NETSTANDARD1_6
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
@@ -2075,7 +2097,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET452 || NETSTANDARD1_6 || NET46
+#if NET452 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
@@ -2359,7 +2381,7 @@ namespace LightInject
             return this;
         }
 
-#if NET452 || NETSTANDARD1_6 || NET46
+#if NET452 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -2994,19 +3016,11 @@ namespace LightInject
         /// </summary>
         public void Dispose()
         {
-            var disposableLifetimeInstances = availableServices.Values.SelectMany(t => t.Values)
-                .Where(sr => sr.Lifetime != null 
-                    && IsNotServiceFactory(sr.ServiceType))
-                .Select(sr => sr.Lifetime)
-                .Where(lt => lt is IDisposable).Cast<IDisposable>();
+            var disposableLifetimeInstances = disposableLifeTimes.Items
+                .Where(lt => lt is IDisposable).Cast<IDisposable>().Reverse();
             foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
             {
                 disposableLifetimeInstance.Dispose();
-            }
-
-            bool IsNotServiceFactory(Type serviceType)
-            {
-                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
             }
         }
 
@@ -3048,6 +3062,10 @@ namespace LightInject
 
         private static ILifetime CloneLifeTime(ILifetime lifetime)
         {
+            if (lifetime is ICloneableLifeTime cloneable)
+            {
+                return cloneable.Clone();
+            }
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
         }
 
@@ -3291,6 +3309,18 @@ namespace LightInject
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
             var registrations = GetEmitMethods(serviceType);
+
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                if (registrations.Count > 1)
+                {
+                    var serviceNames = registrations.Keys.OrderBy(k => k).ToArray();
+                    var defaultServiceName = string.Empty;
+                    serviceName = options.DefaultServiceSelector(serviceNames);                    
+                }
+            }
+
+
             registrations.TryGetValue(serviceName, out Action<IEmitter> emitMethod);
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
@@ -3829,6 +3859,10 @@ namespace LightInject
 
         private void EnsureEmitMethodsForOpenGenericTypesAreCreated(Type actualServiceType)
         {
+            if (!actualServiceType.GetTypeInfo().IsGenericType)
+            {
+                return;
+            }
             var openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
             var openGenericServiceEmitters = GetAvailableServices(openGenericServiceType);
             foreach (var openGenericEmitterEntry in openGenericServiceEmitters.Keys)
@@ -3906,11 +3940,9 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)
         {
             Type actualServiceType = TypeHelper.GetElementType(serviceType);
-            if (actualServiceType.GetTypeInfo().IsGenericType)
-            {
-                EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
-            }
-
+            
+            EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
+            
             List<Action<IEmitter>> emitMethods;
 
             if (options.EnableVariance)
@@ -3940,7 +3972,7 @@ namespace LightInject
 
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
-            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1;
+            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1;           
         }
 
         private ConstructionInfo GetConstructionInfo(Registration registration)
@@ -4018,8 +4050,8 @@ namespace LightInject
             {
                 Func<object> instanceDelegate =
                     () => WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod))();
-                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);
-                var instanceIndex = constants.Add(instance);
+                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);                                           
+                var instanceIndex = constants.Add(instance);    
                 emitter.PushConstant(instanceIndex, instance.GetType());
             }
             else
@@ -4033,6 +4065,15 @@ namespace LightInject
                 emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
                 emitter.Call(LifetimeHelper.GetCurrentScopeMethod);
                 emitter.Call(getInstanceMethod);
+            }
+            if (IsNotServiceFactory(serviceRegistration.ServiceType))
+            {
+                disposableLifeTimes.Add(serviceRegistration.Lifetime);
+            }
+
+            bool IsNotServiceFactory(Type serviceType)
+            {
+                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
             }
         }
 
@@ -4053,7 +4094,8 @@ namespace LightInject
 
         private GetInstanceDelegate CreateDefaultDelegate(Type serviceType, bool throwError)
         {
-            log.Info($"Compiling delegate for resolving service : {serviceType}");
+            log.Info($"Compiling delegate for resolving service : {serviceType}");            
+           
             var instanceDelegate = CreateDelegate(serviceType, string.Empty, throwError);
             if (instanceDelegate == null)
             {
@@ -4304,7 +4346,7 @@ namespace LightInject
                 return dynamicMethod.CreateDelegate(delegateType);
             }
 
-#if NET452 || NET46
+#if NET452 || NET46 || NETCOREAPP2_0
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
@@ -4404,7 +4446,7 @@ namespace LightInject
         }
     }
 
-#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NET46
+#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
 
     /// <summary>
     /// Manages a set of <see cref="Scope"/> instances.
@@ -5594,7 +5636,7 @@ namespace LightInject
     /// <summary>
     /// Ensures that only one instance of a given service can exist within the current <see cref="IServiceContainer"/>.
     /// </summary>
-    public class PerContainerLifetime : ILifetime, IDisposable
+    public class PerContainerLifetime : ILifetime, IDisposable, ICloneableLifeTime
     {
         private readonly object syncRoot = new object();
         private volatile object singleton;
@@ -5633,12 +5675,17 @@ namespace LightInject
                 disposable.Dispose();
             }
         }
+
+        public ILifetime Clone()
+        {
+            return new PerContainerLifetime();
+        }
     }
 
     /// <summary>
     /// Ensures that a new instance is created for each request in addition to tracking disposable instances.
     /// </summary>
-    public class PerRequestLifeTime : ILifetime
+    public class PerRequestLifeTime : ILifetime, ICloneableLifeTime
     {
         /// <summary>
         /// Returns a service instance according to the specific lifetime characteristics.
@@ -5666,6 +5713,11 @@ namespace LightInject
 
             scope.TrackInstance(disposable);
         }
+
+        public ILifetime Clone()
+        {
+            return new PerRequestLifeTime();
+        }
     }
 
     /// <summary>
@@ -5675,7 +5727,7 @@ namespace LightInject
     /// If the service instance implements <see cref="IDisposable"/>,
     /// it will be disposed when the <see cref="Scope"/> ends.
     /// </remarks>
-    public class PerScopeLifetime : ILifetime
+    public class PerScopeLifetime : ILifetime, ICloneableLifeTime
     {
         private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
 
@@ -5718,6 +5770,11 @@ namespace LightInject
             var scope = (Scope)sender;
             scope.Completed -= OnScopeCompleted;
             instances.TryRemove(scope, out object removedInstance);
+        }
+
+        public ILifetime Clone()
+        {
+            return new PerScopeLifetime();
         }
     }
 
@@ -5845,7 +5902,7 @@ namespace LightInject
         private readonly object disposableObjectsLock = new object();
         private readonly HashSet<IDisposable> disposableObjects = new HashSet<IDisposable>(ReferenceEqualityComparer<IDisposable>.Default);
         private readonly IScopeManager scopeManager;
-        private readonly IServiceFactory serviceFactory;
+        private readonly IServiceFactory serviceFactory;        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
@@ -5880,13 +5937,13 @@ namespace LightInject
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
         /// </summary>
         /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
-        public void TrackInstance(IDisposable disposable)
+        public virtual void TrackInstance(IDisposable disposable)
         {
             lock (disposableObjectsLock)
             {
                 disposableObjects.Add(disposable);
             }
-        }
+        }        
 
         /// <summary>
         /// Disposes all instances tracked by this scope.
@@ -6008,7 +6065,7 @@ namespace LightInject
 
         private void DisposeTrackedInstances()
         {
-            foreach (var disposableObject in disposableObjects)
+            foreach (var disposableObject in disposableObjects.Reverse())
             {
                 disposableObject.Dispose();
             }
@@ -6171,7 +6228,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-#if NET452 || NET46 || NETSTANDARD1_6
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
@@ -6198,7 +6255,7 @@ namespace LightInject
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));
-#if NET452 || NET46 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NET452 || NET46 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETCOREAPP2_0
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManager));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
@@ -6587,7 +6644,7 @@ namespace LightInject
             return propertyInfo.SetMethod == null || propertyInfo.SetMethod.IsStatic || propertyInfo.SetMethod.IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
         }
     }
-#if NET452 || NET46 
+#if NET452 || NET46 || NETCOREAPP2_0
 
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
@@ -7545,7 +7602,7 @@ namespace LightInject
         }
     }
 #endif
-#if NETSTANDARD1_3 || NETSTANDARD1_6 || NET46
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>
@@ -7719,7 +7776,7 @@ namespace LightInject
     /// </summary>
     internal static class TypeHelper
     {
-#if NET452 || NET46
+#if NET452 || NET46 || NETCOREAPP2_0
 
         /// <summary>
         /// Gets the method represented by the delegate.

@@ -1264,8 +1264,10 @@ namespace LightInject.Tests
             
             using (var container = new ServiceContainer())
             {               
-                container.Register<IFoo, Foo>(lifetime);                
+                container.Register<IFoo, Foo>(lifetime);
+                container.GetInstance<IFoo>();
             }
+
             Assert.True(lifetime.IsDisposed);
         }
 

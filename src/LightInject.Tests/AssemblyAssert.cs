@@ -1,4 +1,5 @@
-﻿namespace LightInject.Tests
+﻿#if NET452 || NET46 || NETCOREAPP2_0
+namespace LightInject.Tests
 {
     using System;
     using System.Diagnostics;
@@ -50,3 +51,4 @@
         }
     }
 }
+#endif
