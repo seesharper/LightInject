@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>LightInject.Source</id>
-        <version>[VERSION]</version>
+        <version>1.0.0</version>
         <authors>Bernhard Richter</authors>
         <owners>Bernhard Richter</owners>
         <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
@@ -18,7 +18,6 @@
       </dependencies>
     </metadata>
     <files>        
-        <file src="LightInject.cs.pp" target="content\net45\LightInject\LightInject.cs.pp" />        
-        <file src="LightInject.cs.pp" target="content\net46\LightInject\LightInject.cs.pp" />       
+        <file src="content\net45\LightInject\LightInject.cs.pp" target="content\net45\LightInject.Interception\LightInject.cs.pp" />        
     </files>    
 </package>

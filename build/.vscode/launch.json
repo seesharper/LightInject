@@ -2,16 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": ".NET Script Debug",
             "type": "coreclr",
-            "request": "launch",                                    
-            "program": "C:/ProgramData/Chocolatey/lib/csx/csx/csx.exe",            
-            "args": ["${file}","pack"],
+            "request": "launch",
+            "program": "dotnet",
+            "args": [
+              "exec", 
+              "C:/Users/bri/.dotnet/tools/.store/dotnet-script/0.25.0/dotnet-script/0.25.0/tools/netcoreapp2.1/any/dotnet-script.dll", 
+              "${file}"
+            ],
             "cwd": "${workspaceRoot}",
-            "stopAtEntry": false,
-            "console": "internalConsole",
-            "requireExactSource": false
+            "stopAtEntry": true
         }
     ]
 }
-

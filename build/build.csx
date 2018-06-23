@@ -1,108 +1,55 @@
-#! "netcoreapp1.1"
-#r "nuget:NetStandard.Library,1.6.1"
-#r "nuget:Microsoft.Extensions.CommandLineUtils, 1.1.1"
-#load "Context.csx"
-#load "Tasks.csx"
-#load "AssemblyVersion.csx"
-#load "Internalizer.csx"
-#load "DotNet.csx"
-#load "NuGet.csx"
-#load "MsTest.csx"
-#load "Write.csx"
-#load "xUnit.csx"
-#load "CsProj.csx"
+#load "nuget:Dotnet.Build, 0.3.8"
+#load "nuget:github-changelog, 0.1.5"
+#load "BuildContext.csx"
+using static FileUtils;
+using static Internalizer;
+using static xUnit;
+using static DotNet;
+using static ChangeLog;
+using static ReleaseManagement;
 
-using System.IO;
-using System.Xml;
-using System.Xml.Linq;
-using System.Linq;
-using System;
-using System.Text.RegularExpressions;
-using Microsoft.Extensions.CommandLineUtils;
+Build(projectFolder, Git.Default.GetCurrentCommitHash());
+//Test(testProjectFolder);
+//AnalyzeCodeCoverage(pathToTestAssembly, $"+[{projectName}]*");
+Pack(projectFolder, nuGetArtifactsFolder);
 
-
-Tasks.Add(() => Compile(), () => Test(), () => Pack());
-Tasks.Execute(Args.ToArray());
-
-
-private void Compile()
+using(var sourceBuildFolder = new DisposableFolder())
 {
-    BuildContext.Initialize("LightInject");
-    InitializeBuildDirectory();
-    PatchAssemblyInfo();
-    Internalize();
-    BuildAllProjects();
-
-    void InitializeBuildDirectory()
+    string pathToSourceProjectFolder = Path.Combine(sourceBuildFolder.Path,"LightInject");
+    Copy(solutionFolder, sourceBuildFolder.Path, new [] {".vs", "obj"});
+    Internalize(pathToSourceProjectFolder, exceptTheseTypes);    
+    DotNet.Build(Path.Combine(sourceBuildFolder.Path,"LightInject"));
+    using(var nugetPackFolder = new DisposableFolder())
     {
-        FileUtils.RemoveDirectory(BuildContext.BuildFolder);
-        FileUtils.CopySolution(BuildContext.SolutionFolder, BuildContext.BinaryBuildFolder);
-        FileUtils.CopySolution(BuildContext.SolutionFolder, BuildContext.SourceBuildFolder);
-    }
-
-    void PatchAssemblyInfo()
-    {
-        AssemblyInfo.SetVersionInfo(BuildContext.Version, BuildContext.FileVersion, BuildContext.BinaryProjectFolder);
-        AssemblyInfo.SetVersionInfo(BuildContext.Version, BuildContext.FileVersion, BuildContext.SourceBuildFolder);
-        AssemblyInfo.AddInternalsVisibleToAttribute(BuildContext.SourceBuildFolder, BuildContext.TestProjectName);
-        AssemblyInfo.AddInternalsVisibleToAttribute(BuildContext.SourceBuildFolder, "DynamicAssembly");
-    }
-
-    void Internalize()
-    {
-        Internalizer.Internalize(BuildContext.SourceProjectFolder);
-    }
-
-    void BuildAllProjects()
-    {
-        DotNet.Build(BuildContext.BinaryProjectFolder);
-        DotNet.Build(BuildContext.BinaryTestProjectFolder);
-        DotNet.Build(BuildContext.SourceProjectFolder);
-        DotNet.Build(BuildContext.SourceTestProjectFolder);        
+        var contentFolder = CreateDirectory(nugetPackFolder.Path, "content","net45", "LightInject");
+        Copy("LightInject.Source.nuspec", nugetPackFolder.Path);
+        string pathToSourceFileTemplate = Path.Combine(contentFolder, "LightInject.cs.pp");
+        Copy(Path.Combine(pathToSourceProjectFolder, "LightInject.cs"), pathToSourceFileTemplate);        
+        FileUtils.ReplaceInFile(@"namespace \S*", $"namespace $rootnamespace$.{projectName}", pathToSourceFileTemplate);
+        NuGet.Pack(nugetPackFolder.Path, nuGetArtifactsFolder, version);
     }
 }
 
-private void Test()
+if (BuildEnvironment.IsSecure)
+    {
+        await CreateReleaseNotes();
+
+        if (Git.Default.IsTagCommit())
+        {
+            Git.Default.RequreCleanWorkingTree();
+            await ReleaseManagerFor(owner, projectName,BuildEnvironment.GitHubAccessToken)
+            .CreateRelease(Git.Default.GetLatestTag(), pathToReleaseNotes, Array.Empty<ReleaseAsset>());
+            NuGet.TryPush(nuGetArtifactsFolder);            
+        }
+    }
+
+ private async Task CreateReleaseNotes()
 {
-    // DotNet.Test(BuildContext.BinaryTestProjectFolder);
-    // DotNet.Test(BuildContext.SourceTestProjectFolder);    
-    // AnalyzeTestCoverage();    
-}
-
-private void Pack()
-{
-    FileUtils.CreateDirectory(BuildContext.PackageOutputFolder);    
-    DotNet.Pack(BuildContext.BinaryProjectFolder, BuildContext.PackageOutputFolder);    
-    CreateSourcePackage();
-    void CreateSourcePackage()
+    Logger.Log("Creating release notes");        
+    var generator = ChangeLogFrom(owner, projectName, BuildEnvironment.GitHubAccessToken).SinceLatestTag();
+    if (!Git.Default.IsTagCommit())
     {
-        var pathToMetadata = Path.Combine(BuildContext.SourceProjectFolder, $"{BuildContext.ProjectName}.Source.nuspec");
-        var pathToNugetSpecTemplate = $"{BuildContext.ProjectName}.Source.nuspec";
-        File.Copy(pathToNugetSpecTemplate, pathToMetadata, true);
-        var pathToSourceFile = Path.Combine(BuildContext.SourceProjectFolder, $"{BuildContext.ProjectName}.cs");
-        var pathToSourceFileTemplate = Path.Combine(BuildContext.SourceProjectFolder, $"{BuildContext.ProjectName}.cs.pp");
-        File.Copy(pathToSourceFile, pathToSourceFileTemplate, true);
-        FileUtils.ReplaceInFile(@"namespace \S*", $"namespace $rootnamespace$.{BuildContext.ProjectName}", pathToSourceFileTemplate);
-        NuGet.PatchNugetVersionInfo(pathToMetadata, BuildContext.Version);
-        FileUtils.ReplaceInFile(@"\[PATH_TO_SOURCEFILE\]", $"{BuildContext.ProjectName}.cs", pathToMetadata);
-        NuGet.Pack(pathToMetadata, BuildContext.PackageOutputFolder);
+        generator = generator.IncludeUnreleased();
     }
-}
-
-private void AnalyzeTestCoverage()
-{		
-    AnalyzeTestCoverage("NET452");
-    AnalyzeTestCoverage("NET46");	
-}
-
-private void AnalyzeTestCoverage(string frameworkMoniker)
-{	    	
-    string pathToTestAssembly = Path.Combine(BuildContext.BinaryTestProjectFolder, 
-    $@"bin\Release\{frameworkMoniker}\{BuildContext.ProjectName}.Tests.dll");	    
-    xUnit.AnalyzeCodeCoverage(pathToTestAssembly);                
-}
-
-
-
-
-
+    await generator.Generate(pathToReleaseNotes);
+}   

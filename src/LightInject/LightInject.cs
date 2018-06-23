@@ -3055,7 +3055,7 @@ namespace LightInject
         {
             if (lifetime is ICloneableLifeTime cloneable)
             {
-                return (ILifetime)cloneable.Clone();
+                return cloneable.Clone();
             }
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
         }
@@ -5708,7 +5708,7 @@ namespace LightInject
     /// If the service instance implements <see cref="IDisposable"/>,
     /// it will be disposed when the <see cref="Scope"/> ends.
     /// </remarks>
-    public class PerScopeLifetime : ILifetime
+    public class PerScopeLifetime : ILifetime, ICloneableLifeTime
     {
         private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
 
@@ -5751,6 +5751,11 @@ namespace LightInject
             var scope = (Scope)sender;
             scope.Completed -= OnScopeCompleted;
             instances.TryRemove(scope, out object removedInstance);
+        }
+
+        public ILifetime Clone()
+        {
+            return new PerScopeLifetime();
         }
     }
 
