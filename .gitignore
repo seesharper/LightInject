@@ -15,6 +15,7 @@ local.properties
 .classpath
 .settings/
 .loadpath
+Artifacts
 *.exe
 
 # External tool builders
