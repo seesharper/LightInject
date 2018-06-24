@@ -49,7 +49,7 @@ if (BuildEnvironment.IsSecure)
     var generator = ChangeLogFrom(owner, projectName, BuildEnvironment.GitHubAccessToken).SinceLatestTag();
     if (!Git.Default.IsTagCommit())
     {
-        generator = generator.IncludeUnreleased();
+        generator = generator.IncludeUnreleased();        
     }
-    await generator.Generate(pathToReleaseNotes);
+    await generator.Generate(pathToReleaseNotes, FormattingOptions.Default.WithPullRequestBody());
 }   
