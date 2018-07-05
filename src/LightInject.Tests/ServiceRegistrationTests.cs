@@ -1,8 +1,10 @@
 namespace LightInject.Tests
 {
     using System;
+
     using System.Diagnostics;
     using SampleLibrary;
+    
     using Xunit;
     
     public class ServiceRegistrationTests
@@ -76,7 +78,7 @@ namespace LightInject.Tests
 
             var instance = container.GetInstance<IFoo>();
 
-            Assert.IsAssignableFrom(typeof(AnotherFoo), instance);
+            Assert.IsAssignableFrom<AnotherFoo>(instance);
         }
 
         [Fact]
@@ -119,39 +121,66 @@ namespace LightInject.Tests
             string message = null;
             var container = new ServiceContainer(new ContainerOptions {LogFactory = t => m => message = m.Message});
             
-            SampleTraceListener sampleTraceListener = new SampleTraceListener(m => message = m);
+            //SampleTraceListener sampleTraceListener = new SampleTraceListener(m => message = m);
             try
             {                
-                Trace.Listeners.Add(sampleTraceListener);
+              ///  Trace.Listeners.Add(sampleTraceListener);
                 container.Register<IFoo, Foo>();
                 container.GetInstance<IFoo>();
                 container.Register<IFoo, Foo>();
-                Assert.True(message.StartsWith("Cannot overwrite existing serviceregistration"));
+                Assert.StartsWith("Cannot overwrite existing serviceregistration", message);
             }
             finally
             {
-                Trace.Listeners.Remove(sampleTraceListener);
+                //Trace.Listeners.Remove(sampleTraceListener);
             }
         }       
+
+        [Fact]
+        public void Register_ImplementingTypeNotImplementingServiceType_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            Assert.Throws<ArgumentOutOfRangeException>("implementingType",
+                () => container.Register(typeof (IFoo), typeof (Bar)));
+
+        }
+
+        [Fact]
+        public void Register_GenericImplementingTypeWithMissingArgument_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof (IFoo), typeof (Foo<>)));
+            Assert.Equal("implementingType", exception.ParamName);
+            Assert.StartsWith("The generic parameter(s) T found in type", exception.Message);
+        }
+
+        [Fact]
+        public void Register_GenericImplementingTypeWithMultipleMissingArguments_ThrowsException()
+        {
+            var container = new ServiceContainer();
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof(object), typeof(Foo<,>)));
+            Assert.Equal("implementingType", exception.ParamName);
+            Assert.StartsWith("The generic parameter(s) T1,T2 found in type", exception.Message);
+        }
     }
 
-    public class SampleTraceListener : TraceListener
-    {
-        private readonly Action<string> listener;
+    //public class SampleTraceListener : TraceListener
+    //{
+    //    private readonly Action<string> listener;
 
-        public SampleTraceListener(Action<string> listener)
-        {
-            this.listener = listener;
-        }
+    //    public SampleTraceListener(Action<string> listener)
+    //    {
+    //        this.listener = listener;
+    //    }
 
-        public override void Write(string message)
-        {
-            listener(message);
-        }
+    //    public override void Write(string message)
+    //    {
+    //        listener(message);
+    //    }
 
-        public override void WriteLine(string message)
-        {
-            listener(message);
-        }
-    }
+    //    public override void WriteLine(string message)
+    //    {
+    //        listener(message);
+    //    }
+    //}
 }

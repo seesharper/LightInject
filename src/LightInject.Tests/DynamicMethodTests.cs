@@ -1,4 +1,4 @@
-#if PCL_111
+#if NETCOREAPP1_1
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace LightInject.Tests
 {
-    using System.Reflection;    
-
+    using System.Reflection;
+    using System.Reflection.Emit;
     using Xunit;
 
     using DynamicMethod = LightInject.DynamicMethod;

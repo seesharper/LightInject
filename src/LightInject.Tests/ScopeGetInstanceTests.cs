@@ -164,19 +164,6 @@
                     Assert.NotSame(firstInstance, secondInstance);
                 }
             }
-        }
-
-        [Fact]
-        public void ShouldThrowExceptionWhenEndingNonCurrentScope()
-        {
-            var container = CreateContainer();
-
-            using (container.BeginScope())
-            {
-                var scope = new Scope(container.ScopeManagerProvider.GetScopeManager(container), null);
-                Assert.Throws<InvalidOperationException>(() => scope.Dispose());
-            }
-
-        }
+        }      
     }
 }

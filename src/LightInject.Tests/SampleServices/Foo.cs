@@ -5,6 +5,8 @@ using System.Text;
 
 namespace LightInject.SampleLibrary
 {
+    using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Threading.Tasks;
 
     public interface IFooWithProperty
@@ -36,7 +38,7 @@ namespace LightInject.SampleLibrary
 
     }
 
-#if NET45 || NET46
+#if NET452 || NET46
 
     public interface IAsyncFoo
     {
@@ -272,6 +274,13 @@ namespace LightInject.SampleLibrary
     public class FooDecorator<T> : IFoo<T>
     {
         public FooDecorator(IFoo<T> foo)
+        {
+        }
+    }
+
+    public class FooDecoratorWithClassConstraint<T> : IFoo<T> where T : class
+    {
+        public FooDecoratorWithClassConstraint(IFoo<T> foo)
         {
         }
     }
@@ -547,11 +556,76 @@ namespace LightInject.SampleLibrary
 
     public interface IFoo<T1, T2> { }
 
-    public class FooWithPartiallyClosedGenericInterface<T> : IFoo<T, string> { }
+    public class OpenGenericFoo<T1, T2> : IFoo<T1,T2>
+    {
+        
+    }
+
+    public class HalfClosedOpenGenericFooDecorator<T> : IFoo<string, T>
+    {
+        public HalfClosedOpenGenericFooDecorator(IFoo<string, T> foo)
+        {
+        }
+    }
+
+    public class HalfClosedOpenGenericFooDecorator<T1,T2> : IFoo<string, T1>
+    {
+        public HalfClosedOpenGenericFooDecorator(IFoo<string, T1> foo)
+        {
+        }
+    }
+
+    public class BarBase
+    {
+
+    }
+
+    public class InheritedBar :BarBase
+    {
+
+    }
+
+    public class FooDecoratorWithBarBaseConstraint<T> : IFoo<T> where T:BarBase
+    {
+        public FooDecoratorWithBarBaseConstraint(IFoo<T> foo)
+        {
+
+        }
+    }
+
+    public class Foo<T1, T2>
+    {
+    }
+
+    public class HalfClosedFooInhertingFromBaseClass<T1> : Foo<string, T1>
+    {
+        
+    }
+
+
+    public class HalfClosedFoo<T> : IFoo<string, T> { }
+
+    public class HalfClosedFooWithNestedGenericParameter<T> : IFoo<Lazy<T>, string>
+    {
+    }
+
+    public class HalfClosedFooWithDoubleNestedGenericParameter<T> : IFoo<Lazy<Nullable<T>>, string> where T:struct
+    {
+    }
+
+    public class FullyClosedFooWithString : IFoo<string>
+    {
+        
+    }
+
 
     public interface IFoo<T> { }
 
     public class Foo<T> : IFoo<T> { }
+
+    public class GenericFoo<T> { }
+
+    public class AnotherGenericFoo<T> : GenericFoo<T> { }
 
     public class AnotherFoo<T> : IFoo<T> { }
 
@@ -906,6 +980,19 @@ namespace LightInject.SampleLibrary
             return createInstance();
         }
     }
+
+    public class FooList<T> : List<T>
+    {
+        
+    }
+
+    public class FooReadOnlyCollection<T> : ReadOnlyCollection<T>
+    {
+        public FooReadOnlyCollection() : base(Enumerable.Empty<T>().ToList())
+        {
+        }
+    }
+
 
     public class FooCollection<T> : ICollection<T>
     {

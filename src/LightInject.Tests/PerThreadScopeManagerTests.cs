@@ -2,7 +2,7 @@ namespace LightInject.Tests
 {
     using System;
     using System.Threading;
-
+    using System.Threading.Tasks;
     using LightInject.SampleLibrary;
 
     using Xunit;
@@ -68,6 +68,32 @@ namespace LightInject.Tests
                 }
             }
         }
+
+        [Fact]
+        public void Dispose_OnAnotherThread_ShouldDisposeScope()
+        {
+            var container = new ServiceContainer();                        
+            var scope = container.BeginScope();
+            WeakReference scopeReference = new WeakReference(scope);
+                        
+            // Dispose the scope on a different thread
+            Thread disposeThread = new Thread(scope.Dispose);
+            disposeThread.Start();
+            disposeThread.Join();
+
+            // We are now back on the starting thread and
+            // although the scope was ended on another thread 
+            // the current scope on this thread should reflect that. 
+            var currentScope = container.ScopeManagerProvider.GetScopeManager(container).CurrentScope;
+
+            Assert.Null(currentScope);
+            scope = null;
+            GC.Collect();
+            Assert.False(scopeReference.IsAlive);
+            
+        }
+
+
 
         //[Fact]
         //public void Dispose_OnAnotherThread_ThrowsException()

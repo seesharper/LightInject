@@ -2,13 +2,12 @@ namespace LightInject.Tests
 {
     using System;
     using System.Reflection;
-#if NET40 || NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
     using System.Reflection.Emit;
-#endif
 
     using Xunit;
+    
 
-#if PCL_111
+#if NETCOREAPP1_1
     using LocalBuilder = LightInject.LocalBuilder;
     using ILGenerator = LightInject.ILGenerator;
 #endif
@@ -493,7 +492,7 @@ namespace LightInject.Tests
             Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));            
         }
 
-#if NET40 || NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
+#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46
         [Fact]        
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {
@@ -654,7 +653,7 @@ namespace LightInject.Tests
         {
             var instruction = new Instruction(OpCodes.Stloc, null);
             
-            Assert.Equal("stloc", instruction.ToString(),StringComparer.InvariantCultureIgnoreCase);
+            Assert.Equal("stloc", instruction.ToString(),StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -662,16 +661,16 @@ namespace LightInject.Tests
         {
             var instruction = new Instruction<int>(OpCodes.Ldarg, 1, null);
 
-            Assert.Equal("ldarg 1", instruction.ToString(), StringComparer.InvariantCultureIgnoreCase);
+            Assert.Equal("ldarg 1", instruction.ToString(), StringComparer.OrdinalIgnoreCase);
         }
-      
-#if NET40 || NET45 || NET46 || NETSTANDARD11 || NETSTANDARD13
+
+#if NET452 || NET46 || NETCOREAPP2_0
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();
         }
 #endif
-#if PCL_111
+#if NETCOREAPP1_1
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new LightInject.DynamicMethod(typeof(object), parameterTypes).GetILGenerator();

@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
+﻿#if NET452 || NET46 
 namespace LightInject.Tests
 {
     using System;
@@ -39,8 +39,7 @@ namespace LightInject.Tests
         public Delegate CreateDelegate(Type delegateType)
         {                       
             var dynamicType = typeBuilder.CreateType();
-            assemblyBuilder.Save(fileName);
-            Console.WriteLine("Saving file " + fileName);
+            assemblyBuilder.Save(fileName);            
             AssemblyAssert.IsValidAssembly(outputPath);
             MethodInfo methodInfo = dynamicType.GetMethod("DynamicMethod", BindingFlags.Static | BindingFlags.Public);
             return Delegate.CreateDelegate(delegateType, methodInfo);
@@ -49,8 +48,7 @@ namespace LightInject.Tests
         public Delegate CreateDelegate(Type delegateType, object target)
         {            
             var dynamicType = typeBuilder.CreateType();
-            assemblyBuilder.Save(fileName);
-            Console.WriteLine("Saving file " + fileName);
+            assemblyBuilder.Save(fileName);            
             AssemblyAssert.IsValidAssembly(outputPath);
             MethodInfo methodInfo = dynamicType.GetMethod("DynamicMethod", BindingFlags.Static | BindingFlags.Public);
             return Delegate.CreateDelegate(delegateType, target, methodInfo);
@@ -58,7 +56,7 @@ namespace LightInject.Tests
 
         private void CreateAssemblyBuilder()
         {
-            AppDomain myDomain = AppDomain.CurrentDomain;
+            AppDomain myDomain = AppDomain.CurrentDomain;         
             assemblyBuilder = myDomain.DefineDynamicAssembly(CreateAssemblyName(), AssemblyBuilderAccess.RunAndSave, Path.GetDirectoryName(outputPath));
         }
 

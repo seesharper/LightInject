@@ -1,7 +1,7 @@
-/*********************************************************************************
+﻿/*********************************************************************************
     The MIT License (MIT)
 
-    Copyright (c) 2016 bernhard.richter@gmail.com
+    Copyright (c) 2018 bernhard.richter@gmail.com
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-<<<<<<< HEAD
-    LightInject version 5.0.0-RC1
-=======
-    LightInject version 4.1.2
->>>>>>> singletonfix
+    LightInject version 5.1.4
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -46,17 +42,14 @@ namespace LightInject
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
-#endif
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
     using System.Reflection.Emit;
-#endif
     using System.Runtime.CompilerServices;
-#if NET45
+#if NET452
     using System.Runtime.Remoting.Messaging;
 #endif
     using System.Text;
@@ -64,7 +57,7 @@ namespace LightInject
     using System.Threading;
 
     /// <summary>
-    /// A delegate that represent the dynamic method compiled to resolved service instances.
+    /// A delegate that represents the dynamic method compiled to resolved service instances.
     /// </summary>
     /// <param name="args">The arguments used by the dynamic method that this delegate represents.</param>
     /// <returns>A service instance.</returns>
@@ -374,6 +367,28 @@ namespace LightInject
         IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime);
 
         /// <summary>
+        /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
+        /// ensures that service instance ordering matches the ordering of the <paramref name="implementingTypes"/>. 
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingTypes">The implementing types.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory);
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
+        /// ensures that service instance ordering matches the ordering of the <paramref name="implementingTypes"/>. 
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingTypes">The implementing types.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
+        /// <param name="serviceNameFormatter">The function used to format the service name based on current registration index.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes,
+            Func<Type, ILifetime> lifeTimeFactory, Func<int, string> serviceNameFormatter);
+
+        /// <summary>
         /// Registers a custom factory delegate used to create services that is otherwise unknown to the service container.
         /// </summary>
         /// <param name="predicate">Determines if the service can be created by the <paramref name="factory"/> delegate.</param>
@@ -446,6 +461,21 @@ namespace LightInject
         IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister);
 
         /// <summary>
+        /// Registers services from the given <paramref name="assembly"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly to be scanned for services.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
+        /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
+        /// <param name="serviceNameProvider">A function delegate used to provide the service name for a service during assembly scanning.</param>
+        /// <remarks>
+        /// If the target <paramref name="assembly"/> contains an implementation of the <see cref="ICompositionRoot"/> interface, this
+        /// will be used to configure the container.
+        /// </remarks>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory,
+            Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider);
+
+        /// <summary>
         /// Registers services from the given <typeparamref name="TCompositionRoot"/> type.
         /// </summary>
         /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
@@ -455,7 +485,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -465,7 +495,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -475,7 +505,7 @@ namespace LightInject
 
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
-        /// a implicitly registered service.
+        /// an implicitly registered service.
         /// </summary>
         /// <typeparam name="TDependency">The dependency type.</typeparam>
         /// <param name="factory">The factory delegate used to create an instance of the dependency.</param>
@@ -483,9 +513,9 @@ namespace LightInject
         IServiceRegistry RegisterPropertyDependency<TDependency>(
             Func<IServiceFactory, PropertyInfo, TDependency> factory);
 
-#if NET45 || NET46 || NETSTANDARD11
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
         /// <summary>
-        /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
+        /// Registers composition roots from assemblies in the base directory that match the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
@@ -573,7 +603,7 @@ namespace LightInject
         /// </summary>
         /// <returns><see cref="Scope"/></returns>
         Scope BeginScope();
-       
+
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
@@ -663,12 +693,24 @@ namespace LightInject
         object InjectProperties(object instance);
 
         /// <summary>
-        /// Creates a clone of the current <see cref="IServiceContainer"/>.
-        /// </summary>
-        /// <returns>A new <see cref="IServiceContainer"/> instance.</returns>
-        IServiceContainer Clone();
-    }
+        /// Compiles all registered services. 
+        /// </summary>        
+        void Compile();
 
+        /// <summary>
+        /// Compiles services that matches the given <paramref name="predicate"/>.
+        /// </summary>
+        /// <param name="predicate">The predicate that determines if a service should be compiled.</param>
+        void Compile(Func<ServiceRegistration, bool> predicate);
+               
+        /// <summary>
+        /// Compiles the service identified by <typeparamref name="TService"/>
+        /// and optionally the <paramref name="serviceName"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to be compiled.</typeparam>
+        /// <param name="serviceType">The service type to be compiled.</param>
+        void Compile<TService>(string serviceName = null);
+    }
     /// <summary>
     /// Represents a class that manages the lifetime of a service instance.
     /// </summary>
@@ -681,6 +723,19 @@ namespace LightInject
         /// <param name="scope">The <see cref="Scope"/> of the current service request.</param>
         /// <returns>The requested services instance.</returns>
         object GetInstance(Func<object> createInstance, Scope scope);
+    }
+    
+    /// <summary>
+    /// Optinally implemented by <see cref="ILifetime"/> implementations
+    /// to provide a way to clone the lifetime. 
+    /// </summary>    
+    public interface ICloneableLifeTime 
+    {
+        /// <summary>
+        /// Returns a clone of this <see cref="ILifetime"/>.
+        /// </summary>
+        /// <returns><see cref="ILifetime"/></returns>
+        ILifetime Clone();
     }
 
     /// <summary>
@@ -806,6 +861,22 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a class that maps the generic arguments/parameters from a generic servicetype
+    /// to a open generic implementing type.
+    /// </summary>
+    public interface IGenericArgumentMapper
+    {
+        /// <summary>
+        /// Maps the generic arguments/parameters from the <paramref name="genericServiceType"/>
+        /// to the generic arguments/parameters in the <paramref name="openGenericImplementingType"/>.
+        /// </summary>
+        /// <param name="genericServiceType">The generic type containing the arguments/parameters to be mapped to the generic arguments/parameters of the <paramref name="openGenericImplementingType"/>.</param>
+        /// <param name="openGenericImplementingType">The open generic implementing type.</param>
+        /// <returns>A <see cref="GenericMappingResult"/></returns>
+        GenericMappingResult Map(Type genericServiceType, Type openGenericImplementingType);
+    }
+
+    /// <summary>
     /// Represents a class that selects the constructor to be used for creating a new service instance.
     /// </summary>
     public interface IConstructorSelector
@@ -847,7 +918,7 @@ namespace LightInject
         void EndScope(Scope scope);
     }
 
-#if NET45 || NET46 || NETSTANDARD11
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -875,7 +946,8 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister);
+        /// <param name="serviceNameProvider">A function delegate used to provide the service name for a service during assembly scanning.</param>
+        void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider);
 
         /// <summary>
         /// Scans the target <paramref name="assembly"/> and executes composition roots found within the <see cref="Assembly"/>.
@@ -883,6 +955,21 @@ namespace LightInject
         /// <param name="assembly">The <see cref="Assembly"/> to scan.</param>
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         void Scan(Assembly assembly, IServiceRegistry serviceRegistry);
+    }
+
+    /// <summary>
+    /// Represents a class that is capable of providing a service name
+    /// to be used when a service is registered during assembly scanning.
+    /// </summary>
+    public interface IServiceNameProvider
+    {
+        /// <summary>
+        /// Gets the service name for which the given <paramref name="serviceType"/> will be registered.
+        /// </summary>
+        /// <param name="serviceType">The service type for which to provide a service name.</param>
+        /// <param name="implementingType">The implementing type for which to provide a service name.</param>
+        /// <returns>The service name for which the <paramref name="serviceType"/> and <paramref name="implementingType"/> will be registered.</returns>
+        string GetServiceName(Type serviceType, Type implementingType);
     }
 
     /// <summary>
@@ -1020,9 +1107,8 @@ namespace LightInject
         /// <param name="constants">A object array representing the dynamic method context.</param>
         /// <returns>An array containing the runtime arguments supplied when resolving the service.</returns>
         public static object[] Load(object[] constants)
-        {            
-            object[] arguments = constants[constants.Length - 1] as object[];
-            if (arguments == null)
+        {
+            if (!(constants[constants.Length - 1] is object[] arguments))
             {
                 return new object[] { };
             }
@@ -1300,28 +1386,71 @@ namespace LightInject
         /// <param name="key">The key for which to search for a value.</param>
         /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        // Excluded since this is a duplicate of the ImmutableHashTreeExtensions.Search method.
+        [ExcludeFromCodeCoverage]
         public static TValue Search<TKey, TValue>(this ImmutableHashTable<TKey, TValue> hashTable, TKey key)
         {
             var hashCode = key.GetHashCode();
             var bucketIndex = hashCode & (hashTable.Divisor - 1);
             ImmutableHashTree<TKey, TValue> tree = hashTable.Buckets[bucketIndex];
-            return tree.Search(key);
+
+            while (tree.Height != 0 && tree.HashCode != hashCode)
+            {
+                tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
+            }
+
+            if (tree.Height != 0 && (ReferenceEquals(tree.Key, key) || Equals(tree.Key, key)))
+            {
+                return tree.Value;
+            }
+
+            if (tree.Duplicates.Items.Length > 0)
+            {
+                foreach (var keyValue in tree.Duplicates.Items)
+                {
+                    if (ReferenceEquals(keyValue.Key, key) || Equals(keyValue.Key, key))
+                    {
+                        return keyValue.Value;
+                    }
+                }
+            }
+
+            return default(TValue);
         }
 
-        /// <summary>
-        /// Searches for a value using the given <paramref name="key"/>.
-        /// </summary>
-        /// <typeparam name="TValue">The type of the value.</typeparam>
-        /// <param name="hashTable">The target <see cref="ImmutableHashTable{TKey,TValue}"/> instance.</param>
-        /// <param name="key">The key for which to search for a value.</param>
-        /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
+        // Excluded from coverage since it is equal to the generic version.
+        [ExcludeFromCodeCoverage]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TValue Search<TValue>(this ImmutableHashTable<Type, TValue> hashTable, Type key)
+        internal static GetInstanceDelegate Search(this ImmutableHashTable<Type, GetInstanceDelegate> hashTable, Type key)
         {
             var hashCode = key.GetHashCode();
             var bucketIndex = hashCode & (hashTable.Divisor - 1);
-            ImmutableHashTree<Type, TValue> tree = hashTable.Buckets[bucketIndex];
-            return tree.Search(key);
+
+            ImmutableHashTree<Type, GetInstanceDelegate> tree = hashTable.Buckets[bucketIndex];
+
+            while (tree.Height != 0 && tree.HashCode != hashCode)
+            {
+                tree = hashCode < tree.HashCode ? tree.Left : tree.Right;
+            }
+
+            if (tree.Height != 0 && ReferenceEquals(tree.Key, key))
+            {
+                return tree.Value;
+            }
+
+            if (tree.Duplicates.Items.Length > 0)
+            {
+                foreach (var keyValue in tree.Duplicates.Items)
+                {
+                    if (ReferenceEquals(keyValue.Key, key))
+                    {
+                        return keyValue.Value;
+                    }
+                }
+            }
+
+            return default(GetInstanceDelegate);
         }
 
         /// <summary>
@@ -1775,6 +1904,13 @@ namespace LightInject
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
 
         /// <summary>
+        /// Gets or sets the function that determines the default service name. 
+        /// The default is to use the service registered without a service name as the default service.
+        /// </summary>
+        public Func<string[], string> DefaultServiceSelector { get; set; } = services => string.Empty;
+        
+
+        /// <summary>
         /// Gets or sets a value indicating whether property injection is enabled.
         /// </summary>
         /// <remarks>
@@ -1826,11 +1962,13 @@ namespace LightInject
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
         private readonly ServiceRegistry<Delegate> constructorDependencyFactories = new ServiceRegistry<Delegate>();
         private readonly ServiceRegistry<Delegate> propertyDependencyFactories = new ServiceRegistry<Delegate>();
+        
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
 
         private readonly object lockObject = new object();
         private readonly ContainerOptions options;
         private readonly Storage<object> constants = new Storage<object>();
+        private readonly Storage<ILifetime> disposableLifeTimes = new Storage<ILifetime>();
         private readonly Storage<DecoratorRegistration> decorators = new Storage<DecoratorRegistration>();
         private readonly Storage<ServiceOverride> overrides = new Storage<ServiceOverride>();
         private readonly Storage<FactoryRule> factoryRules = new Storage<FactoryRule>();
@@ -1871,42 +2009,40 @@ namespace LightInject
             var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
             CompositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()));
             CompositionRootExecutor = new CompositionRootExecutor(this, type => (ICompositionRoot)Activator.CreateInstance(type));
-            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor);
-            PropertyDependencySelector = options.EnablePropertyInjection 
-                ? (IPropertyDependencySelector) new PropertyDependencySelector(new PropertySelector())
+            ServiceNameProvider = new ServiceNameProvider();
+            PropertyDependencySelector = options.EnablePropertyInjection
+                ? (IPropertyDependencySelector)new PropertyDependencySelector(new PropertySelector())
                 : new PropertyDependencyDisabler();
+            GenericArgumentMapper = new GenericArgumentMapper();
+            AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor, GenericArgumentMapper);
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-#if NET45 || NET46
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
 
         private ServiceContainer(
-          ContainerOptions options,
-          ServiceRegistry<Delegate> constructorDependencyFactories,
-          ServiceRegistry<Delegate> propertyDependencyFactories,
-          ServiceRegistry<ServiceRegistration> availableServices,
-          Storage<DecoratorRegistration> decorators,
-          Storage<ServiceOverride> overrides,
-          Storage<FactoryRule> factoryRules,
-          Storage<Initializer> initializers)
-            : this(options)
+            ContainerOptions options,
+            ServiceRegistry<Delegate> constructorDependencyFactories,
+            ServiceRegistry<Delegate> propertyDependencyFactories,
+            ServiceRegistry<ServiceRegistration> availableServices,
+            Storage<DecoratorRegistration> decorators,
+            Storage<ServiceOverride> overrides,
+            Storage<FactoryRule> factoryRules,
+            Storage<Initializer> initializers)
         {
             this.options = options;
             this.constructorDependencyFactories = constructorDependencyFactories;
             this.propertyDependencyFactories = propertyDependencyFactories;
+            this.availableServices = availableServices;
             this.decorators = decorators;
             this.overrides = overrides;
             this.factoryRules = factoryRules;
             this.initializers = initializers;
-            foreach (var availableService in availableServices.Values.SelectMany(t => t.Values))
-            {
-                Register(availableService);
-            }
         }
 
         /// <summary>
@@ -1928,6 +2064,12 @@ namespace LightInject
         public ITypeExtractor CompositionRootTypeExtractor { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="IServiceNameProvider"/> that is responsible 
+        /// for providing a service name for a given service during assembly scanning.
+        /// </summary>
+        public IServiceNameProvider ServiceNameProvider { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="ICompositionRootExecutor"/> that is responsible
         /// for executing composition roots.
         /// </summary>
@@ -1946,10 +2088,16 @@ namespace LightInject
         public IConstructorSelector ConstructorSelector { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="IGenericArgumentMapper"/> that is responsible for
+        /// mapping generic arguments.
+        /// </summary>
+        public IGenericArgumentMapper GenericArgumentMapper { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET45 || NETSTANDARD11 || NET46
+#if NET452 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
@@ -1978,6 +2126,11 @@ namespace LightInject
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
+            if (serviceType.IsFunc() || serviceType.IsFuncWithParameters() || serviceType.IsLazy())
+            {
+                var returnType = serviceType.GenericTypeArguments.Last();                
+                return GetEmitMethod(returnType, serviceName) != null || availableServices.ContainsKey(serviceType);
+            }
             return GetEmitMethod(serviceType, serviceName) != null;
         }
 
@@ -1989,7 +2142,7 @@ namespace LightInject
         {
             return ScopeManagerProvider.GetScopeManager(this).BeginScope();
         }
-        
+
         /// <summary>
         /// Injects the property dependencies for a given <paramref name="instance"/>.
         /// </summary>
@@ -2033,8 +2186,7 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
         {
-            factoryRules.Add(new FactoryRule { CanCreateInstance = predicate, Factory = factory });
-            return this;
+            return RegisterFallback(predicate, factory, DefaultLifetime);
         }
 
         /// <summary>
@@ -2102,8 +2254,7 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister)
         {
-            AssemblyScanner.Scan(assembly, this, () => DefaultLifetime, shouldRegister);
-            return this;
+            return RegisterAssembly(assembly, () => DefaultLifetime, shouldRegister);                        
         }
 
         /// <summary>
@@ -2118,8 +2269,7 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory)
         {
-            AssemblyScanner.Scan(assembly, this, lifetimeFactory, (serviceType, implementingType) => true);
-            return this;
+            return RegisterAssembly(assembly, lifetimeFactory, (serviceType, implementingType) => true);
         }
 
         /// <summary>
@@ -2135,7 +2285,12 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
         {
-            AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister);
+            return RegisterAssembly(assembly, lifetimeFactory, shouldRegister, ServiceNameProvider.GetServiceName);
+        }
+
+        public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister, Func<Type,Type,string> serviceNameProvider)
+        {
+            AssemblyScanner.Scan(assembly, this, lifetimeFactory, shouldRegister, serviceNameProvider);
             return this;
         }
 
@@ -2164,7 +2319,7 @@ namespace LightInject
             {
                 var message =
                     $"Attempt to register a constructor dependency {typeof(TDependency)} after the first call to GetInstance." +
-                    $"This might lead to incorrect behaviour if a service with a {typeof(TDependency)} dependency has already been resolved";                              
+                    $"This might lead to incorrect behaviour if a service with a {typeof(TDependency)} dependency has already been resolved";
 
                 log.Warning(message);
             }
@@ -2175,7 +2330,7 @@ namespace LightInject
                 (s, e) => isLocked ? e : factory);
             return this;
         }
-      
+
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
         /// a implicitly registered service.
@@ -2200,7 +2355,7 @@ namespace LightInject
                 (s, e) => isLocked ? e : factory);
             return this;
         }
-       
+
         /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
         /// a implicitly registered service.
@@ -2214,7 +2369,7 @@ namespace LightInject
             {
                 var message =
                     $"Attempt to register a property dependency {typeof(TDependency)} after the first call to GetInstance." +
-                   $"This might lead to incorrect behaviour if a service with a {typeof(TDependency)} dependency has already been resolved";
+                    $"This might lead to incorrect behaviour if a service with a {typeof(TDependency)} dependency has already been resolved";
 
                 log.Warning(message);
             }
@@ -2226,7 +2381,7 @@ namespace LightInject
             return this;
         }
 
-#if NET45 || NETSTANDARD11 || NET46
+#if NET452 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -2319,10 +2474,10 @@ namespace LightInject
         public IServiceRegistry Override(Func<ServiceRegistration, bool> serviceSelector, Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory)
         {
             var serviceOverride = new ServiceOverride
-                                      {
-                                          CanOverride = serviceSelector,
-                                          ServiceRegistrationFactory = serviceRegistrationFactory
-                                      };
+            {
+                CanOverride = serviceSelector,
+                ServiceRegistrationFactory = serviceRegistrationFactory,
+            };
             overrides.Add(serviceOverride);
             return this;
         }
@@ -2857,14 +3012,12 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Disposes any services registered using the <see cref="PerContainerLifetime"/>.
+        /// Disposes any services registered using a disposable lifetime.
         /// </summary>
         public void Dispose()
         {
-            var disposableLifetimeInstances = availableServices.Values.SelectMany(t => t.Values)
-                .Where(sr => sr.Lifetime != null)
-                .Select(sr => sr.Lifetime)
-                .Where(lt => lt is IDisposable).Cast<IDisposable>();
+            var disposableLifetimeInstances = disposableLifeTimes.Items
+                .Where(lt => lt is IDisposable).Cast<IDisposable>().Reverse();
             foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
             {
                 disposableLifetimeInstance.Dispose();
@@ -2872,10 +3025,10 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Creates a clone of the current <see cref="IServiceContainer"/>.
+        /// Creates a clone of the current <see cref="ServiceContainer"/>.
         /// </summary>
-        /// <returns>A new <see cref="IServiceContainer"/> instance.</returns>
-        public IServiceContainer Clone()
+        /// <returns>A new <see cref="ServiceContainer"/> instance.</returns>
+        public ServiceContainer Clone()
         {
             return new ServiceContainer(
                 options,
@@ -2909,6 +3062,10 @@ namespace LightInject
 
         private static ILifetime CloneLifeTime(ILifetime lifetime)
         {
+            if (lifetime is ICloneableLifeTime cloneable)
+            {
+                return cloneable.Clone();
+            }
             return lifetime == null ? null : (ILifetime)Activator.CreateInstance(lifetime.GetType());
         }
 
@@ -2918,27 +3075,57 @@ namespace LightInject
             var constructorDependency =
                 constructionInfo.ConstructorDependencies.FirstOrDefault(
                     cd =>
-                    cd.ServiceType == decoratorRegistration.ServiceType
-                    || (cd.ServiceType.IsLazy()
-                        && cd.ServiceType.GetTypeInfo().GenericTypeArguments[0] == decoratorRegistration.ServiceType));
+                        cd.ServiceType == decoratorRegistration.ServiceType
+                        || (cd.ServiceType.IsLazy()
+                            && cd.ServiceType.GetTypeInfo().GenericTypeArguments[0] == decoratorRegistration.ServiceType));
             return constructorDependency;
         }
 
-        private static DecoratorRegistration CreateClosedGenericDecoratorRegistration(
+        private DecoratorRegistration CreateClosedGenericDecoratorRegistration(
             ServiceRegistration serviceRegistration, DecoratorRegistration openGenericDecorator)
         {
             Type implementingType = openGenericDecorator.ImplementingType;
-            Type[] genericTypeArguments = serviceRegistration.ServiceType.GenericTypeArguments;
-            Type closedGenericDecoratorType = implementingType.MakeGenericType(genericTypeArguments);
+            Type serviceType = serviceRegistration.ServiceType;
+            Type[] genericTypeArguments = serviceType.GenericTypeArguments;
+
+            if (!TryCreateClosedGenericDecoratorType(serviceType, implementingType,
+                out var closedGenericDecoratorType))
+            {
+                log.Info($"Skipping decorator [{implementingType.FullName}] since it is incompatible with the service type [{serviceType.FullName}]");
+                return null;
+            }
 
             var decoratorInfo = new DecoratorRegistration
             {
                 ServiceType = serviceRegistration.ServiceType,
                 ImplementingType = closedGenericDecoratorType,
                 CanDecorate = openGenericDecorator.CanDecorate,
-                Index = openGenericDecorator.Index
+                Index = openGenericDecorator.Index,
             };
             return decoratorInfo;
+        }
+
+        private bool TryCreateClosedGenericDecoratorType(Type serviceType, Type implementingType,
+            out Type closedGenericDecoratorType)
+        {
+            closedGenericDecoratorType = null;
+            var mapResult = GenericArgumentMapper.Map(serviceType, implementingType);
+            if (!mapResult.IsValid)
+            {
+                return false;
+            }
+
+            closedGenericDecoratorType = TryMakeGenericType(implementingType, mapResult.GetMappedArguments());
+            if (closedGenericDecoratorType == null)
+            {
+                return false;
+            }
+
+            if (!serviceType.GetTypeInfo().IsAssignableFrom(closedGenericDecoratorType.GetTypeInfo()))
+            {
+                return false;
+            }
+            return true;
         }
 
         private static Type TryMakeGenericType(Type implementingType, Type[] closedGenericArguments)
@@ -3013,15 +3200,13 @@ namespace LightInject
 
         private Delegate GetConstructorDependencyDelegate(Type type, string serviceName)
         {
-            Delegate dependencyDelegate;
-            GetConstructorDependencyFactories(type).TryGetValue(serviceName, out dependencyDelegate);
+            GetConstructorDependencyFactories(type).TryGetValue(serviceName, out Delegate dependencyDelegate);
             return dependencyDelegate;
         }
 
         private Delegate GetPropertyDependencyExpression(Type type, string serviceName)
         {
-            Delegate dependencyDelegate;
-            GetPropertyDependencyFactories(type).TryGetValue(serviceName, out dependencyDelegate);
+            GetPropertyDependencyFactories(type).TryGetValue(serviceName, out Delegate dependencyDelegate);
             return dependencyDelegate;
         }
 
@@ -3084,7 +3269,7 @@ namespace LightInject
             if (rule != null)
             {
                 emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
-                
+
                 RegisterEmitMethod(serviceType, serviceName, emitMethod);
             }
 
@@ -3123,14 +3308,20 @@ namespace LightInject
 
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
-            Action<IEmitter> emitMethod;
             var registrations = GetEmitMethods(serviceType);
-            registrations.TryGetValue(serviceName, out emitMethod);
-            if (emitMethod == null && serviceType.IsClosedGeneric())
+
+            if (string.IsNullOrWhiteSpace(serviceName))
             {
-                emitMethod = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (registrations.Count > 1)
+                {
+                    var serviceNames = registrations.Keys.OrderBy(k => k).ToArray();
+                    var defaultServiceName = string.Empty;
+                    serviceName = options.DefaultServiceSelector(serviceNames);                    
+                }
             }
 
+
+            registrations.TryGetValue(serviceName, out Action<IEmitter> emitMethod);
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
@@ -3138,7 +3329,7 @@ namespace LightInject
         {
             var emitMethod = ResolveEmitMethod(serviceRegistration);
             RegisterEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName, emitMethod);
-            
+
             return serviceRegistration;
         }
 
@@ -3152,7 +3343,7 @@ namespace LightInject
             if (isLocked)
             {
                 var message = $"Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.";
-                log.Warning(message);                                    
+                log.Warning(message);
                 return existingRegistration;
             }
 
@@ -3202,7 +3393,7 @@ namespace LightInject
                 registrations.AddRange(
                     openGenericDecorators.Select(
                         openGenericDecorator =>
-                        CreateClosedGenericDecoratorRegistration(serviceRegistration, openGenericDecorator)));
+                            CreateClosedGenericDecoratorRegistration(serviceRegistration, openGenericDecorator)).Where(dr => dr != null));
             }
 
             return registrations;
@@ -3223,7 +3414,7 @@ namespace LightInject
                     ImplementingType =
                         deferredDecorator.ImplementingTypeFactory(this, serviceRegistration),
                     CanDecorate = sr => true,
-                    Index = deferredDecorator.Index
+                    Index = deferredDecorator.Index,
                 };
                 registrations.Add(decoratorRegistration);
             }
@@ -3395,7 +3586,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private Func<T> CreateGenericDynamicMethodDelegate<T>(Func<object> del)
 
-        // ReSharper restore UnusedMember.Local
+            // ReSharper restore UnusedMember.Local
         {
             return () => (T)del();
         }
@@ -3474,7 +3665,7 @@ namespace LightInject
 
                 if (parameter.ParameterType == typeof(object[]))
                 {
-                   actions.Add(e => PushRuntimeArguments(e));
+                    actions.Add(e => PushRuntimeArguments(e));
                 }
             }
 
@@ -3525,25 +3716,39 @@ namespace LightInject
             }
             else if (serviceType.IsEnumerableOfT())
             {
-                emitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (emitter == null)
+                {
+                    emitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
+                }
             }
             else if (serviceType.IsArray)
             {
                 emitter = CreateEmitMethodForArrayServiceRequest(serviceType);
             }
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
             else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
-                emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (emitter == null)
+                {
+                    emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
+                }                
             }
-#endif
             else if (serviceType.IsListOfT())
             {
-                emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (emitter == null)
+                {
+                    emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                }
             }
             else if (serviceType.IsCollectionOfT())
             {
-                emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
+                if (emitter == null)
+                {
+                    emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                }
             }
             else if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
             {
@@ -3606,7 +3811,7 @@ namespace LightInject
                 ServiceType = serviceType,
                 ServiceName = serviceName,
                 FactoryExpression = rule.Factory,
-                Lifetime = CloneLifeTime(rule.LifeTime) ?? DefaultLifetime
+                Lifetime = CloneLifeTime(rule.LifeTime) ?? DefaultLifetime,
             };
             if (rule.LifeTime != null)
             {
@@ -3635,7 +3840,6 @@ namespace LightInject
                 ms.Emit(OpCodes.Call, closedGenericToListMethod);
             };
         }
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
 
         private Action<IEmitter> CreateEmitMethodForReadOnlyCollectionServiceRequest(Type serviceType)
         {
@@ -3652,10 +3856,13 @@ namespace LightInject
                 emitter.New(constructorInfo);
             };
         }
-#endif
 
         private void EnsureEmitMethodsForOpenGenericTypesAreCreated(Type actualServiceType)
         {
+            if (!actualServiceType.GetTypeInfo().IsGenericType)
+            {
+                return;
+            }
             var openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
             var openGenericServiceEmitters = GetAvailableServices(openGenericServiceType);
             foreach (var openGenericEmitterEntry in openGenericServiceEmitters.Keys)
@@ -3673,10 +3880,10 @@ namespace LightInject
             var constantIndex = constants.Add(getInstanceDelegate);
 
             return emitter =>
-                {
-                    emitter.PushConstant(constantIndex, funcType);
-                    emitter.New(lazyConstructor);
-                };
+            {
+                emitter.PushConstant(constantIndex, funcType);
+                emitter.New(lazyConstructor);
+            };
         }
 
         private ServiceRegistration GetOpenGenericServiceRegistration(Type openGenericServiceType, string serviceName)
@@ -3687,8 +3894,7 @@ namespace LightInject
                 return null;
             }
 
-            ServiceRegistration openGenericServiceRegistration;
-            services.TryGetValue(serviceName, out openGenericServiceRegistration);
+            services.TryGetValue(serviceName, out ServiceRegistration openGenericServiceRegistration);
             if (openGenericServiceRegistration == null && string.IsNullOrEmpty(serviceName) && services.Count == 1)
             {
                 return services.First().Value;
@@ -3708,11 +3914,12 @@ namespace LightInject
                 return null;
             }
 
-            Type[] closedGenericArguments = closedGenericServiceType.GetTypeInfo().GenericTypeArguments;
+            var mappingResult = GenericArgumentMapper.Map(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
+            var typeArguments = mappingResult.GetMappedArguments();
 
             Type closedGenericImplementingType = TryMakeGenericType(
                 openGenericServiceRegistration.ImplementingType,
-                closedGenericArguments);
+                typeArguments.ToArray());
 
             if (closedGenericImplementingType == null)
             {
@@ -3724,7 +3931,7 @@ namespace LightInject
                 ServiceType = closedGenericServiceType,
                 ImplementingType = closedGenericImplementingType,
                 ServiceName = serviceName,
-                Lifetime = CloneLifeTime(openGenericServiceRegistration.Lifetime) ?? DefaultLifetime
+                Lifetime = CloneLifeTime(openGenericServiceRegistration.Lifetime) ?? DefaultLifetime,
             };
             Register(serviceRegistration);
             return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
@@ -3733,20 +3940,21 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)
         {
             Type actualServiceType = TypeHelper.GetElementType(serviceType);
-            if (actualServiceType.GetTypeInfo().IsGenericType)
-            {
-                EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
-            }
-
+            
+            EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
+            
             List<Action<IEmitter>> emitMethods;
 
             if (options.EnableVariance)
             {
-                emitMethods = emitters.Where(kv => actualServiceType.GetTypeInfo().IsAssignableFrom(kv.Key.GetTypeInfo())).SelectMany(kv => kv.Value.Values).ToList();
+                emitMethods = emitters
+                    .Where(kv => actualServiceType.GetTypeInfo().IsAssignableFrom(kv.Key.GetTypeInfo()))
+                    .SelectMany(kv => kv.Value).OrderBy(kv => kv.Key).Select(kv => kv.Value)
+                    .ToList();                
             }
             else
             {
-                emitMethods = GetEmitMethods(actualServiceType).Values.ToList();
+                emitMethods = GetEmitMethods(actualServiceType).OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();                
             }
 
             if (dependencyStack.Count > 0 && emitMethods.Contains(dependencyStack.Peek()))
@@ -3764,7 +3972,7 @@ namespace LightInject
 
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
-            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1;
+            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1;           
         }
 
         private ConstructionInfo GetConstructionInfo(Registration registration)
@@ -3801,8 +4009,29 @@ namespace LightInject
             Ensure.IsNotNull(serviceType, "type");
             Ensure.IsNotNull(implementingType, "implementingType");
             Ensure.IsNotNull(serviceName, "serviceName");
+            EnsureConstructable(serviceType, implementingType);
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime ?? DefaultLifetime };
             Register(serviceRegistration);
+        }
+
+        private void EnsureConstructable(Type serviceType, Type implementingType)
+        {
+            if (implementingType.GetTypeInfo().ContainsGenericParameters)
+            {
+                try
+                {
+                    GenericArgumentMapper.Map(serviceType, implementingType).GetMappedArguments();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(implementingType), ex.Message);
+                }
+            }
+            else
+            if (!serviceType.GetTypeInfo().IsAssignableFrom(implementingType.GetTypeInfo()))
+            {
+                throw new ArgumentOutOfRangeException(nameof(implementingType), $"The implementing type {implementingType.FullName} is not assignable from {serviceType.FullName}.");
+            }
         }
 
         private Action<IEmitter> ResolveEmitMethod(ServiceRegistration serviceRegistration)
@@ -3821,8 +4050,8 @@ namespace LightInject
             {
                 Func<object> instanceDelegate =
                     () => WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod))();
-                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);
-                var instanceIndex = constants.Add(instance);
+                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);                                           
+                var instanceIndex = constants.Add(instance);    
                 emitter.PushConstant(instanceIndex, instance.GetType());
             }
             else
@@ -3837,8 +4066,17 @@ namespace LightInject
                 emitter.Call(LifetimeHelper.GetCurrentScopeMethod);
                 emitter.Call(getInstanceMethod);
             }
+            if (IsNotServiceFactory(serviceRegistration.ServiceType))
+            {
+                disposableLifeTimes.Add(serviceRegistration.Lifetime);
+            }
+
+            bool IsNotServiceFactory(Type serviceType)
+            {
+                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
+            }
         }
-      
+
         private int CreateScopeManagerIndex()
         {
             return constants.Add(ScopeManagerProvider.GetScopeManager(this));
@@ -3856,6 +4094,8 @@ namespace LightInject
 
         private GetInstanceDelegate CreateDefaultDelegate(Type serviceType, bool throwError)
         {
+            log.Info($"Compiling delegate for resolving service : {serviceType}");            
+           
             var instanceDelegate = CreateDelegate(serviceType, string.Empty, throwError);
             if (instanceDelegate == null)
             {
@@ -3868,6 +4108,7 @@ namespace LightInject
 
         private GetInstanceDelegate CreateNamedDelegate(Tuple<Type, string> key, bool throwError)
         {
+            log.Info($"Compiling delegate for resolving service : {key.Item1}, name: {key.Item2}");
             var instanceDelegate = CreateDelegate(key.Item1, key.Item2, throwError);
             if (instanceDelegate == null)
             {
@@ -3915,7 +4156,7 @@ namespace LightInject
                 ServiceType = serviceType,
                 ServiceName = serviceName,
                 Value = value,
-                Lifetime = new PerContainerLifetime()
+                Lifetime = new PerContainerLifetime(),
             };
             Register(serviceRegistration);
         }
@@ -3927,9 +4168,106 @@ namespace LightInject
                 ServiceType = typeof(TService),
                 FactoryExpression = factory,
                 ServiceName = serviceName,
-                Lifetime = lifetime ?? DefaultLifetime
+                Lifetime = lifetime ?? DefaultLifetime,
             };
             Register(serviceRegistration);
+        }
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
+        /// ensures that service instance ordering matches the ordering of the <paramref name="implementingTypes"/>. 
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingTypes">The implementing types.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifeTimeFactory)
+        {
+            return RegisterOrdered(serviceType, implementingTypes, lifeTimeFactory, i => i.ToString().PadLeft(3, '0'));
+        }
+
+        /// <summary>
+        /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
+        /// ensures that service instance ordering matches the ordering of the <paramref name="implementingTypes"/>. 
+        /// </summary>
+        /// <param name="serviceType">The service type to register.</param>
+        /// <param name="implementingTypes">The implementing types.</param>
+        /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
+        /// <param name="serviceNameFormatter">The function used to format the service name based on current registration index.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes,
+            Func<Type, ILifetime> lifeTimeFactory, Func<int, string> serviceNameFormatter)
+        {
+            var offset = GetAvailableServices(serviceType).Count;
+            foreach (var implementingType in implementingTypes)
+            {
+                offset++;                
+                Register(serviceType, implementingType, serviceNameFormatter(offset), lifeTimeFactory(implementingType));
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Compiles services that matches the given <paramref name="predicate"/>.
+        /// </summary>
+        /// <param name="predicate">The predicate that determines if a service should be compiled.</param>
+        public void Compile(Func<ServiceRegistration, bool> predicate)
+        {            
+            var rootServices = AvailableServices.Where(predicate).ToArray();
+            foreach (var rootService in rootServices)
+            {
+                if (rootService.ServiceType.GetTypeInfo().IsGenericTypeDefinition)
+                {
+                    log.Warning($"Unable to precompile open generic type '{GetPrettyName(rootService.ServiceType)}'");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(rootService.ServiceName))
+                {
+                    CreateDefaultDelegate(rootService.ServiceType, true);                    
+                }
+                else
+                {
+                    CreateNamedDelegate(Tuple.Create(rootService.ServiceType, rootService.ServiceName), true);
+                }
+            }
+
+            string GetPrettyName(Type type)
+            {
+                if (type.GetTypeInfo().IsGenericType)
+                {
+                    return $"{type.FullName.Substring(0, type.FullName.LastIndexOf("`", StringComparison.OrdinalIgnoreCase))}<{string.Join(", ", type.GetTypeInfo().GenericTypeParameters.Select(GetPrettyName))}>";
+                }
+
+                return type.Name;
+            }
+        }
+
+        /// <summary>
+        /// Compiles all registered services. 
+        /// </summary>    
+        public void Compile()
+        {
+            Compile(sr => true);
+        }
+
+        /// <summary>
+        /// Compiles the service identified by <typeparamref name="TService"/>
+        /// and optionally the <paramref name="serviceName"/>.
+        /// </summary>
+        /// <typeparam name="TService">The service type to be compiled.</typeparam>
+        /// <param name="serviceType">The service type to be compiled.</param>
+        public void Compile<TService>(string serviceName = null)
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                CreateDefaultDelegate(typeof(TService), true);
+            }
+            else
+            {
+                CreateNamedDelegate(Tuple.Create(typeof(TService), serviceName), true);
+            }
         }
 
         private class Storage<T>
@@ -4008,15 +4346,7 @@ namespace LightInject
                 return dynamicMethod.CreateDelegate(delegateType);
             }
 
-#if NET40
-            private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
-            {
-                dynamicMethod = new DynamicMethod(
-                        "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).Module, true);
-                emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
-            }
-#endif
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || NET46
+#if NET452 || NET46 || NETCOREAPP2_0
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
@@ -4024,7 +4354,7 @@ namespace LightInject
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
-#if PCL_111
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);
@@ -4116,7 +4446,7 @@ namespace LightInject
         }
     }
 
-#if NET45 || NETSTANDARD13 || NET46
+#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
 
     /// <summary>
     /// Manages a set of <see cref="Scope"/> instances.
@@ -4139,7 +4469,7 @@ namespace LightInject
         /// </summary>
         public override Scope CurrentScope
         {
-            get { return currentScope.Value; }
+            get { return GetThisScopeOrFirstValidAncestor(currentScope.Value); }
             set { currentScope.Value = value; }
         }               
     }
@@ -4187,463 +4517,7 @@ namespace LightInject
         }
     }
 
-#if PCL_111
-    /// <summary>
-    /// Represents the MSIL instructions.
-    /// </summary>
-    public enum OpCode
-	{
-        /// <summary>
-        /// Adds two values and pushes the result onto the evaluation stack.
-        /// </summary>
-        Add,
-
-        /// <summary>
-        /// Attempts to cast an object passed by reference to the specified class.
-        /// </summary>
-        Castclass,
-
-        /// <summary>
-        /// Converts the boxed representation of a type specified in the instruction to its unboxed form.
-        /// </summary>
-        Unbox_Any,
-
-        /// <summary>
-        /// Loads the element containing an object reference at a specified array index 
-        /// onto the top of the evaluation stack as type O (object reference).
-        /// </summary>
-		Ldelem_Ref,
-
-        /// <summary>
-        /// Loads an argument (referenced by a specified index value) onto the stack.
-        /// </summary>
-        Ldarg,
-       
-        /// <summary>
-        /// Loads the argument at index 0 onto the evaluation stack.
-        /// </summary>
-        Ldarg_0,
-
-        /// <summary>
-        /// Loads the argument at index 1 onto the evaluation stack.
-        /// </summary>
-        Ldarg_1,
-
-        /// <summary>
-        /// Loads the argument at index 2 onto the evaluation stack.
-        /// </summary>
-        Ldarg_2,
-
-        /// <summary>
-        /// Loads the argument at index 3 onto the evaluation stack.
-        /// </summary>
-        Ldarg_3,
-
-        /// <summary>
-        /// Loads the argument (referenced by a specified short form index) onto the evaluation stack.
-        /// </summary>
-        Ldarg_S,
-
-        /// <summary>
-        /// Pushes the number of elements of a zero-based, one-dimensional array onto the evaluation stack.
-        /// </summary>
-		Ldlen,
-
-        /// <summary>
-        /// Converts the value on top of the evaluation stack to int32.
-        /// </summary>
-        Conv_I4,
-
-        /// <summary>
-        /// Subtracts one value from another and pushes the result onto the evaluation stack.
-        /// </summary>
-        Sub,
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack 
-        /// and stores it in a the local variable list at a specified index.
-        /// </summary>
-        Stloc,
-
-        /// <summary>
-        /// Loads the local variable at a specific index onto the evaluation stack.
-        /// </summary>
-		Ldloc,
-
-        /// <summary>
-        /// Pushes a supplied value of type int32 onto the evaluation stack as an int32.
-        /// </summary>
-		Ldc_I4,
-
-        /// <summary>
-        /// Calls a late-bound method on an object, pushing the return value onto the evaluation stack.
-        /// </summary>
-        Callvirt,
-
-        /// <summary>
-        /// Creates a new object or a new instance of a value type, pushing an object reference (type O) onto the evaluation stack.
-        /// </summary>
-        Newobj,
-
-        /// <summary>
-        /// Loads the local variable at index 0 onto the evaluation stack.
-        /// </summary>
-		Ldloc_0,
-
-        /// <summary>
-        /// Loads the local variable at index 1 onto the evaluation stack.
-        /// </summary>
-        Ldloc_1,
-
-        /// <summary>
-        /// Loads the local variable at index 2 onto the evaluation stack.
-        /// </summary>
-		Ldloc_2,
-
-        /// <summary>
-        /// Loads the local variable at index 3 onto the evaluation stack.
-        /// </summary>
-		Ldloc_3,
-
-        /// <summary>
-        /// Loads the local variable at a specific index onto the evaluation stack, short form.
-        /// </summary>
-		Ldloc_S,
-
-        /// <summary>
-        /// Calls the method indicated by the passed method descriptor.
-        /// </summary>
-		Call,
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 0.
-        /// </summary>
-		Stloc_0,
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 1.
-        /// </summary>
-		Stloc_1,
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 2.
-        /// </summary>
-        Stloc_2,
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 3.
-        /// </summary>
-		Stloc_3,
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index (short form).
-        /// </summary>
-		Stloc_S,
-
-        /// <summary>
-        /// Pushes the integer value of 0 onto the evaluation stack as an int32.
-        /// </summary>
-        Ldc_I4_0,
-
-        /// <summary>
-        /// Pushes the integer value of 1 onto the evaluation stack as an int32.
-        /// </summary>
-		Ldc_I4_1,
-
-        /// <summary>
-        /// Pushes the integer value of 2 onto the evaluation stack as an int32.
-        /// </summary>
-		Ldc_I4_2,
-
-        /// <summary>
-        /// Pushes the integer value of 3 onto the evaluation stack as an int32.
-        /// </summary>
-        Ldc_I4_3,
-
-        /// <summary>
-        /// Pushes the integer value of 4 onto the evaluation stack as an int32.
-        /// </summary>
-		Ldc_I4_4,
-
-        /// <summary>
-        /// Pushes the integer value of 5 onto the evaluation stack as an int32.
-        /// </summary>
-        Ldc_I4_5,
-
-        /// <summary>
-        /// Pushes the integer value of 6 onto the evaluation stack as an int32.
-        /// </summary>
-		Ldc_I4_6,
-
-        /// <summary>
-        /// Pushes the integer value of 7 onto the evaluation stack as an int32.
-        /// </summary>
-        Ldc_I4_7,
-
-        /// <summary>
-        /// Pushes the integer value of 8 onto the evaluation stack as an int32.
-        /// </summary>
-		Ldc_I4_8,
-
-        /// <summary>
-        /// Pushes the supplied int8 value onto the evaluation stack as an int32, short form.
-        /// </summary>
-        Ldc_I4_S,
-
-        /// <summary>
-        /// Returns from the current method, pushing a return value (if present) from the callee's evaluation stack onto the caller's evaluation stack.
-        /// </summary>
-        Ret,
-
-        /// <summary>
-        /// Pushes an object reference to a new zero-based, one-dimensional array whose elements are of a specific type onto the evaluation stack.
-        /// </summary>
-		Newarr,
-
-        /// <summary>
-        /// Replaces the array element at a given index with the value on the evaluation stack, whose type is specified in the instruction.
-        /// </summary>
-		Stelem,
-
-        /// <summary>
-        /// Converts a value type to an object reference (type O).
-        /// </summary>
-		Box,
-
-        /// <summary>
-        /// Pushes a new object reference to a string literal stored in the metadata.
-        /// </summary>
-        Ldstr
-    }
-
-    /// <summary>
-    /// Provides field representations of the Microsoft Intermediate Language (MSIL) instructions.
-    /// </summary>
-    public static class OpCodes
-	{
-        /// <summary>
-        /// Adds two values and pushes the result onto the evaluation stack.
-        /// </summary>
-        public static OpCode Add = OpCode.Add;
-        
-        /// <summary>
-        /// Attempts to cast an object passed by reference to the specified class.
-        /// </summary>
-        public static OpCode Castclass = OpCode.Castclass;
-
-        /// <summary>
-        /// Converts the boxed representation of a type specified in the instruction to its unboxed form.
-        /// </summary>
-        public static OpCode Unbox_Any = OpCode.Unbox_Any;
-
-        /// <summary>
-        /// Loads the element containing an object reference at a specified array index 
-        /// onto the top of the evaluation stack as type O (object reference).
-        /// </summary>
-		public static OpCode Ldelem_Ref = OpCode.Ldelem_Ref;
-
-        /// <summary>
-        /// Loads an argument (referenced by a specified index value) onto the stack.
-        /// </summary>
-        public static OpCode Ldarg = OpCode.Ldarg;
-
-        /// <summary>
-        /// Loads the argument at index 0 onto the evaluation stack.
-        /// </summary>
-        public static OpCode Ldarg_0 = OpCode.Ldarg_0;
-
-        /// <summary>
-        /// Loads the argument at index 1 onto the evaluation stack.
-        /// </summary>
-		public static OpCode Ldarg_1 = OpCode.Ldarg_1;
-
-        /// <summary>
-        /// Loads the argument at index 2 onto the evaluation stack.
-        /// </summary>
-		public static OpCode Ldarg_2 = OpCode.Ldarg_2;
-
-        /// <summary>
-        /// Loads the argument at index 3 onto the evaluation stack.
-        /// </summary>
-		public static OpCode Ldarg_3 = OpCode.Ldarg_3;
-
-        /// <summary>
-        /// Loads the argument (referenced by a specified short form index) onto the evaluation stack.
-        /// </summary>
-		public static OpCode Ldarg_S = OpCode.Ldarg_S;
-
-        /// <summary>
-        /// Pushes the number of elements of a zero-based, one-dimensional array onto the evaluation stack.
-        /// </summary>
-		public static OpCode Ldlen = OpCode.Ldlen;
-
-        /// <summary>
-        /// Converts the value on top of the evaluation stack to int32.
-        /// </summary>
-		public static OpCode Conv_I4 = OpCode.Conv_I4;
-
-        /// <summary>
-        /// Subtracts one value from another and pushes the result onto the evaluation stack.
-        /// </summary>
-		public static OpCode Sub = OpCode.Sub;
-
-        /// <summary>
-        /// Pushes a supplied value of type int32 onto the evaluation stack as an int32.
-        /// </summary>
-		public static OpCode Ldc_I4 = OpCode.Ldc_I4;
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack 
-        /// and stores it in a the local variable list at a specified index.
-        /// </summary>
-		public static OpCode Stloc = OpCode.Stloc;
-
-        /// <summary>
-        /// Loads the local variable at a specific index onto the evaluation stack.
-        /// </summary>
-        public static OpCode Ldloc = OpCode.Ldloc;
-
-        /// <summary>
-        /// Calls a late-bound method on an object, pushing the return value onto the evaluation stack.
-        /// </summary>
-		public static OpCode Callvirt = OpCode.Callvirt;
-
-        /// <summary>
-        /// Creates a new object or a new instance of a value type, pushing an object reference (type O) onto the evaluation stack.
-        /// </summary>
-        public static OpCode Newobj = OpCode.Newobj;
-
-        /// <summary>
-        /// Loads the local variable at index 0 onto the evaluation stack.
-        /// </summary>
-		public static OpCode Ldloc_0 = OpCode.Ldloc_0;
-
-        /// <summary>
-        /// Loads the local variable at index 1 onto the evaluation stack.
-        /// </summary>
-        public static OpCode Ldloc_1 = OpCode.Ldloc_1;
-
-        /// <summary>
-        /// Loads the local variable at index 2 onto the evaluation stack.
-        /// </summary>
-		public static OpCode Ldloc_2 = OpCode.Ldloc_2;
-
-        /// <summary>
-        /// Loads the local variable at index 3 onto the evaluation stack.
-        /// </summary>
-        public static OpCode Ldloc_3 = OpCode.Ldloc_3;
-
-        /// <summary>
-        /// Loads the local variable at a specific index onto the evaluation stack, short form.
-        /// </summary>
-		public static OpCode Ldloc_S = OpCode.Ldloc_S;
-
-        /// <summary>
-        /// Calls the method indicated by the passed method descriptor.
-        /// </summary>
-		public static OpCode Call = OpCode.Call;
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 0.
-        /// </summary>
-		public static OpCode Stloc_0 = OpCode.Stloc_0;
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 1.
-        /// </summary>
-        public static OpCode Stloc_1 = OpCode.Stloc_1;
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 2.
-        /// </summary>
-        public static OpCode Stloc_2 = OpCode.Stloc_2;
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index 3.
-        /// </summary>
-        public static OpCode Stloc_3 = OpCode.Stloc_3;
-
-        /// <summary>
-        /// Pops the current value from the top of the evaluation stack and stores it in a the local variable list at index (short form).
-        /// </summary>
-        public static OpCode Stloc_S = OpCode.Stloc_S;
-
-        /// <summary>
-        /// Pushes the integer value of 0 onto the evaluation stack as an int32.
-        /// </summary>
-		public static OpCode Ldc_I4_0 = OpCode.Ldc_I4_0;
-
-        /// <summary>
-        /// Pushes the integer value of 1 onto the evaluation stack as an int32.
-        /// </summary>
-        public static OpCode Ldc_I4_1 = OpCode.Ldc_I4_1;
-
-        /// <summary>
-        /// Pushes the integer value of 2 onto the evaluation stack as an int32.
-        /// </summary>
-        public static OpCode Ldc_I4_2 = OpCode.Ldc_I4_2;
-
-        /// <summary>
-        /// Pushes the integer value of 3 onto the evaluation stack as an int32.
-        /// </summary>
-        public static OpCode Ldc_I4_3 = OpCode.Ldc_I4_3;
-
-        /// <summary>
-        /// Pushes the integer value of 4 onto the evaluation stack as an int32.
-        /// </summary>
-        public static OpCode Ldc_I4_4 = OpCode.Ldc_I4_4;
-
-        /// <summary>
-        /// Pushes the integer value of 5 onto the evaluation stack as an int32.
-        /// </summary>
-        public static OpCode Ldc_I4_5 = OpCode.Ldc_I4_5;
-
-        /// <summary>
-        /// Pushes the integer value of 6 onto the evaluation stack as an int32.
-        /// </summary>
-        public static OpCode Ldc_I4_6 = OpCode.Ldc_I4_6;
-
-        /// <summary>
-        /// Pushes the integer value of 7 onto the evaluation stack as an int32.
-        /// </summary>
-        public static OpCode Ldc_I4_7 = OpCode.Ldc_I4_7;
-
-        /// <summary>
-        /// Pushes the integer value of 8 onto the evaluation stack as an int32.
-        /// </summary>
-        public static OpCode Ldc_I4_8 = OpCode.Ldc_I4_8;
-
-        /// <summary>
-        /// Pushes the supplied int8 value onto the evaluation stack as an int32, short form.
-        /// </summary>
-        public static OpCode Ldc_I4_S = OpCode.Ldc_I4_S;
-
-        /// <summary>
-        /// Pushes an object reference to a new zero-based, one-dimensional array whose elements are of a specific type onto the evaluation stack.
-        /// </summary>
-		public static OpCode Newarr = OpCode.Newarr;
-
-        /// <summary>
-        /// Replaces the array element at a given index with the value on the evaluation stack, whose type is specified in the instruction.
-        /// </summary>
-        public static OpCode Stelem = OpCode.Stelem;
-
-        /// <summary>
-        /// Converts a value type to an object reference (type O).
-        /// </summary>
-        public static OpCode Box = OpCode.Box;
-
-        /// <summary>
-        /// Returns from the current method, pushing a return value (if present) from the callee's evaluation stack onto the caller's evaluation stack.
-        /// </summary>
-		public static OpCode Ret = OpCode.Ret;
-
-        /// <summary>
-        /// Pushes a new object reference to a string literal stored in the metadata.
-        /// </summary>
-		public static OpCode Ldstr = OpCode.Ldstr;
-
-	}
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
     
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
@@ -5231,16 +5105,16 @@ namespace LightInject
         {
             return
                 constructor.GetParameters()
-                           .OrderBy(p => p.Position)
-                           .Select(
-                               p =>
-                               new ConstructorDependency
-                                   {
-                                       ServiceName = string.Empty,
-                                       ServiceType = p.ParameterType,
-                                       Parameter = p,
-                                       IsRequired = true
-                                   });
+                    .OrderBy(p => p.Position)
+                    .Select(
+                        p =>
+                            new ConstructorDependency
+                            {
+                                ServiceName = string.Empty,
+                                ServiceType = p.ParameterType,
+                                Parameter = p,
+                                IsRequired = true,
+                            });
         }
     }
 
@@ -5328,8 +5202,10 @@ namespace LightInject
             }
 
             var implementingType = registration.ImplementingType;
-            var constructionInfo = new ConstructionInfo();
-            constructionInfo.ImplementingType = implementingType;
+            var constructionInfo = new ConstructionInfo
+            {
+                ImplementingType = implementingType
+            };
             constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
             constructionInfo.Constructor = constructorSelector.Execute(implementingType);
             constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructionInfo.Constructor));
@@ -5524,8 +5400,7 @@ namespace LightInject
         /// <param name="obj">The <see cref="T:System.Object"/> to compare with the current <see cref="T:System.Object"/>. </param><filterpriority>2</filterpriority>
         public override bool Equals(object obj)
         {
-            var other = obj as ServiceRegistration;
-            if (other == null)
+            if (!(obj is ServiceRegistration other))
             {
                 return false;
             }
@@ -5542,6 +5417,68 @@ namespace LightInject
         {
             var lifeTime = Lifetime?.ToString() ?? "Transient";
             return $"ServiceType: '{ServiceType}', ServiceName: '{ServiceName}', ImplementingType: '{ImplementingType}', Lifetime: '{lifeTime}'";
+        }
+    }
+    
+    /// <summary>
+    /// Represents the result from mapping generic arguments.
+    /// </summary>
+    public class GenericMappingResult
+    {
+        private readonly string[] genericParameterNames;
+        private readonly IDictionary<string, Type> genericArgumentMap;
+        private readonly Type genericServiceType;
+        private readonly Type openGenericImplementingType;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenericMappingResult"/> class.
+        /// </summary>
+        /// <param name="genericParameterNames">The name of the generic parameters found in the <paramref name="openGenericImplementingType"/>.</param>
+        /// <param name="genericArgumentMap">A <see cref="IDictionary{TKey,TValue}"/> that contains the mapping
+        /// between a parameter name and the corresponding parameter or argument from the <paramref name="genericServiceType"/>.</param>
+        /// <param name="genericServiceType">The generic type containing the arguments/parameters to be mapped to the generic arguments/parameters of the <paramref name="openGenericImplementingType"/>.</param>
+        /// <param name="openGenericImplementingType">The open generic implementing type.</param>
+        internal GenericMappingResult(string[] genericParameterNames, IDictionary<string, Type> genericArgumentMap, Type genericServiceType, Type openGenericImplementingType)
+        {
+            this.genericParameterNames = genericParameterNames;
+            this.genericArgumentMap = genericArgumentMap;
+            this.genericServiceType = genericServiceType;
+            this.openGenericImplementingType = openGenericImplementingType;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="GenericMappingResult"/> is valid.
+        /// </summary>
+        public bool IsValid
+        {
+            get
+            {
+                if (!genericServiceType.GetTypeInfo().IsGenericType && openGenericImplementingType.GetTypeInfo().ContainsGenericParameters)
+                {
+                    return false;
+                }
+
+                return genericParameterNames.All(n => genericArgumentMap.ContainsKey(n));
+            }
+        }
+
+        /// <summary>
+        /// Gets a list of the mapped arguments/parameters.
+        /// In the case of an closed generic service, this list can be used to
+        /// create a new generic type from the open generic implementing type.
+        /// </summary>
+        /// <returns>A list of the mapped arguments/parameters.</returns>
+        public Type[] GetMappedArguments()
+        {
+            var missingParameters = genericParameterNames.Where(n => !genericArgumentMap.ContainsKey(n)).ToArray();
+            if (missingParameters.Any())
+            {
+                var missingParametersString = missingParameters.Aggregate((current, next) => current + "," + next);
+                string message = $"The generic parameter(s) {missingParametersString} found in type {openGenericImplementingType.FullName} cannot be mapped from {genericServiceType.FullName}";
+                throw new InvalidOperationException(message);
+            }
+
+            return genericParameterNames.Select(parameterName => genericArgumentMap[parameterName]).ToArray();
         }
     }
 
@@ -5699,7 +5636,7 @@ namespace LightInject
     /// <summary>
     /// Ensures that only one instance of a given service can exist within the current <see cref="IServiceContainer"/>.
     /// </summary>
-    public class PerContainerLifetime : ILifetime, IDisposable
+    public class PerContainerLifetime : ILifetime, IDisposable, ICloneableLifeTime
     {
         private readonly object syncRoot = new object();
         private volatile object singleton;
@@ -5733,18 +5670,22 @@ namespace LightInject
         /// </summary>
         public void Dispose()
         {
-            var disposable = singleton as IDisposable;
-            if (disposable != null)
+            if (singleton is IDisposable disposable)
             {
                 disposable.Dispose();
             }
+        }
+
+        public ILifetime Clone()
+        {
+            return new PerContainerLifetime();
         }
     }
 
     /// <summary>
     /// Ensures that a new instance is created for each request in addition to tracking disposable instances.
     /// </summary>
-    public class PerRequestLifeTime : ILifetime
+    public class PerRequestLifeTime : ILifetime, ICloneableLifeTime
     {
         /// <summary>
         /// Returns a service instance according to the specific lifetime characteristics.
@@ -5755,8 +5696,7 @@ namespace LightInject
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
             var instance = createInstance();
-            var disposable = instance as IDisposable;
-            if (disposable != null)
+            if (instance is IDisposable disposable)
             {
                 TrackInstance(scope, disposable);
             }
@@ -5773,6 +5713,11 @@ namespace LightInject
 
             scope.TrackInstance(disposable);
         }
+
+        public ILifetime Clone()
+        {
+            return new PerRequestLifeTime();
+        }
     }
 
     /// <summary>
@@ -5782,7 +5727,7 @@ namespace LightInject
     /// If the service instance implements <see cref="IDisposable"/>,
     /// it will be disposed when the <see cref="Scope"/> ends.
     /// </remarks>
-    public class PerScopeLifetime : ILifetime
+    public class PerScopeLifetime : ILifetime, ICloneableLifeTime
     {
         private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
 
@@ -5805,8 +5750,7 @@ namespace LightInject
 
         private static void RegisterForDisposal(Scope scope, object instance)
         {
-            var disposable = instance as IDisposable;
-            if (disposable != null)
+            if (instance is IDisposable disposable)
             {
                 scope.TrackInstance(disposable);
             }
@@ -5825,8 +5769,12 @@ namespace LightInject
         {
             var scope = (Scope)sender;
             scope.Completed -= OnScopeCompleted;
-            object removedInstance;
-            instances.TryRemove(scope, out removedInstance);
+            instances.TryRemove(scope, out object removedInstance);
+        }
+
+        public ILifetime Clone()
+        {
+            return new PerScopeLifetime();
         }
     }
 
@@ -5843,7 +5791,7 @@ namespace LightInject
         {
             ServiceFactory = serviceFactory;
         }
-        
+
         /// <summary>
         /// Gets or sets the current <see cref="Scope"/>.
         /// </summary>
@@ -5861,6 +5809,7 @@ namespace LightInject
         public Scope BeginScope()
         {
             var currentScope = CurrentScope;
+
             var scope = new Scope(this, currentScope);
             if (currentScope != null)
             {
@@ -5882,18 +5831,40 @@ namespace LightInject
                 throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
             }
 
-            if (!ReferenceEquals(CurrentScope, scope))
+            Scope parentScope = scope.ParentScope;
+
+            // Only update the current scope if the scope being 
+            // ended is the current scope.         
+            if (ReferenceEquals(CurrentScope, scope))
             {
-                throw new InvalidOperationException("Attempt to end a scope that is currently not the current scope.");
+                CurrentScope = parentScope;
             }
 
-            var currentScope = scope.ParentScope;
-            if (currentScope != null)
+            // What to do with the scope reference on the other thread?
+            if (parentScope != null)
             {
-                currentScope.ChildScope = null;
+                parentScope.ChildScope = null;
+            }
+        }
+
+        /// <summary>
+        /// Ensures that we return a valid scope.
+        /// </summary>
+        /// <param name="scope">The scope to be validated.</param>
+        /// <returns>The given <paramref name="scope"/> or the first valid ancestor.</returns>
+        protected Scope GetThisScopeOrFirstValidAncestor(Scope scope)
+        {
+            // The scope could possible been disposed on another thread
+            // or logical thread context.
+            while (scope != null && scope.IsDisposed)
+            {
+                scope = scope.ParentScope;
             }
 
-            CurrentScope = currentScope;
+            // Update the current scope so that the previous current 
+            // scope can be garbage collected.
+            CurrentScope = scope;
+            return scope;
         }
     }
 
@@ -5918,7 +5889,7 @@ namespace LightInject
         /// </summary>
         public override Scope CurrentScope
         {
-            get { return threadLocalScope.Value; }
+            get { return GetThisScopeOrFirstValidAncestor(threadLocalScope.Value); }
             set { threadLocalScope.Value = value; }
         }
     }
@@ -5928,10 +5899,10 @@ namespace LightInject
     /// </summary>
     public class Scope : IServiceFactory, IDisposable
     {
-        private readonly IList<IDisposable> disposableObjects = new List<IDisposable>();
-
+        private readonly object disposableObjectsLock = new object();
+        private readonly HashSet<IDisposable> disposableObjects = new HashSet<IDisposable>(ReferenceEqualityComparer<IDisposable>.Default);
         private readonly IScopeManager scopeManager;
-        private readonly IServiceFactory serviceFactory;
+        private readonly IServiceFactory serviceFactory;        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
@@ -5939,11 +5910,13 @@ namespace LightInject
         /// <param name="scopeManager">The <see cref="scopeManager"/> that manages this <see cref="Scope"/>.</param>
         /// <param name="parentScope">The parent <see cref="Scope"/>.</param>
         public Scope(IScopeManager scopeManager, Scope parentScope)
-        {
+        {            
             this.scopeManager = scopeManager;
             serviceFactory = scopeManager.ServiceFactory;
             ParentScope = parentScope;
         }
+
+        public bool IsDisposed { get; set; }
 
         /// <summary>
         /// Raised when the <see cref="Scope"/> is completed.
@@ -5964,10 +5937,13 @@ namespace LightInject
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
         /// </summary>
         /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
-        public void TrackInstance(IDisposable disposable)
+        public virtual void TrackInstance(IDisposable disposable)
         {
-            disposableObjects.Add(disposable);
-        }
+            lock (disposableObjectsLock)
+            {
+                disposableObjects.Add(disposable);
+            }
+        }        
 
         /// <summary>
         /// Disposes all instances tracked by this scope.
@@ -5976,15 +5952,16 @@ namespace LightInject
         {
             DisposeTrackedInstances();
             OnCompleted();
+            IsDisposed = true;
         }
-      
+
         /// <summary>
         /// Starts a new <see cref="Scope"/>.
         /// </summary>
         /// <returns><see cref="Scope"/></returns>
         public Scope BeginScope()
         {
-            return serviceFactory.BeginScope();            
+            return serviceFactory.BeginScope();
         }
 
         /// <summary>
@@ -5994,7 +5971,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
         {
-            return WithThisScope(() => serviceFactory.GetInstance(serviceType));            
+            return WithThisScope(() => serviceFactory.GetInstance(serviceType));
         }
 
         /// <summary>
@@ -6016,7 +5993,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, object[] arguments)
         {
-            return WithThisScope(() => serviceFactory.GetInstance(serviceType, arguments));            
+            return WithThisScope(() => serviceFactory.GetInstance(serviceType, arguments));
         }
 
         /// <summary>
@@ -6088,7 +6065,7 @@ namespace LightInject
 
         private void DisposeTrackedInstances()
         {
-            foreach (var disposableObject in disposableObjects)
+            foreach (var disposableObject in disposableObjects.Reverse())
             {
                 disposableObject.Dispose();
             }
@@ -6099,6 +6076,22 @@ namespace LightInject
             scopeManager.EndScope(this);
             var completedHandler = Completed;
             completedHandler?.Invoke(this, new EventArgs());
+        }
+
+        private class ReferenceEqualityComparer<T> : IEqualityComparer<T>
+        {
+            public static readonly ReferenceEqualityComparer<T> Default
+                = new ReferenceEqualityComparer<T>(); 
+
+            public bool Equals(T x, T y)
+            {
+                return ReferenceEquals(x, y);
+            }
+
+            public int GetHashCode(T obj)
+            {
+                return obj.GetHashCode();
+            }
         }
     }
 
@@ -6139,7 +6132,7 @@ namespace LightInject
         public CompositionRootTypeAttribute[] GetAttributes(Assembly assembly)
         {
             return assembly.GetCustomAttributes(typeof(CompositionRootTypeAttribute))
-                       .Cast<CompositionRootTypeAttribute>().ToArray();
+                .Cast<CompositionRootTypeAttribute>().ToArray();
         }
     }
 
@@ -6178,7 +6171,7 @@ namespace LightInject
 
             return
                 assembly.DefinedTypes.Where(
-                    t => !t.IsAbstract && typeof(ICompositionRoot).GetTypeInfo().IsAssignableFrom(t))
+                        t => !t.IsAbstract && typeof(ICompositionRoot).GetTypeInfo().IsAssignableFrom(t))
                     .Cast<Type>()
                     .ToArray();
         }
@@ -6235,14 +6228,12 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-#if NET45 || NET46
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(MostResolvableConstructorSelector));
-            InternalTypes.Add(typeof(PerContainerLifetime));
-            InternalTypes.Add(typeof(PerContainerLifetime));
             InternalTypes.Add(typeof(PerRequestLifeTime));
             InternalTypes.Add(typeof(PropertySelector));
             InternalTypes.Add(typeof(AssemblyScanner));
@@ -6264,12 +6255,12 @@ namespace LightInject
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));
-#if NET45 || NET46 || NETSTANDARD13
+#if NET452 || NET46 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETCOREAPP2_0
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManager));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif
-#if PCL_111
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
@@ -6293,10 +6284,10 @@ namespace LightInject
         private static bool IsConcreteType(TypeInfo typeInfo)
         {
             return typeInfo.IsClass
-                        && !typeInfo.IsNestedPrivate
-                        && !typeInfo.IsAbstract
-                        && !Equals(typeInfo.Assembly, typeof(string).GetTypeInfo().Assembly)
-                        && !IsCompilerGenerated(typeInfo);
+                   && !typeInfo.IsNestedPrivate
+                   && !typeInfo.IsAbstract
+                   && !Equals(typeInfo.Assembly, typeof(string).GetTypeInfo().Assembly)
+                   && !IsCompilerGenerated(typeInfo);
         }
 
         private static bool IsCompilerGenerated(TypeInfo typeInfo)
@@ -6350,6 +6341,127 @@ namespace LightInject
     }
 
     /// <summary>
+    /// A class that maps the generic arguments/parameters from a generic servicetype
+    /// to a open generic implementing type.
+    /// </summary>
+    public class GenericArgumentMapper : IGenericArgumentMapper
+    {
+        /// <summary>
+        /// Maps the generic arguments/parameters from the <paramref name="genericServiceType"/>
+        /// to the generic arguments/parameters in the <paramref name="openGenericImplementingType"/>.
+        /// </summary>
+        /// <param name="genericServiceType">The generic type containing the arguments/parameters to be mapped to the generic arguments/parameters of the <paramref name="openGenericImplementingType"/>.</param>
+        /// <param name="openGenericImplementingType">The open generic implementing type.</param>
+        /// <returns>A <see cref="GenericMappingResult"/></returns>
+        public GenericMappingResult Map(Type genericServiceType, Type openGenericImplementingType)
+        {
+            string[] genericParameterNames =
+                openGenericImplementingType.GetTypeInfo().GenericTypeParameters.Select(t => t.Name).ToArray();
+
+            var genericArgumentMap = CreateMap(genericServiceType, openGenericImplementingType, genericParameterNames);
+         
+            return new GenericMappingResult(genericParameterNames, genericArgumentMap, genericServiceType, openGenericImplementingType);
+        }
+
+        private static Dictionary<string, Type> CreateMap(Type genericServiceType, Type openGenericImplementingType, string[] genericParameterNames)
+        {
+            var genericArgumentMap = new Dictionary<string, Type>(genericParameterNames.Length);
+
+            var genericArguments = GetGenericArgumentsOrParameters(genericServiceType);
+
+            if (genericArguments.Length > 0)
+            {
+                genericServiceType = genericServiceType.GetTypeInfo().GetGenericTypeDefinition();
+            }
+            else
+            {
+                return genericArgumentMap;
+            }
+
+            Type baseTypeImplementingOpenGenericServiceType = GetBaseTypeImplementingGenericTypeDefinition(
+                openGenericImplementingType,
+                genericServiceType);
+
+            Type[] baseTypeGenericArguments = GetGenericArgumentsOrParameters(baseTypeImplementingOpenGenericServiceType);
+          
+            MapGenericArguments(genericArguments, baseTypeGenericArguments, genericArgumentMap);
+            return genericArgumentMap;
+        }
+
+        private static Type[] GetGenericArgumentsOrParameters(Type type)
+        {
+            TypeInfo typeInfo = type.GetTypeInfo();
+            if (typeInfo.IsGenericTypeDefinition)
+            {
+                return typeInfo.GenericTypeParameters;
+            }
+
+            return typeInfo.GenericTypeArguments;
+        }
+
+        private static void MapGenericArguments(Type[] serviceTypeGenericArguments, Type[] baseTypeGenericArguments, IDictionary<string, Type> map)
+        {
+            for (int index = 0; index < baseTypeGenericArguments.Length; index++)
+            {
+                var baseTypeGenericArgument = baseTypeGenericArguments[index];
+                var serviceTypeGenericArgument = serviceTypeGenericArguments[index];
+                if (baseTypeGenericArgument.GetTypeInfo().IsGenericParameter)
+                {
+                    map[baseTypeGenericArgument.Name] = serviceTypeGenericArgument;
+                }
+                else if (baseTypeGenericArgument.GetTypeInfo().IsGenericType)
+                {
+                    if (serviceTypeGenericArgument.GetTypeInfo().IsGenericType)
+                    {
+                        MapGenericArguments(serviceTypeGenericArgument.GetTypeInfo().GenericTypeArguments, baseTypeGenericArgument.GetTypeInfo().GenericTypeArguments, map);
+                    }
+                    else
+                    {
+                        MapGenericArguments(serviceTypeGenericArguments, baseTypeGenericArgument.GetTypeInfo().GenericTypeArguments, map);
+                    }
+                }
+            }
+        }
+
+        private static Type GetBaseTypeImplementingGenericTypeDefinition(Type implementingType, Type genericTypeDefinition)
+        {
+            Type baseTypeImplementingGenericTypeDefinition = null;
+
+            if (genericTypeDefinition.GetTypeInfo().IsInterface)
+            {
+                baseTypeImplementingGenericTypeDefinition = implementingType
+                    .GetTypeInfo().ImplementedInterfaces
+                    .FirstOrDefault(i => i.GetTypeInfo().IsGenericType && i.GetTypeInfo().GetGenericTypeDefinition() == genericTypeDefinition);
+            }
+            else
+            {
+                Type baseType = implementingType;
+                while (!ImplementsOpenGenericTypeDefinition(genericTypeDefinition, baseType) && baseType != typeof(object))
+                {
+                    baseType = baseType.GetTypeInfo().BaseType;
+                }
+
+                if (baseType != typeof(object))
+                {
+                    baseTypeImplementingGenericTypeDefinition = baseType;
+                }
+            }
+
+            if (baseTypeImplementingGenericTypeDefinition == null)
+            {
+                throw new InvalidOperationException($"The generic type definition {genericTypeDefinition.FullName} not implemented by implementing type {implementingType.FullName}");
+            }
+
+            return baseTypeImplementingGenericTypeDefinition;
+        }
+
+        private static bool ImplementsOpenGenericTypeDefinition(Type genericTypeDefinition, Type baseType)
+        {
+            return baseType.GetTypeInfo().IsGenericType && baseType.GetTypeInfo().GetGenericTypeDefinition() == genericTypeDefinition;
+        }
+    }
+
+    /// <summary>
     /// An assembly scanner that registers services based on the types contained within an <see cref="Assembly"/>.
     /// </summary>
     public class AssemblyScanner : IAssemblyScanner
@@ -6357,6 +6469,7 @@ namespace LightInject
         private readonly ITypeExtractor concreteTypeExtractor;
         private readonly ITypeExtractor compositionRootTypeExtractor;
         private readonly ICompositionRootExecutor compositionRootExecutor;
+        private readonly IGenericArgumentMapper genericArgumentMapper;        
         private Assembly currentAssembly;
 
         /// <summary>
@@ -6368,11 +6481,16 @@ namespace LightInject
         /// extracting <see cref="ICompositionRoot"/> implementations from the assembly being scanned.</param>
         /// <param name="compositionRootExecutor">The <see cref="ICompositionRootExecutor"/> that is
         /// responsible for creating and executing an <see cref="ICompositionRoot"/>.</param>
-        public AssemblyScanner(ITypeExtractor concreteTypeExtractor, ITypeExtractor compositionRootTypeExtractor, ICompositionRootExecutor compositionRootExecutor)
+        /// <param name="genericArgumentMapper">The <see cref="IGenericArgumentMapper"/> that is responsible
+        /// for determining if an open generic type can be created from the information provided by a given abstraction.</param>
+        /// <param name="serviceNameProvider">The <see cref="IServiceNameProvider"/> that is responsible for providing
+        /// a service name during assembly scanning.</param>
+        public AssemblyScanner(ITypeExtractor concreteTypeExtractor, ITypeExtractor compositionRootTypeExtractor, ICompositionRootExecutor compositionRootExecutor, IGenericArgumentMapper genericArgumentMapper)
         {
             this.concreteTypeExtractor = concreteTypeExtractor;
             this.compositionRootTypeExtractor = compositionRootTypeExtractor;
             this.compositionRootExecutor = compositionRootExecutor;
+            this.genericArgumentMapper = genericArgumentMapper;            
         }
 
         /// <summary>
@@ -6382,12 +6500,13 @@ namespace LightInject
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/> instance.</param>
         /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of the registered service.</param>
         /// <param name="shouldRegister">A function delegate that determines if a service implementation should be registered.</param>
-        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
+        /// <param name="serviceNameProvider">A function delegate used to provide the service name for a service during assembly scanning.</param>
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
         {
             Type[] concreteTypes = GetConcreteTypes(assembly);
             foreach (Type type in concreteTypes)
             {
-                BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister);
+                BuildImplementationMap(type, serviceRegistry, lifetimeFactory, shouldRegister, serviceNameProvider);
             }
         }
 
@@ -6405,26 +6524,7 @@ namespace LightInject
                 ExecuteCompositionRoots(compositionRootTypes);
             }
         }
-
-        private static string GetServiceName(Type serviceType, Type implementingType)
-        {
-            string implementingTypeName = implementingType.Name;
-            string serviceTypeName = serviceType.Name;
-            if (implementingType.GetTypeInfo().IsGenericTypeDefinition)
-            {
-                var regex = new Regex("((?:[a-z][a-z]+))", RegexOptions.IgnoreCase);
-                implementingTypeName = regex.Match(implementingTypeName).Groups[1].Value;
-                serviceTypeName = regex.Match(serviceTypeName).Groups[1].Value;
-            }
-
-            if (serviceTypeName.Substring(1) == implementingTypeName)
-            {
-                implementingTypeName = string.Empty;
-            }
-
-            return implementingTypeName;
-        }
-
+       
         private static IEnumerable<Type> GetBaseTypes(Type concreteType)
         {
             Type baseType = concreteType;
@@ -6453,14 +6553,14 @@ namespace LightInject
             return compositionRootTypeExtractor.Execute(assembly);
         }
 
-        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
+        private void BuildImplementationMap(Type implementingType, IServiceRegistry serviceRegistry, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
         {
             Type[] interfaces = implementingType.GetTypeInfo().ImplementedInterfaces.ToArray();
             foreach (Type interfaceType in interfaces)
             {
                 if (shouldRegister(interfaceType, implementingType))
                 {
-                    RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory());
+                    RegisterInternal(interfaceType, implementingType, serviceRegistry, lifetimeFactory(), serviceNameProvider);
                 }
             }
 
@@ -6468,23 +6568,52 @@ namespace LightInject
             {
                 if (shouldRegister(baseType, implementingType))
                 {
-                    RegisterInternal(baseType, implementingType, serviceRegistry, lifetimeFactory());
+                    RegisterInternal(baseType, implementingType, serviceRegistry, lifetimeFactory(), serviceNameProvider);
                 }
             }
         }
 
-        private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry, ILifetime lifetime)
+        private void RegisterInternal(Type serviceType, Type implementingType, IServiceRegistry serviceRegistry, ILifetime lifetime, Func<Type, Type, string> serviceNameProvider)
         {
             var serviceTypeInfo = serviceType.GetTypeInfo();
+            if (implementingType.GetTypeInfo().ContainsGenericParameters)
+            {
+                if (!genericArgumentMapper.Map(serviceType, implementingType).IsValid)
+                {
+                    return;
+                }
+            }
+
             if (serviceTypeInfo.IsGenericType && serviceTypeInfo.ContainsGenericParameters)
             {
                 serviceType = serviceTypeInfo.GetGenericTypeDefinition();
             }
 
-            serviceRegistry.Register(serviceType, implementingType, GetServiceName(serviceType, implementingType), lifetime);
+            serviceRegistry.Register(serviceType, implementingType, serviceNameProvider(serviceType, implementingType), lifetime);
         }
     }
 
+    public class ServiceNameProvider : IServiceNameProvider
+    {
+        public string GetServiceName(Type serviceType, Type implementingType)
+        {
+            string implementingTypeName = implementingType.FullName;
+            string serviceTypeName = serviceType.FullName;
+            if (implementingType.GetTypeInfo().IsGenericTypeDefinition)
+            {
+                var regex = new Regex("((?:[a-z][a-z.]+))", RegexOptions.IgnoreCase);
+                implementingTypeName = regex.Match(implementingTypeName).Groups[1].Value;
+                serviceTypeName = regex.Match(serviceTypeName).Groups[1].Value;
+            }
+
+            if (serviceTypeName.Split('.').Last().Substring(1) == implementingTypeName.Split('.').Last())
+            {
+                implementingTypeName = string.Empty;
+            }
+
+            return implementingTypeName;
+        }
+    }
     /// <summary>
     /// Selects the properties that represents a dependency to the target <see cref="Type"/>.
     /// </summary>
@@ -6515,8 +6644,63 @@ namespace LightInject
             return propertyInfo.SetMethod == null || propertyInfo.SetMethod.IsStatic || propertyInfo.SetMethod.IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
         }
     }
-#if NET45 || NET46
+#if NET452 || NET46 || NETCOREAPP2_0
 
+    /// <summary>
+    /// Loads all assemblies from the application base directory that matches the given search pattern.
+    /// </summary>
+    public class AssemblyLoader : IAssemblyLoader
+    {
+        /// <summary>
+        /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
+        /// </summary>
+        /// <param name="searchPattern">The search pattern to use.</param>
+        /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
+        public IEnumerable<Assembly> Load(string searchPattern)
+        {
+            string directory = Path.GetDirectoryName(new Uri(GetAssemblyCodeBasePath()).LocalPath);
+            if (directory != null)
+            {
+                string[] searchPatterns = searchPattern.Split('|');
+                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
+                {
+                    yield return LoadAssembly(file);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Indicates if the current <paramref name="fileName"/> represent a file that can be loaded.
+        /// </summary>
+        /// <param name="fileName">The name of the target file.</param>
+        /// <returns><b>true</b> if the file can be loaded, otherwise <b>false</b>.</returns>
+        protected virtual bool CanLoad(string fileName)
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Loads <see cref="Assembly"/> for the file located in <paramref name="filename"/>.
+        /// </summary>
+        /// <param name="filename">Full path to the file.</param>
+        /// <returns><see cref="Assembly"/> of the file.</returns>
+        protected virtual Assembly LoadAssembly(string filename)
+        {
+            return Assembly.LoadFrom(filename);
+        }
+
+        /// <summary>
+        /// Gets the path where the LightInject assembly is located.
+        /// </summary>
+        /// <returns>The path where the LightInject assembly is located.</returns>
+        protected virtual string GetAssemblyCodeBasePath()
+        {
+            return typeof(ServiceContainer).Assembly.CodeBase;
+        }
+    }
+#endif
+
+#if NETSTANDARD1_6
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
     /// </summary>
@@ -6775,13 +6959,13 @@ namespace LightInject
         /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
         public IEnumerable<Assembly> Load(string searchPattern)
         {
-            string directory = Path.GetDirectoryName(new Uri(typeof(ServiceContainer).Assembly.CodeBase).LocalPath);
+            string directory = Path.GetDirectoryName(new Uri(GetAssemblyCodeBasePath()).LocalPath);
             if (directory != null)
             {
                 string[] searchPatterns = searchPattern.Split('|');
                 foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
                 {
-                    yield return Assembly.LoadFrom(file);
+                    yield return LoadAssembly(file);
                 }
             }
         }
@@ -6929,8 +7113,29 @@ namespace LightInject
                 return result;
             }
         }
+
+        /// <summary>
+        /// Loads <see cref="Assembly"/> for the file located in <paramref name="filename"/>.
+        /// </summary>
+        /// <param name="filename">Full path to the file.</param>
+        /// <returns><see cref="Assembly"/> of the file.</returns>
+        protected virtual Assembly LoadAssembly(string filename)
+        {
+            FileInfo fileInfo = new FileInfo(filename);
+            return Assembly.Load(new AssemblyName(fileInfo.Name.Replace(fileInfo.Extension, "")));
+        }
+
+        /// <summary>
+        /// Gets the path where the LightInject assembly is located.
+        /// </summary>
+        /// <returns>The path where the LightInject assembly is located.</returns>
+        protected virtual string GetAssemblyCodeBasePath()
+        {
+            return typeof(ServiceContainer).GetTypeInfo().Assembly.CodeBase;
+        }
     }
 #endif
+
 
     /// <summary>
     /// Defines an immutable representation of a key and a value.
@@ -7721,7 +7926,7 @@ namespace LightInject
             return localBuilder;
         }
     }
-#if NET45
+#if NET452
 
     /// <summary>
     /// Provides storage per logical thread of execution.
@@ -7777,7 +7982,7 @@ namespace LightInject
         }
     }
 #endif
-#if NETSTANDARD13 || NET46
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>
@@ -7861,7 +8066,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TService> CreateInstanceDelegate<TService>(IServiceFactory factory, string serviceName)
 
-        // ReSharper restore UnusedMember.Local
+            // ReSharper restore UnusedMember.Local
         {
             return () => factory.GetInstance<TService>(serviceName);
         }
@@ -7888,8 +8093,8 @@ namespace LightInject
                 typeof(ReflectionHelper).GetTypeInfo().DeclaredMethods
                     .Single(
                         m =>
-                        m.GetGenericArguments().Length == genericTypeArguments.Length
-                        && m.Name == "CreateGenericGetNamedParameterizedInstanceDelegate");
+                            m.GetGenericArguments().Length == genericTypeArguments.Length
+                            && m.Name == "CreateGenericGetNamedParameterizedInstanceDelegate");
             var closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
             return (Delegate)closedGenericMethod.Invoke(null, new object[] { factory, serviceName });
         }
@@ -7905,7 +8110,7 @@ namespace LightInject
             Type[] genericTypeArguments = serviceType.GetTypeInfo().GenericTypeArguments;
             MethodInfo openGenericMethod =
                 typeof(ServiceFactoryExtensions).GetTypeInfo().DeclaredMethods.Single(m => m.Name == "GetInstance"
-                    && m.GetGenericArguments().Length == genericTypeArguments.Length && m.GetParameters().All(p => p.Name != "serviceName"));
+                                                                                           && m.GetGenericArguments().Length == genericTypeArguments.Length && m.GetParameters().All(p => p.Name != "serviceName"));
 
             MethodInfo closedGenericMethod = openGenericMethod.MakeGenericMethod(genericTypeArguments);
 
@@ -7915,7 +8120,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TArg, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg, TService>(IServiceFactory factory, string serviceName)
 
-        // ReSharper restore UnusedMember.Local
+            // ReSharper restore UnusedMember.Local
         {
             return arg => factory.GetInstance<TArg, TService>(arg, serviceName);
         }
@@ -7923,7 +8128,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TService>(IServiceFactory factory, string serviceName)
 
-        // ReSharper restore UnusedMember.Local
+            // ReSharper restore UnusedMember.Local
         {
             return (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
         }
@@ -7931,7 +8136,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TArg3, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TService>(IServiceFactory factory, string serviceName)
 
-        // ReSharper restore UnusedMember.Local
+            // ReSharper restore UnusedMember.Local
         {
             return (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
         }
@@ -7939,7 +8144,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TArg3, TArg4, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TArg4, TService>(IServiceFactory factory, string serviceName)
 
-        // ReSharper restore UnusedMember.Local
+            // ReSharper restore UnusedMember.Local
         {
             return (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
         }
@@ -7951,7 +8156,7 @@ namespace LightInject
     /// </summary>
     internal static class TypeHelper
     {
-#if NET45 || NET46
+#if NET452 || NET46 || NETCOREAPP2_0
 
         /// <summary>
         /// Gets the method represented by the delegate.
@@ -8007,7 +8212,6 @@ namespace LightInject
             var typeInfo = type.GetTypeInfo();
             return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(ICollection<>);
         }
-#if NET45 || NETSTANDARD11 || NETSTANDARD13 || PCL_111 || NET46
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IReadOnlyCollection{T}"/> type.
@@ -8030,7 +8234,6 @@ namespace LightInject
             var typeInfo = type.GetTypeInfo();
             return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IReadOnlyList<>);
         }
-#endif
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="Lazy{T}"/> type.
@@ -8071,7 +8274,7 @@ namespace LightInject
             Type genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
 
             return genericTypeDefinition == typeof(Func<,>) || genericTypeDefinition == typeof(Func<,,>)
-                || genericTypeDefinition == typeof(Func<,,,>) || genericTypeDefinition == typeof(Func<,,,,>);
+                   || genericTypeDefinition == typeof(Func<,,,>) || genericTypeDefinition == typeof(Func<,,,,>);
         }
 
         /// <summary>
@@ -8150,4 +8353,11 @@ namespace LightInject
             return typeof(Func<>).MakeGenericType(type);
         }
     }
+
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+    public class ExcludeFromCodeCoverageAttribute : Attribute
+    {
+        
+    }
+#endif
 }

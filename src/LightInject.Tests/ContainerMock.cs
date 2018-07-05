@@ -151,6 +151,17 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifeTimeFactory,
+            Func<int, string> serviceNameFormatter)
+        {
+            throw new NotImplementedException();
+        }
+
         public IServiceRegistry RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
         {
             throw new NotImplementedException();
@@ -182,6 +193,12 @@ namespace LightInject.Tests
         }
 
         public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IServiceRegistry RegisterAssembly(Assembly assembly, Func<ILifetime> lifetimeFactory, Func<Type, Type, bool> shouldRegister,
+            Func<Type, Type, string> serviceNameProvider)
         {
             throw new NotImplementedException();
         }
@@ -388,7 +405,22 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
-        public IServiceContainer Clone()
+        public void Compile(Func<ServiceRegistration, bool> predicate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Compile()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Compile(Type serviceType, string serviceName = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Compile<TService>(string serviceType = null)
         {
             throw new NotImplementedException();
         }

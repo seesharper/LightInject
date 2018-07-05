@@ -9,7 +9,7 @@ namespace LightInject.Tests
     using Xunit;
     using System.Threading.Tasks;
 
-#if NET45 || NET46
+#if NET452 || NET46
     
     public class AsyncTests : TestBase
     {
@@ -39,7 +39,7 @@ namespace LightInject.Tests
             {
                 var instance = container.GetInstance<IAsyncFoo>();
                 var bar = instance.GetBar().Result;
-                Assert.IsAssignableFrom(typeof(IBar), bar);
+                Assert.IsAssignableFrom<IBar>(bar);
             }
         }
 

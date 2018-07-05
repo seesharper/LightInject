@@ -1,6 +1,6 @@
-[![AppVeyor](https://img.shields.io/appveyor/ci/seesharper/lightinject.svg?maxAge=2592000)]()
-[![NuGet](https://img.shields.io/nuget/v/LightInject.svg?maxAge=2592000)]()
-[![GitHub tag](https://img.shields.io/github/tag/seesharper/lightinject.svg?maxAge=2592000)]()
+[![AppVeyor](https://img.shields.io/appveyor/ci/seesharper/lightinject.svg?maxAge=2592000)](https://ci.appveyor.com/project/seesharper/lightinject/branch/master)
+[![NuGet](https://img.shields.io/nuget/v/LightInject.svg?maxAge=2592000)](https://www.nuget.org/packages/LightInject)
+[![GitHub tag](https://img.shields.io/github/tag/seesharper/lightinject.svg?maxAge=2592000)](https://github.com/seesharper/LightInject/releases/latest)
 
 ## Installing ##
 
@@ -26,13 +26,13 @@ This adds a reference to the LightInject.dll in the target project.
 
 This will install a single file (LightInject.cs) into the current project.
 
-### Creating a container###
+### Creating a container ###
 
     var container = new LightInject.ServiceContainer();
-    
+
 The container implements IDisposable and should be disposed after usage has completed. It can also be used inside of a using statement for a constrained scope.
 
-### Default services###
+### Default services ###
 
     public interface IFoo {}
     public class Foo : IFoo {}
@@ -44,10 +44,10 @@ The container implements IDisposable and should be disposed after usage has comp
     Assert.IsInstanceOfType(instance, typeof(Foo));
 
 ### Named services ###
-    
+
     public class Foo : IFoo {}
     public class AnotherFoo : IFoo {}
-    
+
 ---
 
     container.Register<IFoo, Foo>();
@@ -73,7 +73,7 @@ The first argument to the *RegisterFallback* method makes it possible to possibl
 The second argument is a *ServiceRequest* instance that provides the requested service type and service name.
 
 
- 
+
 
 
 ### IEnumerable&lt;T&gt; ###
@@ -82,7 +82,7 @@ When we register multiple services with the same service type, **LightInject** i
 
     public class Foo : IFoo {}
     public class AnotherFoo : IFoo {}
-    
+
 ---
 
     container.Register<IFoo, Foo>();
@@ -118,6 +118,51 @@ This behavior can be overridden using the **EnableVariance** container option.
 	var instances = container.GetAllInstances<Foo>();
 	Assert.AreEqual(1, instances.Count());
 
+
+
+#### Ordering
+
+Sometimes the ordering of the resolved services are important and **LightInject** solves this by ordering services by their service name.
+
+```c#
+container.Register<IFoo, Foo1>("A");
+container.Register<IFoo, Foo2>("B");
+container.Register<IFoo, Foo3>("C");
+
+var instances = container.GetAllInstances<IFoo>().ToArray();
+Assert.IsType<Foo1>(instances[0]);
+Assert.IsType<Foo2>(instances[1]);
+Assert.IsType<Foo3>(instances[2]);
+```
+
+We can also register multiple implementations for a given service type using the `RegisterOrdered` method.
+
+```c#
+var container = CreateContainer();
+container.RegisterOrdered(typeof(IFoo), new[] {typeof(Foo1), typeof(Foo2), typeof(Foo3)},
+    type => new PerContainerLifetime());
+
+var instances = container.GetAllInstances<IFoo>().ToArray();
+
+Assert.IsType<Foo1>(instances[0]);
+Assert.IsType<Foo2>(instances[1]);
+Assert.IsType<Foo3>(instances[2]);
+```
+
+The `RegisterOrdered` method gives each implementation a service name that can be used for ordering when resolving these services. By default the service name is formatted like `001`, `002` and so on. 
+If we need so change this convention, we can do this by passing a format function to the `RegisterOrdered` method.
+
+```c#
+container.RegisterOrdered(typeof(IFoo<>), new[] { typeof(Foo1<>), typeof(Foo2<>), typeof(Foo3<>) },
+    type => new PerContainerLifetime(), i => $"A{i.ToString().PadLeft(3,'0')}");
+
+var services = container.AvailableServices.Where(sr => sr.ServiceType == typeof(IFoo<>))
+    .OrderBy(sr => sr.ServiceName).ToArray();
+Assert.Equal("A001", services[0].ServiceName);
+Assert.Equal("A002", services[1].ServiceName);
+Assert.Equal("A003", services[2].ServiceName);
+```
+
 ### Values ###
 
 Registers the value as a constant.
@@ -127,7 +172,81 @@ Registers the value as a constant.
     Assert.AreEqual("SomeValue, value);
 
 
-##Lifetime##
+
+### Compilation
+
+**LightInject** uses dynamic code compilation either in the form of System.Reflection.Emit or compiled expression trees. When a service is requested from the container, the code needed for creating the service instance is generated and compiled and a delegate for that code is stored for lookup later on so that we only compile it once. These delegates are stored in an AVL tree that ensures maximal performance when looking up a delegate for a given service type. If fact, looking up these delegates is what sets the top performing containers apart. Most high performance container emits approximately the same code, but the approach to storing these delegates may differ. 
+
+**LightInject** provides lock-free service lookup meaning that no locks are involved for getting a service instance after its initial generation and compilation. The only time **LightInject** actually creates a lock is when generating the code for a given service.  That does however mean a potential lock contention problem when many concurrent requests asks for services for the first time.
+
+**LightInject** deals with this potential problem by providing an API for compilation typically used when an application starts.
+
+The following example shows how to compile all registered services.
+
+```c#
+container.Compile();
+```
+
+One thing to be aware of is that not all services are backed by its own delegate. 
+
+Consider the following service:
+
+```c#
+public class Foo
+{
+	public Foo(Bar bar)
+    {
+    	Bar = bar;
+    }
+} 
+```
+
+Registered and resolved like this:
+
+```c#
+container.Register<Foo>();
+container.Register<Bar>();
+var foo = container.GetInstance<Foo>();
+```
+
+In this case we only create a delegate for resolving `Foo` since that is the only service that is directly requested from the container. The code for creating the `Bar` instance is embedded inside the code for creating the `Foo` instance and hence there is only one delegate created.
+
+We call `Foo` a root service since it is directly requested from the container.	
+
+In fact lets just have a look at the IL generated for creating the `Foo` instance. 
+
+```assembly
+newobj Void .ctor() // Bar
+newobj Void .ctor(LightInject.SampleLibrary.IBar) //Foo
+```
+
+What happens here is that a new instance of `Bar` is created and pushed onto the stack and then we create the `Foo` instance. This is the code that the delegate for `Foo` points to. 
+
+The reason for such a relatively detailed explanation is to illustrate that we don't always create a delegate for a given service and by simply doing a `container.Compile()` we might create a lot of delegates that is never actually executed.  Probably no big deal as long as we don't have tens of thousands of services, but just something to be aware of.
+
+**LightInject** does not attempt to identify root services as that would be very difficult for various reasons.
+
+We can instead use a predicate when compiling services up front.
+
+```C#
+container.Compile(sr => sr.ServiceType == typeof(Foo));
+```
+
+#### Open Generics
+
+**LightInject** cannot compile open generic services since the actual generic arguments are not known at "compile" time. 
+
+We can however specify the generic arguments like this:
+
+```c#
+container.Compile<Foo<int>>()
+```
+
+**LightInject** will create a log entry every time a new delegate is created so that information can be used to identify root services that could be compiled up front. In addition to this, a log entry (warning) is also created when trying to compile an open generic service up front.
+
+
+
+## Lifetime ##
 
 The default behavior in **LightInject** is to treat all objects as transients unless otherwise specified.
 
@@ -136,7 +255,7 @@ The default behavior in **LightInject** is to treat all objects as transients un
 	var secondInstance = container.GetInstance<IFoo>();
 	Assert.AreNotSame(firstInstance, secondInstance);
 
-###PerScopeLifetime###
+### PerScopeLifetime ###
 
 Ensures that only one instance of a given service can exists within a scope.
 The container will call the **Dispose** method on all disposable objects created within the scope.
@@ -152,7 +271,7 @@ The container will call the **Dispose** method on all disposable objects created
 
 **Note:** *An **InvalidOperationException** is thrown if a service registered with the **PerScopeLifetime** is requested outside the scope.*
 
-###PerContainerLifetime###
+### PerContainerLifetime ###
 
 Ensures that only one instance of a given service can exist within the container.
 The container will call the Dispose method on all disposable objects when the container itself is disposed.
@@ -165,7 +284,7 @@ The container will call the Dispose method on all disposable objects when the co
 		Assert.AreSame(firstInstance, secondInstance);
 	}
 
-###PerRequestLifeTime###
+### PerRequestLifeTime ###
 
 A new instance is created for each request and the container calls **Dispose** when the scope ends.
 This lifetime is used when the conrete class implements **IDisposable**.
@@ -181,7 +300,7 @@ This lifetime is used when the conrete class implements **IDisposable**.
 >**Note:** *An **InvalidOperationException** is thrown if a service registered with the **PerRequestLifeTime** is requested outside the scope.*
 
 
-###Custom lifetime###
+### Custom lifetime ###
 
 A custom lifetime is created by implementing the **ILifetime** interface
 
@@ -195,7 +314,7 @@ The following example shows to create a custom lifetime that ensures only one in
 	public class PerThreadLifetime : ILifetime
 	{
 		ThreadLocal<object> instances = new ThreadLocal<object>(); 	
-
+	
 		public object GetInstance(Func<object> instanceFactory, Scope currentScope)
 		{
 			if (instances.value == null)
@@ -205,13 +324,13 @@ The following example shows to create a custom lifetime that ensures only one in
 			return instances.value;
 		}
 	}
-	
+
 That is all it takes to create a custom lifetime, but what about disposable services?
 
 	public class PerThreadLifetime : ILifetime
 	{
 		ThreadLocal<object> instances = new ThreadLocal<object>(); 	
-
+	
 		public object GetInstance(Func<object> instanceFactory, Scope currentScope)
 		{			
 			if (instances.value == null)
@@ -227,15 +346,15 @@ That is all it takes to create a custom lifetime, but what about disposable serv
 					}
 					currentScope.TrackInstance(disposable);
 				}
-
+	
 				instances.value = instance;
 			}
 			return instance.value;
 		}
 	}
 
-####Important####
- 		
+#### Important ####
+
 A lifetime object controls the lifetime of a single service and can **never** be shared for multiple service registrations.
 
 **Wrong**
@@ -271,35 +390,35 @@ Next we implement this interface in such a way that the **IBar** instance is req
     public class AsyncFoo : IAsyncFoo
     {
         private readonly Lazy<IBar> lazyBar;
-
+    
         public AsyncFoo(Lazy<IBar> lazyBar)
         {
             this.lazyBar = lazyBar;
         }
-
+    
         public async Task<IBar> GetBar()
         {
             await Task.Delay(10);
             return lazyBar.Value; <--This code is executed on another thread (continuation).
         }
     }
- 
+
 The we register the dependency (**IBar**) with the **PerScopeLifetime** that is going to cause the container to ask for the current scope so that the instance can be registered with that scope.
 
 	var container = new ServiceContainer();
-    container.Register<IBar, Bar>(new PerScopeLifetime());
-    container.Register<IAsyncFoo, AsyncFoo>();
+	container.Register<IBar, Bar>(new PerScopeLifetime());
+	container.Register<IAsyncFoo, AsyncFoo>();
+	
+	using (container.BeginScope())
+	{
+	    var instance = container.GetInstance<IAsyncFoo>();
+	    ExceptionAssert.Throws<AggregateException>(() => instance.GetBar().Wait());                
+	}
 
-    using (container.BeginScope())
-    {
-        var instance = container.GetInstance<IAsyncFoo>();
-        ExceptionAssert.Throws<AggregateException>(() => instance.GetBar().Wait());                
-    }
-  
 This will throw an exception that states the following:
 
 	Attempt to create a scoped instance without a current scope.  
- 
+
 The reason that this is happening is that the current scope is associated with the thread that created it and when the continuation executes, we are essentially requesting an instance on another thread.
 
 To deal with this issue, **LightInject** now supports scopes across the logical [CallContext](http://msdn.microsoft.com/en-us/library/system.runtime.remoting.messaging.callcontext(v=vs.110).aspx).  
@@ -321,10 +440,10 @@ To deal with this issue, **LightInject** now supports scopes across the logical 
 
 
 ## Dependencies ##
- 
+
 
 ### Constructor Injection ##
-    
+
     public interface IFoo {}        
     public interface IBar {}
     
@@ -334,10 +453,10 @@ To deal with this issue, **LightInject** now supports scopes across the logical 
         {
             Bar = bar;
         }
-
+    
         public IBar Bar { get; private set; } 
     }
-
+    
     public class Bar : IBar {}
 
 #### Implicit service registration ####
@@ -348,7 +467,7 @@ Registers a service without specifying any information about how to resolve the 
     container.Register<IBar, Bar>();
     var foo = (Foo)container.GetInstance<IFoo>();
     Assert.IsInstanceOfType(foo.Bar, typeof(Bar)); 
-     
+
 > Note: In the case where the implementing type(Foo) has more than one constructor, **LightInject** will choose the constructor with the most parameters. 
 
 For fine grained control of the injected constructor dependencies, we can provide a factory that makes it possible to create an instance of a given constructor dependency.
@@ -377,7 +496,7 @@ Parameters are used when we want to supply one or more values when the service i
         {
             Value = value;
         }
-
+    
         public int Value { get; private set; }
     }   
 
@@ -395,7 +514,7 @@ We can also do a combination of supplied values and dependencies.
         {
             Value = value;
         }
-
+    
         public int Value { get; private set; }
         public IBar Bar { get; private set; }
     }    
@@ -411,9 +530,9 @@ We can also do a combination of supplied values and dependencies.
 ### Property Injection ###
 
 	public interface IFoo {}
-
+	
 	public interface IBar {}
-
+	
 	public class Foo : IFoo
 	{
 		public IBar Bar { get; set; }
@@ -421,12 +540,12 @@ We can also do a combination of supplied values and dependencies.
 
 	public class Bar : IBar {}
 
-####Implicit service registration####
+#### Implicit service registration ####
 
 Registers the service without specifying any information about how to resolve the property dependencies.
 
     container.Register<IFoo, Foo>();
-	container.Register<IBar, Bar>();
+    container.Register<IBar, Bar>();
     var foo = (Foo)container.GetInstance<IFoo>();
     Assert.IsNotNull(foo.bar);
 
@@ -439,15 +558,15 @@ For fine grained control of the injected property dependencies, we can provide a
 This tells the container to inject a new **Bar** instance whenever it sees an **IBar** property dependency.
 
 
-####Explicit service registration####
+#### Explicit service registration ####
 
 Registers a service by providing explicit information about how to create the service instance and how to resolve the property dependencies.
 
 
 	container.Register<IBar, Bar>();
 	container.Register<IFoo>(factory => new Foo() {Bar = factory.GetInstance<IBar>()}) 
-    var foo = (Foo)container.GetInstance<IFoo>();
-    Assert.IsNotNull(foo.bar);
+	var foo = (Foo)container.GetInstance<IFoo>();
+	Assert.IsNotNull(foo.bar);
 
 #### Property injection on existing instances. ####
 
@@ -455,8 +574,18 @@ In the cases where we don't control the creation of the service instance, **Ligh
 
 	container.Register<IBar, Bar>();
 	var foo = new Foo();
-    container.InjectProperties(foo);
-    Assert.IsNotNull(foo);
+	container.InjectProperties(foo);
+	Assert.IsNotNull(foo);
+
+#### Disabling ProperyInjection
+
+Property injection is enabled by default in **LightInject**, but it can be disabled like this.
+
+```c#
+var container = new ServiceContainer(new ContainerOptions { EnablePropertyInjection = false });
+```
+
+> It is actually recommended to turn off property injection unless it is really needed. Backward compatibility is the only reason that this is not the default.
 
 ## Initializers ##
 
@@ -466,23 +595,51 @@ Use the **Initialize** method to perform service instance initialization/post-pr
 	container.Initialize(registration => registration.ServiceType == typeof(IFoo), 
 		(factory, instance) => ((FooWithPropertyDependency)instance).Bar = new Bar());
 	var foo = (FooWithProperyDependency)container.GetInstance<IFoo>();
-    Assert.IsInstanceOfType(foo.Bar, typeof(Bar));
+	Assert.IsInstanceOfType(foo.Bar, typeof(Bar));
 
 ## Assembly Scanning ##
 
 LightInject is capable of registering services by looking at the types of a given assembly.
 
-    container.RegisterAssembly(typeof(IFoo).Assembly)
+```c#
+container.RegisterAssembly(typeof(IFoo).Assembly)
+```
 
 To filter out the services to be registered with the container, we can provide a predicate that makes it possible to inspect the service type and the implementing type.
 
-	container.RegisterAssembly(typeof(IFoo).Assembly, (serviceType, implementingType) => serviceType.NameSpace == "SomeNamespace");
- 
+```c#
+container.RegisterAssembly(typeof(IFoo).Assembly, (serviceType, implementingType) => serviceType.NameSpace == "SomeNamespace");
+```
+
 It is also possible to scan a set assembly files based on a search pattern.
 
-    container.RegisterAssembly("SomeAssemblyName*.dll");  
+```c#
+container.RegisterAssembly("SomeAssemblyName*.dll");  
+```
+When scanning assemblies, **LightInject** will register services using a service name that by default is the implementing type name. This behavior can be changed by specifying a function delegate to provide the name based on the service type and the implementing type.
 
- 
+```c#
+container.RegisterAssembly(typeof(IFoo).Assembly, () => new PerContainerLifetime(), (serviceType, implementingType) => serviceType.NameSpace == "SomeNamespace", (serviceType, implementingType) => "Provide custom service name here");
+```
+
+We can also change this behavior globally for all registrations by implementing the **IServiceNameProvider** interface.
+
+```c#
+public class CustomServiceNameProvider : IServiceNameProvider
+{
+	public string GetServiceName(Type serviceType, Type implementingType)
+    {
+    	return "Provide custom service name here";  
+    }
+}
+```
+
+To change the default behavior for all registrations we simply change this dependency on the container before we start scanning assemblies.
+
+```c#
+container.ServiceNameProvider = new CustomServiceNameProvider();
+```
+
 
 
 ## Composition Root ##
@@ -496,7 +653,7 @@ When **LightInject** scans an assembly it will look for an implementation of the
             serviceRegistry.Register(typeof(IFoo),typeof(Foo));
         }
     }
- 
+
 If one or more implementations of the **ICompositionRoot** interface is found, they will be created and executed.
 
 >**Note:** *Any other services contained within the target assembly that is not registered in the composition root, will **NOT** be registered.*
@@ -527,7 +684,7 @@ Allows explicit execution of a composition root.
 
 	public interface IFoo<T> {};
 	public class Foo<T> : IFoo<T> {};
-		
+
 The container creates the closed generic type based on the service request.
 	 
     container.Register(typeof(IFoo<>), typeof(Foo<>));
@@ -588,7 +745,7 @@ Function factories can also take parameters that will be used create the service
         {
             Value = value;
         }
-
+    
         public int Value { get; private set; }
     }
 
@@ -604,7 +761,7 @@ Function factories can also take parameters that will be used create the service
 ### IDisposable ###
 
 The only way to deal with disposable objects when using function factories, is to let the service type inherit from IDisposable.
- 
+
     public interface IFoo : IDisposable {}
     public class Foo : IFoo {}
 
@@ -612,7 +769,7 @@ The only way to deal with disposable objects when using function factories, is t
 
     container.Register<IFoo, Foo>();
     var fooFactory = container.GetInstance<Func<IFoo>>();
-
+    
     using(IFoo foo = fooFactory())
     {
         
@@ -635,12 +792,12 @@ As opposed to just function factories, typed factories provides better expressiv
     public class FooFactory : IFooFactory
     {
         private Func<IFoo> createFoo;
-
+    
         public FooFactory(Func<IFoo> createFoo)
         {
             this.createFoo = createFoo;
         }
-
+    
         public IFoo GetFoo()
         {
             return createFoo();
@@ -648,7 +805,7 @@ As opposed to just function factories, typed factories provides better expressiv
     } 
 
 ---
-    
+
     container.Register<IFoo, Foo>();
     container.Register<IFooFactory, FooFactory>(new PerContainerLifetime());
     var fooFactory = container.GetInstance<IFooFactory>();
@@ -667,10 +824,10 @@ Types factories can also wrap a parameterized function factory and allows us to 
         {
             Value = value;
         }
-
+    
         public int Value { get; private set; }
     }
-
+    
     public interface IFooFactory
     {
         IFoo GetFoo(int value);
@@ -681,12 +838,12 @@ Types factories can also wrap a parameterized function factory and allows us to 
     public class FooFactory : IFooFactory
     {
         private Func<int, IFoo> createFoo;
-
+    
         public FooFactory(Func<int, IFoo> createFoo)
         {
             this.createFoo = createFoo;
         }
-
+    
         public IFoo GetFoo(int value)
         {
             return createFoo(value);
@@ -726,7 +883,7 @@ Working with typed factories gives us the possibility to release disposable serv
         {
             return createFoo(value);
         }
-
+    
         public void Release(IFoo foo)
         {
             var disposable = foo as IDisposable;
@@ -772,5 +929,5 @@ and **LightInject** provides a very simple log abstraction that is used to log i
 ```csharp
 var containerOptions = new ContainerOptions();
 containerOptions.LogFactory = (type) => logEntry => Console.WriteLine(logEntry.Message);
-```   
+```
 
