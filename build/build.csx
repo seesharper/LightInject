@@ -1,4 +1,4 @@
-#load "nuget:Dotnet.Build, 0.3.8"
+#load "nuget:Dotnet.Build, 0.3.9"
 #load "nuget:github-changelog, 0.1.5"
 #load "BuildContext.csx"
 using static FileUtils;
@@ -8,10 +8,10 @@ using static DotNet;
 using static ChangeLog;
 using static ReleaseManagement;
 
-Build(projectFolder, Git.Default.GetCurrentCommitHash());
-Test(testProjectFolder);
-AnalyzeCodeCoverage(pathToTestAssembly, $"+[{projectName}]*");
-Pack(projectFolder, nuGetArtifactsFolder);
+Build(projectFolder);
+//Test(testProjectFolder);
+//AnalyzeCodeCoverage(pathToTestAssembly, $"+[{projectName}]*");
+Pack(projectFolder, nuGetArtifactsFolder, Git.Default.GetCurrentShortCommitHash());
 
 using(var sourceBuildFolder = new DisposableFolder())
 {
