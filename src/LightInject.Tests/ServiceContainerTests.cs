@@ -975,6 +975,15 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetAllInstances_NamedEnumerable_ReturnsAllInstances()
+        {
+            var container = CreateContainer();
+            container.Register<IEnumerable<Foo>>(f => new[] { new Foo() }, "SomeEnumerable");
+            var instances = container.GetAllInstances<Foo>();
+            Assert.Single(instances);
+        }
+
+        [Fact]
         public void GetAllInstances_TwoOpenGenericServices_ReturnsAllInstances()
         {
             var container = CreateContainer();

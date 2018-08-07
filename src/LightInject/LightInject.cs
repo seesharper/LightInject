@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.1.4
+    LightInject version 5.1.6
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3702,7 +3702,12 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodForUnknownService(Type serviceType, string serviceName)
         {
             Action<IEmitter> emitter = null;
-            if (serviceType.IsLazy())
+            if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
+            {
+                emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
+            }
+
+            else if (serviceType.IsLazy())
             {
                 emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType, t => t.CreateGetInstanceDelegate(this));
             }
@@ -3749,11 +3754,7 @@ namespace LightInject
                 {
                     emitter = CreateEmitMethodForListServiceRequest(serviceType);
                 }
-            }
-            else if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
-            {
-                emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
-            }
+            }           
             else if (serviceType.IsClosedGeneric())
             {
                 emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
