@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.1.6
+    LightInject version 5.1.7
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -1986,6 +1986,9 @@ namespace LightInject
 
         private ImmutableHashTree<Type, Func<object[], object, object>> propertyInjectionDelegates =
             ImmutableHashTree<Type, Func<object[], object, object>>.Empty;
+
+        private readonly ThreadSafeDictionary<ServiceRegistration, int> servicesToDelegatesIndex =
+            new ThreadSafeDictionary<ServiceRegistration, int>();
 
         private bool isLocked;
         private Type defaultLifetimeType;
@@ -4057,7 +4060,7 @@ namespace LightInject
             }
             else
             {
-                int instanceDelegateIndex = CreateInstanceDelegateIndex(emitMethod);
+                int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
                 int scopeManagerIndex = CreateScopeManagerIndex();
                 var getInstanceMethod = LifetimeHelper.GetInstanceMethod;
@@ -4114,7 +4117,7 @@ namespace LightInject
             if (instanceDelegate == null)
             {
                 return c => null;
-            }
+            }   
 
             Interlocked.Exchange(ref namedDelegates, namedDelegates.Add(key, instanceDelegate));
             return instanceDelegate;
