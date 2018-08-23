@@ -513,7 +513,7 @@ namespace LightInject
         IServiceRegistry RegisterPropertyDependency<TDependency>(
             Func<IServiceFactory, PropertyInfo, TDependency> factory);
 
-#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+#if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that match the <paramref name="searchPattern"/>.
         /// </summary>
@@ -918,7 +918,7 @@ namespace LightInject
         void EndScope(Scope scope);
     }
 
-#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+#if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
 
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
@@ -2023,7 +2023,7 @@ namespace LightInject
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+#if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
             AssemblyLoader = new AssemblyLoader();
 #endif
         }
@@ -2100,7 +2100,7 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET452 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
+#if NET452 || NETSTANDARD1_6 || NETSTANDARD2_0|| NET46 || NETCOREAPP2_0
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
@@ -2384,7 +2384,7 @@ namespace LightInject
             return this;
         }
 
-#if NET452 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
+#if NET452 || NETSTANDARD1_6 || NETSTANDARD2_0|| NET46 || NETCOREAPP2_0
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that matches the <paramref name="searchPattern"/>.
         /// </summary>
@@ -4358,7 +4358,7 @@ namespace LightInject
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);
@@ -4450,7 +4450,7 @@ namespace LightInject
         }
     }
 
-#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
+#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
 
     /// <summary>
     /// Manages a set of <see cref="Scope"/> instances.
@@ -4521,7 +4521,7 @@ namespace LightInject
         }
     }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
     
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
@@ -6232,7 +6232,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+#if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
             InternalTypes.Add(typeof(AssemblyLoader));
 #endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
@@ -6259,12 +6259,12 @@ namespace LightInject
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));
-#if NET452 || NET46 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETCOREAPP2_0
+#if NET452 || NET46 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManager));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
 #endif
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
@@ -6704,7 +6704,7 @@ namespace LightInject
     }
 #endif
 
-#if NETSTANDARD1_6
+#if NETSTANDARD1_6 || NETSTANDARD2_0
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
     /// </summary>
@@ -7606,7 +7606,7 @@ namespace LightInject
         }
     }
 #endif
-#if NETSTANDARD1_3 || NETSTANDARD1_6 || NET46 || NETCOREAPP2_0
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>
@@ -7978,7 +7978,7 @@ namespace LightInject
         }
     }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
     public class ExcludeFromCodeCoverageAttribute : Attribute
     {
         
