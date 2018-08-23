@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.1.7
+    LightInject version 5.1.8
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2033,20 +2033,51 @@ namespace LightInject
             ServiceRegistry<Delegate> constructorDependencyFactories,
             ServiceRegistry<Delegate> propertyDependencyFactories,
             ServiceRegistry<ServiceRegistration> availableServices,
+            ServiceRegistry<Action<IEmitter>> emitters,
             Storage<DecoratorRegistration> decorators,
             Storage<ServiceOverride> overrides,
             Storage<FactoryRule> factoryRules,
-            Storage<Initializer> initializers)
+            Storage<Initializer> initializers,
+            Lazy<IConstructionInfoProvider> constructionInfoProvider,
+            Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory,
+            Action<LogEntry> log,
+            ICompositionRootExecutor compositionRootExecutor,
+            IServiceNameProvider serviceNameProvider,
+            IPropertyDependencySelector propertyDependencySelector,
+            IGenericArgumentMapper genericArgumentMapper,
+            IAssemblyScanner assemblyScanner,
+            IConstructorDependencySelector constructorDependencySelector,
+            IConstructorSelector constructorSelector,
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+            IAssemblyLoader assemblyLoader,
+#endif
+            IScopeManagerProvider scopeManagerProvider
+            ) 
         {
             this.options = options;
             this.constructorDependencyFactories = constructorDependencyFactories;
             this.propertyDependencyFactories = propertyDependencyFactories;
             this.availableServices = availableServices;
+            this.emitters = emitters;
             this.decorators = decorators;
             this.overrides = overrides;
             this.factoryRules = factoryRules;
             this.initializers = initializers;
-        }
+            this.constructionInfoProvider = constructionInfoProvider;
+            this.methodSkeletonFactory = methodSkeletonFactory;
+            this.log = log;
+            CompositionRootExecutor = compositionRootExecutor;
+            ServiceNameProvider = serviceNameProvider;
+            PropertyDependencySelector = propertyDependencySelector;
+            GenericArgumentMapper = genericArgumentMapper;
+            AssemblyScanner = assemblyScanner;
+            ConstructorDependencySelector = constructorDependencySelector;
+            ConstructorSelector = constructorSelector;
+            ScopeManagerProvider = scopeManagerProvider;
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+            AssemblyLoader = assemblyLoader;
+#endif
+        } 
 
         /// <summary>
         /// Gets or sets the <see cref="IScopeManagerProvider"/> that is responsible
@@ -3032,16 +3063,32 @@ namespace LightInject
         /// </summary>
         /// <returns>A new <see cref="ServiceContainer"/> instance.</returns>
         public ServiceContainer Clone()
-        {
+        {            
             return new ServiceContainer(
                 options,
                 constructorDependencyFactories,
                 propertyDependencyFactories,
                 availableServices,
+                emitters,
                 decorators,
                 overrides,
                 factoryRules,
-                initializers);
+                initializers,
+                constructionInfoProvider,
+                methodSkeletonFactory,
+                log,
+                CompositionRootExecutor,
+                ServiceNameProvider,
+                PropertyDependencySelector,
+                GenericArgumentMapper,
+                AssemblyScanner,
+                ConstructorDependencySelector,
+                ConstructorSelector,
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+                AssemblyLoader,
+#endif
+                ScopeManagerProvider               
+                );
         }
 
         private static void EmitNewArray(IList<Action<IEmitter>> emitMethods, Type elementType, IEmitter emitter)
