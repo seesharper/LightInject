@@ -3678,7 +3678,18 @@ namespace LightInject
                 return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
             }
 
-            Action<IEmitter> emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
+            Action<IEmitter> emitter = null;
+            var registrations = GetEmitMethods(dependency.ServiceType);
+            if (registrations.Count > 1)
+            {
+                if (registrations.TryGetValue(dependency.Name, out emitter))
+                {
+                    return emitter;
+                }
+            }
+
+
+            emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
             if (emitter == null)
             {
                 emitter = GetEmitMethod(dependency.ServiceType, dependency.Name);
