@@ -3358,6 +3358,10 @@ namespace LightInject
 
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
+
+
+
+
             var registrations = GetEmitMethods(serviceType);
 
             if (string.IsNullOrWhiteSpace(serviceName))
@@ -3948,55 +3952,118 @@ namespace LightInject
             };
         }
 
-        private ServiceRegistration GetOpenGenericServiceRegistration(Type openGenericServiceType, string serviceName)
+        private ThreadSafeDictionary<string, ServiceRegistration> GetOpenGenericServiceRegistrations(Type openGenericServiceType, string serviceName)
         {
             var services = GetAvailableServices(openGenericServiceType);
-            if (services.Count == 0)
-            {
-                return null;
-            }
+            return services;
 
-            services.TryGetValue(serviceName, out ServiceRegistration openGenericServiceRegistration);
-            if (openGenericServiceRegistration == null && string.IsNullOrEmpty(serviceName) && services.Count == 1)
-            {
-                return services.First().Value;
-            }
+            //if (services.Count == 0)
+            //{
+            //    return null;
+            //}
 
-            return openGenericServiceRegistration;
+            //services.TryGetValue(serviceName, out ServiceRegistration openGenericServiceRegistration);
+            //if (openGenericServiceRegistration == null && string.IsNullOrEmpty(serviceName) && services.Count == 1)
+            //{
+            //    return services.First().Value;
+            //}
+
+            //return openGenericServiceRegistration;
         }
 
         private Action<IEmitter> CreateEmitMethodBasedOnClosedGenericServiceRequest(Type closedGenericServiceType, string serviceName)
         {
             Type openGenericServiceType = closedGenericServiceType.GetGenericTypeDefinition();
-            ServiceRegistration openGenericServiceRegistration =
-                GetOpenGenericServiceRegistration(openGenericServiceType, serviceName);
+            var openGenericServiceRegistrations =
+                GetOpenGenericServiceRegistrations(openGenericServiceType, serviceName);
 
-            if (openGenericServiceRegistration == null)
+            Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)> candidates = new Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)>();
+
+            foreach (var openGenericServiceRegistration in openGenericServiceRegistrations.Values)
             {
-                return null;
+                var mappingResult = GenericArgumentMapper.Map(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
+                if (mappingResult.IsValid)
+                {
+                    var closedGenericImplementingTypeCandidate = TryMakeGenericType(openGenericServiceRegistration.ImplementingType, mappingResult.GetMappedArguments());
+                    if (closedGenericImplementingTypeCandidate != null)
+                    {
+                        candidates.Add(openGenericServiceRegistration.ServiceName, (closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
+                    }
+                }
+            } 
+            
+            (Type closedGenericImplentingType, ILifetime lifetime) candidate;
+
+            // We have a request for the default service
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {                
+                var defaultServiceName = options.DefaultServiceSelector(candidates.Keys.OrderBy(k => k).ToArray());
+                if (candidates.TryGetValue(defaultServiceName, out candidate))
+                {
+                    return RegisterAndGetEmitMethod();
+                }
+                else if (candidates.Count == 1)
+                {
+                    candidate = candidates.First().Value;
+                    return RegisterAndGetEmitMethod();
+                }
+                else
+                {
+                    return null;
+                }
             }
-
-            var mappingResult = GenericArgumentMapper.Map(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
-            var typeArguments = mappingResult.GetMappedArguments();
-
-            Type closedGenericImplementingType = TryMakeGenericType(
-                openGenericServiceRegistration.ImplementingType,
-                typeArguments.ToArray());
-
-            if (closedGenericImplementingType == null)
+            else
             {
-                return null;
+                if (candidates.TryGetValue(serviceName, out candidate))  
+                {
+                    return RegisterAndGetEmitMethod();
+                }
+                else
+                {
+                    return null;
+                }
             }
+                        
+            Action<IEmitter> RegisterAndGetEmitMethod()
+            {                                
+                var serviceRegistration = new ServiceRegistration
+                {
+                    ServiceType = closedGenericServiceType,
+                    ImplementingType = candidate.closedGenericImplentingType,
+                    ServiceName = serviceName,
+                    Lifetime = CloneLifeTime(candidate.lifetime) ?? DefaultLifetime,
+                };
+                Register(serviceRegistration);
+                return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
+            }
+            
 
-            var serviceRegistration = new ServiceRegistration
-            {
-                ServiceType = closedGenericServiceType,
-                ImplementingType = closedGenericImplementingType,
-                ServiceName = serviceName,
-                Lifetime = CloneLifeTime(openGenericServiceRegistration.Lifetime) ?? DefaultLifetime,
-            };
-            Register(serviceRegistration);
-            return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
+            //if (openGenericServiceRegistration == null)
+            //{
+            //    return null;
+            //}
+
+            //var mappingResult = GenericArgumentMapper.Map(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
+            //var typeArguments = mappingResult.GetMappedArguments();
+
+            //Type closedGenericImplementingType = TryMakeGenericType(
+            //    openGenericServiceRegistration.ImplementingType,
+            //    typeArguments.ToArray());
+
+            //if (closedGenericImplementingType == null)
+            //{
+            //    return null;
+            //}
+
+            //var serviceRegistration = new ServiceRegistration
+            //{
+            //    ServiceType = closedGenericServiceType,
+            //    ImplementingType = closedGenericImplementingType,
+            //    ServiceName = serviceName,
+            //    Lifetime = CloneLifeTime(openGenericServiceRegistration.Lifetime) ?? DefaultLifetime,
+            //};
+            //Register(serviceRegistration);
+            //return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
         }
 
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)

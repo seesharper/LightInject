@@ -405,6 +405,30 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_AmbigiousOpenGenericService_PicksCompatibleServiceAsDefault()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithOpenGenericDependency<>));
+            container.Register(typeof(IBar<>), typeof(Bar<>), "bar");
+            container.Register(typeof(IBar<>), typeof(ConstrainedBar<>), "constrainedBar");
+            var instance = container.GetInstance<IFoo<IBar>>();
+        }
+
+        [Fact]
+        public void GetInstance_AmbigiousOpenGenericService_PicksServiceAccordingToDependencyName()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithOpenGenericDependency<>));
+            container.Register(typeof(IBar<>), typeof(Bar<>), "bar");
+            container.Register(typeof(IBar<>), typeof(AnotherBar<>), "dependency");
+
+            var instance = (FooWithOpenGenericDependency<IBar>)container.GetInstance<IFoo<IBar>>();
+            
+        }
+
+
+
+        [Fact]
         public void GetInstance_AmbiguousIntService_UsesParameterNameAsServiceName()
         {
             var options = new ContainerOptions
@@ -485,6 +509,11 @@ namespace LightInject.Tests
                 First = first;
                 Second = second;
             }
+        }
+
+        public class ConstrainedBar<T> : IBar<T> where T: struct
+        {
+
         }
     }
 }
