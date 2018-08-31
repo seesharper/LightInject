@@ -874,6 +874,8 @@ namespace LightInject
         /// <param name="openGenericImplementingType">The open generic implementing type.</param>
         /// <returns>A <see cref="GenericMappingResult"/></returns>
         GenericMappingResult Map(Type genericServiceType, Type openGenericImplementingType);
+
+        Type TryMakeGenericType(Type genericServiceType, Type openGenericImplementingType);
     }
 
     /// <summary>
@@ -3952,11 +3954,11 @@ namespace LightInject
             };
         }
 
-        private ThreadSafeDictionary<string, ServiceRegistration> GetOpenGenericServiceRegistrations(Type openGenericServiceType, string serviceName)
+        private ThreadSafeDictionary<string, ServiceRegistration> GetOpenGenericServiceRegistrations(Type openGenericServiceType)
         {
             var services = GetAvailableServices(openGenericServiceType);
             return services;
-
+            
             //if (services.Count == 0)
             //{
             //    return null;
@@ -3975,7 +3977,7 @@ namespace LightInject
         {
             Type openGenericServiceType = closedGenericServiceType.GetGenericTypeDefinition();
             var openGenericServiceRegistrations =
-                GetOpenGenericServiceRegistrations(openGenericServiceType, serviceName);
+                GetOpenGenericServiceRegistrations(openGenericServiceType);
 
             Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)> candidates = new Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)>();
 
@@ -4070,8 +4072,28 @@ namespace LightInject
         {
             Type actualServiceType = TypeHelper.GetElementType(serviceType);
             
-            EnsureEmitMethodsForOpenGenericTypesAreCreated(actualServiceType);
-            
+            if (actualServiceType.GetTypeInfo().IsGenericType)
+            {
+                Type openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
+                var openGenericServiceRegistrations = GetOpenGenericServiceRegistrations(openGenericServiceType);
+                
+                
+                var constructableOpenGenericServices = openGenericServiceRegistrations.Values.Select(r => new {r.Lifetime, r.ServiceName, closedGenericImplementingType = GenericArgumentMapper.TryMakeGenericType(actualServiceType, r.ImplementingType)})
+                .Where(t => t.closedGenericImplementingType != null);
+                    
+                foreach(var constructableOpenGenericService in constructableOpenGenericServices)
+                {
+                           var serviceRegistration = new ServiceRegistration
+                    {
+                        ServiceType = actualServiceType,
+                        ImplementingType = constructableOpenGenericService.closedGenericImplementingType,
+                        ServiceName = constructableOpenGenericService.ServiceName,
+                        Lifetime = CloneLifeTime(constructableOpenGenericService.Lifetime) ?? DefaultLifetime,
+                    };
+                    Register(serviceRegistration);
+                }                                                           
+            }
+                       
             List<Action<IEmitter>> emitMethods;
 
             if (options.EnableVariance)
@@ -6492,6 +6514,26 @@ namespace LightInject
             return new GenericMappingResult(genericParameterNames, genericArgumentMap, genericServiceType, openGenericImplementingType);
         }
 
+        public Type TryMakeGenericType(Type genericServiceType, Type openGenericImplementingType)
+        {
+            var mappingResult = Map(genericServiceType, openGenericImplementingType);
+            if (!mappingResult.IsValid)
+            {
+                return null;
+            }
+            else
+            {
+                try
+            {
+                return openGenericImplementingType.MakeGenericType(mappingResult.GetMappedArguments());
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+            }
+        }
+
         private static Dictionary<string, Type> CreateMap(Type genericServiceType, Type openGenericImplementingType, string[] genericParameterNames)
         {
             var genericArgumentMap = new Dictionary<string, Type>(genericParameterNames.Length);
@@ -6587,7 +6629,7 @@ namespace LightInject
         private static bool ImplementsOpenGenericTypeDefinition(Type genericTypeDefinition, Type baseType)
         {
             return baseType.GetTypeInfo().IsGenericType && baseType.GetTypeInfo().GetGenericTypeDefinition() == genericTypeDefinition;
-        }
+        }        
     }
 
     /// <summary>
