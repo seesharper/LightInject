@@ -3685,10 +3685,12 @@ namespace LightInject
             }
 
             Action<IEmitter> emitter = null;
+            var dependencyName = string.IsNullOrWhiteSpace(dependency.ServiceName) ? dependency.Name : dependency.ServiceName; 
+            
             var registrations = GetEmitMethods(dependency.ServiceType);
             if (registrations.Count > 1)
             {
-                if (registrations.TryGetValue(dependency.Name, out emitter))
+                if (registrations.TryGetValue(dependencyName, out emitter))
                 {
                     return emitter;
                 }
@@ -3924,21 +3926,7 @@ namespace LightInject
                 emitter.New(constructorInfo);
             };
         }
-
-        private void EnsureEmitMethodsForOpenGenericTypesAreCreated(Type actualServiceType)
-        {
-            if (!actualServiceType.GetTypeInfo().IsGenericType)
-            {
-                return;
-            }
-            var openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
-            var openGenericServiceEmitters = GetAvailableServices(openGenericServiceType);
-            foreach (var openGenericEmitterEntry in openGenericServiceEmitters.Keys)
-            {
-                GetRegisteredEmitMethod(actualServiceType, openGenericEmitterEntry);
-            }
-        }
-
+     
         private Action<IEmitter> CreateEmitMethodBasedOnLazyServiceRequest(Type serviceType, Func<Type, Delegate> valueFactoryDelegate)
         {
             Type actualServiceType = serviceType.GetTypeInfo().GenericTypeArguments[0];
@@ -4037,35 +4025,7 @@ namespace LightInject
                 };
                 Register(serviceRegistration);
                 return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
-            }
-            
-
-            //if (openGenericServiceRegistration == null)
-            //{
-            //    return null;
-            //}
-
-            //var mappingResult = GenericArgumentMapper.Map(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
-            //var typeArguments = mappingResult.GetMappedArguments();
-
-            //Type closedGenericImplementingType = TryMakeGenericType(
-            //    openGenericServiceRegistration.ImplementingType,
-            //    typeArguments.ToArray());
-
-            //if (closedGenericImplementingType == null)
-            //{
-            //    return null;
-            //}
-
-            //var serviceRegistration = new ServiceRegistration
-            //{
-            //    ServiceType = closedGenericServiceType,
-            //    ImplementingType = closedGenericImplementingType,
-            //    ServiceName = serviceName,
-            //    Lifetime = CloneLifeTime(openGenericServiceRegistration.Lifetime) ?? DefaultLifetime,
-            //};
-            //Register(serviceRegistration);
-            //return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
+            }                      
         }
 
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)

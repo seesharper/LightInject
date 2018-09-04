@@ -5,11 +5,58 @@
             "label": "build",
             "command": "dotnet",
             "type": "process",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },            
             "args": [
                 "build",
                 "${workspaceFolder}/LightInject.Tests/LightInject.Tests.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "test",
+            "command": "dotnet",
+            "type": "process",            
+            "args": [
+                "test",
+                "-c",
+                "release",
+                "-f",
+                "netcoreapp2.0",
+                "${workspaceFolder}/LightInject.Tests/LightInject.Tests.csproj"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "test with coverage",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "script",
+                "${workspaceFolder}/LightInject.Tests/coverage/main.csx"
+                               
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "CoverageReport",
+            "type": "process",
+            "command": "dotnet",
+            "problemMatcher": "$msCompile",
+            "args": [
+                "reportgenerator",
+                ""
+            ]
         }
     ]
 }
