@@ -45,6 +45,13 @@ namespace LightInject.Tests
             var result = CreateMapper().Map(typeof(ICollection), typeof(Collection<>));
             Assert.False(result.IsValid);
         }
+
+        [Fact]
+        public void TryMakeGenericType_MissingArgument_ReturnsNull()
+        {
+            var result = CreateMapper().TryMakeGenericType(typeof(ICollection), typeof(Collection<>));
+            Assert.Null(result);
+        }
         
         [Fact]
         public void Map_PartiallyClosedGeneric_ReturnsArgumentForUnclosedParameter()

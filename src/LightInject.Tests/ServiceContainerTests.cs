@@ -1735,7 +1735,7 @@ namespace LightInject.Tests
         }
 
         
-#if NET452 || NET40 || NET46
+#if NET452 || NET40 || NET46 || NETCOREAPP2_0
         [Fact]
         public void RegisterFrom_CompositionRoot_CallsCompositionRootExecutor()
         {

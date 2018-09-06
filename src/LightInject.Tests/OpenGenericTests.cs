@@ -1,6 +1,8 @@
 ﻿namespace LightInject.Tests
 {
     using System;
+    using System.Collections;
+    using System.Collections.ObjectModel;
     using SampleLibrary;
     using Xunit;
 
@@ -70,6 +72,15 @@
             var instance = container.GetInstance<GenericFoo<int>>();
 
             Assert.IsType<AnotherGenericFoo<int>>(instance);
+        }
+
+        [Fact]
+        public void GetInstance_NamedServiceWithInvalidConstraint_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>), "SomeService");
+
+            Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo<int>>("SomeService"));
         }
     }
 }

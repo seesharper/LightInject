@@ -9,7 +9,7 @@ Command.Execute("dotnet", $"test -c release -f netcoreapp2.0 /property:CollectCo
 
 var pathToOpenCoverResult = Path.Combine(pathToCoverageResultFolder, "coverage.opencover.xml");
 
-Command.Execute("dotnet",$"reportgenerator \"-reports:{pathToOpenCoverResult}\"  \"-targetdir:{pathToCoverageResultFolder}\" \"-reportTypes:Html;XmlSummary\"", rootPath);
+Command.Execute("dotnet",$"reportgenerator \"-reports:{pathToOpenCoverResult}\"  \"-targetdir:{pathToCoverageResultFolder}\" \"-reportTypes:Html;XmlSummary;Xml\"", rootPath);
 
 var coverageSummary = XDocument.Load(Path.Combine(pathToCoverageResultFolder, "summary.xml"));
 

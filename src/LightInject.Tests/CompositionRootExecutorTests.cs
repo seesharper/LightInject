@@ -25,5 +25,4 @@ namespace LightInject.Tests
             executor.Execute(typeof(CompositionRootMock));
             compositionRootMock.Assert(c => c.Compose(The<IServiceContainer>.IsAnyValue), Invoked.Once);           
         }
-    }
-}
+    }}

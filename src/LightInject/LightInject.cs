@@ -3945,20 +3945,7 @@ namespace LightInject
         private ThreadSafeDictionary<string, ServiceRegistration> GetOpenGenericServiceRegistrations(Type openGenericServiceType)
         {
             var services = GetAvailableServices(openGenericServiceType);
-            return services;
-            
-            //if (services.Count == 0)
-            //{
-            //    return null;
-            //}
-
-            //services.TryGetValue(serviceName, out ServiceRegistration openGenericServiceRegistration);
-            //if (openGenericServiceRegistration == null && string.IsNullOrEmpty(serviceName) && services.Count == 1)
-            //{
-            //    return services.First().Value;
-            //}
-
-            //return openGenericServiceRegistration;
+            return services;                      
         }
 
         private Action<IEmitter> CreateEmitMethodBasedOnClosedGenericServiceRequest(Type closedGenericServiceType, string serviceName)
@@ -3970,16 +3957,12 @@ namespace LightInject
             Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)> candidates = new Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)>();
 
             foreach (var openGenericServiceRegistration in openGenericServiceRegistrations.Values)
-            {
-                var mappingResult = GenericArgumentMapper.Map(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
-                if (mappingResult.IsValid)
+            {               
+                var closedGenericImplementingTypeCandidate = GenericArgumentMapper.TryMakeGenericType(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
+                if (closedGenericImplementingTypeCandidate != null)
                 {
-                    var closedGenericImplementingTypeCandidate = TryMakeGenericType(openGenericServiceRegistration.ImplementingType, mappingResult.GetMappedArguments());
-                    if (closedGenericImplementingTypeCandidate != null)
-                    {
-                        candidates.Add(openGenericServiceRegistration.ServiceName, (closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
-                    }
-                }
+                    candidates.Add(openGenericServiceRegistration.ServiceName, (closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
+                }             
             } 
             
             (Type closedGenericImplentingType, ILifetime lifetime) candidate;
