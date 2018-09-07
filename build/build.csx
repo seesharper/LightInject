@@ -10,7 +10,7 @@ using static ReleaseManagement;
 
 Build(projectFolder);
 Test(testProjectFolder);
-AnalyzeCodeCoverage(pathToTestAssembly, $"+[{projectName}]*");
+//AnalyzeCodeCoverage(pathToTestAssembly, $"+[{projectName}]*");
 Pack(projectFolder, nuGetArtifactsFolder, Git.Default.GetCurrentShortCommitHash());
 
 using(var sourceBuildFolder = new DisposableFolder())

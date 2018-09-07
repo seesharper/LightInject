@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net46;netstandard1.1;netstandard1.3;netstandard1.6;netstandard2.0;netcoreapp2.0;net452</TargetFrameworks>
-    <Version>5.1.9</Version>
+    <!-- <TargetFrameworks>net46;netstandard1.1;netstandard1.3;netstandard1.6;netstandard2.0;netcoreapp2.0;net452</TargetFrameworks> -->
+    <TargetFrameworks>netcoreapp2.0;netstandard2.0;netstandard1.6;netstandard1.3;netstandard1.1;net46;net452</TargetFrameworks>
+    <Version>5.1.10</Version>
     <Authors>Bernhard Richter</Authors>   
     <PackageProjectUrl>http//www.lightinject.net</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
@@ -11,11 +12,14 @@
     <PackageTags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime</PackageTags>
     <Description>An ultra lightweight Inversion of Control container for the .Net framework. See LightInject.Source for the source distribution.</Description>    
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>    
-    <DebugType>Full</DebugType>
+    <DebugType>Portable</DebugType>
     <CommitHash Condition="'$(CommitHash)' == ''">Unknown Commit</CommitHash>
     <InformationalVersion>$(Version) ($(CommitHash))</InformationalVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>    
     <AssemblyTitle>$(AssemblyName) ($(TargetFramework))</AssemblyTitle>
-  </PropertyGroup>        
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>        
 </Project>

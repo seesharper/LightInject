@@ -47,6 +47,11 @@ namespace LightInject.SampleLibrary
 
     public class Bar<T> : IBar<T> { }
 
+    public class AnotherBar<T> : IBar<T>
+    {
+
+    }
+
     public class BarWithFooDependency : IBar
     {
         public IFoo Foo { get; private set; }

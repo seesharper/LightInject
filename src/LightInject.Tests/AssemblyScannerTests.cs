@@ -237,7 +237,7 @@ namespace LightInject.Tests
         //}
 
 
-#if NET40 || NET452 || NET46         
+#if NET40 || NET452 || NET46 || NETCOREAPP2_0         
         [Fact]
         public void Register_AssemblyFileWithoutCompositionRoot_CallsAssemblyScanner()
         {	        

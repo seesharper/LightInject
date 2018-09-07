@@ -10,9 +10,9 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceRoot}/LightInject.Tests/bin/Debug/netcoreapp1.1/LightInject.Tests.dll",
+            "program": "${workspaceFolder}/LightInject.Tests/bin/Debug/netcoreapp2.0/LightInject.Tests.dll",
             "args": [],
-            "cwd": "${workspaceRoot}/LightInject.Tests",
+            "cwd": "${workspaceFolder}/LightInject.Tests",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
             "console": "internalConsole",
             "stopAtEntry": false,
@@ -24,5 +24,5 @@
             "request": "attach",
             "processId": "${command:pickProcess}"
         }
-    ]
+    ,]
 }

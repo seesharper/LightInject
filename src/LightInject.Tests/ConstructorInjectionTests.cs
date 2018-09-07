@@ -393,9 +393,81 @@ namespace LightInject.Tests
             container.Register<IBar, Bar>("Bar");
             container.Register<IBar, AnotherBar>("AnotherBar");
             container.Register<IFoo, FooWithDependency>();
-            var instance = (FooWithDependency)container.GetInstance<IFoo>();
-            Assert.IsAssignableFrom<Bar>(instance.Bar);
+            var firstInstance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsAssignableFrom<Bar>(firstInstance.Bar);
+
+            container = CreateContainer();
+            container.Register<IBar>(f => new Bar(), "Bar");
+            container.Register<IBar>(f => new AnotherBar(), "AnotherBar");
+            container.Register<IFoo, FooWithAnotherDependency>();
+            var secondInstance = (FooWithAnotherDependency)container.GetInstance<IFoo>();
+            Assert.IsAssignableFrom<AnotherBar>(secondInstance.Bar);
         }
+
+        [Fact]
+        public void GetInstance_AmbigiousOpenGenericService_PicksCompatibleServiceAsDefault()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithOpenGenericDependency<>));
+            container.Register(typeof(IBar<>), typeof(Bar<>), "bar");
+            container.Register(typeof(IBar<>), typeof(ConstrainedBar<>), "constrainedBar");
+            var instance = container.GetInstance<IFoo<IBar>>();
+        }
+
+        [Fact]
+        public void GetInstance_AmbigiousOpenGenericService_PicksServiceAccordingToDependencyName()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(FooWithOpenGenericDependency<>));
+            container.Register(typeof(IBar<>), typeof(Bar<>), "bar");
+            container.Register(typeof(IBar<>), typeof(AnotherBar<>), "dependency");
+
+            var instance = (FooWithOpenGenericDependency<IBar>)container.GetInstance<IFoo<IBar>>();
+            
+        }
+
+
+
+        [Fact]
+        public void GetInstance_AmbiguousIntService_UsesParameterNameAsServiceName()
+        {
+            var options = new ContainerOptions
+            {
+                DefaultServiceSelector = serviceNames => serviceNames.SingleOrDefault(string.IsNullOrWhiteSpace) ?? serviceNames.Last()
+            };
+
+            var container = CreateContainer(options);
+
+            container.Register(f => 84, "second");
+            container.Register(f => 42, "first");
+            container.Register<FooWithIntDependency>();
+            
+            var foo = container.GetInstance<FooWithIntDependency>();
+
+            Assert.Equal(42, foo.First);
+            Assert.Equal(84, foo.Second);
+        }
+
+        [Fact]
+        public void GetInstance_AmbiguousOpenGenericService_UsesParameterNameAsServiceName()
+        {
+            var options = new ContainerOptions
+            {
+                DefaultServiceSelector = serviceNames => serviceNames.SingleOrDefault(string.IsNullOrWhiteSpace) ?? serviceNames.Last()
+            };
+
+            var container = CreateContainer(options);
+
+            container.Register(typeof(IFoo<>),typeof(FooWithOpenGenericDependency<>));
+            container.Register(typeof(IBar<>), typeof(Bar<>), "bar");
+            container.Register(typeof(IBar<>), typeof(Bar<>), "dependency");
+
+            var instance = container.GetInstance<IFoo<int>>();
+
+        }
+
+
+
 
         [Fact]
         public void GetInstance_OpenGenericPerScopeService_ReturnsSameInstance()
@@ -424,6 +496,24 @@ namespace LightInject.Tests
         private IBar CreateBar()
         {
             return new Bar();
-        }       
+        }
+
+
+        public class FooWithIntDependency
+        {
+            public int First { get; }
+            public int Second { get; }
+
+            public FooWithIntDependency(int first, int second)
+            {
+                First = first;
+                Second = second;
+            }
+        }
+
+        public class ConstrainedBar<T> : IBar<T> where T: struct
+        {
+
+        }
     }
 }

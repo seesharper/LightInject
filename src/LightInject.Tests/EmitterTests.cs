@@ -492,7 +492,7 @@ namespace LightInject.Tests
             Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));            
         }
 
-#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46
+#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46 || NETCOREAPP2_0 
         [Fact]        
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {

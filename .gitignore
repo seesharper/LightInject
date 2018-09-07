@@ -16,6 +16,7 @@ local.properties
 .settings/
 .loadpath
 Artifacts
+CoverageResult
 *.exe
 
 # External tool builders
