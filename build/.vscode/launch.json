@@ -8,7 +8,7 @@
             "program": "dotnet",
             "args": [
               "exec", 
-              "C:/Users/bri/.dotnet/tools/.store/dotnet-script/0.25.0/dotnet-script/0.25.0/tools/netcoreapp2.1/any/dotnet-script.dll", 
+              "/Users/bernhardrichter/.dotnet/tools/.store/dotnet-script/0.26.1/dotnet-script/0.26.1/tools/netcoreapp2.1/any/dotnet-script.dll"
               "${file}"
             ],
             "cwd": "${workspaceRoot}",
