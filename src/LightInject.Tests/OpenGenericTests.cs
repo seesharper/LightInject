@@ -82,5 +82,14 @@
 
             Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo<int>>("SomeService"));
         }
+
+        [Fact]
+        public void GetInstance_NoMatchingOpenGeneric_ThrowsException()
+        {
+             var container = CreateContainer();
+
+             Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo<int>>());
+            
+        }
     }
 }
