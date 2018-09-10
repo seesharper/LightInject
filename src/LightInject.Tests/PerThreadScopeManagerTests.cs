@@ -1,6 +1,7 @@
 namespace LightInject.Tests
 {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using LightInject.SampleLibrary;
@@ -72,6 +73,8 @@ namespace LightInject.Tests
         [Fact]
         public void Dispose_OnAnotherThread_ShouldDisposeScope()
         {
+            //Note : https://stackoverflow.com/questions/11417283/strange-weakreference-behavior-on-mono
+            
             var container = new ServiceContainer();                        
             var scope = container.BeginScope();
             WeakReference scopeReference = new WeakReference(scope);
@@ -85,14 +88,25 @@ namespace LightInject.Tests
             // although the scope was ended on another thread 
             // the current scope on this thread should reflect that. 
             var currentScope = container.ScopeManagerProvider.GetScopeManager(container).CurrentScope;
-
-            Assert.Null(currentScope);
+            Assert.Null(currentScope);         
+#if NET452 || NET46
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                Assert.True(scope.IsDisposed);
+            }
+            else
+            {
+                scope = null;
+                GC.Collect();
+                Assert.False(scopeReference.IsAlive);
+            }
+#else
             scope = null;
             GC.Collect();
             Assert.False(scopeReference.IsAlive);
-            
-        }
+#endif
 
+        }                
 
 
         //[Fact]
