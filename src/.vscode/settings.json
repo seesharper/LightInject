@@ -1,4 +1,6 @@
 {
     "coverage-gutters.lcovname": "./CoverageResult/coverage.info",
-    "coverage-gutters.xmlname": "./CoverageResult/coverage.opencover.xml"
+    "coverage-gutters.xmlname": "./CoverageResult/coverage.opencover.xml",
+    "dotnet-test-explorer.testArguments": "-c release -f netcoreapp2.0",
+    "dotnet-test-explorer.showCodeLens": true
 }
