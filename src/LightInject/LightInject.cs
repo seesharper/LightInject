@@ -4837,26 +4837,22 @@ namespace LightInject
         private Scope _currentScope;
         public virtual Scope CurrentScope
         {
-            get => _currentScope;
-            set
-            {
-                _currentScope = value;
-                _root.CurrentScope = value;
-            }
+            get => _root.CurrentScope;
+            set => _root.CurrentScope = value;
         }
 
         public virtual Scope BeginScope()
         {
             var childScopeManager = new NonStaticServiceScopeManager(_root, ServiceFactory);
-            var childScope = new Scope(childScopeManager, CurrentScope);
-            childScopeManager.CurrentScope = childScope;
-            CurrentScope.ChildScope = childScope;
+            var childScope = new Scope(childScopeManager, _currentScope);
+            childScopeManager._currentScope = childScope;
+            _currentScope.ChildScope = childScope;
             return childScope;
         }
 
         public void EndScope(Scope scope)
         {
-            if (ReferenceEquals(CurrentScope, scope))
+            if (ReferenceEquals(_currentScope, scope))
                 scope.ParentScope.ChildScope = null;
         }
 
