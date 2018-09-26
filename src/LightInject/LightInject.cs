@@ -2221,7 +2221,11 @@ namespace LightInject
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
+#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
+            ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
+#else
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
+#endif
 #if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
             AssemblyLoader = new AssemblyLoader();
 #endif

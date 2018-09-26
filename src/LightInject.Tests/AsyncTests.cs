@@ -17,6 +17,7 @@ namespace LightInject.Tests
         public void GetInstance_Continuation_ThrowException()
         {
             var container = new ServiceContainer();
+            container.ScopeManagerProvider = new PerThreadScopeManagerProvider();
             container.Register<IBar, Bar>(new PerScopeLifetime());
             container.Register<IAsyncFoo, AsyncFoo>();
 
