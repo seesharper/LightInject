@@ -1149,7 +1149,26 @@ namespace LightInject
 
     public static class ServiceRegistryExtensions 
     {
-         /// <summary>
+        public static IServiceRegistry Register(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory, object> factory) 
+            => Register(serviceRegistry, serviceType, factory, string.Empty, null);
+
+        public static IServiceRegistry Register(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory, object> factory, ILifetime lifetime) 
+            => Register(serviceRegistry, serviceType, factory, string.Empty, lifetime);
+
+        public static IServiceRegistry Register(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory,object> factory, string serviceName)        
+            => Register(serviceRegistry, serviceType, factory, serviceName, null);
+        
+        public static IServiceRegistry Register(this IServiceRegistry serviceRegistry,Type serviceType, Func<IServiceFactory,object> factory, string serviceName, ILifetime lifetime)
+        {
+            var serviceRegistration = new ServiceRegistration();
+            serviceRegistration.FactoryExpression = factory;
+            serviceRegistration.ServiceType = serviceType;
+            serviceRegistration.ServiceName = serviceName;
+            serviceRegistration.Lifetime = lifetime;
+            return serviceRegistry.Register(serviceRegistration);            
+        }
+        
+        /// <summary>
         /// Registers a singleton service of type <typeparamref name="TService"> with an implementing type of <typeparamref name="TImplementation">.
         /// </summary>
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry">.</param>
@@ -5670,7 +5689,7 @@ namespace LightInject
         /// <summary>
         /// Gets or sets the name of the service.
         /// </summary>
-        public string ServiceName { get; set; }
+        public string ServiceName { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the <see cref="ILifetime"/> instance that controls the lifetime of the service.
