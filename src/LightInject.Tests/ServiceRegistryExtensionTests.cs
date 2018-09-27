@@ -36,6 +36,7 @@ namespace LightInject.Tests
             AssertSingletonRegistration(container);
         }
 
+        [Fact]
         public void ShouldRegisterNamedSingletonServiceUsingTypes()
         {
             var container = CreateContainer();
@@ -94,6 +95,7 @@ namespace LightInject.Tests
             AssertScopedRegistration(container);
         }
 
+        [Fact]
         public void ShouldRegisterNamedScopedServiceUsingTypes()
         {
             var container = CreateContainer();
@@ -151,6 +153,7 @@ namespace LightInject.Tests
             AssertTransientRegistration(container);
         }
 
+        [Fact]
         public void ShouldRegisterNamedTransientServiceUsingTypes()
         {
             var container = CreateContainer();
