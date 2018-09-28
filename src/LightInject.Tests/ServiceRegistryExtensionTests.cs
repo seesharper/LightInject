@@ -65,6 +65,26 @@ namespace LightInject.Tests
             AssertSingletonRegistration(container, ServiceName);
         }
 
+         [Fact]
+        public void ShouldRegisterSingletonServiceUsingNonGenericFactory()
+        {
+            var container = CreateContainer();
+
+            container.RegisterSingleton(typeof(IFoo), f => new Foo());
+            
+            AssertSingletonRegistration(container);
+        }
+
+        [Fact]
+         public void ShouldRegisterNamedSingletonServiceUsingNonGenericFactory()
+        {
+            var container = CreateContainer();
+
+            container.RegisterSingleton(typeof(IFoo), f => new Foo(), ServiceName);
+            
+            AssertSingletonRegistration(container, ServiceName);
+        }
+
 
         [Fact]
         public void ShouldRegisterScopedService()
@@ -124,6 +144,26 @@ namespace LightInject.Tests
             AssertScopedRegistration(container, ServiceName);
         }
 
+        [Fact]
+        public void ShouldRegisterScopedServiceUsingNonGenericFactory()
+        {
+            var container = CreateContainer();
+
+            container.RegisterScoped(typeof(IFoo), f => new Foo());
+            
+            AssertScopedRegistration(container);
+        }
+
+        [Fact]
+         public void ShouldRegisterNamedScopedServiceUsingonGenericFactory()
+        {
+            var container = CreateContainer();
+
+            container.RegisterScoped(typeof(IFoo), f => new Foo(), ServiceName);
+            
+            AssertScopedRegistration(container, ServiceName);
+        }
+
          [Fact]
         public void ShouldRegisterTransientService()
         {
@@ -178,6 +218,26 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterTransient<IFoo>(f => new Foo(), ServiceName);
+            
+            AssertTransientRegistration(container, ServiceName);
+        }
+
+        [Fact]
+        public void ShouldRegisterTransientServiceUsingNonGenericFactory()
+        {
+            var container = CreateContainer();
+
+            container.RegisterTransient(typeof(IFoo), f => new Foo());
+            
+            AssertTransientRegistration(container);
+        }
+
+        [Fact]
+         public void ShouldRegisterNamedTransientServiceUsingonGenericFactory()
+        {
+            var container = CreateContainer();
+
+            container.RegisterTransient(typeof(IFoo), f => new Foo(), ServiceName);
             
             AssertTransientRegistration(container, ServiceName);
         }

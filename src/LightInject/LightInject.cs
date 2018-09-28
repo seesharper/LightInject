@@ -1147,17 +1147,52 @@ namespace LightInject
         }
     }
 
+    /// <summary>
+    /// Extends the <see cref="IServiceRegistry"/> interface with a 
+    /// set of convenience methods for registering services.
+    /// </summary>
     public static class ServiceRegistryExtensions 
     {
+        /// <summary>
+        /// Registers the <paramref name="serviceType"> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry Register(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory, object> factory) 
             => Register(serviceRegistry, serviceType, factory, string.Empty, null);
 
+        /// <summary>
+        /// Registers the <paramref name="serviceType"> with a given <paramref name="lifetime"/> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> used to control the lifetime of the service.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry Register(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory, object> factory, ILifetime lifetime) 
             => Register(serviceRegistry, serviceType, factory, string.Empty, lifetime);
 
+        /// <summary>
+        /// Registers the <paramref name="serviceType"> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <param name="serviceName">The name the service to register.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry Register(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory,object> factory, string serviceName)        
             => Register(serviceRegistry, serviceType, factory, serviceName, null);
         
+        /// <summary>
+        /// Registers the <paramref name="serviceType"> with a given <paramref name="lifetime"/> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> used to control the lifetime of the service.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry Register(this IServiceRegistry serviceRegistry,Type serviceType, Func<IServiceFactory,object> factory, string serviceName, ILifetime lifetime)
         {
             var serviceRegistration = new ServiceRegistration();
@@ -1167,7 +1202,82 @@ namespace LightInject
             serviceRegistration.Lifetime = lifetime;
             return serviceRegistry.Register(serviceRegistration);            
         }
-        
+
+        /// <summary>
+        /// Registers a singleton <paramref name="serviceType"/> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterSingleton(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory,object> factory)
+        {
+            return serviceRegistry.RegisterSingleton(serviceType, factory, string.Empty);
+        }
+
+        /// <summary>
+        /// Registers a singleton <paramref name="serviceType"/> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <param name="serviceName">The name the service to register.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterSingleton(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory,object> factory, string serviceName)
+        {
+            return serviceRegistry.Register(serviceType, factory, serviceName, new PerContainerLifetime());
+        }
+
+        /// <summary>
+        /// Registers a scoped <paramref name="serviceType"/> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterScoped(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory,object> factory)
+        {
+            return serviceRegistry.RegisterScoped(serviceType, factory, string.Empty);
+        }
+
+        /// <summary>
+        /// Registers a scoped <paramref name="serviceType"/> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <param name="serviceName">The name the service to register.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterScoped(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory,object> factory, string serviceName)
+        {
+            return serviceRegistry.Register(serviceType, factory, serviceName, new PerScopeLifetime());
+        }
+
+        /// <summary>
+        /// Registers a transient <paramref name="serviceType"/> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterTransient(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory,object> factory)
+        {
+            return serviceRegistry.RegisterTransient(serviceType, factory, string.Empty);
+        }
+
+        // <summary>
+        /// Registers a transient <paramref name="serviceType"/> using the non-generic <paramref name="factory"> to resolve the instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <param name="factory">The factory used to resolve the instance.</param>
+        /// <param name="serviceName">The name the service to register.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterTransient(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory,object> factory, string serviceName)
+        {
+            return serviceRegistry.Register(serviceType, factory, serviceName);
+        }
+
         /// <summary>
         /// Registers a singleton service of type <typeparamref name="TService"> with an implementing type of <typeparamref name="TImplementation">.
         /// </summary>
