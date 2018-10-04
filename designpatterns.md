@@ -96,7 +96,7 @@ Decorators can also be applied to open generic types.
 
     Assert.IsInstanceOfType(instance, typeof(FooDecorator<int>));
 
-##Lazy Decorators##
+## Lazy Decorators ##
 
 A lazy decorator is a decorator that creates its target only when and if one of its methods are invoked.
 
