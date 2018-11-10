@@ -18,6 +18,7 @@ local.properties
 Artifacts
 CoverageResult
 *.exe
+.DS_Store
 
 # External tool builders
 .externalToolBuilders/

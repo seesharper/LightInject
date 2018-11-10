@@ -1,4 +1,4 @@
-#load "nuget:Dotnet.Build, 0.3.8"
+#load "nuget:Dotnet.Build, 0.3.9"
 using static FileUtils;
 using System.Xml.Linq;
 
@@ -6,12 +6,15 @@ var owner = "seesharper";
 var projectName = "LightInject";
 var root = FileUtils.GetScriptFolder();
 var solutionFolder = Path.Combine(root,"..","src");
+
+var repoFolder  = Path.Combine(root, "..");
+
 var projectFolder = Path.Combine(root, "..", "src", "LightInject");
 
 var testProjectFolder = Path.Combine(root, "..", "src", "LightInject.Tests");
 
 var pathToTestAssembly = Path.Combine(testProjectFolder, "bin","release", "net46", "LightInject.Tests.dll");
-	
+
 
 var artifactsFolder = CreateDirectory(root, "Artifacts");
 var gitHubArtifactsFolder = CreateDirectory(artifactsFolder, "GitHub");
@@ -19,11 +22,11 @@ var nuGetArtifactsFolder = CreateDirectory(artifactsFolder, "NuGet");
 
 string[] exceptTheseTypes = new string[] {
 		"IProxy",
-		"IInvocationInfo", 
-		"IMethodBuilder", 
-		"IDynamicMethodSkeleton", 
-		"IProxyBuilder", 
-		"IInterceptor", 
+		"IInvocationInfo",
+		"IMethodBuilder",
+		"IDynamicMethodSkeleton",
+		"IProxyBuilder",
+		"IInterceptor",
 		"MethodInterceptorFactory",
 		"TargetMethodInfo",
 		"OpenGenericTargetMethodInfo",
@@ -33,8 +36,8 @@ string[] exceptTheseTypes = new string[] {
 		"InterceptorInvocationInfo",
 		"CompositeInterceptor",
 		"InterceptorInfo",
-		"ProxyDefinition"		
-		}; 
+		"ProxyDefinition"
+		};
 
 var pathToReleaseNotes = Path.Combine(gitHubArtifactsFolder, "ReleaseNotes.md");
 
