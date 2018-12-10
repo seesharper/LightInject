@@ -10,7 +10,7 @@ namespace LightInject.Tests
     {
         [Fact]
         public void ShouldCallDisposeOnlyOnceForSameInstance()
-        {                        
+        {
             var servicecontainer = new ServiceContainer();
 
             using (servicecontainer.BeginScope())
@@ -47,11 +47,16 @@ namespace LightInject.Tests
                 Interlocked.Increment(ref disposalCounters);
 
             }
-            
+
             public override bool Equals(object obj)
             {
                 // We do this to ensure that we use reference equals for tracking instances
                 return false;
+            }
+
+            public override int GetHashCode()
+            {
+                return base.GetHashCode();
             }
         }
     }

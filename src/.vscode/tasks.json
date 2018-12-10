@@ -8,17 +8,18 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
-            },            
+            },
             "args": [
                 "build",
-                "${workspaceFolder}/LightInject.Tests/LightInject.Tests.csproj"
+                "${workspaceFolder}/LightInject.Tests/LightInject.Tests.csproj",
+                "/property:GenerateFullPaths=true"
             ],
             "problemMatcher": "$msCompile"
         },
         {
             "label": "test",
             "command": "dotnet",
-            "type": "process",            
+            "type": "process",
             "args": [
                 "test",
                 "-c",
@@ -40,7 +41,7 @@
             "args": [
                 "script",
                 "${workspaceFolder}/LightInject.Tests/coverage/main.csx"
-                               
+
             ],
             "problemMatcher": "$msCompile",
             "group": {
