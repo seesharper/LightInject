@@ -56,7 +56,7 @@ The container implements IDisposable and should be disposed after usage has comp
     Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
 
 If only one named registration exists, **LightInject** is capable of resolving this as the default service.
-    
+​    
     container.Register<IFoo, AnotherFoo>("AnotherFoo");
     var instance = container.GetInstance<IFoo>();
     Assert.IsInstanceOfType(instance, typeof(AnotherFoo));
@@ -117,6 +117,12 @@ This behavior can be overridden using the **EnableVariance** container option.
 	container.Register<DerivedFoo>();
 	var instances = container.GetAllInstances<Foo>();
 	Assert.AreEqual(1, instances.Count());
+
+We can also selectively decide to apply variance only for certain `IEnumerable<T>` services.
+
+```C#
+options.VarianceFilter = (enumerableType) => enumerableType.GetGenericArguments()[0] == typeof(IFoo);
+```
 
 
 
@@ -480,7 +486,7 @@ This tells the container to inject a new **Bar** instance whenever it sees an **
 #### Explicit service registration ####
 
 Registers a service by providing explicit information about how to create the service instance and how to resolve the constructor dependencies.
-    
+​    
     container.Register<IBar, Bar>();
     container.Register<IFoo>(factory => new Foo(factory.GetInstance<IBar>));
     var foo = (Foo)container.GetInstance<IFoo>();
@@ -686,7 +692,7 @@ Allows explicit execution of a composition root.
 	public class Foo<T> : IFoo<T> {};
 
 The container creates the closed generic type based on the service request.
-	 
+​	 
     container.Register(typeof(IFoo<>), typeof(Foo<>));
     var instance = container.GetInstance(typeof(IFoo<int>));
     Assert.IsInstanceOfType(instance, typeof(Foo<int>));
@@ -781,7 +787,7 @@ The only way to deal with disposable objects when using function factories, is t
 
 A typed factory is a class that wraps the function factory that is used to create the underlying service instance.
 As opposed to just function factories, typed factories provides better expressiveness to the consumer of the factory.   
-    
+​    
     public interface IFooFactory
     {
         IFoo GetFoo();
