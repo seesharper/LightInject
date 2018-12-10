@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.2.1
+    LightInject version 5.3.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2229,6 +2229,15 @@ namespace LightInject
         public bool EnableVariance { get; set; }
 
         /// <summary>
+        /// Gets or sets a function that determines if variance should be applied to a given <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <remarks>
+        /// The default is to apply variance to all <see cref="IEnumerable{T}"/> services.
+        /// This filter will only be applied if the <see cref="EnableVariance"/> is set to 'true'
+        /// </remarks>
+        public Func<Type, bool> VarianceFilter { get; set; } = _ => true;
+
+        /// <summary>
         /// Gets or sets the log factory that crates the delegate used for logging.
         /// </summary>
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
@@ -4373,7 +4382,7 @@ namespace LightInject
 
             List<Action<IEmitter>> emitMethods;
 
-            if (options.EnableVariance)
+            if (options.EnableVariance && options.VarianceFilter(serviceType))
             {
                 emitMethods = emitters
                     .Where(kv => actualServiceType.GetTypeInfo().IsAssignableFrom(kv.Key.GetTypeInfo()))
