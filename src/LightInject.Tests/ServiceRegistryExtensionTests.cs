@@ -6,15 +6,15 @@ namespace LightInject.Tests
     public class ServiceRegistryExtensionTests : TestBase
     {
         private const string ServiceName = "SomeFoo";
-        
+
         [Fact]
         public void ShouldRegisterSingletonService()
         {
             var container = CreateContainer();
 
             container.RegisterSingleton<IFoo, Foo>();
-            
-            AssertSingletonRegistration(container);
+
+            AssertSingletonRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -23,8 +23,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterSingleton<IFoo, Foo>(ServiceName);
-            
-            AssertSingletonRegistration(container, ServiceName);
+
+            AssertSingletonRegistration<IFoo>(container, ServiceName);
         }
 
         [Fact]
@@ -33,7 +33,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterSingleton(typeof(IFoo), typeof(Foo));
-            AssertSingletonRegistration(container);
+
+            AssertSingletonRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -42,7 +43,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterSingleton(typeof(IFoo), typeof(Foo), ServiceName);
-            AssertSingletonRegistration(container, ServiceName);
+            AssertSingletonRegistration<IFoo>(container, ServiceName);
         }
 
         [Fact]
@@ -51,8 +52,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterSingleton<IFoo>(f => new Foo());
-            
-            AssertSingletonRegistration(container);
+
+            AssertSingletonRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -61,8 +62,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterSingleton<IFoo>(f => new Foo(), ServiceName);
-            
-            AssertSingletonRegistration(container, ServiceName);
+
+            AssertSingletonRegistration<IFoo>(container, ServiceName);
         }
 
          [Fact]
@@ -71,20 +72,39 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterSingleton(typeof(IFoo), f => new Foo());
-            
-            AssertSingletonRegistration(container);
+
+            AssertSingletonRegistration<IFoo>(container);
         }
 
         [Fact]
-         public void ShouldRegisterNamedSingletonServiceUsingNonGenericFactory()
+        public void ShouldRegisterNamedSingletonServiceUsingNonGenericFactory()
         {
             var container = CreateContainer();
 
             container.RegisterSingleton(typeof(IFoo), f => new Foo(), ServiceName);
-            
-            AssertSingletonRegistration(container, ServiceName);
+
+            AssertSingletonRegistration<IFoo>(container, ServiceName);
         }
 
+        [Fact]
+        public void ShouldRegisterConcreteSingletonService()
+        {
+            var container = CreateContainer();
+
+            container.RegisterSingleton<Foo>();
+
+            AssertSingletonRegistration<Foo>(container);
+        }
+
+        [Fact]
+        public void ShouldRegisterConcreteSingletonServiceUsingType()
+        {
+            var container = CreateContainer();
+
+            container.RegisterSingleton(typeof(Foo));
+
+            AssertSingletonRegistration<Foo>(container);
+        }
 
         [Fact]
         public void ShouldRegisterScopedService()
@@ -92,8 +112,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterScoped<IFoo, Foo>();
-            
-            AssertScopedRegistration(container);
+
+            AssertScopedRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -102,8 +122,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterScoped<IFoo, Foo>(ServiceName);
-            
-            AssertScopedRegistration(container, ServiceName);
+
+            AssertScopedRegistration<IFoo>(container, ServiceName);
         }
 
         [Fact]
@@ -112,7 +132,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterScoped(typeof(IFoo), typeof(Foo));
-            AssertScopedRegistration(container);
+            AssertScopedRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -121,7 +141,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterScoped(typeof(IFoo), typeof(Foo), ServiceName);
-            AssertScopedRegistration(container, ServiceName);
+            AssertScopedRegistration<IFoo>(container, ServiceName);
         }
 
         [Fact]
@@ -130,8 +150,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterScoped<IFoo>(f => new Foo());
-            
-            AssertScopedRegistration(container);
+
+            AssertScopedRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -140,8 +160,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterScoped<IFoo>(f => new Foo(), ServiceName);
-            
-            AssertScopedRegistration(container, ServiceName);
+
+            AssertScopedRegistration<IFoo>(container, ServiceName);
         }
 
         [Fact]
@@ -150,8 +170,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterScoped(typeof(IFoo), f => new Foo());
-            
-            AssertScopedRegistration(container);
+
+            AssertScopedRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -160,18 +180,39 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterScoped(typeof(IFoo), f => new Foo(), ServiceName);
-            
-            AssertScopedRegistration(container, ServiceName);
+
+            AssertScopedRegistration<IFoo>(container, ServiceName);
         }
 
-         [Fact]
+        [Fact]
+        public void ShouldRegisterConcreteScopedService()
+        {
+            var container = CreateContainer();
+
+            container.RegisterScoped<Foo>();
+
+            AssertScopedRegistration<Foo>(container);
+        }
+
+        [Fact]
+        public void ShouldRegisterConcreteScopedServiceUsingType()
+        {
+            var container = CreateContainer();
+
+            container.RegisterScoped(typeof(Foo));
+
+            AssertScopedRegistration<Foo>(container);
+        }
+
+
+        [Fact]
         public void ShouldRegisterTransientService()
         {
             var container = CreateContainer();
 
             container.RegisterTransient<IFoo, Foo>();
-            
-            AssertTransientRegistration(container);
+
+            AssertTransientRegistration<IFoo>(container);
         }
 
          [Fact]
@@ -180,8 +221,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterTransient<IFoo, Foo>(ServiceName);
-            
-            AssertTransientRegistration(container, ServiceName);
+
+            AssertTransientRegistration<IFoo>(container, ServiceName);
         }
 
         [Fact]
@@ -190,7 +231,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterTransient(typeof(IFoo), typeof(Foo));
-            AssertTransientRegistration(container);
+            AssertTransientRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -199,7 +240,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterTransient(typeof(IFoo), typeof(Foo), ServiceName);
-            AssertTransientRegistration(container, ServiceName);
+            AssertTransientRegistration<IFoo>(container, ServiceName);
         }
 
         [Fact]
@@ -208,8 +249,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterTransient<IFoo>(f => new Foo());
-            
-            AssertTransientRegistration(container);
+
+            AssertTransientRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -218,8 +259,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterTransient<IFoo>(f => new Foo(), ServiceName);
-            
-            AssertTransientRegistration(container, ServiceName);
+
+            AssertTransientRegistration<IFoo>(container, ServiceName);
         }
 
         [Fact]
@@ -228,8 +269,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterTransient(typeof(IFoo), f => new Foo());
-            
-            AssertTransientRegistration(container);
+
+            AssertTransientRegistration<IFoo>(container);
         }
 
         [Fact]
@@ -238,30 +279,51 @@ namespace LightInject.Tests
             var container = CreateContainer();
 
             container.RegisterTransient(typeof(IFoo), f => new Foo(), ServiceName);
-            
-            AssertTransientRegistration(container, ServiceName);
+
+            AssertTransientRegistration<IFoo>(container, ServiceName);
         }
 
-        private void AssertTransientRegistration(IServiceRegistry serviceRegistry, string serviceName = null)
+         [Fact]
+        public void ShouldRegisterConcreteTransientService()
+        {
+            var container = CreateContainer();
+
+            container.RegisterTransient<Foo>();
+
+            AssertTransientRegistration<Foo>(container);
+        }
+
+        [Fact]
+        public void ShouldRegisterConcreteTransientServiceUsingType()
+        {
+            var container = CreateContainer();
+
+            container.RegisterTransient(typeof(Foo));
+
+            AssertTransientRegistration<Foo>(container);
+        }
+
+
+        private void AssertTransientRegistration<TService>(IServiceRegistry serviceRegistry, string serviceName = null)
         {
             serviceName = serviceName ?? string.Empty;
-            Assert.Contains<ServiceRegistration>(serviceRegistry.AvailableServices, sr => sr.ServiceType == typeof(IFoo) && sr.Lifetime == null && sr.ServiceName == serviceName);
+            Assert.Contains<ServiceRegistration>(serviceRegistry.AvailableServices, sr => sr.ServiceType == typeof(TService) && sr.Lifetime == null && sr.ServiceName == serviceName);
         }
 
-        private void AssertScopedRegistration(IServiceRegistry serviceRegistry, string serviceName = null)
+        private void AssertScopedRegistration<TService>(IServiceRegistry serviceRegistry, string serviceName = null)
         {
-            AssertLifetimeRegistration<PerScopeLifetime>(serviceRegistry, serviceName);
+            AssertLifetimeRegistration<PerScopeLifetime, TService>(serviceRegistry, serviceName);
         }
 
-         private void AssertSingletonRegistration(IServiceRegistry serviceRegistry, string serviceName = null)
+         private void AssertSingletonRegistration<TService>(IServiceRegistry serviceRegistry, string serviceName = null)
         {
-            AssertLifetimeRegistration<PerContainerLifetime>(serviceRegistry, serviceName);
+            AssertLifetimeRegistration<PerContainerLifetime, TService>(serviceRegistry, serviceName);
         }
 
-        private void AssertLifetimeRegistration<TLifetime>(IServiceRegistry serviceRegistry, string serviceName = null)
+        private void AssertLifetimeRegistration<TLifetime, TService>(IServiceRegistry serviceRegistry, string serviceName = null)
         {
             serviceName = serviceName ?? string.Empty;
-            Assert.Contains<ServiceRegistration>(serviceRegistry.AvailableServices, sr => sr.ServiceType == typeof(IFoo) && sr.Lifetime.GetType() == typeof(TLifetime) && sr.ServiceName == serviceName);
+            Assert.Contains<ServiceRegistration>(serviceRegistry.AvailableServices, sr => sr.ServiceType == typeof(TService) && sr.Lifetime.GetType() == typeof(TLifetime) && sr.ServiceName == serviceName);
         }
    }
 }
