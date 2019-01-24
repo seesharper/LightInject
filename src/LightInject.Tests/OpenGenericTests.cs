@@ -89,7 +89,19 @@
              var container = CreateContainer();
 
              Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo<int>>());
-            
+
+        }
+
+        [Fact]
+        public void GetInstance_NamedOpenGenerics_IgnoresCaseOnServiceNames()
+        {
+            var container = CreateContainer();
+            container.Register(typeof(IFoo<>), typeof(Foo<>), "SomeFoo");
+            container.Register(typeof(IFoo<>), typeof(AnotherFoo<>), "AnotherFoo");
+
+            var instance = container.GetInstance<IFoo<int>>("somefoo");
+
+            Assert.IsType<Foo<int>>(instance);
         }
     }
 }

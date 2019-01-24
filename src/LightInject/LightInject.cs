@@ -4462,7 +4462,7 @@ namespace LightInject
             var openGenericServiceRegistrations =
                 GetOpenGenericServiceRegistrations(openGenericServiceType);
 
-            Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)> candidates = new Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)>();
+            Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)> candidates = new Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var openGenericServiceRegistration in openGenericServiceRegistrations.Values)
             {
