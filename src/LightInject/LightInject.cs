@@ -1297,6 +1297,15 @@ namespace LightInject
             => serviceRegistry.Register<TService, TImplementation>(new PerContainerLifetime());
 
         /// <summary>
+        /// Registers a singleton service of type <typeparamref name="TService"/> as a concrete service.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <typeparam name="TService">The type of service to register.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterSingleton<TService>(this IServiceRegistry serviceRegistry)
+            => serviceRegistry.Register<TService>(new PerContainerLifetime());
+
+        /// <summary>
         /// Registers a singleton service of type <typeparamref name="TService"/> with an implementing type of <typeparamref name="TImplementation"/>.
         /// </summary>
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
@@ -1317,6 +1326,16 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry RegisterSingleton(this IServiceRegistry serviceRegistry, Type serviceType, Type implementingType)
             => serviceRegistry.Register(serviceType, implementingType, new PerContainerLifetime());
+
+        /// <summary>
+        /// Registers a singleton service of type <paramref name="serviceType"/> as a concrete service type.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterSingleton(this IServiceRegistry serviceRegistry, Type serviceType)
+            => serviceRegistry.Register(serviceType, new PerContainerLifetime());
+
 
         /// <summary>
         /// Registers a singleton service of type <paramref name="serviceType"/> with an implementing type of <paramref name="implementingType"/>.
@@ -1362,7 +1381,17 @@ namespace LightInject
             => serviceRegistry.Register<TService, TImplementation>(new PerScopeLifetime());
 
         /// <summary>
-        /// Registers a Singleton service of type <typeparamref name="TService"/> with an implementing type of <typeparamref name="TImplementation"/>.
+        /// Registers a scoped service of type <typeparamref name="TService"/> as a concrete service.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <typeparam name="TService">The type of service to register.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterScoped<TService>(this IServiceRegistry serviceRegistry)
+            => serviceRegistry.Register<TService>(new PerScopeLifetime());
+
+
+        /// <summary>
+        /// Registers a scoped service of type <typeparamref name="TService"/> with an implementing type of <typeparamref name="TImplementation"/>.
         /// </summary>
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
         /// <param name="serviceName">The name of the service to register.</param>
@@ -1382,6 +1411,16 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry RegisterScoped(this IServiceRegistry serviceRegistry, Type serviceType, Type implementingType)
             => serviceRegistry.Register(serviceType, implementingType, new PerScopeLifetime());
+
+
+        /// <summary>
+        /// Registers a scoped service of type <paramref name="serviceType"/> as a concrete service type.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterScoped(this IServiceRegistry serviceRegistry, Type serviceType)
+            => serviceRegistry.Register(serviceType, new PerScopeLifetime());
 
         /// <summary>
         /// Registers a scoped service of type <paramref name="serviceType"/> with an implementing type of <paramref name="implementingType"/>.
@@ -1427,6 +1466,15 @@ namespace LightInject
             => serviceRegistry.Register<TService, TImplementation>();
 
         /// <summary>
+        /// Registers a transient service of type <typeparamref name="TService"/> as a concrete service.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <typeparam name="TService">The type of service to register.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterTransient<TService>(this IServiceRegistry serviceRegistry)
+            => serviceRegistry.Register<TService>();
+
+        /// <summary>
         /// Registers a transient service of type <typeparamref name="TService"/> with an implementing type of <typeparamref name="TImplementation"/>.
         /// </summary>
         /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
@@ -1447,6 +1495,15 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry RegisterTransient(this IServiceRegistry serviceRegistry, Type serviceType, Type implementingType)
             => serviceRegistry.Register(serviceType, implementingType);
+
+        /// <summary>
+        /// Registers a singleton service of type <paramref name="serviceType"/> as a concrete service type.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="serviceType">The type of service to register.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry RegisterTransient(this IServiceRegistry serviceRegistry, Type serviceType)
+            => serviceRegistry.Register(serviceType);
 
         /// <summary>
         /// Registers a transient service of type <paramref name="serviceType"/> with an implementing type of <paramref name="implementingType"/>.
