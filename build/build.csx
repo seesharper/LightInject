@@ -11,7 +11,6 @@ using System.Text.RegularExpressions;
 
 Build(projectFolder);
 Test(testProjectFolder);
-AnalyzeCodeCoverage(pathToTestAssembly, $"+[{projectName}]*");
 Pack(projectFolder, nuGetArtifactsFolder, Git.Default.GetCurrentShortCommitHash());
 
 using (var sourceRepoFolder = new DisposableFolder())
