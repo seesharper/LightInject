@@ -804,12 +804,12 @@ namespace LightInject
     public interface IPropertyDependencySelector
     {
         /// <summary>
-        /// Selects the property dependencies for the given <paramref name="type"/>.
+        /// Selects the property dependencies for the given <paramref name="registration"/>.
         /// </summary>
-        /// <param name="type">The <see cref="Type"/> for which to select the property dependencies.</param>
+        /// <param name="registration">The <see cref="Registration"/> for which to select the property dependencies.</param>
         /// <returns>A list of <see cref="PropertyDependency"/> instances that represents the property
-        /// dependencies for the given <paramref name="type"/>.</returns>
-        IEnumerable<PropertyDependency> Execute(Type type);
+        /// dependencies for the given <paramref name="registration"/>.</returns>
+        IEnumerable<PropertyDependency> Execute(Registration registration);
     }
 
     /// <summary>
@@ -3716,9 +3716,9 @@ namespace LightInject
             lock (lockObject)
             {
                 IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
-
+                
                 ConstructionInfo constructionInfo = new ConstructionInfo();
-                constructionInfo.PropertyDependencies.AddRange(PropertyDependencySelector.Execute(concreteType));
+                constructionInfo.PropertyDependencies.AddRange(PropertyDependencySelector.Execute(new ServiceRegistration { ImplementingType = concreteType, ServiceType = concreteType }));
                 constructionInfo.ImplementingType = concreteType;
 
                 var emitter = methodSkeleton.GetEmitter();
@@ -4829,7 +4829,7 @@ namespace LightInject
 
         private class PropertyDependencyDisabler : IPropertyDependencySelector
         {
-            public IEnumerable<PropertyDependency> Execute(Type type)
+            public IEnumerable<PropertyDependency> Execute(Registration registration)
             {
                 return new PropertyDependency[0];
             }
@@ -5651,13 +5651,14 @@ namespace LightInject
         /// <summary>
         /// Selects the property dependencies for the given <paramref name="type"/>.
         /// </summary>
-        /// <param name="type">The <see cref="Type"/> for which to select the property dependencies.</param>
+        /// <param name="registration">The <see cref="Registration"/> for which to select the property dependencies.</param>
         /// <returns>A list of <see cref="PropertyDependency"/> instances that represents the property
-        /// dependencies for the given <paramref name="type"/>.</returns>
-        public virtual IEnumerable<PropertyDependency> Execute(Type type)
+        /// dependencies for the given <paramref name="registration"/>.</returns>
+        public IEnumerable<PropertyDependency> Execute(Registration registration)
         {
-            return PropertySelector.Execute(type).Select(
-                p => new PropertyDependency { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
+            return PropertySelector
+                .Execute(registration.ImplementingType)
+                .Select(p => new PropertyDependency { Property = p, ServiceName = string.Empty, ServiceType = p.PropertyType });
         }
     }
 
@@ -5715,7 +5716,9 @@ namespace LightInject
             {
                 ImplementingType = implementingType,
             };
-            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
+
+            constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(registration));
+
             constructionInfo.Constructor = constructorSelector.Execute(implementingType);
             constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructionInfo.Constructor));
 
@@ -5736,9 +5739,9 @@ namespace LightInject
             return constructorDependencies;
         }
 
-        private IEnumerable<PropertyDependency> GetPropertyDependencies(Type implementingType)
+        private IEnumerable<PropertyDependency> GetPropertyDependencies(Registration registration)
         {
-            var propertyDependencies = propertyDependencySelector.Execute(implementingType).ToArray();
+            var propertyDependencies = propertyDependencySelector.Execute(registration).ToArray();
             foreach (var property in propertyDependencies)
             {
                 property.FactoryExpression =
