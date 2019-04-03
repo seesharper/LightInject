@@ -6325,10 +6325,6 @@ namespace LightInject
             var currentScope = CurrentScope;
 
             var scope = new Scope(this, currentScope);
-            if (currentScope != null)
-            {
-                currentScope.ChildScope = scope;
-            }
 
             CurrentScope = scope;
             return scope;
@@ -6340,11 +6336,6 @@ namespace LightInject
         /// <param name="scope">The scope to be ended.</param>
         public void EndScope(Scope scope)
         {
-            if (scope.ChildScope != null)
-            {
-                throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
-            }
-
             Scope parentScope = scope.ParentScope;
 
             // Only update the current scope if the scope being
@@ -6352,12 +6343,6 @@ namespace LightInject
             if (ReferenceEquals(CurrentScope, scope))
             {
                 CurrentScope = parentScope;
-            }
-
-            // What to do with the scope reference on the other thread?
-            if (parentScope != null)
-            {
-                parentScope.ChildScope = null;
             }
         }
 
@@ -6444,11 +6429,6 @@ namespace LightInject
         /// Gets the parent <see cref="Scope"/>.
         /// </summary>
         public Scope ParentScope { get; internal set; }
-
-        /// <summary>
-        /// Gets the child <see cref="Scope"/>.
-        /// </summary>
-        public Scope ChildScope { get; internal set; }
 
         /// <summary>
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
