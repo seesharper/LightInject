@@ -486,11 +486,11 @@ This tells the container to inject a new **Bar** instance whenever it sees an **
 #### Explicit service registration ####
 
 Registers a service by providing explicit information about how to create the service instance and how to resolve the constructor dependencies.
-​    
-​    container.Register<IBar, Bar>();
-​    container.Register<IFoo>(factory => new Foo(factory.GetInstance<IBar>));
-​    var foo = (Foo)container.GetInstance<IFoo>();
-​    Assert.IsNotNull(foo.Bar);            
+
+	container.Register<IBar, Bar>();
+	container.Register<IFoo>(factory => new Foo(factory.GetInstance<IBar>));
+	var foo = (Foo)container.GetInstance<IFoo>();
+	Assert.IsNotNull(foo.Bar);            
 
 #### Parameters ####
 
