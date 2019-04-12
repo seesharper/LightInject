@@ -2281,6 +2281,7 @@ namespace LightInject
         {
             EnableVariance = true;
             EnablePropertyInjection = true;
+            EnableRegistrationOverriding = false;
             LogFactory = t => message => { };
         }
 
@@ -2324,6 +2325,14 @@ namespace LightInject
         /// The default value is true.
         /// </remarks>
         public bool EnablePropertyInjection { get; set; }
+
+        /// <summary>
+        /// Gets or sets if the Regristrations can be overriden.
+        /// </summary>
+        /// <remarks>
+        /// The default value is false.
+        /// </remarks>
+        public bool EnableRegistrationOverriding { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions()
         {
@@ -3736,7 +3745,7 @@ namespace LightInject
 
                 emitter.Return();
 
-                isLocked = true;
+                isLocked = !options.EnableRegistrationOverriding;
 
                 return (Func<object[], object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object, object>));
             }
@@ -3788,7 +3797,7 @@ namespace LightInject
 
             emitter.Return();
 
-            isLocked = true;
+            isLocked = !options.EnableRegistrationOverriding;
 
             return (GetInstanceDelegate)methodSkeleton.CreateDelegate(typeof(GetInstanceDelegate));
         }
