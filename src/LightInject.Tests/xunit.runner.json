@@ -1,1 +1,1 @@
-{ "appDomain": "denied" }
+{ "appDomain": "denied", "parallelizeTestCollections": false }

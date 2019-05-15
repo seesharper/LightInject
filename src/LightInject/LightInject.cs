@@ -4144,7 +4144,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private Func<T> CreateGenericDynamicMethodDelegate<T>(Func<object> del)
 
-            // ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedMember.Local
         {
             return () => (T)del();
         }
@@ -6261,7 +6261,7 @@ namespace LightInject
             return instances.GetOrAdd(scope, s => CreateScopedInstance(s, createInstance));
         }
 
-         /// <inheritdoc/>
+        /// <inheritdoc/>
         public ILifetime Clone()
         {
             return new PerScopeLifetime();
@@ -6325,10 +6325,6 @@ namespace LightInject
             var currentScope = CurrentScope;
 
             var scope = new Scope(this, currentScope);
-            if (currentScope != null)
-            {
-                currentScope.ChildScope = scope;
-            }
 
             CurrentScope = scope;
             return scope;
@@ -6340,11 +6336,6 @@ namespace LightInject
         /// <param name="scope">The scope to be ended.</param>
         public void EndScope(Scope scope)
         {
-            if (scope.ChildScope != null)
-            {
-                throw new InvalidOperationException("Attempt to end a scope before all child scopes are completed.");
-            }
-
             Scope parentScope = scope.ParentScope;
 
             // Only update the current scope if the scope being
@@ -6352,12 +6343,6 @@ namespace LightInject
             if (ReferenceEquals(CurrentScope, scope))
             {
                 CurrentScope = parentScope;
-            }
-
-            // What to do with the scope reference on the other thread?
-            if (parentScope != null)
-            {
-                parentScope.ChildScope = null;
             }
         }
 
@@ -6444,11 +6429,6 @@ namespace LightInject
         /// Gets the parent <see cref="Scope"/>.
         /// </summary>
         public Scope ParentScope { get; internal set; }
-
-        /// <summary>
-        /// Gets the child <see cref="Scope"/>.
-        /// </summary>
-        public Scope ChildScope { get; internal set; }
 
         /// <summary>
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
@@ -6891,13 +6871,13 @@ namespace LightInject
             else
             {
                 try
-            {
-                return openGenericImplementingType.MakeGenericType(mappingResult.GetMappedArguments());
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+                {
+                    return openGenericImplementingType.MakeGenericType(mappingResult.GetMappedArguments());
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
             }
         }
 
@@ -7201,13 +7181,11 @@ namespace LightInject
         public IEnumerable<Assembly> Load(string searchPattern)
         {
             string directory = Path.GetDirectoryName(new Uri(GetAssemblyCodeBasePath()).LocalPath);
-            if (directory != null)
+
+            string[] searchPatterns = searchPattern.Split('|');
+            foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
             {
-                string[] searchPatterns = searchPattern.Split('|');
-                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
-                {
-                    yield return LoadAssembly(file);
-                }
+                yield return LoadAssembly(file);
             }
         }
 
@@ -8238,7 +8216,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TService> CreateInstanceDelegate<TService>(IServiceFactory factory, string serviceName)
 
-            // ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedMember.Local
         {
             return () => factory.GetInstance<TService>(serviceName);
         }
@@ -8292,7 +8270,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TArg, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg, TService>(IServiceFactory factory, string serviceName)
 
-            // ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedMember.Local
         {
             return arg => factory.GetInstance<TArg, TService>(arg, serviceName);
         }
@@ -8300,7 +8278,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TService>(IServiceFactory factory, string serviceName)
 
-            // ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedMember.Local
         {
             return (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
         }
@@ -8308,7 +8286,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TArg3, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TService>(IServiceFactory factory, string serviceName)
 
-            // ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedMember.Local
         {
             return (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
         }
@@ -8316,7 +8294,7 @@ namespace LightInject
         // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TArg3, TArg4, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TArg4, TService>(IServiceFactory factory, string serviceName)
 
-            // ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedMember.Local
         {
             return (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
         }

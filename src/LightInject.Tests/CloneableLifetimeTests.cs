@@ -63,7 +63,7 @@ namespace LightInject.Tests
             Assert.IsType<Foo<string>>(instance);
         }
 
-        public class LifetimeWithoutCloneableImplementation : ILifetime
+        internal class LifetimeWithoutCloneableImplementation : ILifetime
         {
             public object GetInstance(Func<object> createInstance, Scope scope)
             {
@@ -72,5 +72,5 @@ namespace LightInject.Tests
         }
     }
 
-   
+
 }
