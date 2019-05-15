@@ -36,6 +36,7 @@ AsyncStep deploy = async () =>
     if (!BuildEnvironment.IsSecure)
     {
         Logger.Log("Deployment can only be done in a secure environment");
+        return;
     }
 
     await CreateReleaseNotes();
