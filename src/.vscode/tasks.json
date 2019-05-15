@@ -1,63 +1,62 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "build",
-            "command": "dotnet",
-            "type": "process",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "args": [
-                "build",
-                "${workspaceFolder}/LightInject.Tests/LightInject.Tests.csproj",
-                "/property:GenerateFullPaths=true"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "test",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "test",
-                "-c",
-                "release",
-                "-f",
-                "netcoreapp2.0",
-                "${workspaceFolder}/LightInject.Tests/LightInject.Tests.csproj"
-            ],
-            "problemMatcher": "$msCompile",
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "test with coverage",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "script",
-                "${workspaceFolder}/LightInject.Tests/coverage/main.csx"
-
-            ],
-            "problemMatcher": "$msCompile",
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "CoverageReport",
-            "type": "process",
-            "command": "dotnet",
-            "problemMatcher": "$msCompile",
-            "args": [
-                "reportgenerator",
-                ""
-            ]
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "command": "dotnet",
+      "args": ["build", "/property:GenerateFullPaths=true"],
+      "type": "shell",
+      "group": "build",
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "rebuild",
+      "command": "dotnet",
+      "args": ["build", "--no-incremental", "/property:GenerateFullPaths=true"],
+      "type": "shell",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "clear": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "test",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["script", "${workspaceFolder}/../build/build.csx", "test"],
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "test with coverage",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "script",
+        "${workspaceFolder}/../build/build.csx",
+        "testcoverage"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    }
+  ]
 }

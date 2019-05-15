@@ -1,47 +1,58 @@
-#load "nuget:Dotnet.Build, 0.3.9"
+#load "nuget:Dotnet.Build, 0.5.0"
 #load "nuget:github-changelog, 0.1.5"
+#load "nuget:dotnet-steps, 0.0.1"
 #load "BuildContext.csx"
-using static FileUtils;
-using static Internalizer;
-using static xUnit;
-using static DotNet;
+
 using static ChangeLog;
 using static ReleaseManagement;
-using System.Text.RegularExpressions;
 
-Build(projectFolder);
-Test(testProjectFolder);
-Pack(projectFolder, nuGetArtifactsFolder, Git.Default.GetCurrentShortCommitHash());
 
-using (var sourceRepoFolder = new DisposableFolder())
+[StepDescription("Runs the tests with test coverage")]
+Step testcoverage = () =>
 {
-    string pathToSourceProjectFolder = Path.Combine(sourceRepoFolder.Path,"src","LightInject");
-    string pathToSourceFile = Path.Combine(pathToSourceProjectFolder, "LightInject.cs");
-    Copy(repoFolder, sourceRepoFolder.Path, new [] {".vs", "obj"});
-    Internalize(pathToSourceProjectFolder, exceptTheseTypes);
-    DotNet.Build(Path.Combine(sourceRepoFolder.Path,"src","LightInject"));
-    using(var nugetPackFolder = new DisposableFolder())
-    {
-        Copy("LightInject.Source.nuspec", nugetPackFolder.Path);
-        PrepareSourceFile(nugetPackFolder.Path, pathToSourceFile, "netcoreapp2.0");
-        PrepareSourceFile(nugetPackFolder.Path, pathToSourceFile, "netstandard2.0");
-        PrepareSourceFile(nugetPackFolder.Path, pathToSourceFile, "net46");
-        NuGet.Pack(nugetPackFolder.Path, nuGetArtifactsFolder, version);
-    }
-}
+    DotNet.TestWithCodeCoverage(projectName, testProjectFolder, coverageArtifactsFolder, targetFramework: "netcoreapp2.0", threshold: 90);
+};
 
-if (BuildEnvironment.IsSecure)
-    {
-        await CreateReleaseNotes();
+[StepDescription("Runs all the tests for all target frameworks")]
+Step test = () =>
+{
+    DotNet.Test(testProjectFolder);
+};
 
-        if (Git.Default.IsTagCommit())
-        {
-            Git.Default.RequreCleanWorkingTree();
-            await ReleaseManagerFor(owner, projectName,BuildEnvironment.GitHubAccessToken)
-            .CreateRelease(Git.Default.GetLatestTag(), pathToReleaseNotes, Array.Empty<ReleaseAsset>());
-            NuGet.TryPush(nuGetArtifactsFolder);
-        }
+[StepDescription("Creates the NuGet packages")]
+Step pack = () =>
+{
+    test();
+    testcoverage();
+    DotNet.Pack(projectFolder, nuGetArtifactsFolder, Git.Default.GetCurrentShortCommitHash());
+    NuGet.CreateSourcePackage(repoFolder, projectName, nuGetArtifactsFolder);
+};
+
+[DefaultStep]
+[StepDescription("Deploys packages if we are on a tag commit in a secure environment.")]
+AsyncStep deploy = async () =>
+{
+    pack();
+    if (!BuildEnvironment.IsSecure)
+    {
+        Logger.Log("Deployment can only be done in a secure environment");
     }
+
+    await CreateReleaseNotes();
+
+    if (Git.Default.IsTagCommit())
+    {
+        Git.Default.RequireCleanWorkingTree();
+        await ReleaseManagerFor(owner, projectName, BuildEnvironment.GitHubAccessToken)
+        .CreateRelease(Git.Default.GetLatestTag(), pathToReleaseNotes, Array.Empty<ReleaseAsset>());
+        NuGet.TryPush(nuGetArtifactsFolder);
+    }
+};
+
+
+await StepRunner.Execute(Args);
+return 0;
+
 
 private async Task CreateReleaseNotes()
 {
@@ -52,16 +63,4 @@ private async Task CreateReleaseNotes()
         generator = generator.IncludeUnreleased();
     }
     await generator.Generate(pathToReleaseNotes, FormattingOptions.Default.WithPullRequestBody());
-}
-
-private void PrepareSourceFile(string nugetPackFolder, string pathToSourceFile ,string targetFramework)
-{
-    var contentFolder = CreateDirectory(nugetPackFolder, "contentFiles", "cs", targetFramework, "LightInject");
-    string pathToSourceFileTemplate = Path.Combine(contentFolder, "LightInject.cs.pp");
-    Copy(pathToSourceFile, pathToSourceFileTemplate);
-    var frameworkConstant = targetFramework.ToUpper().Replace(".","_");
-    var lines = File.ReadAllLines(pathToSourceFileTemplate).ToList();
-    lines.Insert(0, $"#define {frameworkConstant}");
-    File.WriteAllLines(pathToSourceFileTemplate, lines);
-    FileUtils.ReplaceInFile(@"namespace \S*", $"namespace $rootnamespace$.{projectName}", pathToSourceFileTemplate);
 }

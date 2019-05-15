@@ -8,12 +8,8 @@ namespace LightInject.Tests
 
     using Xunit;
 
-
-
     public class PerThreadScopeManagerTests
     {
-        //private readonly ThreadLocal<PerLogicalCallContextScopeManager> scopeManagers = new ThreadLocal<PerLogicalCallContextScopeManager>(() => new PerLogicalCallContextScopeManager());
-
         [Fact]
         public void BeginScope_NoParentScope_ParentScopeIsNull()
         {
@@ -41,22 +37,8 @@ namespace LightInject.Tests
             }
         }
 
-        // [Fact]
-        // public void BeginScope_WithParentScope_ParentScopeHasInnerScopeAsChild()
-        // {
-        //     var container = new ServiceContainer();
-        //     var scopeManager = new PerThreadScopeManager(container);
-        //     using (var outerScope = scopeManager.BeginScope())
-        //     {
-        //         using (var scope = scopeManager.BeginScope())
-        //         {
-        //             Assert.Same(scope, outerScope.ChildScope);
-        //         }
-        //     }
-        // }
-
         [Fact]
-        public void EndScope_BeforeInnerScopeHasCompleted_ThrowsException()
+        public void EndScope_BeforeInnerScopeHasCompleted_DoesNotThrowException()
         {
             var container = new ServiceContainer();
             var scopeManager = new PerThreadScopeManager(container);
@@ -65,10 +47,11 @@ namespace LightInject.Tests
             {
                 using (var innerScope = scopeManager.BeginScope())
                 {
-                    Assert.Throws<InvalidOperationException>(() => outerScope.Dispose());
+                    outerScope.Dispose();
                 }
             }
         }
+
 
         [Fact]
         public void Dispose_OnAnotherThread_ShouldDisposeScope()
@@ -107,22 +90,6 @@ namespace LightInject.Tests
 #endif
 
         }
-
-
-        //[Fact]
-        //public void Dispose_OnAnotherThread_ThrowsException()
-        //{
-        //    var container = new ServiceContainer();
-        //    var scopeManager = new PerThreadScopeManager(container);
-        //    Scope scope = scopeManager.BeginScope();
-        //    Thread thread = new Thread(scope.Dispose);
-
-        //    Assert.Throws<InvalidOperationException>(() =>
-        //    {
-        //        thread.Start();
-        //        thread.Join();
-        //    });
-        //}
 
         [Fact]
         public void Dispose_WithTrackedInstances_DisposesTrackedInstances()
