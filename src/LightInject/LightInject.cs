@@ -2307,7 +2307,7 @@ namespace LightInject
         public Func<Type, bool> VarianceFilter { get; set; } = _ => true;
 
         /// <summary>
-        /// Gets or sets the log factory that crates the delegate used for logging.
+        /// Gets or sets the log factory that creates the delegate used for logging.
         /// </summary>
         public Func<Type, Action<LogEntry>> LogFactory { get; set; }
 
