@@ -7226,6 +7226,252 @@ namespace LightInject
     /// </summary>
     public class AssemblyLoader : IAssemblyLoader
     {
+        [Flags]
+        private enum Characteristics : ushort
+        {
+            /// <summary>
+            /// Image only, Windows CE, and Microsoft Windows NT and later. This indicates that the
+            /// file does not contain base relocations and must therefore be loaded at its preferred
+            /// base address. If the base address is not available, the loader reports an error.
+            /// </summary>
+            /// <remarks>
+            /// The default behavior of the linker is to strip base relocations from executable (EXE) files.
+            /// </remarks>
+            IMAGE_FILE_RELOCS_STRIPPED = 0x0001,
+
+            /// <summary>
+            /// Image only. This indicates that the image file is valid and can be run.
+            /// </summary>
+            /// <remarks>If this flag is not set, it indicates a linker error.</remarks>
+            IMAGE_FILE_EXECUTABLE_IMAGE = 0x0002,
+
+            /// <summary>
+            /// COFF line numbers have been removed.
+            /// </summary>
+            /// <remarks>This flag is deprecated and should be zero.</remarks>
+            [Obsolete("This flag is deprecated and should be zero.")]
+            IMAGE_FILE_LINE_NUMS_STRIPPED = 0x0004,
+
+            /// <summary>
+            /// COFF symbol table entries for local symbols have been removed.
+            /// </summary>
+            /// <remarks>This flag is deprecated and should be zero.</remarks>
+            [Obsolete("This flag is deprecated and should be zero.")]
+            IMAGE_FILE_LOCAL_SYMS_STRIPPED = 0x0008,
+
+            /// <summary>
+            /// Aggressively trim working set.
+            /// </summary>
+            /// <remarks>This flag is deprecated for Windows 2000 and later and must be zero.</remarks>
+            [Obsolete("This flag is deprecated for Windows 2000 and later and must be zero.")]
+            IMAGE_FILE_AGGRESSIVE_WS_TRIM = 0x0010,
+
+            /// <summary>
+            /// Application can handle &gt; 2 GB addresses
+            /// </summary>
+            IMAGE_FILE_LARGE_ADDRESS_AWARE = 0x0020,
+
+            /// <summary>
+            /// This flag is reserved for future use.
+            /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1700:DoNotNameEnumValuesReserved")]
+            Reserved = 0x0040,
+
+            /// <summary>
+            /// Little endian: the least significant bit (LSB) precedes the most significant bit
+            /// (MSB) in memory.
+            /// </summary>
+            /// <remarks>This flag is deprecated and should be zero.</remarks>
+            [Obsolete("This flag is deprecated and should be zero.")]
+            IMAGE_FILE_BYTES_REVERSED_LO = 0x0080,
+
+            /// <summary>
+            /// Machine is based on a 32-bit-word architecture.
+            /// </summary>
+            IMAGE_FILE_32BIT_MACHINE = 0x0100,
+
+            /// <summary>
+            /// Debugging information is removed from the image file.
+            /// </summary>
+            IMAGE_FILE_DEBUG_STRIPPED = 0x0200,
+
+            /// <summary>
+            /// If the image is on removable media, fully load it and copy it to the swap file.
+            /// </summary>
+            IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP = 0x0400,
+
+            /// <summary>
+            /// If the image is on network media, fully load it and copy it to the swap file.
+            /// </summary>
+            IMAGE_FILE_NET_RUN_FROM_SWAP = 0x0800,
+
+            /// <summary>
+            /// The image file is a system file, not a user program.
+            /// </summary>
+            IMAGE_FILE_SYSTEM = 0x1000,
+
+            /// <summary>
+            /// The image file is a dynamic-link library (DLL). Such files are considered executable
+            /// files for almost all purposes, although they cannot be directly run.
+            /// </summary>
+            IMAGE_FILE_DLL = 0x2000,
+
+            /// <summary>
+            /// The file should be run only on a uniprocessor machine.
+            /// </summary>
+            IMAGE_FILE_UP_SYSTEM_ONLY = 0x4000,
+
+            /// <summary>
+            /// Big endian: the MSB precedes the LSB in memory.
+            /// </summary>
+            /// <remarks>This flag is deprecated and should be zero.</remarks>
+            [Obsolete("This flag is deprecated and should be zero.")]
+            IMAGE_FILE_BYTES_REVERSED_HI = 0x8000
+        }
+
+        private enum MachineType : ushort
+        {
+            /// <summary>
+            /// The contents of this field are assumed to be applicable to any machine type
+            /// </summary>
+            IMAGE_FILE_MACHINE_UNKNOWN = 0x0,
+
+            /// <summary>
+            /// Matsushita AM33
+            /// </summary>
+            IMAGE_FILE_MACHINE_AM33 = 0x1d3,
+
+            /// <summary>
+            /// Intel x64
+            /// </summary>
+            IMAGE_FILE_MACHINE_AMD64 = 0x8664,
+
+            /// <summary>
+            /// ARM little endian
+            /// </summary>
+            IMAGE_FILE_MACHINE_ARM = 0x1c0,
+
+            /// <summary>
+            /// ARM Thumb-2 little endian
+            /// </summary>
+            IMAGE_FILE_MACHINE_ARMNT = 0x1c4,
+
+            /// <summary>
+            /// EFI byte code
+            /// </summary>
+            IMAGE_FILE_MACHINE_EBC = 0xebc,
+
+            /// <summary>
+            /// Intel 386 or later processors and compatible processors
+            /// </summary>
+            IMAGE_FILE_MACHINE_I386 = 0x14c,
+
+            /// <summary>
+            /// Intel Itanium processor family
+            /// </summary>
+            IMAGE_FILE_MACHINE_IA64 = 0x200,
+
+            /// <summary>
+            /// Mitsubishi M32R little endian
+            /// </summary>
+            IMAGE_FILE_MACHINE_M32R = 0x9041,
+
+            /// <summary>
+            /// MIPS16 without FPU
+            /// </summary>
+            IMAGE_FILE_MACHINE_MIPS16 = 0x266,
+
+            /// <summary>
+            /// MIPS with FPU
+            /// </summary>
+            IMAGE_FILE_MACHINE_MIPSFPU = 0x366,
+
+            /// <summary>
+            /// MIPS16 with FPU
+            /// </summary>
+            IMAGE_FILE_MACHINE_MIPSFPU16 = 0x466,
+
+            /// <summary>
+            /// Power PC little endian
+            /// </summary>
+            IMAGE_FILE_MACHINE_POWERPC = 0x1f0,
+
+            /// <summary>
+            /// Power PC with floating point support
+            /// </summary>
+            IMAGE_FILE_MACHINE_POWERPCFP = 0x1f1,
+
+            /// <summary>
+            /// MIPS little endian
+            /// </summary>
+            IMAGE_FILE_MACHINE_R4000 = 0x166,
+
+            /// <summary>
+            /// RISC-V 32-bit address space
+            /// </summary>
+            IMAGE_FILE_MACHINE_RISCV32 = 0x5032,
+
+            /// <summary>
+            /// RISC-V 64-bit address space
+            /// </summary>
+            IMAGE_FILE_MACHINE_RISCV64 = 0x5064,
+
+            /// <summary>
+            /// RISC-V 128-bit address space
+            /// </summary>
+            IMAGE_FILE_MACHINE_RISCV128 = 0x5128,
+
+            /// <summary>
+            /// Hitachi SH3
+            /// </summary>
+            IMAGE_FILE_MACHINE_SH3 = 0x1a2,
+
+            /// <summary>
+            /// Hitachi SH3 DSP
+            /// </summary>
+            IMAGE_FILE_MACHINE_SH3DSP = 0x1a3,
+
+            /// <summary>
+            /// Hitachi SH4
+            /// </summary>
+            IMAGE_FILE_MACHINE_SH4 = 0x1a6,
+
+            /// <summary>
+            /// Hitachi SH5
+            /// </summary>
+            IMAGE_FILE_MACHINE_SH5 = 0x1a8,
+
+            /// <summary>
+            /// Thumb
+            /// </summary>
+            IMAGE_FILE_MACHINE_THUMB = 0x1c2,
+
+            /// <summary>
+            /// MIPS little-endian WCE v2
+            /// </summary>
+            IMAGE_FILE_MACHINE_WCEMIPSV2 = 0x169
+        }
+
+        private enum PEType : ushort
+        {
+            None = 0,
+
+            /// <summary>
+            /// ROM Image
+            /// </summary>
+            ROMImage = 0x107,
+
+            /// <summary>
+            /// Normal executable
+            /// </summary>
+            PE32 = 0x10B,
+
+            /// <summary>
+            /// PE32+ executable
+            /// </summary>
+            PE32Plus = 0x20B
+        }
+
         /// <summary>
         /// Loads a set of assemblies based on the given <paramref name="searchPattern"/>.
         /// </summary>
@@ -7251,7 +7497,141 @@ namespace LightInject
         /// <returns><b>true</b> if the file can be loaded, otherwise <b>false</b>.</returns>
         protected virtual bool CanLoad(string fileName)
         {
-            return true;
+            return IsManagedDll(fileName) ?? false;
+        }
+
+        /// <summary>
+        /// Indicates if the current <paramref name="fileName"/> represent a managed assembly (.exe or .dll).
+        /// </summary>
+        /// <param name="fileName">The name of the target file.</param>
+        /// <returns><b>true</b>  if the dll is Managed,  <b>false</b> if it is native, and <b>null</b> if unknown</returns>
+        private static bool? IsManagedDll(string fileName)
+        {
+            try
+            {
+                var pe = GetDllMachineType(fileName);
+
+                // The 15th directory consist of CLR header! if its 0, its not a CLR file :)
+                return pe.DataDictionaryRVA[14] != 0;
+            }
+#pragma warning disable RECS0022 // A catch clause that catches System.Exception and has an empty body
+            catch
+#pragma warning restore RECS0022 // A catch clause that catches System.Exception and has an empty body
+            {
+            }
+
+            return null;
+        }
+
+        private static IMAGE_FILE_HEADER GetDllMachineType(string dllPath)
+        {
+            // See http://www.microsoft.com/whdc/system/platform/firmware/PECOFF.mspx Offset to PE
+            // header is always at 0x3C. The PE header starts with "PE\0\0" = 0x50 0x45 0x00 0x00,
+            // followed by a 2-byte machine type field (see the document above for the enum).
+            var result = IMAGE_FILE_HEADER.Empty;
+
+            FileStream stream = null;
+            try
+            {
+                stream = new FileStream(dllPath, FileMode.Open, FileAccess.Read);
+                using (var reader = new BinaryReader(stream))
+                {
+                    stream = null;
+
+                    // PE Header starts @ 0x3C (60). Its a 4 byte header.
+                    stream.Seek(0x3c, SeekOrigin.Begin);
+                    var peHeaderOffset = reader.ReadInt32();
+                    if (peHeaderOffset == 0)
+                    {
+                        peHeaderOffset = 0x80;
+                    }
+
+                    // Ensure there is at least enough room for the following structures: 24 byte PE
+                    // Signature & Header 28 byte Standard Fields (24 bytes for PE32+) 68 byte NT Fields
+                    // (88 bytes for PE32+) >= 128 byte Data Dictionary Table
+                    if (peHeaderOffset > stream.Length - 256)
+                    {
+                        throw new BadImageFormatException("File either is not a PE/COFF file or is corrupted.", dllPath);
+                    }
+
+                    // Moving to PE Header start location...
+                    stream.Seek(peHeaderOffset, SeekOrigin.Begin);
+                    var peHeaderSignature = reader.ReadUInt32();
+
+                    // Check the PE signature. Should equal 'PE\0\0'.
+                    if (peHeaderSignature != 0x00004550)
+                    {
+                        throw new BadImageFormatException("Can't find PE header", dllPath);
+                    }
+
+                    result.Machine = (MachineType)reader.ReadUInt16();
+                    result.NumberOfSections = reader.ReadUInt16();
+                    var seconds = reader.ReadUInt32();
+                    result.TimeDateStamp = new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(seconds);
+                    result.PointerToSymbolTable = reader.ReadUInt32();
+                    result.NumberOfSymbols = reader.ReadUInt32();
+                    result.SizeOfOptionalHeader = reader.ReadUInt16();
+                    result.Characteristics = (Characteristics)reader.ReadUInt16();
+
+                    // Now we are at the end of the PE Header and from here, the PE Optional Headers
+                    // starts... Read PE magic number from Standard Fields to determine format.
+                    result.PEFormat = (PEType)reader.ReadUInt16();
+                    if (result.PEFormat != PEType.PE32 && result.PEFormat != PEType.PE32Plus)
+                    {
+                        throw new BadImageFormatException("Found neither PE nor PE+ magic numbers", dllPath);
+                    }
+
+                    // we'll increase the stream's current position to with 96 for PE headers and 112 for
+                    // PE+ headers we want to skip these structures: 28 byte Standard Fields (24 bytes
+                    // for PE32+) 68 byte NT Fields (88 bytes for PE32+)
+                    var dataDictionaryStart = peHeaderOffset + (result.PEFormat == PEType.PE32 ? 96 : 112);
+
+                    // To go directly to the datadictionary
+                    stream.Position = stream.Position + dataDictionaryStart;
+
+                    // DataDictionay has 16 directories in total, doing simple maths 128/16 = 8. So each
+                    // directory is of 8 bytes. In this 8 bytes, 4 bytes is of RVA and 4 bytes of Size.
+                    for (int i = 0; i < 15; i++)
+                    {
+                        result.DataDictionaryRVA[i] = reader.ReadUInt32();
+                        result.DataDictionarySize[i] = reader.ReadUInt32();
+                    }
+                }
+            }
+#pragma warning disable RECS0022 // A catch clause that catches System.Exception and has an empty body
+            catch
+#pragma warning restore RECS0022 // A catch clause that catches System.Exception and has an empty body
+            {
+            }
+            finally
+            {
+                stream?.Dispose();
+            }
+
+            return result;
+        }
+
+        private struct IMAGE_FILE_HEADER
+        {
+            public static readonly IMAGE_FILE_HEADER Empty = Initialize();
+            public Characteristics Characteristics;
+            public uint[] DataDictionaryRVA;
+            public uint[] DataDictionarySize;
+            public MachineType Machine;
+            public ushort NumberOfSections;
+            public uint NumberOfSymbols;
+            public PEType PEFormat;
+            public uint PointerToSymbolTable;
+            public ushort SizeOfOptionalHeader;
+            public DateTime TimeDateStamp;
+
+            public static IMAGE_FILE_HEADER Initialize()
+            {
+                var result = default(IMAGE_FILE_HEADER);
+                result.DataDictionaryRVA = new uint[16];
+                result.DataDictionarySize = new uint[16];
+                return result;
+            }
         }
 
         /// <summary>
