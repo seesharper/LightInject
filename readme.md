@@ -586,7 +586,13 @@ In addition to the `PerScopeLifetime` which ensures disposal and a single instan
 
 > Note: The `PerRequestLifetime` has NO relation to the notion of a web request. 
 
+If we don't need access to an ambient scope, we can disable this in the `ContainerOptions`
 
+```csharp
+var container = new ServiceContainer(o => o.EnableCurrentScope = false);
+```
+
+This also improves performance ever so slightly as we don't need to maintain a current scope when scopes are started and ended. 
 
 ## Dependencies ##
 
