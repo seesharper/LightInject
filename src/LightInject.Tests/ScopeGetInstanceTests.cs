@@ -475,7 +475,7 @@
         }
     }
 
-    public class LifeTimeEx : ILifetimeEx
+    public class LifeTimeEx : ILifetime
     {
         public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
         {

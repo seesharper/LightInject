@@ -734,22 +734,6 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a optimized <see cref="ILifetime"/> class
-    /// that don't close around the scope.
-    /// </summary>
-    public interface ILifetimeEx : ILifetime
-    {
-        /// <summary>
-        /// Returns a service instance according to the specific lifetime characteristics.
-        /// </summary>
-        /// <param name="createInstance">The delegate used to create a new service instance.</param>
-        /// <param name="scope">The <see cref="Scope"/> of the current service request.</param>
-        /// <param name="arguments">The arguments array to be passed to the <paramref name="createInstance"/> delegate.</param>
-        /// <returns>The requested services instance.</returns>
-        object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments);
-    }
-
-    /// <summary>
     /// Optionally implemented by <see cref="ILifetime"/> implementations
     /// to provide a way to clone the lifetime.
     /// </summary>
@@ -4461,48 +4445,53 @@ namespace LightInject
                 emitter.Push(scopeVariable);
                 emitter.Emit(OpCodes.Call, ScopeLoader.ValidateTrackedTransientMethod);
             }
-            else if (serviceRegistration.Lifetime is ILifetimeEx)
-            {
-                int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
-                int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
-                emitter.PushConstant(lifetimeIndex, typeof(ILifetimeEx));
-                emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
-                PushScope(emitter);
-                emitter.PushArgument(0);
-                emitter.Call(LifetimeHelper.NonClosingGetInstanceMethod);
-            }
             else
             {
-                int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+                var nonClosingGetInstanceMethod = LifetimeHelper.GetNonClosingGetInstanceMethod(serviceRegistration.Lifetime.GetType());
+                if (nonClosingGetInstanceMethod != null)
+                {
+                    int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+                    int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
+                    emitter.PushConstant(lifetimeIndex, serviceRegistration.Lifetime.GetType());
+                    emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+                    PushScope(emitter);
+                    emitter.PushArgument(0);
+                    emitter.Call(nonClosingGetInstanceMethod);
+                }
+                else
+                {
+                    int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
 
-                int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
+                    int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
 
-                var scopeVariable = emitter.DeclareLocal(typeof(Scope));
+                    var scopeVariable = emitter.DeclareLocal(typeof(Scope));
 
-                // Push the scope into the stack
-                PushScope(emitter);
+                    // Push the scope into the stack
+                    PushScope(emitter);
 
-                // Store the scope
-                emitter.Store(scopeVariable);
+                    // Store the scope
+                    emitter.Store(scopeVariable);
 
-                // Push the lifetime onto the stack
-                emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
+                    // Push the lifetime onto the stack
+                    emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
 
-                emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+                    emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
 
-                // Push the constants arguments
-                emitter.PushArgument(0);
+                    // Push the constants arguments
+                    emitter.PushArgument(0);
 
-                // Push the scope
-                emitter.Push(scopeVariable);
+                    // Push the scope
+                    emitter.Push(scopeVariable);
 
-                // Create the scoped function
-                emitter.Emit(OpCodes.Call, FuncHelper.CreateScopedFuncMethod);
+                    // Create the scoped function
+                    emitter.Emit(OpCodes.Call, FuncHelper.CreateScopedFuncMethod);
 
-                emitter.Push(scopeVariable);
+                    emitter.Push(scopeVariable);
 
-                emitter.Call(LifetimeHelper.GetInstanceMethod);
+                    emitter.Call(LifetimeHelper.GetInstanceMethod);
+                }
             }
+
 
             if (IsNotServiceFactory(serviceRegistration.ServiceType))
             {
@@ -7934,17 +7923,28 @@ namespace LightInject
 
     internal static class LifetimeHelper
     {
+        private static ThreadSafeDictionary<Type, MethodInfo> nonClosingGetInstanceMethods
+            = new ThreadSafeDictionary<Type, MethodInfo>();
+
         public static readonly MethodInfo GetInstanceMethod;
 
         public static readonly MethodInfo GetCurrentScopeMethod;
 
-        public static readonly MethodInfo NonClosingGetInstanceMethod;
-
         static LifetimeHelper()
         {
             GetInstanceMethod = typeof(ILifetime).GetTypeInfo().GetDeclaredMethod("GetInstance");
-            NonClosingGetInstanceMethod = typeof(ILifetimeEx).GetTypeInfo().GetDeclaredMethod("GetInstance");
             GetCurrentScopeMethod = typeof(IScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
+        }
+
+        public static MethodInfo GetNonClosingGetInstanceMethod(Type lifetimeType)
+        {
+            return nonClosingGetInstanceMethods.GetOrAdd(lifetimeType, ResolveNonClosingGetInstanceMethod);
+        }
+
+        private static MethodInfo ResolveNonClosingGetInstanceMethod(Type lifetimeType)
+        {
+            Type[] parameterTypes = { typeof(GetInstanceDelegate), typeof(Scope), typeof(object[]) };
+            return lifetimeType.GetTypeInfo().DeclaredMethods.SingleOrDefault(m => m.GetParameters().Select(p => p.ParameterType).SequenceEqual(parameterTypes));
         }
     }
 
