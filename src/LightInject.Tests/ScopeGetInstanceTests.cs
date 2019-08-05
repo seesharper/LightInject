@@ -381,6 +381,16 @@
                 }
             }
         }
+
+        [Fact]
+        public void ShouldNotUpdateCurrentScopeWhenCurrentScopeIsDisabled()
+        {
+            var container = CreateContainer(new ContainerOptions() { EnableCurrentScope = false });
+            using (container.BeginScope())
+            {
+                Assert.Null(container.ScopeManagerProvider.GetScopeManager(container).CurrentScope);
+            }
+        }
     }
 
 
