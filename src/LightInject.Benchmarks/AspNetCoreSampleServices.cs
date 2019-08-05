@@ -95,7 +95,7 @@ namespace LightInject.Benchmarks
 
         public ScopedService1()
         {
-            //Interlocked.Increment(ref counter);
+            Interlocked.Increment(ref counter);
         }
 
         public static int Instances
@@ -238,45 +238,42 @@ namespace LightInject.Benchmarks
     {
         private static int counter;
 
-        public RepositoryTransient1(ISingleton1 singleton, IScopedService1 scopedService1, IScopedService2 scopedService2)
+
+
+        public RepositoryTransient1(ISingleton1 singleton, IScopedService1 scopedService1, IScopedService2 scopedService2, IScopedService3 scopedService3, IScopedService4 scopedService4, IScopedService5 scopedService5)
         {
+            if (singleton == null)
+            {
+                throw new ArgumentNullException(nameof(singleton));
+            }
 
+            if (scopedService1 == null)
+            {
+                throw new ArgumentNullException(nameof(scopedService1));
+            }
+
+            if (scopedService2 == null)
+            {
+                throw new ArgumentNullException(nameof(scopedService2));
+            }
+
+            if (scopedService3 == null)
+            {
+                throw new ArgumentNullException(nameof(scopedService3));
+            }
+
+            if (scopedService4 == null)
+            {
+                throw new ArgumentNullException(nameof(scopedService4));
+            }
+
+            if (scopedService5 == null)
+            {
+                throw new ArgumentNullException(nameof(scopedService5));
+            }
+
+            Interlocked.Increment(ref counter);
         }
-
-        // public RepositoryTransient1(ISingleton1 singleton, IScopedService1 scopedService1, IScopedService2 scopedService2, IScopedService3 scopedService3, IScopedService4 scopedService4, IScopedService5 scopedService5)
-        // {
-        //     if (singleton == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(singleton));
-        //     }
-
-        //     if (scopedService1 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(scopedService1));
-        //     }
-
-        //     if (scopedService2 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(scopedService2));
-        //     }
-
-        //     if (scopedService3 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(scopedService3));
-        //     }
-
-        //     if (scopedService4 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(scopedService4));
-        //     }
-
-        //     if (scopedService5 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(scopedService5));
-        //     }
-
-        //     Interlocked.Increment(ref counter);
-        // }
 
         public static int Instances
         {
@@ -489,7 +486,7 @@ namespace LightInject.Benchmarks
         }
     }
 
-    public class TestController1 //: IDisposable
+    public class TestController1 : IDisposable
     {
         private static int counter;
 
@@ -498,40 +495,40 @@ namespace LightInject.Benchmarks
         public TestController1(IRepositoryTransient1 transient1)
         { }
 
-        // public TestController1(
-        //     IRepositoryTransient1 transient1,
-        //     IRepositoryTransient2 repositoryTransient2,
-        //     IRepositoryTransient3 repositoryTransient3,
-        //     IRepositoryTransient4 repositoryTransient4,
-        //     IRepositoryTransient5 repositoryTransient5)
-        // {
-        //     if (transient1 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(transient1));
-        //     }
+        public TestController1(
+            IRepositoryTransient1 transient1,
+            IRepositoryTransient2 repositoryTransient2,
+            IRepositoryTransient3 repositoryTransient3,
+            IRepositoryTransient4 repositoryTransient4,
+            IRepositoryTransient5 repositoryTransient5)
+        {
+            if (transient1 == null)
+            {
+                throw new ArgumentNullException(nameof(transient1));
+            }
 
-        //     if (repositoryTransient2 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(repositoryTransient2));
-        //     }
+            if (repositoryTransient2 == null)
+            {
+                throw new ArgumentNullException(nameof(repositoryTransient2));
+            }
 
-        //     if (repositoryTransient3 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(repositoryTransient3));
-        //     }
+            if (repositoryTransient3 == null)
+            {
+                throw new ArgumentNullException(nameof(repositoryTransient3));
+            }
 
-        //     if (repositoryTransient4 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(repositoryTransient4));
-        //     }
+            if (repositoryTransient4 == null)
+            {
+                throw new ArgumentNullException(nameof(repositoryTransient4));
+            }
 
-        //     if (repositoryTransient5 == null)
-        //     {
-        //         throw new ArgumentNullException(nameof(repositoryTransient5));
-        //     }
+            if (repositoryTransient5 == null)
+            {
+                throw new ArgumentNullException(nameof(repositoryTransient5));
+            }
 
-        //     Interlocked.Increment(ref counter);
-        // }
+            Interlocked.Increment(ref counter);
+        }
 
         public static int Instances
         {
@@ -546,10 +543,10 @@ namespace LightInject.Benchmarks
         }
 
         /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
-        // public void Dispose()
-        // {
-        //     Interlocked.Increment(ref disposeCount);
-        // }
+        public void Dispose()
+        {
+            Interlocked.Increment(ref disposeCount);
+        }
     }
 
     public class TestController2 : IDisposable

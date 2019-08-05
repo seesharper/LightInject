@@ -1889,6 +1889,61 @@ namespace LightInject
         }
 
         /// <summary>
+        /// Searches for a <typeparamref name="TValue"/> using the given <paramref name="key"/>.
+        /// </summary>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="tree">The target <see cref="ImmutableHashTree{TKey,TValue}"/>.</param>
+        /// <param name="key">The key of the <see cref="ImmutableHashTree{TKey,TValue}"/> to get.</param>
+        /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TValue Search<TValue>(this ImmutableMapTree<TValue> tree, int key)
+        {
+            while (tree.Height != 0 && tree.Key != key)
+            {
+                tree = key < tree.Key ? tree.Left : tree.Right;
+            }
+
+            if (!tree.IsEmpty)
+            {
+                return tree.Value;
+            }
+
+            return default(TValue);
+        }
+
+        /// <summary>
+        /// Adds a new element to the <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="tree">The target <see cref="ImmutableHashTree{TKey,TValue}"/>.</param>
+        /// <param name="key">The key to be associated with the value.</param>
+        /// <param name="value">The value to be added to the tree.</param>
+        /// <returns>A new <see cref="ImmutableHashTree{TKey,TValue}"/> that contains the new key/value pair.</returns>
+        public static ImmutableMapTree<TValue> Add<TValue>(this ImmutableMapTree<TValue> tree, int key, TValue value)
+        {
+            if (tree.IsEmpty)
+            {
+                return new ImmutableMapTree<TValue>(key, value, tree, tree);
+            }
+
+
+            if (key > tree.Key)
+            {
+                return AddToRightBranch(tree, key, value);
+            }
+
+            if (key < tree.Key)
+            {
+                return AddToLeftBranch(tree, key, value);
+            }
+
+            return new ImmutableMapTree<TValue>(key, value, tree);
+        }
+
+
+
+        /// <summary>
         /// Adds a new element to the <see cref="ImmutableHashTree{TKey,TValue}"/>.
         /// </summary>
         /// <typeparam name="TKey">The type of the key.</typeparam>
@@ -1949,6 +2004,12 @@ namespace LightInject
                 }
             }
         }
+
+        private static ImmutableMapTree<TValue> AddToLeftBranch<TValue>(ImmutableMapTree<TValue> tree, int key, TValue value)
+            => new ImmutableMapTree<TValue>(tree.Key, tree.Value, tree.Left.Add(key, value), tree.Right);
+
+        private static ImmutableMapTree<TValue> AddToRightBranch<TValue>(ImmutableMapTree<TValue> tree, int key, TValue value)
+            => new ImmutableMapTree<TValue>(tree.Key, tree.Value, tree.Left, tree.Right.Add(key, value));
 
         private static ImmutableHashTree<TKey, TValue> AddToLeftBranch<TKey, TValue>(ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
             => new ImmutableHashTree<TKey, TValue>(tree.Key, tree.Value, tree.Left.Add(key, value), tree.Right);
@@ -3129,6 +3190,7 @@ namespace LightInject
             return GetInstance(serviceType);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object GetInstance(Type serviceType, Scope scope)
         {
             var instanceDelegate = delegates.Search(serviceType);
@@ -6159,7 +6221,11 @@ namespace LightInject
     /// </summary>
     public class Scope : IServiceFactory, IDisposable
     {
-        private ImmutableHashTable<int, object> createdInstances = ImmutableHashTable<int, object>.Empty;
+        private ImmutableMapTree<object> createdInstances = ImmutableMapTree<object>.Empty;
+
+        private object lockObject = new object();
+
+        //private Dictionary<int, object> createdInstances3 = new Dictionary<int, object>();
 
         /// <summary>
         /// Gets a value indicating whether this scope has been disposed.
@@ -6171,7 +6237,7 @@ namespace LightInject
         /// </summary>
         public Scope ParentScope;
 
-        private readonly object disposableObjectsLock = new object();
+        // private readonly object disposableObjectsLock = new object();
 
         private List<IDisposable> disposableObjects;
 
@@ -6214,7 +6280,7 @@ namespace LightInject
         /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
         public void TrackInstance(IDisposable disposable)
         {
-            lock (disposableObjectsLock)
+            lock (lockObject)
             {
                 if (disposableObjects == null)
                 {
@@ -6264,6 +6330,21 @@ namespace LightInject
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments, int instanceDelegateIndex)
         {
+            // // object valueFactory(int i)
+            // // {
+            // //     return getInstanceDelegate(arguments, this);
+            // // }
+
+            // if (createdInstances2.TryGetValue(instanceDelegateIndex, out var createdInstance))
+            // {
+            //     return createdInstance;
+            // }
+
+            // createdInstance = getInstanceDelegate(arguments, this);
+            // createdInstances2.TryAdd(instanceDelegateIndex, createdInstance);
+            // return createdInstance;
+            // // return createdInstances2.GetOrAdd(instanceDelegateIndex, valueFactory);
+
 
             var createdInstance = createdInstances.Search(instanceDelegateIndex);
             if (createdInstance != null)
@@ -7292,6 +7373,145 @@ namespace LightInject
 
         private bool IsRightHeavy() => Right.Height > Left.Height;
     }
+
+    /// <summary>
+    /// A balanced binary search tree implemented as an AVL tree
+    /// where the key is an integer which we don't need GetHashCode.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
+    public sealed class ImmutableMapTree<TValue>
+    {
+        /// <summary>
+        /// An empty <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public static readonly ImmutableMapTree<TValue> Empty = new ImmutableMapTree<TValue>();
+
+        /// <summary>
+        /// The key of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly int Key;
+
+        /// <summary>
+        /// The value of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly TValue Value;
+
+        /// <summary>
+        /// The left node of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly ImmutableMapTree<TValue> Left;
+
+        /// <summary>
+        /// The right node of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// </summary>
+        public readonly ImmutableMapTree<TValue> Right;
+
+        /// <summary>
+        /// The height of this node.
+        /// </summary>
+        /// <remarks>
+        /// An empty node has a height of 0 and a node without children has a height of 1.
+        /// </remarks>
+        public readonly int Height;
+
+        /// <summary>
+        /// Indicates that this <see cref="ImmutableHashTree{TKey,TValue}"/> is empty.
+        /// </summary>
+        public readonly bool IsEmpty;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableHashTree{TKey,TValue}"/> class
+        /// and adds a new entry in the <see cref="Duplicates"/> list.
+        /// </summary>
+        /// <param name="key">The key for this node.</param>
+        /// <param name="value">The value for this node.</param>
+        /// <param name="hashTree">The <see cref="ImmutableHashTree{TKey,TValue}"/> that contains existing duplicates.</param>
+        public ImmutableMapTree(int key, TValue value, ImmutableMapTree<TValue> hashTree)
+        {
+            Key = hashTree.Key;
+            Value = hashTree.Value;
+            Height = hashTree.Height;
+            Left = hashTree.Left;
+            Right = hashTree.Right;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
+        /// </summary>
+        /// <param name="key">The key for this node.</param>
+        /// <param name="value">The value for this node.</param>
+        /// <param name="left">The left node.</param>
+        /// <param name="right">The right node.</param>
+        public ImmutableMapTree(int key, TValue value, ImmutableMapTree<TValue> left, ImmutableMapTree<TValue> right)
+        {
+            var balance = left.Height - right.Height;
+
+            if (balance == -2)
+            {
+                if (right.IsLeftHeavy())
+                {
+                    right = RotateRight(right);
+                }
+
+                // Rotate left
+                Key = right.Key;
+                Value = right.Value;
+                Left = new ImmutableMapTree<TValue>(key, value, left, right.Left);
+                Right = right.Right;
+            }
+            else if (balance == 2)
+            {
+                if (left.IsRightHeavy())
+                {
+                    left = RotateLeft(left);
+                }
+
+                // Rotate right
+                Key = left.Key;
+                Value = left.Value;
+                Right = new ImmutableMapTree<TValue>(key, value, left.Right, right);
+                Left = left.Left;
+            }
+            else
+            {
+                Key = key;
+                Value = value;
+                Left = left;
+                Right = right;
+            }
+
+            Height = 1 + Math.Max(Left.Height, Right.Height);
+        }
+
+        private ImmutableMapTree()
+        {
+            IsEmpty = true;
+        }
+
+        private static ImmutableMapTree<TValue> RotateLeft(ImmutableMapTree<TValue> left)
+        {
+            return new ImmutableMapTree<TValue>(
+                left.Right.Key,
+                left.Right.Value,
+                new ImmutableMapTree<TValue>(left.Key, left.Value, left.Right.Left, left.Left),
+                left.Right.Right);
+        }
+
+        private static ImmutableMapTree<TValue> RotateRight(ImmutableMapTree<TValue> right)
+        {
+            return new ImmutableMapTree<TValue>(
+                right.Left.Key,
+                right.Left.Value,
+                right.Left.Left,
+                new ImmutableMapTree<TValue>(right.Key, right.Value, right.Left.Right, right.Right));
+        }
+
+        private bool IsLeftHeavy() => Left.Height > Right.Height;
+
+        private bool IsRightHeavy() => Right.Height > Left.Height;
+    }
+
+
 
     /// <summary>
     /// Represents an MSIL instruction to be emitted into a dynamic method.

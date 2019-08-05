@@ -39,9 +39,9 @@ namespace LightInject.Benchmarks
             defaultServiceProvider = serviceCollection.BuildServiceProvider();
 
             serviceContainer = new ServiceContainer(new ContainerOptions() { EnableCurrentScope = false });
-            serviceContainer.RegisterTransient<TestController1>();
-            serviceContainer.RegisterTransient<TestController2>();
-            serviceContainer.RegisterTransient<TestController3>();
+            serviceContainer.Register<TestController1>(new PerRequestLifeTime());
+            serviceContainer.Register<TestController2>(new PerRequestLifeTime());
+            serviceContainer.Register<TestController3>(new PerRequestLifeTime());
             serviceContainer.RegisterTransient<IRepositoryTransient1, RepositoryTransient1>();
             serviceContainer.RegisterTransient<IRepositoryTransient2, RepositoryTransient2>();
             serviceContainer.RegisterTransient<IRepositoryTransient3, RepositoryTransient3>();
@@ -63,9 +63,17 @@ namespace LightInject.Benchmarks
         {
             using (var scope = serviceContainer.BeginScope())
             {
-                var controller = scope.GetInstance<IScopedService1>();
-                // var controller2 = scope.GetInstance<IScopedService2>();
-                // var controller3 = scope.GetInstance<IScopedService3>();
+                var controller = scope.GetInstance<TestController1>();
+            }
+
+            using (var scope = serviceContainer.BeginScope())
+            {
+                var controller = scope.GetInstance<TestController2>();
+            }
+
+            using (var scope = serviceContainer.BeginScope())
+            {
+                var controller = scope.GetInstance<TestController3>();
             }
         }
 
@@ -74,12 +82,18 @@ namespace LightInject.Benchmarks
         {
             using (var scope = defaultServiceProvider.CreateScope())
             {
-                var controller = scope.ServiceProvider.GetService<IScopedService1>();
-                // var controller2 = scope.ServiceProvider.GetService<IScopedService2>();
-                // var controller3 = scope.ServiceProvider.GetService<IScopedService3>();
+                var controller = scope.ServiceProvider.GetService<TestController1>();
+            }
+
+            using (var scope = defaultServiceProvider.CreateScope())
+            {
+                var controller = scope.ServiceProvider.GetService<TestController2>();
+            }
+
+            using (var scope = defaultServiceProvider.CreateScope())
+            {
+                var controller = scope.ServiceProvider.GetService<TestController3>();
             }
         }
-
-
     }
 }
