@@ -1844,6 +1844,69 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Extends the <see cref="ImmutableMapTree{TValue}"/> class.
+    /// </summary>
+    public static class ImmutableMapTreeExtensions
+    {
+        /// <summary>
+        /// Searches for a <typeparamref name="TValue"/> using the given <paramref name="key"/>.
+        /// </summary>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="tree">The target <see cref="ImmutableMapTree{TValue}"/>.</param>
+        /// <param name="key">The key of the <see cref="ImmutableMapTree{TValue}"/> to get.</param>
+        /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TValue Search<TValue>(this ImmutableMapTree<TValue> tree, int key)
+        {
+            while (tree.Height != 0 && tree.Key != key)
+            {
+                tree = key < tree.Key ? tree.Left : tree.Right;
+            }
+
+            if (!tree.IsEmpty)
+            {
+                return tree.Value;
+            }
+
+            return default(TValue);
+        }
+
+        /// <summary>
+        /// Adds a new element to the <see cref="ImmutableMapTree{TValue}"/>.
+        /// </summary>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="tree">The target <see cref="ImmutableMapTree{TValue}"/>.</param>
+        /// <param name="key">The key to be associated with the value.</param>
+        /// <param name="value">The value to be added to the tree.</param>
+        /// <returns>A new <see cref="ImmutableMapTree{TValue}"/> that contains the new key/value pair.</returns>
+        public static ImmutableMapTree<TValue> Add<TValue>(this ImmutableMapTree<TValue> tree, int key, TValue value)
+        {
+            if (tree.IsEmpty)
+            {
+                return new ImmutableMapTree<TValue>(key, value, tree, tree);
+            }
+
+            if (key > tree.Key)
+            {
+                return AddToRightBranch(tree, key, value);
+            }
+
+            if (key < tree.Key)
+            {
+                return AddToLeftBranch(tree, key, value);
+            }
+
+            return new ImmutableMapTree<TValue>(key, value, tree);
+        }
+
+        private static ImmutableMapTree<TValue> AddToLeftBranch<TValue>(ImmutableMapTree<TValue> tree, int key, TValue value)
+        => new ImmutableMapTree<TValue>(tree.Key, tree.Value, tree.Left.Add(key, value), tree.Right);
+
+        private static ImmutableMapTree<TValue> AddToRightBranch<TValue>(ImmutableMapTree<TValue> tree, int key, TValue value)
+            => new ImmutableMapTree<TValue>(tree.Key, tree.Value, tree.Left, tree.Right.Add(key, value));
+    }
+
+    /// <summary>
     /// Extends the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
     /// </summary>
     public static class ImmutableHashTreeExtensions
@@ -1883,57 +1946,6 @@ namespace LightInject
             }
 
             return default(TValue);
-        }
-
-        /// <summary>
-        /// Searches for a <typeparamref name="TValue"/> using the given <paramref name="key"/>.
-        /// </summary>
-        /// <typeparam name="TValue">The type of the value.</typeparam>
-        /// <param name="tree">The target <see cref="ImmutableHashTree{TKey,TValue}"/>.</param>
-        /// <param name="key">The key of the <see cref="ImmutableHashTree{TKey,TValue}"/> to get.</param>
-        /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TValue Search<TValue>(this ImmutableMapTree<TValue> tree, int key)
-        {
-            while (tree.Height != 0 && tree.Key != key)
-            {
-                tree = key < tree.Key ? tree.Left : tree.Right;
-            }
-
-            if (!tree.IsEmpty)
-            {
-                return tree.Value;
-            }
-
-            return default(TValue);
-        }
-
-        /// <summary>
-        /// Adds a new element to the <see cref="ImmutableHashTree{TKey,TValue}"/>.
-        /// </summary>
-        /// <typeparam name="TValue">The type of the value.</typeparam>
-        /// <param name="tree">The target <see cref="ImmutableHashTree{TKey,TValue}"/>.</param>
-        /// <param name="key">The key to be associated with the value.</param>
-        /// <param name="value">The value to be added to the tree.</param>
-        /// <returns>A new <see cref="ImmutableHashTree{TKey,TValue}"/> that contains the new key/value pair.</returns>
-        public static ImmutableMapTree<TValue> Add<TValue>(this ImmutableMapTree<TValue> tree, int key, TValue value)
-        {
-            if (tree.IsEmpty)
-            {
-                return new ImmutableMapTree<TValue>(key, value, tree, tree);
-            }
-
-            if (key > tree.Key)
-            {
-                return AddToRightBranch(tree, key, value);
-            }
-
-            if (key < tree.Key)
-            {
-                return AddToLeftBranch(tree, key, value);
-            }
-
-            return new ImmutableMapTree<TValue>(key, value, tree);
         }
 
         /// <summary>
@@ -1997,12 +2009,6 @@ namespace LightInject
                 }
             }
         }
-
-        private static ImmutableMapTree<TValue> AddToLeftBranch<TValue>(ImmutableMapTree<TValue> tree, int key, TValue value)
-            => new ImmutableMapTree<TValue>(tree.Key, tree.Value, tree.Left.Add(key, value), tree.Right);
-
-        private static ImmutableMapTree<TValue> AddToRightBranch<TValue>(ImmutableMapTree<TValue> tree, int key, TValue value)
-            => new ImmutableMapTree<TValue>(tree.Key, tree.Value, tree.Left, tree.Right.Add(key, value));
 
         private static ImmutableHashTree<TKey, TValue> AddToLeftBranch<TKey, TValue>(ImmutableHashTree<TKey, TValue> tree, TKey key, TValue value)
             => new ImmutableHashTree<TKey, TValue>(tree.Key, tree.Value, tree.Left.Add(key, value), tree.Right);
@@ -7282,33 +7288,33 @@ namespace LightInject
 
     /// <summary>
     /// A balanced binary search tree implemented as an AVL tree
-    /// where the key is an integer which we don't need GetHashCode.
+    /// where the key is an integer which means we don't need GetHashCode.
     /// </summary>
     /// <typeparam name="TValue">The type of the value.</typeparam>
     public sealed class ImmutableMapTree<TValue>
     {
         /// <summary>
-        /// An empty <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// An empty <see cref="ImmutableMapTree{TValue}"/>.
         /// </summary>
         public static readonly ImmutableMapTree<TValue> Empty = new ImmutableMapTree<TValue>();
 
         /// <summary>
-        /// The key of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// The key of this <see cref="ImmutableMapTree{TValue}"/>.
         /// </summary>
         public readonly int Key;
 
         /// <summary>
-        /// The value of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// The value of this <see cref="ImmutableMapTree{TValue}"/>.
         /// </summary>
         public readonly TValue Value;
 
         /// <summary>
-        /// The left node of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// The left node of this <see cref="ImmutableMapTree{TValue}"/>.
         /// </summary>
         public readonly ImmutableMapTree<TValue> Left;
 
         /// <summary>
-        /// The right node of this <see cref="ImmutableHashTree{TKey,TValue}"/>.
+        /// The right node of this <see cref="ImmutableMapTree{TValue}"/>.
         /// </summary>
         public readonly ImmutableMapTree<TValue> Right;
 
@@ -7321,7 +7327,7 @@ namespace LightInject
         public readonly int Height;
 
         /// <summary>
-        /// Indicates that this <see cref="ImmutableHashTree{TKey,TValue}"/> is empty.
+        /// Indicates that this <see cref="ImmutableMapTree{TValue}"/> is empty.
         /// </summary>
         public readonly bool IsEmpty;
 
