@@ -2471,7 +2471,6 @@ namespace LightInject
             ServiceRegistry<Delegate> constructorDependencyFactories,
             ServiceRegistry<Delegate> propertyDependencyFactories,
             ServiceRegistry<ServiceRegistration> availableServices,
-            ServiceRegistry<Action<IEmitter>> emitters,
             Storage<DecoratorRegistration> decorators,
             Storage<ServiceOverride> overrides,
             Storage<FactoryRule> factoryRules,
@@ -2495,7 +2494,6 @@ namespace LightInject
             this.constructorDependencyFactories = constructorDependencyFactories;
             this.propertyDependencyFactories = propertyDependencyFactories;
             this.availableServices = availableServices;
-            this.emitters = emitters;
             this.decorators = decorators;
             this.overrides = overrides;
             this.factoryRules = factoryRules;
@@ -2513,6 +2511,10 @@ namespace LightInject
             ScopeManagerProvider = scopeManagerProvider;
 #if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
             AssemblyLoader = assemblyLoader;
+            foreach (var availableService in AvailableServices)
+            {
+                this.Register(availableService);
+            }
 #endif
         }
 
@@ -3221,7 +3223,6 @@ namespace LightInject
                 constructorDependencyFactories,
                 propertyDependencyFactories,
                 availableServices,
-                emitters,
                 decorators,
                 overrides,
                 factoryRules,
