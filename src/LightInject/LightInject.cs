@@ -1118,25 +1118,6 @@ namespace LightInject
         IScopeManager GetScopeManager(IServiceFactory serviceFactory);
     }
 
-    internal interface IScopedServiceFactory
-    {
-        object GetInstance(Type serviceType, Scope scope);
-
-        object GetInstance(Type serviceType, Scope scope, string serviceName);
-
-        IEnumerable<object> GetAllInstances(Type serviceType, Scope scope);
-
-        object GetInstance(Type serviceType, object[] arguments, Scope scope);
-
-        object GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope);
-
-        object TryGetInstance(Type serviceType, Scope scope);
-
-        object TryGetInstance(Type serviceType, string serviceName, Scope scope);
-
-        object Create(Type serviceType, Scope scope);
-    }
-
     /// <summary>
     /// This class is not for public use and is used internally
     /// to load runtime arguments onto the evaluation stack.
@@ -2387,7 +2368,7 @@ namespace LightInject
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
-    public class ServiceContainer : IServiceContainer, IScopedServiceFactory
+    public class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
         private readonly Action<LogEntry> log;
@@ -3191,7 +3172,7 @@ namespace LightInject
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public object GetInstance(Type serviceType, Scope scope)
+        internal object GetInstance(Type serviceType, Scope scope)
         {
             var instanceDelegate = delegates.Search(serviceType);
             if (instanceDelegate == null)
@@ -3202,18 +3183,7 @@ namespace LightInject
             return instanceDelegate(constants.Items, scope);
         }
 
-        object IScopedServiceFactory.GetInstance(Type serviceType, Scope scope)
-        {
-            var instanceDelegate = delegates.Search(serviceType);
-            if (instanceDelegate == null)
-            {
-                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
-            }
-
-            return instanceDelegate(constants.Items, scope);
-        }
-
-        object IScopedServiceFactory.GetInstance(Type serviceType, Scope scope, string serviceName)
+        internal object GetInstance(Type serviceType, Scope scope, string serviceName)
         {
             var key = Tuple.Create(serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
@@ -3225,12 +3195,12 @@ namespace LightInject
             return instanceDelegate(constants.Items, scope);
         }
 
-        IEnumerable<object> IScopedServiceFactory.GetAllInstances(Type serviceType, Scope scope)
+        internal IEnumerable<object> GetAllInstances(Type serviceType, Scope scope)
         {
-            return (IEnumerable<object>)((IScopedServiceFactory)this).GetInstance(serviceType.GetEnumerableType(), scope);
+            return (IEnumerable<object>)GetInstance(serviceType.GetEnumerableType(), scope);
         }
 
-        object IScopedServiceFactory.GetInstance(Type serviceType, object[] arguments, Scope scope)
+        internal object GetInstance(Type serviceType, object[] arguments, Scope scope)
         {
             var instanceDelegate = delegates.Search(serviceType);
             if (instanceDelegate == null)
@@ -3243,7 +3213,7 @@ namespace LightInject
             return instanceDelegate(constantsWithArguments, scope);
         }
 
-        object IScopedServiceFactory.GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope)
+        internal object GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope)
         {
             var key = Tuple.Create(serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
@@ -3257,7 +3227,7 @@ namespace LightInject
             return instanceDelegate(constantsWithArguments, scope);
         }
 
-        object IScopedServiceFactory.TryGetInstance(Type serviceType, Scope scope)
+        internal object TryGetInstance(Type serviceType, Scope scope)
         {
             var instanceDelegate = delegates.Search(serviceType);
             if (instanceDelegate == null)
@@ -3268,7 +3238,7 @@ namespace LightInject
             return instanceDelegate(constants.Items, scope);
         }
 
-        object IScopedServiceFactory.TryGetInstance(Type serviceType, string serviceName, Scope scope)
+        internal object TryGetInstance(Type serviceType, string serviceName, Scope scope)
         {
             var key = Tuple.Create(serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
@@ -3280,10 +3250,10 @@ namespace LightInject
             return instanceDelegate(constants.Items, scope);
         }
 
-        object IScopedServiceFactory.Create(Type serviceType, Scope scope)
+        internal object Create(Type serviceType, Scope scope)
         {
             Register(serviceType);
-            return ((IScopedServiceFactory)this).GetInstance(serviceType, scope);
+            return GetInstance(serviceType, scope);
         }
 
         /// <inheritdoc/>
@@ -4092,7 +4062,7 @@ namespace LightInject
                 var createScopedGenericFuncMethod = FuncHelper.CreateScopedGenericFuncMethod.MakeGenericMethod(returnType);
                 return e =>
                 {
-                    e.PushConstant(constants.Add(this), typeof(IScopedServiceFactory));
+                    e.PushConstant(constants.Add(this), typeof(ServiceContainer));
 
                     int scopeManagerIndex = CreateScopeManagerIndex();
 
@@ -4113,7 +4083,7 @@ namespace LightInject
                 var createScopedGenericNamedFuncMethod = FuncHelper.CreateScopedGenericNamedFuncMethod.MakeGenericMethod(returnType);
                 return e =>
                 {
-                    e.PushConstant(constants.Add(this), typeof(IScopedServiceFactory));
+                    e.PushConstant(constants.Add(this), typeof(ServiceContainer));
 
                     int scopeManagerIndex = CreateScopeManagerIndex();
 
@@ -4215,7 +4185,7 @@ namespace LightInject
             var createScopedLazyMethod = LazyHelper.CreateScopedLazyMethod.MakeGenericMethod(returnType);
             return e =>
             {
-                e.PushConstant(constants.Add(this), typeof(IScopedServiceFactory));
+                e.PushConstant(constants.Add(this), typeof(ServiceContainer));
 
                 int scopeManagerIndex = CreateScopeManagerIndex();
 
@@ -6225,8 +6195,6 @@ namespace LightInject
 
         private object lockObject = new object();
 
-        //private Dictionary<int, object> createdInstances3 = new Dictionary<int, object>();
-
         /// <summary>
         /// Gets a value indicating whether this scope has been disposed.
         /// </summary>
@@ -6237,14 +6205,11 @@ namespace LightInject
         /// </summary>
         public Scope ParentScope;
 
-        // private readonly object disposableObjectsLock = new object();
-
         private List<IDisposable> disposableObjects;
 
         private readonly IScopeManager scopeManager;
-        private readonly ServiceContainer serviceFactory;
 
-        private readonly IScopedServiceFactory scopedServiceFactory;
+        private readonly ServiceContainer serviceFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
@@ -6255,7 +6220,6 @@ namespace LightInject
         {
             this.scopeManager = scopeManager;
             serviceFactory = (ServiceContainer)scopeManager.ServiceFactory;
-            scopedServiceFactory = (IScopedServiceFactory)serviceFactory;
             ParentScope = parentScope;
         }
 
@@ -6266,7 +6230,6 @@ namespace LightInject
         public Scope(ServiceContainer serviceFactory)
         {
             this.serviceFactory = serviceFactory;
-            scopedServiceFactory = (IScopedServiceFactory)serviceFactory;
         }
 
         /// <summary>
@@ -6324,71 +6287,63 @@ namespace LightInject
         public object GetInstance(Type serviceType)
         {
             return serviceFactory.GetInstance(serviceType, this);
-            //return scopedServiceFactory.GetInstance(serviceType, this);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments, int instanceDelegateIndex)
         {
-            // // object valueFactory(int i)
-            // // {
-            // //     return getInstanceDelegate(arguments, this);
-            // // }
-
-            // if (createdInstances2.TryGetValue(instanceDelegateIndex, out var createdInstance))
-            // {
-            //     return createdInstance;
-            // }
-
-            // createdInstance = getInstanceDelegate(arguments, this);
-            // createdInstances2.TryAdd(instanceDelegateIndex, createdInstance);
-            // return createdInstance;
-            // // return createdInstances2.GetOrAdd(instanceDelegateIndex, valueFactory);
-
-
             var createdInstance = createdInstances.Search(instanceDelegateIndex);
             if (createdInstance != null)
             {
                 return createdInstance;
             }
-            createdInstance = getInstanceDelegate(arguments, this);
-            if (createdInstance is IDisposable disposable)
+
+            lock (lockObject)
             {
-                TrackInstance(disposable);
+                createdInstance = createdInstances.Search(instanceDelegateIndex);
+                if (createdInstance != null)
+                {
+                    return createdInstance;
+                }
+                createdInstance = getInstanceDelegate(arguments, this);
+                if (createdInstance is IDisposable disposable)
+                {
+                    TrackInstance(disposable);
+                }
+
+                Interlocked.Exchange(ref createdInstances, createdInstances.Add(instanceDelegateIndex, createdInstance));
+                return createdInstance;
             }
-            //TODO replace with interlocked
-            Interlocked.Exchange(ref createdInstances, createdInstances.Add(instanceDelegateIndex, createdInstance));
-            // createdInstances = createdInstances.Add(getInstanceDelegate, createdInstance);
-            return createdInstance;
+
         }
 
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName) =>
-            scopedServiceFactory.GetInstance(serviceType, this, serviceName);
+            serviceFactory.GetInstance(serviceType, this, serviceName);
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, object[] arguments) =>
-            scopedServiceFactory.GetInstance(serviceType, arguments, this);
+            serviceFactory.GetInstance(serviceType, arguments, this);
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName, object[] arguments)
-            => scopedServiceFactory.GetInstance(serviceType, serviceName, arguments, this);
+            => serviceFactory.GetInstance(serviceType, serviceName, arguments, this);
 
         /// <inheritdoc/>
         public object TryGetInstance(Type serviceType)
-            => scopedServiceFactory.TryGetInstance(serviceType, this);
+            => serviceFactory.TryGetInstance(serviceType, this);
 
         /// <inheritdoc/>
         public object TryGetInstance(Type serviceType, string serviceName)
-            => scopedServiceFactory.TryGetInstance(serviceType, serviceName, this);
+            => serviceFactory.TryGetInstance(serviceType, serviceName, this);
 
         /// <inheritdoc/>
         public IEnumerable<object> GetAllInstances(Type serviceType)
-            => scopedServiceFactory.GetAllInstances(serviceType, this);
+            => serviceFactory.GetAllInstances(serviceType, this);
 
         /// <inheritdoc/>
-        public object Create(Type serviceType) => scopedServiceFactory.Create(serviceType, this);
+        public object Create(Type serviceType) => serviceFactory.Create(serviceType, this);
 
         private class ReferenceEqualityComparer<T> : IEqualityComparer<T>
         {
@@ -8114,11 +8069,11 @@ but either way the scope has to be started with 'container.BeginScope()'";
         public static Func<object> CreateScopedFunc(GetInstanceDelegate getInstanceDelegate, object[] constants, Scope scope)
             => () => getInstanceDelegate(constants, scope);
 
-        public static Func<T> CreateScopedGenericFunc<T>(IScopedServiceFactory serviceFactory, Scope scope)
-            => () => (T)serviceFactory.GetInstance(typeof(T), scope);
+        public static Func<T> CreateScopedGenericFunc<T>(ServiceContainer serviceContainer, Scope scope)
+            => () => (T)serviceContainer.GetInstance(typeof(T), scope);
 
-        public static Func<string, T> CreateScopedGenericNamedFunc<T>(IScopedServiceFactory serviceFactory, Scope scope)
-            => (serviceName) => (T)serviceFactory.GetInstance(typeof(T), scope, serviceName);
+        public static Func<string, T> CreateScopedGenericNamedFunc<T>(ServiceContainer serviceContainer, Scope scope)
+            => (serviceName) => (T)serviceContainer.GetInstance(typeof(T), scope, serviceName);
     }
 
     internal static class ServiceFactoryLoader
@@ -8168,8 +8123,8 @@ but either way the scope has to be started with 'container.BeginScope()'";
             CreateScopedLazyFromDelegateMethod = typeof(LazyHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedLazyFromDelegate");
         }
 
-        public static Lazy<T> CreateScopedLazy<T>(IScopedServiceFactory serviceFactory, Scope scope)
-            => new Lazy<T>(() => (T)serviceFactory.GetInstance(typeof(T), scope));
+        public static Lazy<T> CreateScopedLazy<T>(ServiceContainer serviceContainer, Scope scope)
+            => new Lazy<T>(() => (T)serviceContainer.GetInstance(typeof(T), scope));
 
         public static Lazy<T> CreateScopedLazyFromDelegate<T>(GetInstanceDelegate getInstanceDelegate, object[] constants, Scope scope)
             => new Lazy<T>(() => (T)getInstanceDelegate(constants, scope));
