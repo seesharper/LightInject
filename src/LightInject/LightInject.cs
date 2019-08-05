@@ -4492,7 +4492,6 @@ namespace LightInject
                 }
             }
 
-
             if (IsNotServiceFactory(serviceRegistration.ServiceType))
             {
                 disposableLifeTimes.Add(serviceRegistration.Lifetime);
@@ -7923,12 +7922,12 @@ namespace LightInject
 
     internal static class LifetimeHelper
     {
-        private static ThreadSafeDictionary<Type, MethodInfo> nonClosingGetInstanceMethods
-            = new ThreadSafeDictionary<Type, MethodInfo>();
-
         public static readonly MethodInfo GetInstanceMethod;
 
         public static readonly MethodInfo GetCurrentScopeMethod;
+
+        private static ThreadSafeDictionary<Type, MethodInfo> nonClosingGetInstanceMethods
+            = new ThreadSafeDictionary<Type, MethodInfo>();
 
         static LifetimeHelper()
         {
