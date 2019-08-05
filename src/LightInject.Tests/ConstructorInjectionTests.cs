@@ -6,7 +6,7 @@ namespace LightInject.Tests
     using LightInject;
     using LightInject.SampleLibrary;
     using Xunit;
-        
+
     public class ConstructorInjectionTests : TestBase
     {
         [Fact]
@@ -25,7 +25,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-            Assert.Equal(ErrorMessages.UnknownConstructorDependency, exception.InnerException.Message);            
+            Assert.Equal(ErrorMessages.UnknownConstructorDependency, exception.InnerException.Message);
         }
 
         [Fact]
@@ -78,7 +78,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IBar, Bar>(new PerScopeLifetime());
             container.Register<IFoo, FooWithDependency>();
-            
+
             FooWithDependency instance1;
             FooWithDependency instance2;
             using (container.BeginScope())
@@ -88,7 +88,7 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 instance2 = (FooWithDependency)container.GetInstance<IFoo>();
-            }            
+            }
             Assert.NotEqual(instance1.Bar, instance2.Bar);
         }
 
@@ -108,13 +108,13 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             Bar.InitializeCount = 0;
-            container.Register<IBar>(c => new Bar(), new PerContainerLifetime());            
+            container.Register<IBar>(c => new Bar(), new PerContainerLifetime());
             container.Register<IFoo>(c => new FooWithDependency(c.GetInstance<IBar>()));
             container.GetInstance<IFoo>();
             container.GetInstance<IFoo>();
             Assert.Equal(1, Bar.InitializeCount);
         }
-        
+
         [Fact]
         public void GetInstance_DependencyWithTransientLifeCycle_InjectsTransientDependenciesForSingleRequest()
         {
@@ -146,7 +146,7 @@ namespace LightInject.Tests
                 var instance = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
                 Assert.Equal(instance.Bar1, instance.Bar2);
             }
-            
+
         }
 
         [Fact]
@@ -178,7 +178,7 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 instance2 = (FooWithSameDependencyTwice)container.GetInstance<IFoo>();
-            }            
+            }
             Assert.NotEqual(instance1.Bar1, instance2.Bar2);
         }
 
@@ -222,8 +222,8 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 container.GetInstance<IFoo>();
-                Assert.Equal(1, Bar.InitializeCount);    
-            }            
+                Assert.Equal(1, Bar.InitializeCount);
+            }
         }
 
         [Fact]
@@ -263,7 +263,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(Foo), "Foo");
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
-            container.Register(typeof(IFoo), typeof(FooWithEnumerableIFooDependency));            
+            container.Register(typeof(IFoo), typeof(FooWithEnumerableIFooDependency));
             var instance = (FooWithEnumerableIFooDependency)container.GetInstance<IFoo>();
 
             Assert.Contains(instance.FooList, f => f.GetType() == typeof(Foo));
@@ -284,7 +284,7 @@ namespace LightInject.Tests
 
         //    Assert.True(instance.FooList.Any(f => f.GetType() == typeof(Foo)));
         //    Assert.True(instance.FooList.Any(f => f.GetType() == typeof(AnotherFoo)));
-        //    Assert.Equal(2, instance.FooList.Count());            
+        //    Assert.Equal(2, instance.FooList.Count());
         //}
 
         [Fact]
@@ -293,7 +293,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-            Assert.Equal(ErrorMessages.RecursiveDependency, exception.InnerException.InnerException.Message);            
+            Assert.Equal(ErrorMessages.RecursiveDependency, exception.InnerException.InnerException.Message);
         }
 
         [Fact]
@@ -312,7 +312,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo>(factory => CreateRecursive(factory), new PerContainerLifetime());
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-            Assert.Contains("Recursive dependency detected", exception.ToString());            
+            Assert.Contains("Recursive dependency detected", exception.ToString());
         }
 
         private static FooWithRecursiveDependency CreateRecursive(IServiceFactory factory)
@@ -327,7 +327,7 @@ namespace LightInject.Tests
 
         [Fact]
         public void GetInstance_RequestLifeCycle_FirstIEnumerableAndArgumentAreSame()
-         {
+        {
             var container = CreateContainer();
             container.Register(typeof(IBar), typeof(Bar), new PerScopeLifetime());
             container.Register(typeof(IFoo), typeof(FooWithEnumerableAndRegularDependency));
@@ -336,7 +336,7 @@ namespace LightInject.Tests
                 var instance = (FooWithEnumerableAndRegularDependency)container.GetInstance<IFoo>();
                 Assert.Same(instance.Bar, instance.Bars.First());
             }
-         }
+        }
 
         [Fact]
         public void GetInstance_SingletonLifeCycle_FirstIEnumerableAndArgumentAreSame()
@@ -375,7 +375,7 @@ namespace LightInject.Tests
             var instance = (FooWithCustomFuncDependency)container.GetInstance<IFoo>();
             Assert.NotNull(instance.StringFunc);
         }
-      
+
         [Fact]
         public void GetInstance_MethodGroupWithFactoryParameter_InjectsDependency()
         {
@@ -423,7 +423,7 @@ namespace LightInject.Tests
             container.Register(typeof(IBar<>), typeof(AnotherBar<>), "dependency");
 
             var instance = (FooWithOpenGenericDependency<IBar>)container.GetInstance<IFoo<IBar>>();
-            
+
         }
 
 
@@ -441,7 +441,7 @@ namespace LightInject.Tests
             container.Register(f => 84, "second");
             container.Register(f => 42, "first");
             container.Register<FooWithIntDependency>();
-            
+
             var foo = container.GetInstance<FooWithIntDependency>();
 
             Assert.Equal(42, foo.First);
@@ -458,7 +458,7 @@ namespace LightInject.Tests
 
             var container = CreateContainer(options);
 
-            container.Register(typeof(IFoo<>),typeof(FooWithOpenGenericDependency<>));
+            container.Register(typeof(IFoo<>), typeof(FooWithOpenGenericDependency<>));
             container.Register(typeof(IBar<>), typeof(Bar<>), "bar");
             container.Register(typeof(IBar<>), typeof(Bar<>), "dependency");
 
@@ -511,7 +511,7 @@ namespace LightInject.Tests
             }
         }
 
-        public class ConstrainedBar<T> : IBar<T> where T: struct
+        public class ConstrainedBar<T> : IBar<T> where T : struct
         {
 
         }

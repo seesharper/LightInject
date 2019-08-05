@@ -734,6 +734,14 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Represents a class
+    /// </summary>
+    public interface ILifetimeEx
+    {
+        object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments);
+    }
+
+    /// <summary>
     /// Optionally implemented by <see cref="ILifetime"/> implementations
     /// to provide a way to clone the lifetime.
     /// </summary>
@@ -4412,7 +4420,8 @@ namespace LightInject
                 var instanceIndex = constants.Add(instance);
                 emitter.PushConstant(instanceIndex, instance.GetType());
             }
-            else if (serviceRegistration.Lifetime is PerScopeLifetime)
+            else
+            if (serviceRegistration.Lifetime is PerScopeLifetime)
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
 
@@ -4480,6 +4489,34 @@ namespace LightInject
                 emitter.Emit(OpCodes.Call, ScopeLoader.ValidateTrackedTransientMethod);
             }
 
+            else if (serviceRegistration.Lifetime is ILifetimeEx)
+            {
+                int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+                int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
+                emitter.PushConstant(lifetimeIndex, typeof(ILifetimeEx));
+                emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+
+                if (options.EnableCurrentScope)
+                {
+                    int scopeManagerIndex = CreateScopeManagerIndex();
+
+                    // Push the scope into the stack
+                    emitter.PushArgument(1);
+
+                    // Push the scope manager into the stack.
+                    emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                    // Get the scope
+                    emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+                }
+                else
+                {
+                    // Push the scope onto the stack.
+                    emitter.PushArgument(1);
+                }
+                emitter.PushArgument(0);
+                emitter.Call(LifetimeHelper.NonClosingGetInstanceMethod);
+            }
 
             else
             {
@@ -5999,6 +6036,24 @@ namespace LightInject
         {
             return new PerContainerLifetime();
         }
+
+        // public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
+        // {
+        //     if (singleton != null)
+        //     {
+        //         return singleton;
+        //     }
+
+        //     lock (syncRoot)
+        //     {
+        //         if (singleton == null)
+        //         {
+        //             singleton = createInstance(arguments, scope);
+        //         }
+        //     }
+
+        //     return singleton;
+        // }
     }
 
     /// <summary>
@@ -7983,12 +8038,15 @@ namespace LightInject
         static LifetimeHelper()
         {
             GetInstanceMethod = typeof(ILifetime).GetTypeInfo().GetDeclaredMethod("GetInstance");
+            NonClosingGetInstanceMethod = typeof(ILifetimeEx).GetTypeInfo().GetDeclaredMethod("GetInstance");
             GetCurrentScopeMethod = typeof(IScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
         }
 
-        public static MethodInfo GetInstanceMethod { get; private set; }
+        public static readonly MethodInfo GetInstanceMethod;
 
-        public static MethodInfo GetCurrentScopeMethod { get; private set; }
+        public static readonly MethodInfo GetCurrentScopeMethod;
+
+        public static readonly MethodInfo NonClosingGetInstanceMethod;
     }
 
     internal static class ScopeLoader
