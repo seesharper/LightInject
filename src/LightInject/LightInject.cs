@@ -3129,6 +3129,17 @@ namespace LightInject
             return GetInstance(serviceType);
         }
 
+        public object GetInstance(Type serviceType, Scope scope)
+        {
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
+            }
+
+            return instanceDelegate(constants.Items, scope);
+        }
+
         object IScopedServiceFactory.GetInstance(Type serviceType, Scope scope)
         {
             var instanceDelegate = delegates.Search(serviceType);
@@ -4401,6 +4412,40 @@ namespace LightInject
 
                 emitter.Call(ScopeLoader.GetScopedInstanceMethod);
             }
+            else if (serviceRegistration.Lifetime is PerRequestLifeTime)
+            {
+                var scopeVariable = emitter.DeclareLocal(typeof(Scope));
+                int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+                var invokeMethod = typeof(GetInstanceDelegate).GetTypeInfo().GetDeclaredMethod("Invoke");
+                emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+                emitter.PushArgument(0);
+
+                if (options.EnableCurrentScope)
+                {
+                    int scopeManagerIndex = CreateScopeManagerIndex();
+
+                    // Push the scope into the stack
+                    emitter.PushArgument(1);
+
+                    // Push the scope manager into the stack.
+                    emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                    // Get the scope
+                    emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+                }
+                else
+                {
+                    // Push the scope onto the stack.
+                    emitter.PushArgument(1);
+                }
+
+                emitter.Store(scopeVariable);
+                emitter.Push(scopeVariable);
+                emitter.Emit(OpCodes.Callvirt, invokeMethod);
+                emitter.Push(scopeVariable);
+                emitter.Emit(OpCodes.Call, ScopeLoader.ValidateTrackedTransientMethod);
+            }
+
 
             else
             {
@@ -6125,9 +6170,11 @@ namespace LightInject
         public Scope ParentScope;
 
         private readonly object disposableObjectsLock = new object();
-        private readonly HashSet<IDisposable> disposableObjects = new HashSet<IDisposable>(ReferenceEqualityComparer<IDisposable>.Default);
+
+        private List<IDisposable> disposableObjects;
+
         private readonly IScopeManager scopeManager;
-        private readonly IServiceFactory serviceFactory;
+        private readonly ServiceContainer serviceFactory;
 
         private readonly IScopedServiceFactory scopedServiceFactory;
 
@@ -6139,7 +6186,7 @@ namespace LightInject
         public Scope(IScopeManager scopeManager, Scope parentScope)
         {
             this.scopeManager = scopeManager;
-            serviceFactory = scopeManager.ServiceFactory;
+            serviceFactory = (ServiceContainer)scopeManager.ServiceFactory;
             scopedServiceFactory = (IScopedServiceFactory)serviceFactory;
             ParentScope = parentScope;
         }
@@ -6148,7 +6195,7 @@ namespace LightInject
         /// Initializes a new instance of the <see cref="Scope"/> class.
         /// </summary>
         /// <param name="serviceFactory">The <see cref="IServiceFactory"/> that created this <see cref="Scope"/>.</param>
-        public Scope(IServiceFactory serviceFactory)
+        public Scope(ServiceContainer serviceFactory)
         {
             this.serviceFactory = serviceFactory;
             scopedServiceFactory = (IScopedServiceFactory)serviceFactory;
@@ -6163,10 +6210,14 @@ namespace LightInject
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
         /// </summary>
         /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
-        public virtual void TrackInstance(IDisposable disposable)
+        public void TrackInstance(IDisposable disposable)
         {
             lock (disposableObjectsLock)
             {
+                if (disposableObjects == null)
+                {
+                    disposableObjects = new List<IDisposable>();
+                }
                 disposableObjects.Add(disposable);
             }
         }
@@ -6176,8 +6227,25 @@ namespace LightInject
         /// </summary>
         public void Dispose()
         {
-            DisposeTrackedInstances();
-            OnCompleted();
+            if (disposableObjects != null && disposableObjects.Count > 0)
+            {
+                HashSet<IDisposable> disposedObjects = new HashSet<IDisposable>(ReferenceEqualityComparer<IDisposable>.Default);
+
+                for (var i = disposableObjects.Count - 1; i >= 0; i--)
+                {
+                    if (disposableObjects[i] is IDisposable disposable)
+                    {
+                        if (disposedObjects.Add(disposable))
+                        {
+                            disposable.Dispose();
+                        }
+                    }
+                }
+            }
+
+            scopeManager?.EndScope(this);
+            var completedHandler = Completed;
+            completedHandler?.Invoke(this, new EventArgs());
             IsDisposed = true;
         }
 
@@ -6187,20 +6255,8 @@ namespace LightInject
         /// <inheritdoc/>
         public object GetInstance(Type serviceType)
         {
-            // This must not hurt transient performance.
-            // How to determine if we should do this.
-
-            // Could it be baked into the GetInstanceDelegate?
-
-            // var createdInstance = createdInstances.Search(serviceType);
-            // if (createdInstance != null)
-            // {
-            //     return createdInstance;
-            // }
-            // createdInstance = scopedServiceFactory.GetInstance(serviceType, this);
-            // createdInstances = createdInstances.Add(serviceType, createdInstance);
-            // return createdInstance;
-            return scopedServiceFactory.GetInstance(serviceType, this);
+            return serviceFactory.GetInstance(serviceType, this);
+            //return scopedServiceFactory.GetInstance(serviceType, this);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -6217,9 +6273,12 @@ namespace LightInject
             {
                 TrackInstance(disposable);
             }
-            createdInstances = createdInstances.Add(getInstanceDelegate, createdInstance);
+            //TODO replace with interlocked
+            Interlocked.Exchange(ref createdInstances, createdInstances.Add(getInstanceDelegate, createdInstance));
+            // createdInstances = createdInstances.Add(getInstanceDelegate, createdInstance);
             return createdInstance;
         }
+
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName) =>
@@ -6247,21 +6306,6 @@ namespace LightInject
 
         /// <inheritdoc/>
         public object Create(Type serviceType) => scopedServiceFactory.Create(serviceType, this);
-
-        private void DisposeTrackedInstances()
-        {
-            foreach (var disposableObject in disposableObjects.Reverse())
-            {
-                disposableObject.Dispose();
-            }
-        }
-
-        private void OnCompleted()
-        {
-            scopeManager?.EndScope(this);
-            var completedHandler = Completed;
-            completedHandler?.Invoke(this, new EventArgs());
-        }
 
         private class ReferenceEqualityComparer<T> : IEqualityComparer<T>
         {
@@ -7778,11 +7822,32 @@ namespace LightInject
 
         public static readonly MethodInfo ValidateScopeMethod;
 
+        public static readonly MethodInfo ValidateTrackedTransientMethod;
+
         static ScopeLoader()
         {
             GetThisOrCurrentScopeMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("GetThisOrCurrentScope");
             GetScopedInstanceMethod = typeof(Scope).GetTypeInfo().GetDeclaredMethod("GetScopedInstance");
             ValidateScopeMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("ValidateScope");
+            ValidateTrackedTransientMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("ValidateTrackedTransient");
+        }
+
+        public static object ValidateTrackedTransient(object instance, Scope scope)
+        {
+            if (instance is IDisposable disposable)
+            {
+                if (scope == null)
+                {
+                    string message = $@"The disposable instance ({instance.GetType()}) was created outside a scope. If 'ContainerOptions.EnableCurrentScope=false',
+the service must be requested directly from the scope. If `ContainerOptions.EnableCurrentScope=true`, the service can be requested from the container,
+but either way the scope has to be started with 'container.BeginScope()'";
+                    throw new InvalidOperationException(message);
+                }
+
+                scope.TrackInstance(disposable);
+            }
+
+            return instance;
         }
 
         public static Scope ValidateScope<TService>(Scope scope)
@@ -7790,8 +7855,8 @@ namespace LightInject
             if (scope == null)
             {
                 string message = $@"Attempt to create a scoped instance ({typeof(TService)}) outside a scope. If 'ContainerOptions.EnableCurrentScope=false',
-                the service must be requested directly from the scope. If `ContainerOptions.EnableCurrentScope=true`, the service can be requested from the container,
-                but either way the scope has to be started with 'container.BeginScope()'";
+the service must be requested directly from the scope. If `ContainerOptions.EnableCurrentScope=true`, the service can be requested from the container,
+but either way the scope has to be started with 'container.BeginScope()'";
                 throw new InvalidOperationException(message);
             }
 

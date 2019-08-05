@@ -21,6 +21,25 @@
         }
 
         [Fact]
+        public void ShouldGetTransientFromScope()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, DisposableFoo>(new PerRequestLifeTime());
+            IFoo firstFoo;
+            IFoo secondFoo;
+            using (var scope = container.BeginScope())
+            {
+                firstFoo = scope.GetInstance<IFoo>();
+                secondFoo = scope.GetInstance<IFoo>();
+                Assert.NotSame(firstFoo, secondFoo);
+            }
+
+            Assert.True(((DisposableFoo)firstFoo).IsDisposed);
+            Assert.True(((DisposableFoo)secondFoo).IsDisposed);
+        }
+
+
+        [Fact]
         public void ShouldThrowMeaningfulMessageWhenScopedInstanceIsRequestFromContainer()
         {
             var container = CreateContainer(new ContainerOptions() { EnableCurrentScope = false });

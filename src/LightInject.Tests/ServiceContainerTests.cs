@@ -544,7 +544,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, DisposableFoo>(new PerRequestLifeTime());
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-            Assert.Equal(ErrorMessages.DisposableOutsideScope, exception.Message);
+            Assert.StartsWith(ErrorMessages.DisposableOutsideScope, exception.Message);
         }
 
         #region Array

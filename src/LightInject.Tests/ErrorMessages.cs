@@ -10,7 +10,7 @@ namespace LightInject.Tests
         public const string RecursiveDependency = "Recursive dependency detected: ServiceType:LightInject.SampleLibrary.IFoo, ServiceName:]";
         public const string GetInstanceOutSideScope = "Attempt to create a scoped instance";
 
-        public const string DisposableOutsideScope = "Attempt to create a disposable instance without a current scope.";
+        public const string DisposableOutsideScope = "The disposable instance (LightInject.SampleLibrary.DisposableFoo) was created outside a scope.";
 
         public const string RecursivePropertyDependency =
             "Unresolved dependency [Target Type: LightInject.SampleLibrary.FooWithRecursiveDependency], [Parameter: foo(LightInject.SampleLibrary.IFoo)], [Requested dependency: ServiceType:LightInject.SampleLibrary.IFoo, ServiceName:]";
