@@ -14,8 +14,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
-            container.Register<IFoo, FooWithProperyDependency>();
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithPropertyDependency>();
+            var instance = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
 
@@ -23,8 +23,8 @@ namespace LightInject.Tests
         public void GetInstance_UnKnownDependency_ReturnsInstanceWithoutDependency()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithProperyDependency>();
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithPropertyDependency>();
+            var instance = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             Assert.Null(instance.Bar);
         }
 
@@ -43,9 +43,9 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
-            container.Register<IFoo, FooWithProperyDependency>();
-            var instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
-            var instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithPropertyDependency>();
+            var instance1 = (FooWithPropertyDependency)container.GetInstance<IFoo>();
+            var instance2 = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             Assert.NotEqual(instance1.Bar, instance2.Bar);
         }
 
@@ -54,16 +54,16 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(new PerScopeLifetime());
-            container.Register<IFoo, FooWithProperyDependency>();
-            FooWithProperyDependency instance1;
-            FooWithProperyDependency instance2;
+            container.Register<IFoo, FooWithPropertyDependency>();
+            FooWithPropertyDependency instance1;
+            FooWithPropertyDependency instance2;
             using (container.BeginScope())
             {
-                instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+                instance1 = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             }
             using (container.BeginScope())
             {
-                instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+                instance2 = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             }
             Assert.NotEqual(instance1.Bar, instance2.Bar);
         }
@@ -73,9 +73,9 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(new PerContainerLifetime());
-            container.Register<IFoo, FooWithProperyDependency>();
-            var instance1 = (FooWithProperyDependency)container.GetInstance<IFoo>();
-            var instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            container.Register<IFoo, FooWithPropertyDependency>();
+            var instance1 = (FooWithPropertyDependency)container.GetInstance<IFoo>();
+            var instance2 = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             Assert.Equal(instance1.Bar, instance2.Bar);
         }
 
@@ -167,8 +167,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IBar), typeof(Bar));
-            container.Register<IFoo>(f => new FooWithProperyDependency { Bar = f.GetInstance<IBar>() });
-            var instance = (FooWithProperyDependency)container.GetInstance(typeof(IFoo));
+            container.Register<IFoo>(f => new FooWithPropertyDependency { Bar = f.GetInstance<IBar>() });
+            var instance = (FooWithPropertyDependency)container.GetInstance(typeof(IFoo));
             Assert.NotNull(instance.Bar);
         }
 
@@ -176,8 +176,8 @@ namespace LightInject.Tests
         public void GetInstance_FuncFactoryWithoutInitializer_ReturnsInstanceWithoutDependency()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(f => new FooWithProperyDependency());
-            var instance = (FooWithProperyDependency)container.GetInstance(typeof(IFoo));
+            container.Register<IFoo>(f => new FooWithPropertyDependency());
+            var instance = (FooWithPropertyDependency)container.GetInstance(typeof(IFoo));
             Assert.Null(instance.Bar);
         }
 
@@ -218,11 +218,11 @@ namespace LightInject.Tests
         public void InjectProperties_KnownClassWithPropertyDependency_InjectsPropertyDependencies()
         {
             var container = CreateContainer();
-            container.Register<FooWithProperyDependency>();
+            container.Register<FooWithPropertyDependency>();
             container.Register<IBar, Bar>();
-            var fooWithProperyDependency = new FooWithProperyDependency();
+            var fooWithProperyDependency = new FooWithPropertyDependency();
 
-            var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+            var result = (FooWithPropertyDependency)container.InjectProperties(fooWithProperyDependency);
 
             Assert.IsAssignableFrom<Bar>(result.Bar);
         }
@@ -246,9 +246,9 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
-            var fooWithProperyDependency = new FooWithProperyDependency();
+            var fooWithProperyDependency = new FooWithPropertyDependency();
 
-            var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+            var result = (FooWithPropertyDependency)container.InjectProperties(fooWithProperyDependency);
 
             Assert.IsAssignableFrom<Bar>(result.Bar);
         }
@@ -258,9 +258,9 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.RegisterInstance<IBar>(new Bar());
-            var fooWithProperyDependency = new FooWithProperyDependency();
+            var fooWithProperyDependency = new FooWithPropertyDependency();
 
-            var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+            var result = (FooWithPropertyDependency)container.InjectProperties(fooWithProperyDependency);
 
             Assert.IsAssignableFrom<Bar>(result.Bar);
         }
@@ -270,10 +270,10 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IBar, Bar>();
             container.Register<IBar, AnotherBar>("AnotherBar");
-            container.Register(f => new FooWithProperyDependency() { Bar = f.GetInstance<IBar>("AnotherBar") });
-            var fooWithProperyDependency = new FooWithProperyDependency();
+            container.Register(f => new FooWithPropertyDependency() { Bar = f.GetInstance<IBar>("AnotherBar") });
+            var fooWithProperyDependency = new FooWithPropertyDependency();
 
-            var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
+            var result = (FooWithPropertyDependency)container.InjectProperties(fooWithProperyDependency);
 
             Assert.IsAssignableFrom<Bar>(result.Bar);
         }
@@ -322,7 +322,7 @@ namespace LightInject.Tests
         public void ToString_PropertyDependency_ReturnsDescriptiveDescription()
         {
             PropertyDependency propertyDependency = new PropertyDependency();
-            propertyDependency.Property = typeof(FooWithProperyDependency).GetTypeInfo().GetProperty("Bar");
+            propertyDependency.Property = typeof(FooWithPropertyDependency).GetTypeInfo().GetProperty("Bar");
             var description = propertyDependency.ToString();
             Assert.StartsWith("[Target Type", description);
         }

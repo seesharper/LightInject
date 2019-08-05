@@ -782,7 +782,7 @@ namespace LightInject.SampleLibrary
     }
 
 
-    public class FooWithProperyDependency : IFoo
+    public class FooWithPropertyDependency : IFoo
     {
         public IBar Bar { get; set; }
     }
@@ -793,7 +793,7 @@ namespace LightInject.SampleLibrary
     }
 
 
-    public class FooWithInheritedProperyDepenency : FooWithProperyDependency { }
+    public class FooWithInheritedProperyDepenency : FooWithPropertyDependency { }
 
     //public class FooWithAnnotatedProperyDependency : IFoo
     //{

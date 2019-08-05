@@ -6,15 +6,15 @@ namespace LightInject.Tests
     using Xunit;
 
 
-    
+
     public class PropertySelectorTests
     {
-        [Fact] 
+        [Fact]
         public void Execute_PublicGetterAndSetter_IsReturned()
         {
             var propertySelector = new PropertySelector();
-             
-            var result = propertySelector.Execute(typeof(FooWithProperyDependency));
+
+            var result = propertySelector.Execute(typeof(FooWithPropertyDependency));
 
             Assert.Single(result);
         }
