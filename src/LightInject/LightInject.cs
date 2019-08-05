@@ -734,10 +734,18 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a class
+    /// Represents a optimized <see cref="ILifetime"/> class
+    /// that don't close around the scope.
     /// </summary>
-    public interface ILifetimeEx
+    public interface ILifetimeEx : ILifetime
     {
+        /// <summary>
+        /// Returns a service instance according to the specific lifetime characteristics.
+        /// </summary>
+        /// <param name="createInstance">The delegate used to create a new service instance.</param>
+        /// <param name="scope">The <see cref="Scope"/> of the current service request.</param>
+        /// <param name="arguments">The arguments array to be passed to the <paramref name="createInstance"/> delegate.</param>
+        /// <returns>The requested services instance.</returns>
         object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments);
     }
 
@@ -1903,7 +1911,6 @@ namespace LightInject
         /// <summary>
         /// Adds a new element to the <see cref="ImmutableHashTree{TKey,TValue}"/>.
         /// </summary>
-        /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="tree">The target <see cref="ImmutableHashTree{TKey,TValue}"/>.</param>
         /// <param name="key">The key to be associated with the value.</param>
@@ -1915,7 +1922,6 @@ namespace LightInject
             {
                 return new ImmutableMapTree<TValue>(key, value, tree, tree);
             }
-
 
             if (key > tree.Key)
             {
@@ -1929,8 +1935,6 @@ namespace LightInject
 
             return new ImmutableMapTree<TValue>(key, value, tree);
         }
-
-
 
         /// <summary>
         /// Adds a new element to the <see cref="ImmutableHashTree{TKey,TValue}"/>.
@@ -2599,7 +2603,6 @@ namespace LightInject
             {
                 return new Scope(this);
             }
-
         }
 
         /// <inheritdoc/>
@@ -3179,6 +3182,57 @@ namespace LightInject
             return GetInstance(serviceType);
         }
 
+        /// <inheritdoc/>
+        public IServiceRegistry SetDefaultLifetime<T>()
+            where T : ILifetime, new()
+        {
+            defaultLifetimeType = typeof(T);
+            return this;
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            var disposableLifetimeInstances = disposableLifeTimes.Items
+                .Where(lt => lt is IDisposable).Cast<IDisposable>().Reverse();
+            foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
+            {
+                disposableLifetimeInstance.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Creates a clone of the current <see cref="ServiceContainer"/>.
+        /// </summary>
+        /// <returns>A new <see cref="ServiceContainer"/> instance.</returns>
+        public ServiceContainer Clone()
+        {
+            return new ServiceContainer(
+                options,
+                constructorDependencyFactories,
+                propertyDependencyFactories,
+                availableServices,
+                emitters,
+                decorators,
+                overrides,
+                factoryRules,
+                initializers,
+                constructionInfoProvider,
+                methodSkeletonFactory,
+                log,
+                CompositionRootExecutor,
+                ServiceNameProvider,
+                PropertyDependencySelector,
+                GenericArgumentMapper,
+                AssemblyScanner,
+                ConstructorDependencySelector,
+                ConstructorSelector,
+#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+                AssemblyLoader,
+#endif
+                ScopeManagerProvider);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal object GetInstance(Type serviceType, Scope scope)
         {
@@ -3262,57 +3316,6 @@ namespace LightInject
         {
             Register(serviceType);
             return GetInstance(serviceType, scope);
-        }
-
-        /// <inheritdoc/>
-        public IServiceRegistry SetDefaultLifetime<T>()
-            where T : ILifetime, new()
-        {
-            defaultLifetimeType = typeof(T);
-            return this;
-        }
-
-        /// <inheritdoc/>
-        public void Dispose()
-        {
-            var disposableLifetimeInstances = disposableLifeTimes.Items
-                .Where(lt => lt is IDisposable).Cast<IDisposable>().Reverse();
-            foreach (var disposableLifetimeInstance in disposableLifetimeInstances)
-            {
-                disposableLifetimeInstance.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// Creates a clone of the current <see cref="ServiceContainer"/>.
-        /// </summary>
-        /// <returns>A new <see cref="ServiceContainer"/> instance.</returns>
-        public ServiceContainer Clone()
-        {
-            return new ServiceContainer(
-                options,
-                constructorDependencyFactories,
-                propertyDependencyFactories,
-                availableServices,
-                emitters,
-                decorators,
-                overrides,
-                factoryRules,
-                initializers,
-                constructionInfoProvider,
-                methodSkeletonFactory,
-                log,
-                CompositionRootExecutor,
-                ServiceNameProvider,
-                PropertyDependencySelector,
-                GenericArgumentMapper,
-                AssemblyScanner,
-                ConstructorDependencySelector,
-                ConstructorSelector,
-#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
-                AssemblyLoader,
-#endif
-                ScopeManagerProvider);
         }
 
         private static void EmitEnumerable(IList<Action<IEmitter>> serviceEmitters, Type elementType, IEmitter emitter)
@@ -4420,29 +4423,10 @@ namespace LightInject
                 var instanceIndex = constants.Add(instance);
                 emitter.PushConstant(instanceIndex, instance.GetType());
             }
-            else
-            if (serviceRegistration.Lifetime is PerScopeLifetime)
+            else if (serviceRegistration.Lifetime is PerScopeLifetime)
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
-
-                if (options.EnableCurrentScope)
-                {
-                    int scopeManagerIndex = CreateScopeManagerIndex();
-
-                    // Push the scope into the stack
-                    emitter.PushArgument(1);
-
-                    // Push the scope manager into the stack.
-                    emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
-
-                    // Get the scope
-                    emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
-                }
-                else
-                {
-                    // Push the scope onto the stack.
-                    emitter.PushArgument(1);
-                }
+                PushScope(emitter);
 
                 emitter.Emit(OpCodes.Call, ScopeLoader.ValidateScopeMethod.MakeGenericMethod(serviceRegistration.ServiceType));
 
@@ -4463,24 +4447,7 @@ namespace LightInject
                 emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
                 emitter.PushArgument(0);
 
-                if (options.EnableCurrentScope)
-                {
-                    int scopeManagerIndex = CreateScopeManagerIndex();
-
-                    // Push the scope into the stack
-                    emitter.PushArgument(1);
-
-                    // Push the scope manager into the stack.
-                    emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
-
-                    // Get the scope
-                    emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
-                }
-                else
-                {
-                    // Push the scope onto the stack.
-                    emitter.PushArgument(1);
-                }
+                PushScope(emitter);
 
                 emitter.Store(scopeVariable);
                 emitter.Push(scopeVariable);
@@ -4488,52 +4455,26 @@ namespace LightInject
                 emitter.Push(scopeVariable);
                 emitter.Emit(OpCodes.Call, ScopeLoader.ValidateTrackedTransientMethod);
             }
-
             else if (serviceRegistration.Lifetime is ILifetimeEx)
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
                 emitter.PushConstant(lifetimeIndex, typeof(ILifetimeEx));
                 emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
-
-                if (options.EnableCurrentScope)
-                {
-                    int scopeManagerIndex = CreateScopeManagerIndex();
-
-                    // Push the scope into the stack
-                    emitter.PushArgument(1);
-
-                    // Push the scope manager into the stack.
-                    emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
-
-                    // Get the scope
-                    emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
-                }
-                else
-                {
-                    // Push the scope onto the stack.
-                    emitter.PushArgument(1);
-                }
+                PushScope(emitter);
                 emitter.PushArgument(0);
                 emitter.Call(LifetimeHelper.NonClosingGetInstanceMethod);
             }
-
             else
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
 
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
-                int scopeManagerIndex = CreateScopeManagerIndex();
+
                 var scopeVariable = emitter.DeclareLocal(typeof(Scope));
 
                 // Push the scope into the stack
-                emitter.PushArgument(1);
-
-                // Push the scope manager into the stack.
-                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
-
-                // Get the scope
-                emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+                PushScope(emitter);
 
                 // Store the scope
                 emitter.Store(scopeVariable);
@@ -4565,6 +4506,28 @@ namespace LightInject
             bool IsNotServiceFactory(Type serviceType)
             {
                 return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
+            }
+        }
+
+        private void PushScope(IEmitter emitter)
+        {
+            if (options.EnableCurrentScope)
+            {
+                int scopeManagerIndex = CreateScopeManagerIndex();
+
+                // Push the scope into the stack
+                emitter.PushArgument(1);
+
+                // Push the scope manager into the stack.
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                // Get the scope
+                emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+            }
+            else
+            {
+                // Push the scope onto the stack.
+                emitter.PushArgument(1);
             }
         }
 
@@ -6036,24 +5999,6 @@ namespace LightInject
         {
             return new PerContainerLifetime();
         }
-
-        // public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
-        // {
-        //     if (singleton != null)
-        //     {
-        //         return singleton;
-        //     }
-
-        //     lock (syncRoot)
-        //     {
-        //         if (singleton == null)
-        //         {
-        //             singleton = createInstance(arguments, scope);
-        //         }
-        //     }
-
-        //     return singleton;
-        // }
     }
 
     /// <summary>
@@ -6064,13 +6009,7 @@ namespace LightInject
         /// <inheritdoc/>
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
-            var instance = createInstance();
-            if (instance is IDisposable disposable)
-            {
-                TrackInstance(scope, disposable);
-            }
-
-            return instance;
+            throw new NotImplementedException("Optimized");
         }
 
         /// <summary>
@@ -6080,16 +6019,6 @@ namespace LightInject
         public ILifetime Clone()
         {
             return new PerRequestLifeTime();
-        }
-
-        private static void TrackInstance(Scope scope, IDisposable disposable)
-        {
-            if (scope == null)
-            {
-                throw new InvalidOperationException("Attempt to create a disposable instance without a current scope.");
-            }
-
-            scope.TrackInstance(disposable);
         }
     }
 
@@ -6112,43 +6041,13 @@ namespace LightInject
         /// <returns>The requested services instance.</returns>
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
-            if (scope == null)
-            {
-                throw new InvalidOperationException(
-                    "Attempt to create a scoped instance without a current scope.");
-            }
-
-            return instances.GetOrAdd(scope, s => CreateScopedInstance(s, createInstance));
+            throw new NotImplementedException("Optimized");
         }
 
         /// <inheritdoc/>
         public ILifetime Clone()
         {
             return new PerScopeLifetime();
-        }
-
-        private static void RegisterForDisposal(Scope scope, object instance)
-        {
-            if (instance is IDisposable disposable)
-            {
-                scope.TrackInstance(disposable);
-            }
-        }
-
-        private object CreateScopedInstance(Scope scope, Func<object> createInstance)
-        {
-            scope.Completed += OnScopeCompleted;
-            var instance = createInstance();
-
-            RegisterForDisposal(scope, instance);
-            return instance;
-        }
-
-        private void OnScopeCompleted(object sender, EventArgs e)
-        {
-            var scope = (Scope)sender;
-            scope.Completed -= OnScopeCompleted;
-            instances.TryRemove(scope, out object removedInstance);
         }
     }
 
@@ -6246,10 +6145,6 @@ namespace LightInject
     /// </summary>
     public class Scope : IServiceFactory, IDisposable
     {
-        private ImmutableMapTree<object> createdInstances = ImmutableMapTree<object>.Empty;
-
-        private object lockObject = new object();
-
         /// <summary>
         /// Gets a value indicating whether this scope has been disposed.
         /// </summary>
@@ -6260,11 +6155,15 @@ namespace LightInject
         /// </summary>
         public Scope ParentScope;
 
-        private List<IDisposable> disposableObjects;
+        private readonly object lockObject = new object();
 
         private readonly IScopeManager scopeManager;
 
         private readonly ServiceContainer serviceFactory;
+
+        private List<IDisposable> disposableObjects;
+
+        private ImmutableMapTree<object> createdInstances = ImmutableMapTree<object>.Empty;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
@@ -6304,6 +6203,7 @@ namespace LightInject
                 {
                     disposableObjects = new List<IDisposable>();
                 }
+
                 disposableObjects.Add(disposable);
             }
         }
@@ -6339,39 +6239,8 @@ namespace LightInject
         public Scope BeginScope() => serviceFactory.BeginScope();
 
         /// <inheritdoc/>
-        public object GetInstance(Type serviceType)
-        {
-            return serviceFactory.GetInstance(serviceType, this);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments, int instanceDelegateIndex)
-        {
-            var createdInstance = createdInstances.Search(instanceDelegateIndex);
-            if (createdInstance != null)
-            {
-                return createdInstance;
-            }
-
-            lock (lockObject)
-            {
-                createdInstance = createdInstances.Search(instanceDelegateIndex);
-                if (createdInstance != null)
-                {
-                    return createdInstance;
-                }
-                createdInstance = getInstanceDelegate(arguments, this);
-                if (createdInstance is IDisposable disposable)
-                {
-                    TrackInstance(disposable);
-                }
-
-                Interlocked.Exchange(ref createdInstances, createdInstances.Add(instanceDelegateIndex, createdInstance));
-                return createdInstance;
-            }
-
-        }
-
+        public object GetInstance(Type serviceType) =>
+            serviceFactory.GetInstance(serviceType, this);
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName) =>
@@ -6399,6 +6268,33 @@ namespace LightInject
 
         /// <inheritdoc/>
         public object Create(Type serviceType) => serviceFactory.Create(serviceType, this);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments, int instanceDelegateIndex)
+        {
+            var createdInstance = createdInstances.Search(instanceDelegateIndex);
+            if (createdInstance != null)
+            {
+                return createdInstance;
+            }
+
+            lock (lockObject)
+            {
+                createdInstance = createdInstances.Search(instanceDelegateIndex);
+                if (createdInstance == null)
+                {
+                    createdInstance = getInstanceDelegate(arguments, this);
+                    if (createdInstance is IDisposable disposable)
+                    {
+                        TrackInstance(disposable);
+                    }
+
+                    Interlocked.Exchange(ref createdInstances, createdInstances.Add(instanceDelegateIndex, createdInstance));
+                }
+
+                return createdInstance;
+            }
+        }
 
         private class ReferenceEqualityComparer<T> : IEqualityComparer<T>
         {
@@ -7430,23 +7326,22 @@ namespace LightInject
         public readonly bool IsEmpty;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableHashTree{TKey,TValue}"/> class
-        /// and adds a new entry in the <see cref="Duplicates"/> list.
+        /// Initializes a new instance of the <see cref="ImmutableMapTree{TValue}"/> class.
         /// </summary>
         /// <param name="key">The key for this node.</param>
         /// <param name="value">The value for this node.</param>
-        /// <param name="hashTree">The <see cref="ImmutableHashTree{TKey,TValue}"/> that contains existing duplicates.</param>
+        /// <param name="hashTree">The <see cref="ImmutableMapTree{TValue}"/> that contains existing duplicates.</param>
         public ImmutableMapTree(int key, TValue value, ImmutableMapTree<TValue> hashTree)
         {
-            Key = hashTree.Key;
-            Value = hashTree.Value;
+            Key = key;
+            Value = value;
             Height = hashTree.Height;
             Left = hashTree.Left;
             Right = hashTree.Right;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableMapTree{TValue}"/> class.
         /// </summary>
         /// <param name="key">The key for this node.</param>
         /// <param name="value">The value for this node.</param>
@@ -7520,8 +7415,6 @@ namespace LightInject
 
         private bool IsRightHeavy() => Right.Height > Left.Height;
     }
-
-
 
     /// <summary>
     /// Represents an MSIL instruction to be emitted into a dynamic method.
@@ -8035,18 +7928,18 @@ namespace LightInject
 
     internal static class LifetimeHelper
     {
+        public static readonly MethodInfo GetInstanceMethod;
+
+        public static readonly MethodInfo GetCurrentScopeMethod;
+
+        public static readonly MethodInfo NonClosingGetInstanceMethod;
+
         static LifetimeHelper()
         {
             GetInstanceMethod = typeof(ILifetime).GetTypeInfo().GetDeclaredMethod("GetInstance");
             NonClosingGetInstanceMethod = typeof(ILifetimeEx).GetTypeInfo().GetDeclaredMethod("GetInstance");
             GetCurrentScopeMethod = typeof(IScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
         }
-
-        public static readonly MethodInfo GetInstanceMethod;
-
-        public static readonly MethodInfo GetCurrentScopeMethod;
-
-        public static readonly MethodInfo NonClosingGetInstanceMethod;
     }
 
     internal static class ScopeLoader

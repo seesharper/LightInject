@@ -449,7 +449,42 @@
                 var foo = scope.GetInstance<DisposableFoo>();
             }
         }
+
+        [Fact]
+        public void ShouldThrowNotImplementedForPerRequestLifeTime()
+        {
+            Assert.Throws<NotImplementedException>(() => new PerRequestLifeTime().GetInstance(null, null));
+        }
+
+        [Fact]
+        public void ShouldThrowNotImplementedForPerScopeLifeTime()
+        {
+            Assert.Throws<NotImplementedException>(() => new PerScopeLifetime().GetInstance(null, null));
+        }
+
+        [Fact]
+        public void ShouldUseLifetimeEx()
+        {
+            var container = CreateContainer(new ContainerOptions() { EnableCurrentScope = false });
+            container.Register<Foo>(new LifeTimeEx());
+            using (var scope = container.BeginScope())
+            {
+                var foo = scope.GetInstance<Foo>();
+                Assert.IsType<Foo>(foo);
+            }
+        }
     }
 
+    public class LifeTimeEx : ILifetimeEx
+    {
+        public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
+        {
+            return createInstance(arguments, scope);
+        }
 
+        public object GetInstance(Func<object> createInstance, Scope scope)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
