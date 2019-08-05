@@ -21,6 +21,34 @@
         }
 
         [Fact]
+        public void ShouldThrowMeaningfulMessageWhenScopedInstanceIsRequestFromContainer()
+        {
+            var container = CreateContainer(new ContainerOptions() { EnableCurrentScope = false });
+            container.Register<IFoo, Foo>(new PerScopeLifetime());
+            using (var scope = container.BeginScope())
+            {
+                var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+                Assert.StartsWith("Attempt to create a scoped instance", exception.Message);
+            }
+        }
+
+        [Fact]
+        public void ShouldGEtDefaultAndNamedServiceFromScope()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>(new PerScopeLifetime());
+            container.Register<IFoo, AnotherFoo>("AnotherFoo", new PerScopeLifetime());
+
+            using (var scope = container.BeginScope())
+            {
+                var foo = scope.GetInstance<IFoo>();
+                Assert.IsType<Foo>(foo);
+                var anotherFoo = scope.GetInstance<IFoo>("AnotherFoo");
+                Assert.IsType<AnotherFoo>(anotherFoo);
+            }
+        }
+
+        [Fact]
         public void ShouldGetDifferentInstancePerScope()
         {
             var container = CreateContainer();
@@ -389,6 +417,17 @@
             using (container.BeginScope())
             {
                 Assert.Null(container.ScopeManagerProvider.GetScopeManager(container).CurrentScope);
+            }
+        }
+
+        [Fact]
+        public void ShouldGetInstanceWhenCurrentScopeIsDisabled()
+        {
+            var container = CreateContainer(new ContainerOptions() { EnableCurrentScope = false });
+            container.RegisterScoped<DisposableFoo>();
+            using (var scope = container.BeginScope())
+            {
+                var foo = scope.GetInstance<DisposableFoo>();
             }
         }
     }

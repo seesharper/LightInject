@@ -22,10 +22,10 @@ namespace LightInject.BenchMarks
         public void Setup()
         {
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddTransient<Foo>();
+            serviceCollection.AddScoped<Foo>();
 
             serviceContainer = new ServiceContainer();
-            serviceContainer.Register<Foo>();
+            serviceContainer.RegisterScoped<Foo>();
 
             lightInjectScope = serviceContainer.BeginScope();
 
@@ -64,8 +64,11 @@ namespace LightInject.BenchMarks
     }
 
 
-    public class Foo
+    public class Foo : IDisposable
     {
-
+        public void Dispose()
+        {
+            // throw new NotImplementedException();
+        }
     }
 }

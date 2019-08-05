@@ -4369,6 +4369,39 @@ namespace LightInject
                 var instanceIndex = constants.Add(instance);
                 emitter.PushConstant(instanceIndex, instance.GetType());
             }
+            else if (serviceRegistration.Lifetime is PerScopeLifetime)
+            {
+                int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+
+                if (options.EnableCurrentScope)
+                {
+                    int scopeManagerIndex = CreateScopeManagerIndex();
+
+                    // Push the scope into the stack
+                    emitter.PushArgument(1);
+
+                    // Push the scope manager into the stack.
+                    emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                    // Get the scope
+                    emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+                }
+                else
+                {
+                    // Push the scope onto the stack.
+                    emitter.PushArgument(1);
+                }
+
+                emitter.Emit(OpCodes.Call, ScopeLoader.ValidateScopeMethod.MakeGenericMethod(serviceRegistration.ServiceType));
+
+                // Push the getinstance delegate
+                emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+
+                emitter.PushArgument(0);
+
+                emitter.Call(ScopeLoader.GetScopedInstanceMethod);
+            }
+
             else
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
@@ -6079,6 +6112,8 @@ namespace LightInject
     /// </summary>
     public class Scope : IServiceFactory, IDisposable
     {
+        private ImmutableHashTable<GetInstanceDelegate, object> createdInstances = ImmutableHashTable<GetInstanceDelegate, object>.Empty;
+
         /// <summary>
         /// Gets a value indicating whether this scope has been disposed.
         /// </summary>
@@ -6116,6 +6151,7 @@ namespace LightInject
         public Scope(IServiceFactory serviceFactory)
         {
             this.serviceFactory = serviceFactory;
+            scopedServiceFactory = (IScopedServiceFactory)serviceFactory;
         }
 
         /// <summary>
@@ -6149,8 +6185,41 @@ namespace LightInject
         public Scope BeginScope() => serviceFactory.BeginScope();
 
         /// <inheritdoc/>
-        public object GetInstance(Type serviceType) =>
-            scopedServiceFactory.GetInstance(serviceType, this);
+        public object GetInstance(Type serviceType)
+        {
+            // This must not hurt transient performance.
+            // How to determine if we should do this.
+
+            // Could it be baked into the GetInstanceDelegate?
+
+            // var createdInstance = createdInstances.Search(serviceType);
+            // if (createdInstance != null)
+            // {
+            //     return createdInstance;
+            // }
+            // createdInstance = scopedServiceFactory.GetInstance(serviceType, this);
+            // createdInstances = createdInstances.Add(serviceType, createdInstance);
+            // return createdInstance;
+            return scopedServiceFactory.GetInstance(serviceType, this);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments)
+        {
+
+            var createdInstance = createdInstances.Search(getInstanceDelegate);
+            if (createdInstance != null)
+            {
+                return createdInstance;
+            }
+            createdInstance = getInstanceDelegate(arguments, this);
+            if (createdInstance is IDisposable disposable)
+            {
+                TrackInstance(disposable);
+            }
+            createdInstances = createdInstances.Add(getInstanceDelegate, createdInstance);
+            return createdInstance;
+        }
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName) =>
@@ -7705,9 +7774,28 @@ namespace LightInject
     {
         public static readonly MethodInfo GetThisOrCurrentScopeMethod;
 
+        public static readonly MethodInfo GetScopedInstanceMethod;
+
+        public static readonly MethodInfo ValidateScopeMethod;
+
         static ScopeLoader()
         {
             GetThisOrCurrentScopeMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("GetThisOrCurrentScope");
+            GetScopedInstanceMethod = typeof(Scope).GetTypeInfo().GetDeclaredMethod("GetScopedInstance");
+            ValidateScopeMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("ValidateScope");
+        }
+
+        public static Scope ValidateScope<TService>(Scope scope)
+        {
+            if (scope == null)
+            {
+                string message = $@"Attempt to create a scoped instance ({typeof(TService)}) outside a scope. If 'ContainerOptions.EnableCurrentScope=false',
+                the service must be requested directly from the scope. If `ContainerOptions.EnableCurrentScope=true`, the service can be requested from the container,
+                but either way the scope has to be started with 'container.BeginScope()'";
+                throw new InvalidOperationException(message);
+            }
+
+            return scope;
         }
 
         public static Scope GetThisOrCurrentScope(Scope scope, IScopeManager scopemanager)

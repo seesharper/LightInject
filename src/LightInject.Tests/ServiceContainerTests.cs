@@ -508,7 +508,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, Foo>(new PerScopeLifetime());
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-            Assert.Equal(ErrorMessages.GetInstanceOutSideScope, exception.Message);
+            Assert.StartsWith(ErrorMessages.GetInstanceOutSideScope, exception.Message);
         }
 
         [Fact]
