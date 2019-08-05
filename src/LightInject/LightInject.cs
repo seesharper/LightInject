@@ -4410,6 +4410,8 @@ namespace LightInject
 
                 emitter.PushArgument(0);
 
+                emitter.Push(instanceDelegateIndex);
+
                 emitter.Call(ScopeLoader.GetScopedInstanceMethod);
             }
             else if (serviceRegistration.Lifetime is PerRequestLifeTime)
@@ -6157,7 +6159,7 @@ namespace LightInject
     /// </summary>
     public class Scope : IServiceFactory, IDisposable
     {
-        private ImmutableHashTable<GetInstanceDelegate, object> createdInstances = ImmutableHashTable<GetInstanceDelegate, object>.Empty;
+        private ImmutableHashTable<int, object> createdInstances = ImmutableHashTable<int, object>.Empty;
 
         /// <summary>
         /// Gets a value indicating whether this scope has been disposed.
@@ -6260,10 +6262,10 @@ namespace LightInject
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments)
+        internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments, int instanceDelegateIndex)
         {
 
-            var createdInstance = createdInstances.Search(getInstanceDelegate);
+            var createdInstance = createdInstances.Search(instanceDelegateIndex);
             if (createdInstance != null)
             {
                 return createdInstance;
@@ -6274,7 +6276,7 @@ namespace LightInject
                 TrackInstance(disposable);
             }
             //TODO replace with interlocked
-            Interlocked.Exchange(ref createdInstances, createdInstances.Add(getInstanceDelegate, createdInstance));
+            Interlocked.Exchange(ref createdInstances, createdInstances.Add(instanceDelegateIndex, createdInstance));
             // createdInstances = createdInstances.Add(getInstanceDelegate, createdInstance);
             return createdInstance;
         }

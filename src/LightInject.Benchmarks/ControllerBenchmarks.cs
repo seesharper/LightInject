@@ -63,7 +63,9 @@ namespace LightInject.Benchmarks
         {
             using (var scope = serviceContainer.BeginScope())
             {
-                var controller = scope.GetInstance<IRepositoryTransient1>();
+                var controller = scope.GetInstance<IScopedService1>();
+                // var controller2 = scope.GetInstance<IScopedService2>();
+                // var controller3 = scope.GetInstance<IScopedService3>();
             }
         }
 
@@ -72,7 +74,9 @@ namespace LightInject.Benchmarks
         {
             using (var scope = defaultServiceProvider.CreateScope())
             {
-                var controller = scope.ServiceProvider.GetService<IRepositoryTransient1>();
+                var controller = scope.ServiceProvider.GetService<IScopedService1>();
+                // var controller2 = scope.ServiceProvider.GetService<IScopedService2>();
+                // var controller3 = scope.ServiceProvider.GetService<IScopedService3>();
             }
         }
 

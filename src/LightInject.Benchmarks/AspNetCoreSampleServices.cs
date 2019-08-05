@@ -95,7 +95,7 @@ namespace LightInject.Benchmarks
 
         public ScopedService1()
         {
-            Interlocked.Increment(ref counter);
+            //Interlocked.Increment(ref counter);
         }
 
         public static int Instances
@@ -120,7 +120,7 @@ namespace LightInject.Benchmarks
 
         public ScopedService2()
         {
-            Interlocked.Increment(ref counter);
+            //Interlocked.Increment(ref counter);
         }
 
         public static int Instances
