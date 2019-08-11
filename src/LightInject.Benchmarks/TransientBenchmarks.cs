@@ -3,7 +3,6 @@
     using BenchmarkDotNet.Attributes;
     using DryIoc;
     using Grace.DependencyInjection;
-    using Grace.Dynamic;
 
     internal class TransientBenchmarks
     {
@@ -11,7 +10,7 @@
         private readonly DryIoc.Container dryIocContainer = new Container();
 
         private readonly Grace.DependencyInjection.DependencyInjectionContainer graceContainer =
-            new DependencyInjectionContainer(GraceDynamicMethod.Configuration());
+            new DependencyInjectionContainer();
 
         public TransientBenchmarks()
         {
@@ -22,7 +21,7 @@
 
             dryIocContainer.Register<ITransient1, Transient1>();
             dryIocContainer.Register<ITransient2, Transient2>();
-            dryIocContainer.Register<ITransient3, Transient3>();            
+            dryIocContainer.Register<ITransient3, Transient3>();
 
             graceContainer.Configure(ioc =>
             {
@@ -52,22 +51,22 @@
     }
 
 
-    
+
     public interface ITransient1
     {
-       
+
     }
-    
+
     public interface ITransient2
     {
     }
-    
+
     public interface ITransient3
     {
     }
-    
+
     public class Transient1 : ITransient1
-    {             
+    {
     }
 
     public class Transient2 : ITransient2

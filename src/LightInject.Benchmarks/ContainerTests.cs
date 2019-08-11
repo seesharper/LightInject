@@ -2,14 +2,14 @@
 {
     using DryIoc;
     using Grace.DependencyInjection;
-    using Grace.Dynamic;
+
 
     internal class ContainerTests
     {
         protected readonly ServiceContainer LightInjectContainer = new ServiceContainer();
         protected readonly DryIoc.Container DryIocContainer = new Container();
         protected readonly Grace.DependencyInjection.DependencyInjectionContainer GraceContainer =
-            new DependencyInjectionContainer(GraceDynamicMethod.Configuration());
+            new DependencyInjectionContainer();
 
         public ContainerTests()
         {
