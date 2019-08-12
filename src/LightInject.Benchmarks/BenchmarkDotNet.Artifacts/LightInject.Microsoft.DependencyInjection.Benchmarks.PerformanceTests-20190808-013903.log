@@ -1,5 +1,0 @@
-// Validating benchmarks:
-// ***** BenchmarkRunner: Start   *****
-// ***** Found 2 benchmark(s) in total *****
-// ***** Building 1 exe(s) in Parallel: Start   *****
-// start dotnet restore  /p:UseSharedCompilation=false /p:BuildInParallel=false /m:1 in /Users/bernhardrichter/GitHub/LightInject/src/LightInject.Benchmarks/bin/release/netcoreapp2.2/2de36432-ba87-4c54-bbf0-ae206610fbc2
