@@ -620,6 +620,13 @@ namespace LightInject
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        object GetInstance(Type serviceType, Scope scope);
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
         /// <param name="arguments">The arguments to be passed to the target instance.</param>
         /// <returns>The requested service instance.</returns>
         object GetInstance(Type serviceType, object[] arguments);
@@ -3442,6 +3449,18 @@ namespace LightInject
             return instanceDelegate(constants.Items, null);
         }
 
+        public object GetInstance(Type serviceType, Scope scope)
+        {
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
+            }
+
+            return instanceDelegate(constants.Items, scope);
+        }
+
+
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
@@ -4667,8 +4686,9 @@ namespace LightInject
                 var getInstanceMethod = LifetimeHelper.GetInstanceMethod;
                 emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
                 emitter.PushConstant(instanceDelegateIndex, typeof(Func<object>));
+                emitter.PushArgument(1);
                 emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
-                emitter.Call(LifetimeHelper.GetCurrentScopeMethod);
+                emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
                 emitter.Call(getInstanceMethod);
             }
 
@@ -6423,12 +6443,12 @@ namespace LightInject
         /// <summary>
         /// Gets a value indicating whether this scope has been disposed.
         /// </summary>
-        public bool IsDisposed { get; private set; }
+        public bool IsDisposed;
 
         /// <summary>
         /// Gets the parent <see cref="Scope"/>.
         /// </summary>
-        public Scope ParentScope { get; internal set; }
+        public Scope ParentScope;
 
         /// <summary>
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
@@ -6468,7 +6488,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType)
         {
-            return WithThisScope(() => serviceFactory.GetInstance(serviceType));
+            return serviceFactory.GetInstance(serviceType, this);
         }
 
         /// <summary>
@@ -6573,6 +6593,11 @@ namespace LightInject
             scopeManager.EndScope(this);
             var completedHandler = Completed;
             completedHandler?.Invoke(this, new EventArgs());
+        }
+
+        public object GetInstance(Type serviceType, Scope scope)
+        {
+            throw new NotImplementedException();
         }
 
         private class ReferenceEqualityComparer<T> : IEqualityComparer<T>
@@ -8169,6 +8194,28 @@ namespace LightInject
 
         public static MethodInfo GetCurrentScopeMethod { get; private set; }
     }
+
+    public static class ScopeLoader
+    {
+
+        public static readonly MethodInfo GetThisOrCurrentScopeMethod;
+
+        static ScopeLoader()
+        {
+            GetThisOrCurrentScopeMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("GetThisOrCurrentScope");
+        }
+
+        public static Scope GetThisOrCurrentScope(Scope scope, IScopeManager scopemanager)
+        {
+            if (scope != null)
+            {
+                return scope;
+            }
+
+            return scopemanager.CurrentScope;
+        }
+    }
+
 
     internal static class DelegateTypeExtensions
     {
