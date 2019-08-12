@@ -60,7 +60,7 @@ namespace LightInject
     /// </summary>
     /// <param name="args">The arguments used by the dynamic method that this delegate represents.</param>
     /// <returns>A service instance.</returns>
-    internal delegate object GetInstanceDelegate(object[] args);
+    internal delegate object GetInstanceDelegate(object[] args, Scope scope);
 
     /// <summary>
     /// Describes the logging level/severity.
@@ -3439,7 +3439,7 @@ namespace LightInject
                 instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
             }
 
-            return instanceDelegate(constants.Items);
+            return instanceDelegate(constants.Items, null);
         }
 
         /// <summary>
@@ -3458,7 +3458,7 @@ namespace LightInject
 
             object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
 
-            return instanceDelegate(constantsWithArguments);
+            return instanceDelegate(constantsWithArguments, null);
         }
 
         /// <summary>
@@ -3479,7 +3479,7 @@ namespace LightInject
 
             object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
 
-            return instanceDelegate(constantsWithArguments);
+            return instanceDelegate(constantsWithArguments, null);
         }
 
         /// <summary>
@@ -3495,7 +3495,7 @@ namespace LightInject
                 instanceDelegate = CreateDefaultDelegate(serviceType, throwError: false);
             }
 
-            return instanceDelegate(constants.Items);
+            return instanceDelegate(constants.Items, null);
         }
 
         /// <summary>
@@ -3513,7 +3513,7 @@ namespace LightInject
                 instanceDelegate = CreateNamedDelegate(key, throwError: false);
             }
 
-            return instanceDelegate(constants.Items);
+            return instanceDelegate(constants.Items, null);
         }
 
         /// <summary>
@@ -3531,7 +3531,7 @@ namespace LightInject
                 instanceDelegate = CreateNamedDelegate(key, throwError: true);
             }
 
-            return instanceDelegate(constants.Items);
+            return instanceDelegate(constants.Items, null);
         }
 
         /// <summary>
@@ -3771,7 +3771,7 @@ namespace LightInject
 
         private GetInstanceDelegate CreateDynamicMethodDelegate(Action<IEmitter> serviceEmitter)
         {
-            var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]) });
+            var methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(Scope) });
             IEmitter emitter = methodSkeleton.GetEmitter();
             serviceEmitter(emitter);
             if (emitter.StackType.GetTypeInfo().IsValueType)
@@ -3795,7 +3795,7 @@ namespace LightInject
 
         private Func<object> WrapAsFuncDelegate(GetInstanceDelegate instanceDelegate)
         {
-            return () => instanceDelegate(constants.Items);
+            return () => instanceDelegate(constants.Items, null);
         }
 
         private Action<IEmitter> GetEmitMethod(Type serviceType, string serviceName)
@@ -4705,7 +4705,7 @@ namespace LightInject
             var instanceDelegate = CreateDelegate(serviceType, string.Empty, throwError);
             if (instanceDelegate == null)
             {
-                return c => null;
+                return (args, scope) => null;
             }
 
             Interlocked.Exchange(ref delegates, delegates.Add(serviceType, instanceDelegate));
@@ -4718,7 +4718,7 @@ namespace LightInject
             var instanceDelegate = CreateDelegate(key.Item1, key.Item2, throwError);
             if (instanceDelegate == null)
             {
-                return c => null;
+                return (args, scope) => null;
             }
 
             Interlocked.Exchange(ref namedDelegates, namedDelegates.Add(key, instanceDelegate));
