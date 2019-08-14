@@ -60,7 +60,7 @@ namespace LightInject
     /// </summary>
     /// <param name="args">The arguments used by the dynamic method that this delegate represents.</param>
     /// <returns>A service instance.</returns>
-    internal delegate object GetInstanceDelegate(object[] args, Scope scope);
+    public delegate object GetInstanceDelegate(object[] args, Scope scope);
 
     /// <summary>
     /// Describes the logging level/severity.
@@ -4364,7 +4364,27 @@ namespace LightInject
             var returnType = serviceType.GetTypeInfo().GenericTypeArguments[0];
             if (string.IsNullOrEmpty(serviceName))
             {
-                getInstanceDelegate = returnType.CreateGetInstanceDelegate(this);
+
+                var createScopedGenericFuncMethod = FuncHelper.CreateScopedGenericFuncMethod.MakeGenericMethod(returnType);
+                return e =>
+                {
+                    e.PushConstant(constants.Add(this), typeof(IServiceFactory));
+
+                    int scopeManagerIndex = CreateScopeManagerIndex();
+                    // Push the scope into the stack
+                    e.PushArgument(1);
+
+                    // Push the scope manager into the stack.
+                    e.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                    // Get the scope
+                    e.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+
+                    e.Emit(OpCodes.Call, createScopedGenericFuncMethod);
+                };
+
+                getInstanceDelegate = (Func<Type, Scope, object>)returnType.CreateGetInstanceDelegate(this);
+
             }
             else
             {
@@ -4681,15 +4701,55 @@ namespace LightInject
             else
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+
                 int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
                 int scopeManagerIndex = CreateScopeManagerIndex();
-                var getInstanceMethod = LifetimeHelper.GetInstanceMethod;
-                emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
-                emitter.PushConstant(instanceDelegateIndex, typeof(Func<object>));
+                var scopeVariable = emitter.DeclareLocal(typeof(Scope));
+
+                // Push the scope into the stack
                 emitter.PushArgument(1);
+
+                // Push the scope manager into the stack.
                 emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                // Get the scope
                 emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
-                emitter.Call(getInstanceMethod);
+
+                // Store the scope
+                emitter.Store(scopeVariable);
+
+                // Push the lifetime onto the stack
+                emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
+
+                emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+
+                // Push the constants arguments
+                emitter.PushArgument(0);
+
+                // Push the scope
+                emitter.Push(scopeVariable);
+
+                // Create the scoped function
+                emitter.Emit(OpCodes.Call, FuncHelper.CreateScopedFuncMethod);
+
+
+                emitter.Push(scopeVariable);
+
+
+                emitter.Call(LifetimeHelper.GetInstanceMethod);
+
+
+                // int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+
+                // int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
+                // int scopeManagerIndex = CreateScopeManagerIndex();
+                // var getInstanceMethod = LifetimeHelper.GetInstanceMethod;
+                // emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
+                // emitter.PushConstant(instanceDelegateIndex, typeof(Func<object>));
+                // emitter.PushArgument(1);
+                // emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+                // emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+                // emitter.Call(getInstanceMethod);
             }
 
             if (IsNotServiceFactory(serviceRegistration.ServiceType))
@@ -4710,7 +4770,8 @@ namespace LightInject
 
         private int CreateInstanceDelegateIndex(Action<IEmitter> emitMethod)
         {
-            return constants.Add(WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod)));
+            return constants.Add(CreateDynamicMethodDelegate(emitMethod));
+            //return constants.Add(WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod)));
         }
 
         private int CreateLifetimeIndex(ILifetime lifetime)
@@ -8216,9 +8277,41 @@ namespace LightInject
         }
     }
 
+    public class FuncHelper
+    {
+        public static readonly MethodInfo CreateScopedFuncMethod;
+
+        public static readonly MethodInfo CreateScopedGenericFuncMethod;
+
+        static FuncHelper()
+        {
+            CreateScopedFuncMethod = typeof(FuncHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedFunc");
+            CreateScopedGenericFuncMethod = typeof(FuncHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedGenericFunc");
+        }
+
+        public static Func<object> CreateScopedFunc(GetInstanceDelegate getInstanceDelegate, object[] constants, Scope scope)
+        {
+            return () => getInstanceDelegate(constants, scope);
+        }
+
+        public static Func<T> CreateScopedGenericFunc<T>(IServiceFactory serviceFactory, Scope scope)
+        {
+            return () => (T)serviceFactory.GetInstance(typeof(T), scope);
+        }
+    }
 
     internal static class DelegateTypeExtensions
     {
+        private static readonly MethodInfo GetInstanceMethod;
+
+        static DelegateTypeExtensions()
+        {
+            GetInstanceMethod = typeof(IServiceFactory).GetTypeInfo().DeclaredMethods
+                .Where(m => m.Name == "GetInstance" && m.GetParameters().Select(p => p.ParameterType)
+                .SequenceEqual(new[] { typeof(Type), typeof(Scope) })).Single();
+        }
+
+
         private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
             typeof(ServiceFactoryExtensions).GetTypeInfo().DeclaredMethods.Where(m => m.Name == "GetInstance" & m.GetParameters().Length == 1).Single();
 
@@ -8228,7 +8321,7 @@ namespace LightInject
         public static Delegate CreateGetInstanceDelegate(this Type serviceType, IServiceFactory serviceFactory)
         {
             Type delegateType = serviceType.GetFuncType();
-            MethodInfo getInstanceMethod = GetInstanceMethods.GetOrAdd(serviceType, CreateGetInstanceMethod);
+            var getInstanceMethod = GetInstanceMethods.GetOrAdd(serviceType, CreateGetInstanceMethod);
             return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
         }
 

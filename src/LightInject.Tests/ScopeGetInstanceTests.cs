@@ -98,7 +98,7 @@
             container.Register<int, IFoo>((factory, arg) => new FooWithValueTypeDependency(arg));
             using (var scope = container.BeginScope())
             {
-                var instance = scope.GetInstance<int,IFoo>(42);
+                var instance = scope.GetInstance<int, IFoo>(42);
                 Assert.IsType<FooWithValueTypeDependency>(instance);
             }
         }
@@ -164,6 +164,27 @@
                     Assert.NotSame(firstInstance, secondInstance);
                 }
             }
-        }      
+        }
+
+        [Fact]
+        public void ShouldUseInitialScopeWhenResolvingFunc()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerScopeLifetime());
+            container.Register<IFoo, FooWithFuncDependency>(new PerScopeLifetime());
+            using (var outerScope = container.BeginScope())
+            {
+                var foo = (FooWithFuncDependency)outerScope.GetInstance<IFoo>();
+                var bar1 = outerScope.GetInstance<IBar>();
+                var bar2 = foo.GetBar();
+                Assert.Same(bar1, bar2);
+                using (var innerScope = container.BeginScope())
+                {
+                    var bar3 = foo.GetBar();
+                    Assert.Same(bar1, bar3);
+                }
+            }
+
+        }
     }
 }

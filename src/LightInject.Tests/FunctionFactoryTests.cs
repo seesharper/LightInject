@@ -5,9 +5,9 @@ namespace LightInject.Tests
     using LightInject.SampleLibrary;
     using Xunit;
 
-    
+
     public class FunctionFactoryTests : TestBase
-    {        
+    {
         [Fact]
         public void Invoke_NoParameters_ReturnsInstance()
         {
@@ -27,7 +27,7 @@ namespace LightInject.Tests
             var instance = fooFactory();
             Assert.IsAssignableFrom<Foo>(instance);
         }
-       
+
         [Fact]
         public void GetInstance_NamedNoParameters_ReturnsFactoryInstanceAsSingleton()
         {
@@ -50,18 +50,18 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_NoParameters_ReturnsFactoryInstanceAsSingleton()
+        public void GetInstance_NoParameters_ReturnsFactoryInstanceAsTransients()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             var firstInstance = container.GetInstance<Func<IFoo>>();
             var secondInstance = container.GetInstance<Func<IFoo>>();
-            Assert.Same(firstInstance, secondInstance);
+            Assert.NotSame(firstInstance, secondInstance);
         }
-        
+
         [Fact]
         public void GetInstance_OneParameter_ReturnsFactoryInstance()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             var instance = container.GetInstance<Func<int, IFoo>>();
             Assert.IsAssignableFrom<Func<int, IFoo>>(instance);
         }
@@ -99,7 +99,7 @@ namespace LightInject.Tests
             var instance = (FooWithOneParameter)fooFactory(1);
             Assert.Equal(1, instance.Arg1);
         }
-        
+
         [Fact]
         public void Invoke_TwoParameters_FactoryCreatesInstanceAndPassesValuesToConstructor()
         {
@@ -115,7 +115,7 @@ namespace LightInject.Tests
         public void Invoke_ThreeParameters_FactoryCreatesInstanceAndPassesValuesToConstructor()
         {
             var container = CreateContainer();
-            container.Register<int, int, int, IFoo>((factory, arg1, arg2, arg3 ) => new FooWithThreeParameters(arg1, arg2, arg3));
+            container.Register<int, int, int, IFoo>((factory, arg1, arg2, arg3) => new FooWithThreeParameters(arg1, arg2, arg3));
             var fooFactory = container.GetInstance<Func<int, int, int, IFoo>>();
             var instance = (FooWithThreeParameters)fooFactory(1, 2, 3);
             Assert.Equal(1, instance.Arg1);
@@ -215,9 +215,9 @@ namespace LightInject.Tests
         [Fact]
         public void GetInstance_OneParameter_ThrowsMeaningfulExceptionWhenWrongGetInstanceMethodIsUsed()
         {
-                
+
         }
-      
+
         [Fact]
         public void GetInstance_ValueTypeParameter_ReturnsInstance()
         {
@@ -381,6 +381,6 @@ namespace LightInject.Tests
         //    var container = CreateContainer();
         //    container.Register<int, int, IFoo>((factory, arg1, arg2) => new FooWithTwoParameters(arg1, arg2), "SomeFoo");
         //    ExceptionAssert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo), new object[] { 42 }));
-        //}       
+        //}
     }
 }
