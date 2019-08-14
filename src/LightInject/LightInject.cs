@@ -2400,8 +2400,8 @@ namespace LightInject
         private ImmutableHashTable<Tuple<Type, string>, GetInstanceDelegate> namedDelegates =
             ImmutableHashTable<Tuple<Type, string>, GetInstanceDelegate>.Empty;
 
-        private ImmutableHashTree<Type, Func<object[], object, object>> propertyInjectionDelegates =
-            ImmutableHashTree<Type, Func<object[], object, object>>.Empty;
+        private ImmutableHashTree<Type, Func<object[], Scope, object, object>> propertyInjectionDelegates =
+            ImmutableHashTree<Type, Func<object[], Scope, object, object>>.Empty;
 
         private bool isLocked;
         private Type defaultLifetimeType;
@@ -2611,7 +2611,7 @@ namespace LightInject
                 propertyInjectionDelegates = propertyInjectionDelegates.Add(type, del);
             }
 
-            return del(constants.Items, instance);
+            return del(constants.Items, null, instance);
         }
 
         /// <summary>
@@ -3730,18 +3730,18 @@ namespace LightInject
             return true;
         }
 
-        private Func<object[], object, object> CreatePropertyInjectionDelegate(Type concreteType)
+        private Func<object[], Scope, object, object> CreatePropertyInjectionDelegate(Type concreteType)
         {
             lock (lockObject)
             {
-                IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(object) });
+                IMethodSkeleton methodSkeleton = methodSkeletonFactory(typeof(object), new[] { typeof(object[]), typeof(Scope), typeof(object) });
 
                 ConstructionInfo constructionInfo = new ConstructionInfo();
                 constructionInfo.PropertyDependencies.AddRange(PropertyDependencySelector.Execute(concreteType));
                 constructionInfo.ImplementingType = concreteType;
 
                 var emitter = methodSkeleton.GetEmitter();
-                emitter.PushArgument(1);
+                emitter.PushArgument(2);
                 emitter.Cast(concreteType);
                 try
                 {
@@ -3757,7 +3757,7 @@ namespace LightInject
 
                 isLocked = true;
 
-                return (Func<object[], object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], object, object>));
+                return (Func<object[], Scope, object, object>)methodSkeleton.CreateDelegate(typeof(Func<object[], Scope, object, object>));
             }
         }
 
