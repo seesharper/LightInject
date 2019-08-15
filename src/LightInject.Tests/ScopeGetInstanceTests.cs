@@ -184,7 +184,26 @@
                     Assert.Same(bar1, bar3);
                 }
             }
+        }
 
+        [Fact]
+        public void ShouldUseInitialScopeWhenResolvingFuncOverNamedService()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>("SomeBar", new PerScopeLifetime());
+            container.Register<IFoo, FooWithNamedFuncDependency>(new PerScopeLifetime());
+            using (var outerScope = container.BeginScope())
+            {
+                var foo = (FooWithNamedFuncDependency)outerScope.GetInstance<IFoo>();
+                var bar1 = outerScope.GetInstance<IBar>();
+                var bar2 = foo.GetBar("SomeBar");
+                Assert.Same(bar1, bar2);
+                using (var innerScope = container.BeginScope())
+                {
+                    var bar3 = foo.GetBar("SomeBar");
+                    Assert.Same(bar1, bar3);
+                }
+            }
         }
     }
 }

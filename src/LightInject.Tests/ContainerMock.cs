@@ -429,5 +429,10 @@ namespace LightInject.Tests
         {
             throw new NotImplementedException();
         }
+
+        public object GetInstance(Type serviceType, Scope scope, string serviceName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

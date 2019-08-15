@@ -59,6 +59,8 @@ namespace LightInject
     /// A delegate that represents the dynamic method compiled to resolved service instances.
     /// </summary>
     /// <param name="args">The arguments used by the dynamic method that this delegate represents.</param>
+    /// <param name="scope">The <see cref="Scope"/> to be used when resolving the instance.
+    /// If this is set to null, the ambient (current) scope is used.</param>
     /// <returns>A service instance.</returns>
     public delegate object GetInstanceDelegate(object[] args, Scope scope);
 
@@ -627,6 +629,14 @@ namespace LightInject
         /// Gets an instance of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
+        /// <returns>The requested service instance.</returns>
+        object GetInstance(Type serviceType, Scope scope, string serviceName);
+
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
         /// <param name="arguments">The arguments to be passed to the target instance.</param>
         /// <returns>The requested service instance.</returns>
         object GetInstance(Type serviceType, object[] arguments);
@@ -1026,6 +1036,14 @@ namespace LightInject
         /// </summary>
         /// <param name="code">The Microsoft Intermediate Language (MSIL) instruction to be put onto the stream.</param>
         void Emit(OpCode code);
+
+
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="arg">The String to be emitted.</param>
+        void Emit(OpCode code, string arg);
 
         /// <summary>
         /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
@@ -3460,6 +3478,18 @@ namespace LightInject
             return instanceDelegate(constants.Items, scope);
         }
 
+        public object GetInstance(Type serviceType, Scope scope, string serviceName)
+        {
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: true);
+            }
+
+            return instanceDelegate(constants.Items, scope);
+        }
+
 
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
@@ -4382,13 +4412,28 @@ namespace LightInject
 
                     e.Emit(OpCodes.Call, createScopedGenericFuncMethod);
                 };
-
-                getInstanceDelegate = (Func<Type, Scope, object>)returnType.CreateGetInstanceDelegate(this);
-
             }
             else
             {
-                getInstanceDelegate = returnType.CreateNamedGetInstanceDelegate(serviceName, this);
+                var createScopedGenericFuncMethod = FuncHelper.CreateScopedGenericNamedFuncMethod.MakeGenericMethod(returnType);
+                return e =>
+                {
+                    e.PushConstant(constants.Add(this), typeof(IServiceFactory));
+
+                    int scopeManagerIndex = CreateScopeManagerIndex();
+                    // Push the scope into the stack
+                    e.PushArgument(1);
+
+                    // Push the scope manager into the stack.
+                    e.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                    // Get the scope
+                    e.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+
+                    e.Emit(OpCodes.Ldstr, serviceName);
+
+                    e.Emit(OpCodes.Call, createScopedGenericFuncMethod);
+                };
             }
 
             var constantIndex = constants.Add(getInstanceDelegate);
@@ -6560,7 +6605,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName)
         {
-            return WithThisScope(() => serviceFactory.GetInstance(serviceType, serviceName));
+            return serviceFactory.GetInstance(serviceType, this, serviceName);
         }
 
         /// <summary>
@@ -6657,6 +6702,11 @@ namespace LightInject
         }
 
         public object GetInstance(Type serviceType, Scope scope)
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetInstance(Type serviceType, Scope scope, string serviceName)
         {
             throw new NotImplementedException();
         }
@@ -8150,6 +8200,25 @@ namespace LightInject
             variables.Add(localBuilder);
             return localBuilder;
         }
+
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given string.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="arg">The String to be emitted.</param>
+        public void Emit(OpCode code, string arg)
+        {
+            if (code == OpCodes.Ldstr)
+            {
+                stack.Push(typeof(string));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            instructions.Add(new Instruction<string>(code, arg, il => il.Emit(code, arg)));
+        }
     }
 #if NET452
 
@@ -8283,10 +8352,13 @@ namespace LightInject
 
         public static readonly MethodInfo CreateScopedGenericFuncMethod;
 
+        public static readonly MethodInfo CreateScopedGenericNamedFuncMethod;
+
         static FuncHelper()
         {
             CreateScopedFuncMethod = typeof(FuncHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedFunc");
             CreateScopedGenericFuncMethod = typeof(FuncHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedGenericFunc");
+            CreateScopedGenericNamedFuncMethod = typeof(FuncHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedGenericNamedFunc");
         }
 
         public static Func<object> CreateScopedFunc(GetInstanceDelegate getInstanceDelegate, object[] constants, Scope scope)
@@ -8297,6 +8369,11 @@ namespace LightInject
         public static Func<T> CreateScopedGenericFunc<T>(IServiceFactory serviceFactory, Scope scope)
         {
             return () => (T)serviceFactory.GetInstance(typeof(T), scope);
+        }
+
+        public static Func<T> CreateScopedGenericNamedFunc<T>(IServiceFactory serviceFactory, Scope scope, string serviceName)
+        {
+            return () => (T)serviceFactory.GetInstance(typeof(T), scope, serviceName);
         }
     }
 
