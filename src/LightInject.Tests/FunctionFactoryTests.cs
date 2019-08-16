@@ -29,13 +29,13 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_NamedNoParameters_ReturnsFactoryInstanceAsSingleton()
+        public void GetInstance_NamedNoParameters_ReturnsFactoryInstanceAsTransients()
         {
             var container = CreateContainer();
             container.Register<IFoo>(factory => new Foo(), "SomeFoo");
             var firstInstance = container.GetInstance<Func<IFoo>>("SomeFoo");
             var secondInstance = container.GetInstance<Func<IFoo>>("SomeFoo");
-            Assert.Same(firstInstance, secondInstance);
+            Assert.NotSame(firstInstance, secondInstance);
         }
 
         [Fact]

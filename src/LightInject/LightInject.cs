@@ -2594,7 +2594,7 @@ namespace LightInject
         /// <returns><b>true</b> if the container can create the requested service, otherwise <b>false</b>.</returns>
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
-            if (serviceType.IsFunc() || serviceType.IsFuncWithParameters() || serviceType.IsLazy())
+            if (serviceType.IsFuncRepresentingService() || serviceType.IsFuncRepresentingNamedService() || serviceType.IsFuncWithParameters() || serviceType.IsLazy())
             {
                 var returnType = serviceType.GenericTypeArguments.Last();
                 return GetEmitMethod(returnType, serviceName) != null || availableServices.ContainsKey(serviceType);
@@ -4340,9 +4340,9 @@ namespace LightInject
             {
                 emitter = CreateEmitMethodBasedParameterizedFuncRequest(serviceType, serviceName);
             }
-            else if (serviceType.IsFunc())
+            else if (serviceType.IsFuncRepresentingService() || serviceType.IsFuncRepresentingNamedService())
             {
-                emitter = CreateEmitMethodBasedOnFuncServiceRequest(serviceType, serviceName);
+                emitter = CreateEmitMethodBasedOnFuncServiceRequest(serviceType);
             }
             else if (serviceType.IsEnumerableOfT())
             {
@@ -4388,11 +4388,10 @@ namespace LightInject
             return emitter;
         }
 
-        private Action<IEmitter> CreateEmitMethodBasedOnFuncServiceRequest(Type serviceType, string serviceName)
+        private Action<IEmitter> CreateEmitMethodBasedOnFuncServiceRequest(Type serviceType)
         {
-            Delegate getInstanceDelegate;
-            var returnType = serviceType.GetTypeInfo().GenericTypeArguments[0];
-            if (string.IsNullOrEmpty(serviceName))
+            var returnType = serviceType.GetTypeInfo().GenericTypeArguments.Last();
+            if (serviceType.IsFuncRepresentingService())
             {
 
                 var createScopedGenericFuncMethod = FuncHelper.CreateScopedGenericFuncMethod.MakeGenericMethod(returnType);
@@ -4415,7 +4414,7 @@ namespace LightInject
             }
             else
             {
-                var createScopedGenericFuncMethod = FuncHelper.CreateScopedGenericNamedFuncMethod.MakeGenericMethod(returnType);
+                var createScopedGenericNamedFuncMethod = FuncHelper.CreateScopedGenericNamedFuncMethod.MakeGenericMethod(returnType);
                 return e =>
                 {
                     e.PushConstant(constants.Add(this), typeof(IServiceFactory));
@@ -4430,14 +4429,9 @@ namespace LightInject
                     // Get the scope
                     e.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
 
-                    e.Emit(OpCodes.Ldstr, serviceName);
-
-                    e.Emit(OpCodes.Call, createScopedGenericFuncMethod);
+                    e.Emit(OpCodes.Call, createScopedGenericNamedFuncMethod);
                 };
             }
-
-            var constantIndex = constants.Add(getInstanceDelegate);
-            return e => e.PushConstant(constantIndex, serviceType);
         }
 
         private Action<IEmitter> CreateEmitMethodBasedParameterizedFuncRequest(Type serviceType, string serviceName)
@@ -8371,9 +8365,9 @@ namespace LightInject
             return () => (T)serviceFactory.GetInstance(typeof(T), scope);
         }
 
-        public static Func<T> CreateScopedGenericNamedFunc<T>(IServiceFactory serviceFactory, Scope scope, string serviceName)
+        public static Func<string, T> CreateScopedGenericNamedFunc<T>(IServiceFactory serviceFactory, Scope scope)
         {
-            return () => (T)serviceFactory.GetInstance(typeof(T), scope, serviceName);
+            return (serviceName) => (T)serviceFactory.GetInstance(typeof(T), scope, serviceName);
         }
     }
 
@@ -8636,7 +8630,7 @@ namespace LightInject
         /// </summary>
         /// <param name="type">The target <see cref="Type"/>.</param>
         /// <returns>true if the <see cref="Type"/> is an <see cref="Func{T1}"/>; otherwise, false.</returns>
-        public static bool IsFunc(this Type type)
+        public static bool IsFuncRepresentingService(this Type type)
         {
             var typeInfo = type.GetTypeInfo();
             return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(Func<>);
@@ -8656,11 +8650,30 @@ namespace LightInject
                 return false;
             }
 
+            if (type.IsFuncRepresentingNamedService())
+            {
+                return false;
+            }
+
             Type genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
 
             return genericTypeDefinition == typeof(Func<,>) || genericTypeDefinition == typeof(Func<,,>)
                    || genericTypeDefinition == typeof(Func<,,,>) || genericTypeDefinition == typeof(Func<,,,,>);
         }
+
+        public static bool IsFuncRepresentingNamedService(this Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            if (!typeInfo.IsGenericType)
+            {
+                return false;
+            }
+
+            Type genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
+
+            return genericTypeDefinition == typeof(Func<,>) && typeInfo.GenericTypeArguments[0] == typeof(string);
+        }
+
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="Type"/> is a closed generic type.

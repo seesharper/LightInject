@@ -659,12 +659,12 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_FuncWithStringArgument_ReturnsSameInstance()
+        public void GetInstance_FuncWithStringArgument_DoesNotReturnSameInstance()
         {
             var container = CreateContainer();
             var factory1 = (Func<string, IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
             var factory2 = (Func<string, IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
-            Assert.Same(factory1, factory2);
+            Assert.NotSame(factory1, factory2);
         }
 
         [Fact]
