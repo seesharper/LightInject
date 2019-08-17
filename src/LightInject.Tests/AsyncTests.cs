@@ -24,7 +24,10 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 var instance = container.GetInstance<IAsyncFoo>();
-                Assert.Throws<AggregateException>(() => instance.GetBar().Wait());
+                // This no longer throws since we injected lazy is closed around the scope.
+                // Assert.Throws<AggregateException>(() => instance.GetBar().Wait());
+                var bar = instance.GetBar().Result;
+                Assert.NotNull(bar);
             }
         }
 

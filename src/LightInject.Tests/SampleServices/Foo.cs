@@ -56,6 +56,7 @@ namespace LightInject.SampleLibrary
 
         public async Task<IBar> GetBar()
         {
+            // Force continuation on another thread.
             await Task.Delay(10);
             return lazyBar.Value;
         }
