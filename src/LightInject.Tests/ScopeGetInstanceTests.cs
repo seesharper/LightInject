@@ -205,5 +205,25 @@
                 }
             }
         }
+
+        [Fact]
+        public void ShouldUseInitialScopeWhenResolvingLazy()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerScopeLifetime());
+            container.Register<IFoo, FooWithLazyDependency>(new PerScopeLifetime());
+            using (var outerScope = container.BeginScope())
+            {
+                var foo = (FooWithLazyDependency)outerScope.GetInstance<IFoo>();
+                var bar1 = outerScope.GetInstance<IBar>();
+                // var bar2 = foo.LazyService.Value;
+                // Assert.Same(bar1, bar2);
+                using (var innerScope = container.BeginScope())
+                {
+                    var bar3 = foo.LazyService.Value;
+                    Assert.Same(bar1, bar3);
+                }
+            }
+        }
     }
 }

@@ -1,0 +1,6 @@
+{
+  "fileOptions": {
+    "systemExcludeSearchPatterns": ["**/*AssemblyInfo.cs"],
+    "userExcludeSearchPatterns": []
+  }
+}

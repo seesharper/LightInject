@@ -4172,12 +4172,40 @@ namespace LightInject
                 {
                     if (dependency.ServiceType.IsLazy())
                     {
-                        Action<IEmitter> instanceEmitter = decoratorTargetEmitter;
-                        decoratorTargetEmitter = CreateEmitMethodBasedOnLazyServiceRequest(
-                            dependency.ServiceType, t => CreateTypedInstanceDelegate(instanceEmitter, t));
+                        var scopeVariable = emitter.DeclareLocal(typeof(Scope));
+
+                        // Push the scope into the stack
+                        emitter.PushArgument(1);
+
+                        int scopeManagerIndex = CreateScopeManagerIndex();
+                        // Push the scope manager into the stack.
+                        emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                        // Get the scope
+                        emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+
+                        emitter.Store(scopeVariable);
+
+
+                        var instanceDelegateIndex = CreateInstanceDelegateIndex(decoratorTargetEmitter);
+
+                        //Push the GetInstanceDelegate that represents emitting the decoratee.
+                        emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+
+                        //push the constants
+                        emitter.PushArgument(0);
+
+                        emitter.Push(scopeVariable);
+
+                        var createScopedLazyFromDelegateMethod = LazyHelper.CreateScopedLazyFromDelegateMethod.MakeGenericMethod(dependency.ServiceType.GetTypeInfo().GenericTypeArguments.Last());
+
+                        emitter.Emit(OpCodes.Call, createScopedLazyFromDelegateMethod);
+                    }
+                    else
+                    {
+                        decoratorTargetEmitter(emitter);
                     }
 
-                    decoratorTargetEmitter(emitter);
                 }
             }
         }
@@ -4327,14 +4355,7 @@ namespace LightInject
             }
             else if (serviceType.IsLazy())
             {
-                if (string.IsNullOrWhiteSpace(serviceName))
-                {
-                    emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType, t => t.CreateGetInstanceDelegate(this));
-                }
-                else
-                {
-                    emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType, t => t.CreateNamedGetInstanceDelegate(serviceName, this));
-                }
+                emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType);
             }
             else if (serviceType.IsFuncWithParameters())
             {
@@ -4512,18 +4533,25 @@ namespace LightInject
             };
         }
 
-        private Action<IEmitter> CreateEmitMethodBasedOnLazyServiceRequest(Type serviceType, Func<Type, Delegate> valueFactoryDelegate)
+        private Action<IEmitter> CreateEmitMethodBasedOnLazyServiceRequest(Type serviceType)
         {
-            Type actualServiceType = serviceType.GetTypeInfo().GenericTypeArguments[0];
-            Type funcType = actualServiceType.GetFuncType();
-            ConstructorInfo lazyConstructor = actualServiceType.GetLazyConstructor();
-            Delegate getInstanceDelegate = valueFactoryDelegate(actualServiceType);
-            var constantIndex = constants.Add(getInstanceDelegate);
-
-            return emitter =>
+            var returnType = serviceType.GetTypeInfo().GenericTypeArguments.Last();
+            var createScopedLazyMethod = LazyHelper.CreateScopedLazyMethod.MakeGenericMethod(returnType);
+            return e =>
             {
-                emitter.PushConstant(constantIndex, funcType);
-                emitter.New(lazyConstructor);
+                e.PushConstant(constants.Add(this), typeof(IServiceFactory));
+
+                int scopeManagerIndex = CreateScopeManagerIndex();
+                // Push the scope into the stack
+                e.PushArgument(1);
+
+                // Push the scope manager into the stack.
+                e.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                // Get the scope
+                e.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+
+                e.Emit(OpCodes.Call, createScopedLazyMethod);
             };
         }
 
@@ -8370,6 +8398,30 @@ namespace LightInject
             return (serviceName) => (T)serviceFactory.GetInstance(typeof(T), scope, serviceName);
         }
     }
+
+    public static class LazyHelper
+    {
+        public static readonly MethodInfo CreateScopedLazyMethod;
+
+        public static readonly MethodInfo CreateScopedLazyFromDelegateMethod;
+
+        static LazyHelper()
+        {
+            CreateScopedLazyMethod = typeof(LazyHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedLazy");
+            CreateScopedLazyFromDelegateMethod = typeof(LazyHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedLazyFromDelegate");
+        }
+
+        public static Lazy<T> CreateScopedLazy<T>(IServiceFactory serviceFactory, Scope scope)
+        {
+            return new Lazy<T>(() => (T)serviceFactory.GetInstance(typeof(T), scope));
+        }
+
+        public static Lazy<T> CreateScopedLazyFromDelegate<T>(GetInstanceDelegate getInstanceDelegate, object[] constants, Scope scope)
+        {
+            return new Lazy<T>(() => (T)getInstanceDelegate(constants, scope));
+        }
+    }
+
 
     internal static class DelegateTypeExtensions
     {

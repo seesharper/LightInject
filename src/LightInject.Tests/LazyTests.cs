@@ -8,7 +8,7 @@ namespace LightInject.Tests
     {
         [Fact]
         public void GetInstance_LazyService_ReturnsInstance()
-        {            
+        {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
 
@@ -32,13 +32,13 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            
+
             var instance = container.GetInstance<Lazy<IFoo>>();
 
             Assert.IsAssignableFrom<Foo>(instance.Value);
         }
 
-         [Fact]
+        [Fact]
         public void CanGetInstance_LazyForKnownService_ReturnsTrue()
         {
             var container = CreateContainer();
@@ -49,7 +49,7 @@ namespace LightInject.Tests
         [Fact]
         public void CanGetInstance_LazyForUnknownService_ReturnsFalse()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             Assert.False(container.CanGetInstance(typeof(Lazy<IFoo>), string.Empty));
         }
 
@@ -57,10 +57,10 @@ namespace LightInject.Tests
         public void GetInstance_NamedService_ReturnsLazyThatResolvesNamedService()
         {
             var container = CreateContainer();
-            container.Register<IFoo,Foo>();
-            container.Register<IFoo,AnotherFoo>("AnotherFoo");
-
-            var anotherLazyFoo = container.GetInstance<Lazy<IFoo>>("AnotherFoo");
+            container.Register<IFoo, Foo>();
+            container.Register<IFoo, AnotherFoo>("AnotherFoo");
+            container.Register<Lazy<IFoo>>(f => new Lazy<IFoo>(() => f.GetInstance<IFoo>("AnotherFoo")));
+            var anotherLazyFoo = container.GetInstance<Lazy<IFoo>>();
 
             Assert.IsType<AnotherFoo>(anotherLazyFoo.Value);
         }
@@ -69,7 +69,7 @@ namespace LightInject.Tests
         public void GetInstance_LazySingleton_GetsDisposedWhenContainerIsDisposed()
         {
             var container = CreateContainer();
-            container.Register<IFoo,DisposableFoo>(new PerContainerLifetime());
+            container.Register<IFoo, DisposableFoo>(new PerContainerLifetime());
 
             var lazyInstance = container.GetInstance<Lazy<IFoo>>();
             var instance = (DisposableFoo)lazyInstance.Value;
