@@ -4150,6 +4150,10 @@ namespace LightInject
             {
                 var serviceFactoryIndex = constants.Add(this);
                 emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
+                var scopeManagerIndex = CreateScopeManagerIndex();
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+                emitter.PushArgument(1);
+                emitter.Emit(OpCodes.Call, ServiceFactoryLoader.LoadServiceFactoryMethod);
 
                 if (parameters.Length > 1)
                 {
@@ -8396,6 +8400,33 @@ namespace LightInject
         public static Func<string, T> CreateScopedGenericNamedFunc<T>(IServiceFactory serviceFactory, Scope scope)
         {
             return (serviceName) => (T)serviceFactory.GetInstance(typeof(T), scope, serviceName);
+        }
+    }
+
+    public static class ServiceFactoryLoader
+    {
+        public static readonly MethodInfo LoadServiceFactoryMethod;
+
+
+        static ServiceFactoryLoader()
+        {
+            LoadServiceFactoryMethod = typeof(ServiceFactoryLoader).GetTypeInfo().GetDeclaredMethod("LoadServiceFactory");
+        }
+
+        public static IServiceFactory LoadServiceFactory(IServiceFactory serviceFactory, IScopeManager scopeManager, Scope scope)
+        {
+            if (scope != null)
+            {
+                return scope;
+            }
+
+            var currentScope = scopeManager.CurrentScope;
+            if (currentScope != null)
+            {
+                return currentScope;
+            }
+
+            return serviceFactory;
         }
     }
 

@@ -216,8 +216,6 @@
             {
                 var foo = (FooWithLazyDependency)outerScope.GetInstance<IFoo>();
                 var bar1 = outerScope.GetInstance<IBar>();
-                // var bar2 = foo.LazyService.Value;
-                // Assert.Same(bar1, bar2);
                 using (var innerScope = container.BeginScope())
                 {
                     var bar3 = foo.LazyService.Value;
@@ -225,5 +223,59 @@
                 }
             }
         }
+
+        [Fact]
+        public void ShouldPassAmbientScopeToFactory()
+        {
+            var container = CreateContainer();
+            IServiceFactory passedFactory = null;
+
+            container.Register<DisposableFoo>(f =>
+                {
+                    passedFactory = f;
+                    return new DisposableFoo();
+                });
+            using (var scope = container.BeginScope())
+            {
+                var instance = container.GetInstance<DisposableFoo>();
+                Assert.Same(scope, passedFactory);
+            }
+        }
+
+        [Fact]
+        public void ShouldPassScopeToFactory()
+        {
+            var container = CreateContainer();
+            IServiceFactory passedFactory = null;
+
+            container.Register<DisposableFoo>(f =>
+                {
+                    passedFactory = f;
+                    return new DisposableFoo();
+                });
+            using (var scope = container.BeginScope())
+            {
+                var instance = scope.GetInstance<DisposableFoo>();
+                Assert.Same(scope, passedFactory);
+            }
+        }
+
+        [Fact]
+        public void ShouldPassContainerToFactory()
+        {
+            var container = CreateContainer();
+            IServiceFactory passedFactory = null;
+
+            container.Register<DisposableFoo>(f =>
+                {
+                    passedFactory = f;
+                    return new DisposableFoo();
+                });
+
+            var instance = container.GetInstance<DisposableFoo>();
+            Assert.Same(container, passedFactory);
+        }
     }
+
+
 }
