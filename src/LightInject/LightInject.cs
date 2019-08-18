@@ -4312,7 +4312,13 @@ namespace LightInject
             {
                 if (parameter.ParameterType == typeof(IServiceFactory))
                 {
-                    actions.Add(e => e.PushConstant(constants.Add(this), typeof(IServiceFactory)));
+
+                    var serviceFactoryIndex = constants.Add(this);
+                    var scopeManagerIndex = CreateScopeManagerIndex();
+                    actions.Add(e => e.PushConstant(serviceFactoryIndex, typeof(IServiceFactory)));
+                    actions.Add(e => e.PushConstant(scopeManagerIndex, typeof(IScopeManager)));
+                    actions.Add(e => e.PushArgument(1));
+                    actions.Add(e => e.Emit(OpCodes.Call, ServiceFactoryLoader.LoadServiceFactoryMethod));
                 }
 
                 if (parameter.ParameterType == typeof(ParameterInfo))

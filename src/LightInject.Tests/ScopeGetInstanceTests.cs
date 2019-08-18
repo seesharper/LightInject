@@ -294,6 +294,26 @@
                 Assert.Same(scope, passedFactory);
             }
         }
+
+        [Fact]
+        public void ShouldPassScopeToConstructorDependency()
+        {
+            var container = CreateContainer();
+            IServiceFactory passedFactory = null;
+            container.Register<FooWithDependency>();
+            container.RegisterConstructorDependency<IBar>((factory, paramater) =>
+            {
+                passedFactory = factory;
+                return new Bar();
+            });
+
+            using (var scope = container.BeginScope())
+            {
+                var instance = scope.GetInstance<FooWithDependency>();
+                Assert.Same(scope, passedFactory);
+            }
+
+        }
     }
 
 
