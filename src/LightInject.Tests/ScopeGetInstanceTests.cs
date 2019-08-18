@@ -275,6 +275,25 @@
             var instance = container.GetInstance<DisposableFoo>();
             Assert.Same(container, passedFactory);
         }
+
+
+        [Fact]
+        public void ShouldPassScopeToFallback()
+        {
+            var container = CreateContainer();
+            IServiceFactory passedFactory = null;
+            container.RegisterFallback((t, s) => t == typeof(DisposableFoo), sr =>
+            {
+                passedFactory = sr.ServiceFactory;
+                return new DisposableFoo();
+            });
+
+            using (var scope = container.BeginScope())
+            {
+                var instance = scope.GetInstance<DisposableFoo>();
+                Assert.Same(scope, passedFactory);
+            }
+        }
     }
 
 

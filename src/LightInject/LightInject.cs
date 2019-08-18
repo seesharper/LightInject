@@ -4140,9 +4140,20 @@ namespace LightInject
             var parameters = invokeMethod.GetParameters();
             if (parameters.Length == 1 && parameters[0].ParameterType == typeof(ServiceRequest))
             {
-                var serviceRequest = new ServiceRequest(serviceRegistration.ServiceType, serviceRegistration.ServiceName, this);
-                var serviceRequestIndex = constants.Add(serviceRequest);
-                emitter.PushConstant(serviceRequestIndex, typeof(ServiceRequest));
+                var createServiceRequestMethod = ServiceRequestHelper.CreateServiceRequestMethod.MakeGenericMethod(serviceRegistration.ServiceType);
+                emitter.Emit(OpCodes.Ldstr, serviceRegistration.ServiceName);
+                var serviceFactoryIndex = constants.Add(this);
+                emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
+                var scopeManagerIndex = CreateScopeManagerIndex();
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+                emitter.PushArgument(1);
+                emitter.Emit(OpCodes.Call, ServiceFactoryLoader.LoadServiceFactoryMethod);
+                emitter.Emit(OpCodes.Call, createServiceRequestMethod);
+
+
+                // var serviceRequest = new ServiceRequest(serviceRegistration.ServiceType, serviceRegistration.ServiceName, this);
+                // var serviceRequestIndex = constants.Add(serviceRequest);
+                // emitter.PushConstant(serviceRequestIndex, typeof(ServiceRequest));
                 emitter.Call(invokeMethod);
                 emitter.UnboxOrCast(serviceRegistration.ServiceType);
             }
@@ -8429,6 +8440,22 @@ namespace LightInject
             return serviceFactory;
         }
     }
+
+    public static class ServiceRequestHelper
+    {
+        public static readonly MethodInfo CreateServiceRequestMethod;
+
+        static ServiceRequestHelper()
+        {
+            CreateServiceRequestMethod = typeof(ServiceRequestHelper).GetTypeInfo().GetDeclaredMethod("CreateServiceRequest");
+        }
+
+        public static ServiceRequest CreateServiceRequest<TService>(string serviceName, IServiceFactory serviceFactory)
+        {
+            return new ServiceRequest(typeof(TService), serviceName, serviceFactory);
+        }
+    }
+
 
     public static class LazyHelper
     {
