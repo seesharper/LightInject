@@ -1,0 +1,6 @@
+{
+  "fileOptions": {
+    "systemExcludeSearchPatterns": ["**/*/LightInject.AssemblyInfo.cs"],
+    "userExcludeSearchPatterns": []
+  }
+}

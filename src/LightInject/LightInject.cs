@@ -8368,7 +8368,7 @@ namespace LightInject
         public static MethodInfo GetCurrentScopeMethod { get; private set; }
     }
 
-    public static class ScopeLoader
+    internal static class ScopeLoader
     {
 
         public static readonly MethodInfo GetThisOrCurrentScopeMethod;
@@ -8389,7 +8389,7 @@ namespace LightInject
         }
     }
 
-    public class FuncHelper
+    internal class FuncHelper
     {
         public static readonly MethodInfo CreateScopedFuncMethod;
 
@@ -8420,7 +8420,7 @@ namespace LightInject
         }
     }
 
-    public static class ServiceFactoryLoader
+    internal static class ServiceFactoryLoader
     {
         public static readonly MethodInfo LoadServiceFactoryMethod;
 
@@ -8447,7 +8447,7 @@ namespace LightInject
         }
     }
 
-    public static class ServiceRequestHelper
+    internal static class ServiceRequestHelper
     {
         public static readonly MethodInfo CreateServiceRequestMethod;
 
@@ -8463,7 +8463,7 @@ namespace LightInject
     }
 
 
-    public static class LazyHelper
+    internal static class LazyHelper
     {
         public static readonly MethodInfo CreateScopedLazyMethod;
 
