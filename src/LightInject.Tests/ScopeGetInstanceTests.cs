@@ -220,6 +220,29 @@
                 {
                     var bar3 = foo.LazyService.Value;
                     Assert.Same(bar1, bar3);
+                    var bar4 = innerScope.GetInstance<IBar>();
+                    Assert.NotSame(bar1, bar4);
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldUseInitialScopeWhenResolvingEnumerable()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerScopeLifetime());
+            container.Register<IBar, AnotherBar>("AnotherBar", new PerScopeLifetime());
+            container.Register<FooWithFuncOverEnumerable>();
+            using (var outerScope = container.BeginScope())
+            {
+                var foo = outerScope.GetInstance<FooWithFuncOverEnumerable>();
+                var bars1 = outerScope.GetAllInstances<IBar>();
+                using (var innerScope = container.BeginScope())
+                {
+                    var bars2 = foo.BarsFunc();
+                    Assert.True(bars1.SequenceEqual(bars2));
+                    var bars3 = innerScope.GetAllInstances<IBar>();
+                    Assert.NotEqual(bars2, bars3);
                 }
             }
         }

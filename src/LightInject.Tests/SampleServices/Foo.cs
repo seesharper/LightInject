@@ -524,6 +524,17 @@ namespace LightInject.SampleLibrary
         public IEnumerable<IBar> Bars { get; private set; }
     }
 
+    public class FooWithFuncOverEnumerable : IFoo
+    {
+        public FooWithFuncOverEnumerable(Func<IEnumerable<IBar>> barsFunc)
+        {
+            BarsFunc = barsFunc;
+        }
+
+        public Func<IEnumerable<IBar>> BarsFunc { get; }
+    }
+
+
     public class FooWithArrayDependency : IFoo
     {
         public FooWithArrayDependency(IBar[] bars)
