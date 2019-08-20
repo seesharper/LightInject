@@ -33,8 +33,6 @@ namespace LightInject.Tests
 
             Assert.Contains(container.AvailableServices, sr => sr.ImplementingType == typeof(FooWithInnerFoo.InnerFoo));
             Assert.Contains(container.AvailableServices, sr => sr.ImplementingType == typeof(BarWithInnerFoo.InnerFoo));
-            // Assert.True(container.AvailableServices.Any(sr => sr.ImplementingType == typeof(FooWithInnerFoo.InnerFoo)));
-            // Assert.True(container.AvailableServices.Any(sr => sr.ImplementingType == typeof(BarWithInnerFoo.InnerFoo)));
         }
     }
 }

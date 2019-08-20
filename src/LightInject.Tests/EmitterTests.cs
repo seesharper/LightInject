@@ -5,14 +5,14 @@ namespace LightInject.Tests
     using System.Reflection.Emit;
 
     using Xunit;
-    
+
 
 #if NETCOREAPP1_1
     using LocalBuilder = LightInject.LocalBuilder;
     using ILGenerator = LightInject.ILGenerator;
 #endif
 
-    
+
     public class EmitterTests
     {
 
@@ -22,7 +22,7 @@ namespace LightInject.Tests
             var emitter = CreateEmitter();
             emitter.Push(0);
             emitter.Return();
-            Assert.Equal(OpCodes.Ldc_I4_0, emitter.Instructions[0].Code);            
+            Assert.Equal(OpCodes.Ldc_I4_0, emitter.Instructions[0].Code);
         }
 
         [Fact]
@@ -212,7 +212,7 @@ namespace LightInject.Tests
 
             emitter.PushArgument(ArgumentCount);
             emitter.Return();
-            
+
             Assert.Equal(OpCodes.Ldarg_3, emitter.Instructions[0].Code);
         }
 
@@ -262,7 +262,7 @@ namespace LightInject.Tests
 
             emitter.PushArgument(ArgumentCount);
             emitter.Return();
-            
+
             Assert.Equal(OpCodes.Ldarg, emitter.Instructions[0].Code);
         }
 
@@ -275,7 +275,7 @@ namespace LightInject.Tests
             emitter.Push(localBuilders[localBuilders.Length - 1]);
             emitter.Return();
 
-            Assert.Equal(OpCodes.Ldloc_0, emitter.Instructions[0].Code);            
+            Assert.Equal(OpCodes.Ldloc_0, emitter.Instructions[0].Code);
         }
 
         [Fact]
@@ -343,7 +343,7 @@ namespace LightInject.Tests
         {
             var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, byte.MaxValue + 2);
-            
+
             emitter.Push(localBuilders[localBuilders.Length - 1]);
             emitter.Return();
 
@@ -355,7 +355,7 @@ namespace LightInject.Tests
         {
             var emitter = CreateEmitter();
             var localBuilders = CreateLocalBuilders(emitter, 1);
-            
+
             emitter.Push(42);
             emitter.Store(localBuilders[localBuilders.Length - 1]);
             emitter.Return();
@@ -442,69 +442,69 @@ namespace LightInject.Tests
         }
 
 
-        [Fact]        
+        [Fact]
         public void Emit_InvalidOpCodeWithInteger_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
             Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, 42));
 
         }
-        
-        [Fact]        
+
+        [Fact]
         public void Emit_InvalidOpCodeWithLocalBuilder_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
             Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (LocalBuilder)null));
         }
 
-        [Fact]        
+        [Fact]
         public void Emit_InvalidOpCodeWithSignedByte_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, new Type[] {});
-            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (sbyte)42));            
+            var emitter = new Emitter(null, new Type[] { });
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (sbyte)42));
         }
 
-        [Fact]        
+        [Fact]
         public void Emit_InvalidOpCodeWithByte_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, new Type[] {});
-            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (byte)42));                        
+            var emitter = new Emitter(null, new Type[] { });
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (byte)42));
         }
 
-        [Fact]        
+        [Fact]
         public void Emit_InvalidOpCodeWithType_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, new Type[] {});
-            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, typeof(object)));                                    
+            var emitter = new Emitter(null, new Type[] { });
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, typeof(object)));
         }
 
-        [Fact]        
+        [Fact]
         public void Emit_InvalidOpCodeWithMethodInfo_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, new Type[] {});
-            Assert.Throws<NotSupportedException>(() =>  emitter.Emit(OpCodes.Ldarg_0, (MethodInfo)null));
+            var emitter = new Emitter(null, new Type[] { });
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (MethodInfo)null));
         }
 
-        [Fact]        
+        [Fact]
         public void Emit_InvalidOpCodeWithConstructorInfo_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, new Type[] {});
-            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));            
+            var emitter = new Emitter(null, new Type[] { });
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));
         }
 
-#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46 || NETCOREAPP2_0 
-        [Fact]        
+#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46 || NETCOREAPP2_0
+        [Fact]
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {
-            var emitter = new Emitter(null, new Type[] {});
-            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Xor));                        
+            var emitter = new Emitter(null, new Type[] { });
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Xor));
         }
 #endif
         [Fact]
         public void Push_Zero_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
-            
+            var emitter = new Emitter(null, new Type[] { });
+
             emitter.Push(0);
 
             Assert.Equal(typeof(int), emitter.StackType);
@@ -513,7 +513,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_One_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(1);
 
@@ -523,7 +523,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_Two_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(2);
 
@@ -533,7 +533,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_Three_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(3);
 
@@ -543,7 +543,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_Four_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(4);
 
@@ -553,7 +553,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_Five_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(5);
 
@@ -563,7 +563,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_Six_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(6);
 
@@ -573,7 +573,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_Seven_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(7);
 
@@ -583,7 +583,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_Eight_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(8);
 
@@ -593,7 +593,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_Nine_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(9);
 
@@ -603,7 +603,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_SignedByteMaxValue_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(sbyte.MaxValue);
 
@@ -613,7 +613,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_SignedByteMaxValuePlusOne_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(sbyte.MaxValue + 1);
 
@@ -623,7 +623,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_SignedByteMinValue_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(sbyte.MinValue);
 
@@ -633,7 +633,7 @@ namespace LightInject.Tests
         [Fact]
         public void Push_SignedByteMinValueMinusOne_ReturnsCorrectStackType()
         {
-            var emitter = new Emitter(null, new Type[] {});
+            var emitter = new Emitter(null, new Type[] { });
 
             emitter.Push(sbyte.MinValue - 1);
 
@@ -643,17 +643,25 @@ namespace LightInject.Tests
         [Fact]
         public void StackType_EmptyMethod_IsNull()
         {
-            var emitter = new Emitter(null, new Type[] {});
-            
+            var emitter = new Emitter(null, new Type[] { });
+
             Assert.Null(emitter.StackType);
+        }
+
+        [Fact]
+        public void Emit_InvalidOpCodeForString_ThrowsException()
+        {
+            var emitter = new Emitter(null, new Type[] { });
+
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Call, "somestring"));
         }
 
         [Fact]
         public void ToString_Instruction_ReturnsCodeAsString()
         {
             var instruction = new Instruction(OpCodes.Stloc, null);
-            
-            Assert.Equal("stloc", instruction.ToString(),StringComparer.OrdinalIgnoreCase);
+
+            Assert.Equal("stloc", instruction.ToString(), StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -667,20 +675,20 @@ namespace LightInject.Tests
 #if NET452 || NET46 || NETCOREAPP2_0
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
-            return new DynamicMethod(string.Empty, typeof(object), new Type[]{typeof(object[])}).GetILGenerator();
+            return new DynamicMethod(string.Empty, typeof(object), new Type[] { typeof(object[]) }).GetILGenerator();
         }
 #endif
 #if NETCOREAPP1_1
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new LightInject.DynamicMethod(typeof(object), parameterTypes).GetILGenerator();
-        }        
+        }
 #endif
 
         private LocalBuilder[] CreateLocalBuilders(IEmitter emitter, int count)
         {
             var localBuilders = new LocalBuilder[count];
-            
+
             for (int i = 0; i < count; i++)
             {
                 localBuilders[i] = emitter.DeclareLocal(typeof(int));
@@ -699,5 +707,5 @@ namespace LightInject.Tests
             }
             return parameterTypes;
         }
-    }    
+    }
 }

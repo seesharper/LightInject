@@ -4226,21 +4226,21 @@ namespace LightInject
             }
         }
 
-        private Delegate CreateTypedInstanceDelegate(Action<IEmitter> emitter, Type serviceType)
-        {
-            var openGenericMethod = GetType().GetTypeInfo().GetDeclaredMethod("CreateGenericDynamicMethodDelegate");
-            var closedGenericMethod = openGenericMethod.MakeGenericMethod(serviceType);
-            var del = WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitter));
-            return (Delegate)closedGenericMethod.Invoke(this, new object[] { del });
-        }
+        // private Delegate CreateTypedInstanceDelegate(Action<IEmitter> emitter, Type serviceType)
+        // {
+        //     var openGenericMethod = GetType().GetTypeInfo().GetDeclaredMethod("CreateGenericDynamicMethodDelegate");
+        //     var closedGenericMethod = openGenericMethod.MakeGenericMethod(serviceType);
+        //     var del = WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitter));
+        //     return (Delegate)closedGenericMethod.Invoke(this, new object[] { del });
+        // }
 
-        // ReSharper disable UnusedMember.Local
-        private Func<T> CreateGenericDynamicMethodDelegate<T>(Func<object> del)
+        // // ReSharper disable UnusedMember.Local
+        // private Func<T> CreateGenericDynamicMethodDelegate<T>(Func<object> del)
 
-        // ReSharper restore UnusedMember.Local
-        {
-            return () => (T)del();
-        }
+        // // ReSharper restore UnusedMember.Local
+        // {
+        //     return () => (T)del();
+        // }
 
         private void EmitConstructorDependency(IEmitter emitter, Dependency dependency)
         {
@@ -8501,67 +8501,67 @@ namespace LightInject
     }
 
 
-    internal static class DelegateTypeExtensions
-    {
-        private static readonly MethodInfo GetInstanceMethod;
+    // internal static class DelegateTypeExtensions
+    // {
+    //     private static readonly MethodInfo GetInstanceMethod;
 
-        static DelegateTypeExtensions()
-        {
-            GetInstanceMethod = typeof(IServiceFactory).GetTypeInfo().DeclaredMethods
-                .Where(m => m.Name == "GetInstance" && m.GetParameters().Select(p => p.ParameterType)
-                .SequenceEqual(new[] { typeof(Type), typeof(Scope) })).Single();
-        }
+    //     static DelegateTypeExtensions()
+    //     {
+    //         GetInstanceMethod = typeof(IServiceFactory).GetTypeInfo().DeclaredMethods
+    //             .Where(m => m.Name == "GetInstance" && m.GetParameters().Select(p => p.ParameterType)
+    //             .SequenceEqual(new[] { typeof(Type), typeof(Scope) })).Single();
+    //     }
 
 
-        private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
-            typeof(ServiceFactoryExtensions).GetTypeInfo().DeclaredMethods.Where(m => m.Name == "GetInstance" & m.GetParameters().Length == 1).Single();
+    //     private static readonly MethodInfo OpenGenericGetInstanceMethodInfo =
+    //         typeof(ServiceFactoryExtensions).GetTypeInfo().DeclaredMethods.Where(m => m.Name == "GetInstance" & m.GetParameters().Length == 1).Single();
 
-        private static readonly ThreadSafeDictionary<Type, MethodInfo> GetInstanceMethods =
-            new ThreadSafeDictionary<Type, MethodInfo>();
+    //     private static readonly ThreadSafeDictionary<Type, MethodInfo> GetInstanceMethods =
+    //         new ThreadSafeDictionary<Type, MethodInfo>();
 
-        public static Delegate CreateGetInstanceDelegate(this Type serviceType, IServiceFactory serviceFactory)
-        {
-            Type delegateType = serviceType.GetFuncType();
-            var getInstanceMethod = GetInstanceMethods.GetOrAdd(serviceType, CreateGetInstanceMethod);
-            return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
-        }
+    //     public static Delegate CreateGetInstanceDelegate(this Type serviceType, IServiceFactory serviceFactory)
+    //     {
+    //         Type delegateType = serviceType.GetFuncType();
+    //         var getInstanceMethod = GetInstanceMethods.GetOrAdd(serviceType, CreateGetInstanceMethod);
+    //         return getInstanceMethod.CreateDelegate(delegateType, serviceFactory);
+    //     }
 
-        private static MethodInfo CreateGetInstanceMethod(Type type)
-        {
-            return OpenGenericGetInstanceMethodInfo.MakeGenericMethod(type);
-        }
-    }
+    //     private static MethodInfo CreateGetInstanceMethod(Type type)
+    //     {
+    //         return OpenGenericGetInstanceMethodInfo.MakeGenericMethod(type);
+    //     }
+    // }
 
-    internal static class NamedDelegateTypeExtensions
-    {
-        private static readonly MethodInfo CreateInstanceDelegateMethodInfo =
-            typeof(NamedDelegateTypeExtensions).GetTypeInfo().GetDeclaredMethod("CreateInstanceDelegate");
+    // internal static class NamedDelegateTypeExtensions
+    // {
+    //     private static readonly MethodInfo CreateInstanceDelegateMethodInfo =
+    //         typeof(NamedDelegateTypeExtensions).GetTypeInfo().GetDeclaredMethod("CreateInstanceDelegate");
 
-        private static readonly ThreadSafeDictionary<Type, MethodInfo> CreateInstanceDelegateMethods =
-            new ThreadSafeDictionary<Type, MethodInfo>();
+    //     private static readonly ThreadSafeDictionary<Type, MethodInfo> CreateInstanceDelegateMethods =
+    //         new ThreadSafeDictionary<Type, MethodInfo>();
 
-        public static Delegate CreateNamedGetInstanceDelegate(this Type serviceType, string serviceName, IServiceFactory factory)
-        {
-            MethodInfo createInstanceDelegateMethodInfo = CreateInstanceDelegateMethods.GetOrAdd(
-                serviceType,
-                CreateClosedGenericCreateInstanceDelegateMethod);
+    //     public static Delegate CreateNamedGetInstanceDelegate(this Type serviceType, string serviceName, IServiceFactory factory)
+    //     {
+    //         MethodInfo createInstanceDelegateMethodInfo = CreateInstanceDelegateMethods.GetOrAdd(
+    //             serviceType,
+    //             CreateClosedGenericCreateInstanceDelegateMethod);
 
-            return (Delegate)createInstanceDelegateMethodInfo.Invoke(null, new object[] { factory, serviceName });
-        }
+    //         return (Delegate)createInstanceDelegateMethodInfo.Invoke(null, new object[] { factory, serviceName });
+    //     }
 
-        private static MethodInfo CreateClosedGenericCreateInstanceDelegateMethod(Type type)
-        {
-            return CreateInstanceDelegateMethodInfo.MakeGenericMethod(type);
-        }
+    //     private static MethodInfo CreateClosedGenericCreateInstanceDelegateMethod(Type type)
+    //     {
+    //         return CreateInstanceDelegateMethodInfo.MakeGenericMethod(type);
+    //     }
 
-        // ReSharper disable UnusedMember.Local
-        private static Func<TService> CreateInstanceDelegate<TService>(IServiceFactory factory, string serviceName)
+    //     // ReSharper disable UnusedMember.Local
+    //     private static Func<TService> CreateInstanceDelegate<TService>(IServiceFactory factory, string serviceName)
 
-        // ReSharper restore UnusedMember.Local
-        {
-            return () => factory.GetInstance<TService>(serviceName);
-        }
-    }
+    //     // ReSharper restore UnusedMember.Local
+    //     {
+    //         return () => factory.GetInstance<TService>(serviceName);
+    //     }
+    // }
 
     internal static class ReflectionHelper
     {
@@ -8836,21 +8836,21 @@ namespace LightInject
         }
     }
 
-    internal static class LazyTypeExtensions
-    {
-        private static readonly ThreadSafeDictionary<Type, ConstructorInfo> Constructors = new ThreadSafeDictionary<Type, ConstructorInfo>();
+    // internal static class LazyTypeExtensions
+    // {
+    //     private static readonly ThreadSafeDictionary<Type, ConstructorInfo> Constructors = new ThreadSafeDictionary<Type, ConstructorInfo>();
 
-        public static ConstructorInfo GetLazyConstructor(this Type type)
-        {
-            return Constructors.GetOrAdd(type, GetConstructor);
-        }
+    //     // public static ConstructorInfo GetLazyConstructor(this Type type)
+    //     // {
+    //     //     return Constructors.GetOrAdd(type, GetConstructor);
+    //     // }
 
-        private static ConstructorInfo GetConstructor(Type type)
-        {
-            Type closedGenericLazyType = typeof(Lazy<>).MakeGenericType(type);
-            return closedGenericLazyType.GetTypeInfo().DeclaredConstructors.Where(c => c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == type.GetFuncType()).Single();
-        }
-    }
+    //     // private static ConstructorInfo GetConstructor(Type type)
+    //     // {
+    //     //     Type closedGenericLazyType = typeof(Lazy<>).MakeGenericType(type);
+    //     //     return closedGenericLazyType.GetTypeInfo().DeclaredConstructors.Where(c => c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == type.GetFuncType()).Single();
+    //     // }
+    // }
 
     internal static class EnumerableTypeExtensions
     {
@@ -8867,18 +8867,18 @@ namespace LightInject
         }
     }
 
-    internal static class FuncTypeExtensions
-    {
-        private static readonly ThreadSafeDictionary<Type, Type> FuncTypes = new ThreadSafeDictionary<Type, Type>();
+    // internal static class FuncTypeExtensions
+    // {
+    //     private static readonly ThreadSafeDictionary<Type, Type> FuncTypes = new ThreadSafeDictionary<Type, Type>();
 
-        public static Type GetFuncType(this Type returnType)
-        {
-            return FuncTypes.GetOrAdd(returnType, CreateFuncType);
-        }
+    //     public static Type GetFuncType(this Type returnType)
+    //     {
+    //         return FuncTypes.GetOrAdd(returnType, CreateFuncType);
+    //     }
 
-        private static Type CreateFuncType(Type type)
-        {
-            return typeof(Func<>).MakeGenericType(type);
-        }
-    }
+    //     private static Type CreateFuncType(Type type)
+    //     {
+    //         return typeof(Func<>).MakeGenericType(type);
+    //     }
+    // }
 }
