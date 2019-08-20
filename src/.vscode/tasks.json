@@ -4,7 +4,7 @@
     {
       "label": "build",
       "command": "dotnet",
-      "args": ["build", "/property:GenerateFullPaths=true"],
+      "args": ["build", "/property:GenerateFullPaths=true", "-f netcoreapp2.0"],
       "type": "shell",
       "group": "build",
       "presentation": {

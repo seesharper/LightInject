@@ -9,19 +9,18 @@ namespace LightInject.Tests
         [Fact]
         public void ShouldNotApplyVarianceIfFilterDoesNotMatch()
         {
-            var container = CreateContainer(new ContainerOptions(){VarianceFilter = t => false});
+            var container = CreateContainer(new ContainerOptions() { VarianceFilter = t => false });
             container.Register(typeof(IFoo<Bar>), typeof(FooWithBar));
             container.Register(typeof(IFoo<DerivedBar>), typeof(FooWithDerivedBar));
 
             var instances = container.GetAllInstances<IFoo<Bar>>();
-
-            Assert.Equal(1, instances.Count());
+            Assert.Single(instances);
         }
 
         [Fact]
         public void ShouldApplyVarianceIfFilterMatches()
         {
-            var container = CreateContainer(new ContainerOptions(){VarianceFilter = t => true});
+            var container = CreateContainer(new ContainerOptions() { VarianceFilter = t => true });
             container.Register(typeof(IFoo<Bar>), typeof(FooWithBar));
             container.Register(typeof(IFoo<DerivedBar>), typeof(FooWithDerivedBar));
 
@@ -31,14 +30,14 @@ namespace LightInject.Tests
         }
 
 
-        public interface IFoo<out T> {}
+        public interface IFoo<out T> { }
 
-        public class FooWithBar : IFoo<Bar> {}
+        public class FooWithBar : IFoo<Bar> { }
 
-        public class FooWithDerivedBar : IFoo<DerivedBar> {}
+        public class FooWithDerivedBar : IFoo<DerivedBar> { }
 
-        public class Bar {}
+        public class Bar { }
 
-        public class DerivedBar : Bar {}
+        public class DerivedBar : Bar { }
     }
 }

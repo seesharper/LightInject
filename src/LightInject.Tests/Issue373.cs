@@ -31,8 +31,10 @@ namespace LightInject.Tests
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
             container.RegisterAssembly(typeof(Issue373).GetTypeInfo().Assembly, (s, i) => s == typeof(BaseInnerFoo));
 
-            Assert.True(container.AvailableServices.Any(sr => sr.ImplementingType == typeof(FooWithInnerFoo.InnerFoo)));
-            Assert.True(container.AvailableServices.Any(sr => sr.ImplementingType == typeof(BarWithInnerFoo.InnerFoo)));
+            Assert.Contains(container.AvailableServices, sr => sr.ImplementingType == typeof(FooWithInnerFoo.InnerFoo));
+            Assert.Contains(container.AvailableServices, sr => sr.ImplementingType == typeof(BarWithInnerFoo.InnerFoo));
+            // Assert.True(container.AvailableServices.Any(sr => sr.ImplementingType == typeof(FooWithInnerFoo.InnerFoo)));
+            // Assert.True(container.AvailableServices.Any(sr => sr.ImplementingType == typeof(BarWithInnerFoo.InnerFoo)));
         }
     }
 }

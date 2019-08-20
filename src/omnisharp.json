@@ -1,6 +1,3 @@
 {
-  "fileOptions": {
-    "systemExcludeSearchPatterns": ["**/*/LightInject.AssemblyInfo.cs"],
-    "userExcludeSearchPatterns": []
-  }
+  "enableAnalyzersSupport": true
 }
