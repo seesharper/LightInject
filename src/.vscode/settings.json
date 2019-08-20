@@ -1,7 +1,7 @@
 {
   "coverage-gutters.lcovname": "./CoverageResult/coverage.info",
   "coverage-gutters.xmlname": "./CoverageResult/coverage.opencover.xml",
-  "omnisharp.loggingLevel": "debug",
+  "omnisharp.path": "latest",
   "cSpell.words": [
     "Callvirt",
     "Conv",
@@ -13,5 +13,5 @@
     "MSIL",
     "Stloc",
     "Xunit"
-]
+  ]
 }

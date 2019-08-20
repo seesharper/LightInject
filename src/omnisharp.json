@@ -1,3 +1,5 @@
 {
-  "enableAnalyzersSupport": true
+  "RoslynExtensionsOptions": {
+    "enableAnalyzersSupport": true
+  }
 }
