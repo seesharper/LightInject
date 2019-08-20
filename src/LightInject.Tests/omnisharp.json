@@ -1,7 +1,0 @@
-{
-    "fileOptions": {
-      "excludeSearchPatterns": [
-        "Coverage/**/*"
-      ]
-    }
-  }

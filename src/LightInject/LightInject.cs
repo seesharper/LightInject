@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 5.5.0
+    LightInject version 6.0.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -675,59 +675,20 @@ namespace LightInject
 
     internal interface IScopedServiceFactory
     {
-        /// <summary>
-        /// Gets an instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
         object GetInstance(Type serviceType, Scope scope);
 
-        /// <summary>
-        /// Gets an instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
         object GetInstance(Type serviceType, Scope scope, string serviceName);
 
-        /// <summary>
-        /// Gets all instances of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of services to resolve.</param>
-        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
         IEnumerable<object> GetAllInstances(Type serviceType, Scope scope);
 
-        /// <summary>
-        /// Gets an instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="arguments">The arguments to be passed to the target instance.</param>
-        /// <returns>The requested service instance.</returns>
         object GetInstance(Type serviceType, object[] arguments, Scope scope);
 
-        /// <summary>
-        /// Gets an instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <param name="arguments">The arguments to be passed to the target instance.</param>
-        /// <returns>The requested service instance.</returns>
         object GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope);
 
         object TryGetInstance(Type serviceType, Scope scope);
 
-        /// <summary>
-        /// Gets a named instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance if available, otherwise null.</returns>
         object TryGetInstance(Type serviceType, string serviceName, Scope scope);
 
-        /// <summary>
-        /// Creates an instance of a concrete class.
-        /// </summary>
-        /// <param name="serviceType">The type of class for which to create an instance.</param>
-        /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
         object Create(Type serviceType, Scope scope);
     }
 
@@ -2869,7 +2830,7 @@ namespace LightInject
             {
                 var message =
                     $"Attempt to register a constructor dependency {typeof(TDependency)} after the first call to GetInstance." +
-                    $"This might lead to incorrect behaviour if a service with a {typeof(TDependency)} dependency has already been resolved";
+                    $"This might lead to incorrect behavior if a service with a {typeof(TDependency)} dependency has already been resolved";
 
                 log.Warning(message);
             }
@@ -6748,85 +6709,45 @@ namespace LightInject
             IsDisposed = true;
         }
 
-        /// <summary>
-        /// Starts a new <see cref="Scope"/>.
-        /// </summary>
-        /// <returns><see cref="Scope"/>.</returns>
+        /// <inheritdoc/>
         public Scope BeginScope()
         {
             return serviceFactory.BeginScope();
         }
 
-        /// <summary>
-        /// Gets an instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
+        /// <inheritdoc/>
         public object GetInstance(Type serviceType) =>
             scopedServiceFactory.GetInstance(serviceType, this);
 
-        /// <summary>
-        /// Gets a named instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance.</returns>
+        /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName) =>
             scopedServiceFactory.GetInstance(serviceType, this, serviceName);
 
-        /// <summary>
-        /// Gets an instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="arguments">The arguments to be passed to the target instance.</param>
-        /// <returns>The requested service instance.</returns>
+        /// <inheritdoc/>
         public object GetInstance(Type serviceType, object[] arguments) =>
             scopedServiceFactory.GetInstance(serviceType, arguments, this);
 
-        /// <summary>
-        /// Gets an instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <param name="arguments">The arguments to be passed to the target instance.</param>
-        /// <returns>The requested service instance.</returns>
+        /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName, object[] arguments)
         {
             return scopedServiceFactory.GetInstance(serviceType, serviceName, arguments, this);
         }
 
-        /// <summary>
-        /// Gets an instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <returns>The requested service instance if available, otherwise null.</returns>
+        /// <inheritdoc/>
         public object TryGetInstance(Type serviceType)
         {
             return scopedServiceFactory.TryGetInstance(serviceType, this);
         }
 
-        /// <summary>
-        /// Gets a named instance of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of the requested service.</param>
-        /// <param name="serviceName">The name of the requested service.</param>
-        /// <returns>The requested service instance if available, otherwise null.</returns>
+        /// <inheritdoc/>
         public object TryGetInstance(Type serviceType, string serviceName) =>
             scopedServiceFactory.TryGetInstance(serviceType, serviceName, this);
 
-        /// <summary>
-        /// Gets all instances of the given <paramref name="serviceType"/>.
-        /// </summary>
-        /// <param name="serviceType">The type of services to resolve.</param>
-        /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
+        /// <inheritdoc/>
         public IEnumerable<object> GetAllInstances(Type serviceType) =>
             scopedServiceFactory.GetAllInstances(serviceType, this);
 
-        /// <summary>
-        /// Creates an instance of a concrete class.
-        /// </summary>
-        /// <param name="serviceType">The type of class for which to create an instance.</param>
-        /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
+        /// <inheritdoc/>
         public object Create(Type serviceType)
         {
             return scopedServiceFactory.Create(serviceType, this);
