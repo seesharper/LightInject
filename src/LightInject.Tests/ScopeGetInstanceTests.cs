@@ -187,6 +187,27 @@
         }
 
         [Fact]
+        public void ShouldUseInitialScopeWhenResolvingFuncUsingTryGetInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerScopeLifetime());
+            container.Register<IFoo, FooWithFuncDependency>(new PerScopeLifetime());
+            using (var outerScope = container.BeginScope())
+            {
+                var foo = (FooWithFuncDependency)outerScope.TryGetInstance<IFoo>();
+                var bar1 = outerScope.TryGetInstance<IBar>();
+                var bar2 = foo.GetBar();
+                Assert.Same(bar1, bar2);
+                using (var innerScope = container.BeginScope())
+                {
+                    var bar3 = foo.GetBar();
+                    Assert.Same(bar1, bar3);
+                }
+            }
+        }
+
+
+        [Fact]
         public void ShouldUseInitialScopeWhenResolvingFuncOverNamedService()
         {
             var container = CreateContainer();
@@ -330,12 +351,35 @@
                 return new Bar();
             });
 
-            using (var scope = container.BeginScope())
+            using (var outerScope = container.BeginScope())
             {
-                var instance = scope.GetInstance<FooWithDependency>();
-                Assert.Same(scope, passedFactory);
+                using (var innerScope = container.BeginScope())
+                {
+                    outerScope.GetInstance<FooWithDependency>();
+                    Assert.Same(outerScope, passedFactory);
+                }
             }
+        }
 
+        [Fact]
+        public void ShouldUseInitialScopeWhenResolvingParameterizedFunc()
+        {
+            var container = CreateContainer();
+            container.Register<IBar, Bar>(new PerScopeLifetime());
+            container.Register<FooWithFuncDependency>(new PerScopeLifetime());
+            container.Register<int, IFoo>((f, a) => f.GetInstance<FooWithFuncDependency>());
+            using (var outerScope = container.BeginScope())
+            {
+                var foo = (FooWithFuncDependency)outerScope.GetInstance<int, IFoo>(42);
+                var bar1 = outerScope.GetInstance<IBar>();
+                var bar2 = foo.GetBar();
+                Assert.Same(bar1, bar2);
+                using (var innerScope = container.BeginScope())
+                {
+                    var bar3 = foo.GetBar();
+                    Assert.Same(bar1, bar3);
+                }
+            }
         }
     }
 

@@ -695,6 +695,40 @@ namespace LightInject
         /// <param name="serviceType">The type of services to resolve.</param>
         /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
         IEnumerable<object> GetAllInstances(Type serviceType, Scope scope);
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="arguments">The arguments to be passed to the target instance.</param>
+        /// <returns>The requested service instance.</returns>
+        object GetInstance(Type serviceType, object[] arguments, Scope scope);
+
+        /// <summary>
+        /// Gets an instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <param name="arguments">The arguments to be passed to the target instance.</param>
+        /// <returns>The requested service instance.</returns>
+        object GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope);
+
+        object TryGetInstance(Type serviceType, Scope scope);
+
+        /// <summary>
+        /// Gets a named instance of the given <paramref name="serviceType"/>.
+        /// </summary>
+        /// <param name="serviceType">The type of the requested service.</param>
+        /// <param name="serviceName">The name of the requested service.</param>
+        /// <returns>The requested service instance if available, otherwise null.</returns>
+        object TryGetInstance(Type serviceType, string serviceName, Scope scope);
+
+        /// <summary>
+        /// Creates an instance of a concrete class.
+        /// </summary>
+        /// <param name="serviceType">The type of class for which to create an instance.</param>
+        /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
+        object Create(Type serviceType, Scope scope);
     }
 
 
@@ -4160,10 +4194,6 @@ namespace LightInject
                 emitter.Emit(OpCodes.Call, ServiceFactoryLoader.LoadServiceFactoryMethod);
                 emitter.Emit(OpCodes.Call, createServiceRequestMethod);
 
-
-                // var serviceRequest = new ServiceRequest(serviceRegistration.ServiceType, serviceRegistration.ServiceName, this);
-                // var serviceRequestIndex = constants.Add(serviceRequest);
-                // emitter.PushConstant(serviceRequestIndex, typeof(ServiceRequest));
                 emitter.Call(invokeMethod);
                 emitter.UnboxOrCast(serviceRegistration.ServiceType);
             }
@@ -4984,6 +5014,62 @@ namespace LightInject
         IEnumerable<object> IScopedServiceFactory.GetAllInstances(Type serviceType, Scope scope)
         {
             return (IEnumerable<object>)((IScopedServiceFactory)this).GetInstance(serviceType.GetEnumerableType(), scope);
+        }
+
+        object IScopedServiceFactory.GetInstance(Type serviceType, object[] arguments, Scope scope)
+        {
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
+            }
+
+            object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
+
+            return instanceDelegate(constantsWithArguments, scope);
+        }
+
+        object IScopedServiceFactory.GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope)
+        {
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: true);
+            }
+
+            object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
+
+            return instanceDelegate(constantsWithArguments, scope);
+        }
+
+        object IScopedServiceFactory.TryGetInstance(Type serviceType, Scope scope)
+        {
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: false);
+            }
+
+            return instanceDelegate(constants.Items, scope);
+        }
+
+        object IScopedServiceFactory.TryGetInstance(Type serviceType, string serviceName, Scope scope)
+        {
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: false);
+
+            }
+            return instanceDelegate(constants.Items, scope);
+        }
+
+        object IScopedServiceFactory.Create(Type serviceType, Scope scope)
+        {
+            Register(serviceType);
+            return ((IScopedServiceFactory)this).GetInstance(serviceType, scope);
         }
 
         private class Storage<T>
@@ -6676,10 +6762,8 @@ namespace LightInject
         /// </summary>
         /// <param name="serviceType">The type of the requested service.</param>
         /// <returns>The requested service instance.</returns>
-        public object GetInstance(Type serviceType)
-        {
-            return scopedServiceFactory.GetInstance(serviceType, this);
-        }
+        public object GetInstance(Type serviceType) =>
+            scopedServiceFactory.GetInstance(serviceType, this);
 
         /// <summary>
         /// Gets a named instance of the given <paramref name="serviceType"/>.
@@ -6687,10 +6771,8 @@ namespace LightInject
         /// <param name="serviceType">The type of the requested service.</param>
         /// <param name="serviceName">The name of the requested service.</param>
         /// <returns>The requested service instance.</returns>
-        public object GetInstance(Type serviceType, string serviceName)
-        {
-            return scopedServiceFactory.GetInstance(serviceType, this, serviceName);
-        }
+        public object GetInstance(Type serviceType, string serviceName) =>
+            scopedServiceFactory.GetInstance(serviceType, this, serviceName);
 
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
@@ -6698,10 +6780,8 @@ namespace LightInject
         /// <param name="serviceType">The type of the requested service.</param>
         /// <param name="arguments">The arguments to be passed to the target instance.</param>
         /// <returns>The requested service instance.</returns>
-        public object GetInstance(Type serviceType, object[] arguments)
-        {
-            return WithThisScope(() => serviceFactory.GetInstance(serviceType, arguments));
-        }
+        public object GetInstance(Type serviceType, object[] arguments) =>
+            scopedServiceFactory.GetInstance(serviceType, arguments, this);
 
         /// <summary>
         /// Gets an instance of the given <paramref name="serviceType"/>.
@@ -6712,7 +6792,7 @@ namespace LightInject
         /// <returns>The requested service instance.</returns>
         public object GetInstance(Type serviceType, string serviceName, object[] arguments)
         {
-            return WithThisScope(() => serviceFactory.GetInstance(serviceType, serviceName, arguments));
+            return scopedServiceFactory.GetInstance(serviceType, serviceName, arguments, this);
         }
 
         /// <summary>
@@ -6722,7 +6802,7 @@ namespace LightInject
         /// <returns>The requested service instance if available, otherwise null.</returns>
         public object TryGetInstance(Type serviceType)
         {
-            return WithThisScope(() => serviceFactory.TryGetInstance(serviceType));
+            return scopedServiceFactory.TryGetInstance(serviceType, this);
         }
 
         /// <summary>
@@ -6731,21 +6811,16 @@ namespace LightInject
         /// <param name="serviceType">The type of the requested service.</param>
         /// <param name="serviceName">The name of the requested service.</param>
         /// <returns>The requested service instance if available, otherwise null.</returns>
-        public object TryGetInstance(Type serviceType, string serviceName)
-        {
-            return WithThisScope(() => serviceFactory.TryGetInstance(serviceType, serviceName));
-        }
+        public object TryGetInstance(Type serviceType, string serviceName) =>
+            scopedServiceFactory.TryGetInstance(serviceType, serviceName, this);
 
         /// <summary>
         /// Gets all instances of the given <paramref name="serviceType"/>.
         /// </summary>
         /// <param name="serviceType">The type of services to resolve.</param>
         /// <returns>A list that contains all implementations of the <paramref name="serviceType"/>.</returns>
-        public IEnumerable<object> GetAllInstances(Type serviceType)
-        {
-            return scopedServiceFactory.GetAllInstances(serviceType, this);
-            //return WithThisScope(() => serviceFactory.GetAllInstances(serviceType));
-        }
+        public IEnumerable<object> GetAllInstances(Type serviceType) =>
+            scopedServiceFactory.GetAllInstances(serviceType, this);
 
         /// <summary>
         /// Creates an instance of a concrete class.
@@ -6754,21 +6829,7 @@ namespace LightInject
         /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
         public object Create(Type serviceType)
         {
-            return WithThisScope(() => serviceFactory.Create(serviceType));
-        }
-
-        private T WithThisScope<T>(Func<T> function)
-        {
-            var previosScope = scopeManager.CurrentScope;
-            scopeManager.CurrentScope = this;
-            try
-            {
-                return function();
-            }
-            finally
-            {
-                scopeManager.CurrentScope = previosScope;
-            }
+            return scopedServiceFactory.Create(serviceType, this);
         }
 
         private void DisposeTrackedInstances()

@@ -825,6 +825,16 @@ namespace LightInject.SampleLibrary
         public Func<string, IBar> GetBar { get; private set; }
     }
 
+    public class FooWithParameterizedFuncDependency : IFoo
+    {
+        public FooWithParameterizedFuncDependency(Func<int, IBar> getBar)
+        {
+            GetBar = getBar;
+        }
+        public Func<int, IBar> GetBar { get; private set; }
+    }
+
+
     public class FooWithCustomFuncDependency : IFoo
     {
         public Func<string> StringFunc { get; private set; }
