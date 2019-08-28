@@ -16,6 +16,7 @@ local.properties
 .settings/
 .loadpath
 Artifacts
+BenchmarkDotNet.Artifacts
 CoverageResult
 *.exe
 .DS_Store

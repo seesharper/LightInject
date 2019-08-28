@@ -5,9 +5,9 @@ namespace LightInject.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;    
+    using System.Linq;
     using System.Security;
-    
+
     using System.Text;
     using System.Threading.Tasks;
 
@@ -19,7 +19,7 @@ namespace LightInject.Tests
     using IFoo = LightInject.SampleLibrary.IFoo;
     using IBar = LightInject.SampleLibrary.IBar;
     using Bar = LightInject.SampleLibrary.Bar;
-    
+
     public class ServiceContainerTests : TestBase
     {
         #region InputValidation
@@ -48,16 +48,16 @@ namespace LightInject.Tests
         public void Register_NullImplementingType_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            var exception = Assert.Throws<ArgumentNullException>(() => container.Register(typeof (IFoo), (Type) null));
-            Assert.Equal("implementingType", exception.ParamName);            
+            var exception = Assert.Throws<ArgumentNullException>(() => container.Register(typeof(IFoo), (Type)null));
+            Assert.Equal("implementingType", exception.ParamName);
         }
 
         [Fact]
         public void Register_NullServiceName_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            var exception = Assert.Throws<ArgumentNullException>(() => container.Register(typeof (IFoo), typeof (Foo), (string) null));
-            Assert.Equal("serviceName", exception.ParamName);            
+            var exception = Assert.Throws<ArgumentNullException>(() => container.Register(typeof(IFoo), typeof(Foo), (string)null));
+            Assert.Equal("serviceName", exception.ParamName);
         }
 
         //[Fact]
@@ -81,16 +81,16 @@ namespace LightInject.Tests
         public void RegisterInstance_NullInstance_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            var exception = Assert.Throws<ArgumentNullException>(() => container.RegisterInstance((string) null));
-            Assert.Equal("instance", exception.ParamName);            
+            var exception = Assert.Throws<ArgumentNullException>(() => container.RegisterInstance((string)null));
+            Assert.Equal("instance", exception.ParamName);
         }
 
         [Fact]
         public void RegisterInstance_NullServiceName_ThrowsArgumentNullException()
         {
             var container = CreateContainer();
-            var exception = Assert.Throws<ArgumentNullException>(() => container.RegisterInstance(typeof (object), new object(), null));
-            Assert.Equal("serviceName", exception.ParamName);            
+            var exception = Assert.Throws<ArgumentNullException>(() => container.RegisterInstance(typeof(object), new object(), null));
+            Assert.Equal("serviceName", exception.ParamName);
         }
         #endregion
 
@@ -134,7 +134,7 @@ namespace LightInject.Tests
             var value = (int)container.GetInstance(typeof(int));
             Assert.Equal(42, value);
         }
-        
+
 
         [Fact]
         public void GetInstance_NamedValue_ReturnsNamedValue()
@@ -162,7 +162,7 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 var value = container.GetInstance<int>();
-                Assert.Equal(42, value);    
+                Assert.Equal(42, value);
             }
         }
 
@@ -223,8 +223,8 @@ namespace LightInject.Tests
 
             Assert.Throws<InvalidOperationException>(() => container.GetInstance<IBar>());
         }
-        
-        
+
+
         [Fact]
         public void GetInstance_OneService_ReturnsInstance()
         {
@@ -251,14 +251,14 @@ namespace LightInject.Tests
             container.Register(typeof(IFoo), typeof(Foo), "SomeFoo");
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
 
-            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof (IFoo)));
-            Assert.Equal(ErrorMessages.UnableToResolveType, exception.Message);            
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo)));
+            Assert.Equal(ErrorMessages.UnableToResolveType, exception.Message);
         }
 
         [Fact]
         public void GetInstance_DuplicateRegistration_ReturnsLastRegisteredService()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             container.Register<IFoo, Foo>();
             container.RegisterInstance<IFoo>(new AnotherFoo());
             var instance = container.GetInstance<IFoo>();
@@ -270,7 +270,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IBar<>), typeof(Bar<>));
-            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof (IFoo<int>)));
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)));
             Assert.Equal(ErrorMessages.UnknownGenericDependency, exception.Message);
         }
 
@@ -291,7 +291,7 @@ namespace LightInject.Tests
             container.Register(typeof(IFoo), typeof(Foo));
             container.Register(typeof(IFoo), typeof(AnotherFoo), "AnotherFoo");
             container.GetInstance(typeof(IFoo), "AnotherFoo");
-            object defaultInstance = container.GetInstance(typeof(IFoo));            
+            object defaultInstance = container.GetInstance(typeof(IFoo));
             Assert.IsAssignableFrom<Foo>(defaultInstance);
         }
 
@@ -320,7 +320,7 @@ namespace LightInject.Tests
             var serviceContainer = new ServiceContainer();
             serviceContainer.Register<IBar, Bar>("bar");
             serviceContainer.Register<IBar, AnotherBar>("anotherBar");
-            serviceContainer.Register<Func<string, IBar>>(factory => (s => factory.GetInstance<IBar>(s)) );
+            serviceContainer.Register<Func<string, IBar>>(factory => (s => factory.GetInstance<IBar>(s)));
             var barFactory = serviceContainer.GetInstance<Func<string, IBar>>();
             var bar = barFactory("bar");
             var anotherBar = barFactory("anotherBar");
@@ -499,7 +499,7 @@ namespace LightInject.Tests
                 var instance1 = container.GetInstance<IFoo>();
                 var instance2 = container.GetInstance<IFoo>();
                 Assert.Same(instance1, instance2);
-            }            
+            }
         }
 
         [Fact]
@@ -508,7 +508,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, Foo>(new PerScopeLifetime());
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-            Assert.Equal(ErrorMessages.GetInstanceOutSideScope, exception.Message);            
+            Assert.Equal(ErrorMessages.GetInstanceOutSideScope, exception.Message);
         }
 
         [Fact]
@@ -516,13 +516,13 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo<>), typeof(Foo<>), new PerScopeLifetime());
-            using(container.BeginScope())
+            using (container.BeginScope())
             {
                 var intInstance = container.GetInstance<IFoo<int>>();
                 var stringInstance = container.GetInstance<IFoo<string>>();
                 Assert.IsAssignableFrom<IFoo<int>>(intInstance);
                 Assert.IsAssignableFrom<IFoo<string>>(stringInstance);
-            }            
+            }
         }
 
         [Fact]
@@ -544,11 +544,11 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, DisposableFoo>(new PerRequestLifeTime());
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-            Assert.Equal(ErrorMessages.DisposableOutsideScope, exception.Message);            
+            Assert.Equal(ErrorMessages.DisposableOutsideScope, exception.Message);
         }
 
         #region Array
-        
+
         [Fact]
         public void GetInstance_Array_ReturnsAllInstances()
         {
@@ -631,7 +631,7 @@ namespace LightInject.Tests
 
         #endregion
         #region Func Services
-                
+
         [Fact]
         public void GetInstance_Func_ReturnsFuncInstance()
         {
@@ -639,7 +639,7 @@ namespace LightInject.Tests
             var factory = container.GetInstance(typeof(Func<IFoo>));
             Assert.IsAssignableFrom<Func<IFoo>>(factory);
         }
-    
+
 
         [Fact]
         public void GetInstance_FuncWithStringArgument_ReturnsFuncInstance()
@@ -650,21 +650,21 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_Func_ReturnsSameInstance()
+        public void GetInstance_Func_DoesNotReturnSameInstance()
         {
             var container = CreateContainer();
             var factory1 = (Func<IFoo>)container.GetInstance(typeof(Func<IFoo>));
             var factory2 = (Func<IFoo>)container.GetInstance(typeof(Func<IFoo>));
-            Assert.Same(factory1, factory2);
+            Assert.NotSame(factory1, factory2);
         }
 
         [Fact]
-        public void GetInstance_FuncWithStringArgument_ReturnsSameInstance()
+        public void GetInstance_FuncWithStringArgument_DoesNotReturnSameInstance()
         {
             var container = CreateContainer();
             var factory1 = (Func<string, IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
             var factory2 = (Func<string, IFoo>)container.GetInstance(typeof(Func<string, IFoo>));
-            Assert.Same(factory1, factory2);
+            Assert.NotSame(factory1, factory2);
         }
 
         [Fact]
@@ -676,7 +676,7 @@ namespace LightInject.Tests
             var instance = factory();
             Assert.IsAssignableFrom<Foo>(instance);
         }
-        
+
         [Fact]
         public void GetInstance_FuncWithSingletonTarget_ReturnsSameInstance()
         {
@@ -726,8 +726,8 @@ namespace LightInject.Tests
             {
                 container.Register<int>(c => 42, new PerContainerLifetime());
                 var instance = container.GetInstance(typeof(int));
-                Assert.Equal(42, instance);    
-            }            
+                Assert.Equal(42, instance);
+            }
         }
 
         [Fact]
@@ -751,14 +751,14 @@ namespace LightInject.Tests
             var instance = container.GetInstance(typeof(IFoo));
             Assert.IsAssignableFrom<Foo>(instance);
         }
-    
+
         [Fact]
         public void GetInstance_FuncFactory_ReturnsLastRegisteredFactoryCreatedInstance()
         {
             var container = CreateContainer();
             container.Register<IFoo>(c => new FooWithMultipleConstructors());
             container.Register<IFoo>(c => new FooWithMultipleConstructors(new Bar()));
-            var instance = (FooWithMultipleConstructors)container.GetInstance(typeof(IFoo));            
+            var instance = (FooWithMultipleConstructors)container.GetInstance(typeof(IFoo));
             Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
 
@@ -853,7 +853,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
-           
+
             container.Register<IFoo>(factory => new FooWithArrayDependency(new[] { factory.GetInstance<IBar>() }));
             var instance = (FooWithArrayDependency)container.GetInstance<IFoo>();
             Assert.Single(instance.Bars);
@@ -861,7 +861,7 @@ namespace LightInject.Tests
 
         [Fact]
         public void GetInstance_FuncFactoryWithParamsArrayInitializer_ReturnsInstanceWithDependency()
-            {
+        {
             var container = CreateContainer();
             container.Register<IBar, Bar>();
 
@@ -889,7 +889,7 @@ namespace LightInject.Tests
         public void GetInstance_FuncWithClosure_ReturnsInstance()
         {
             var container = new ServiceContainer();
-            Register(container,"SomeName");
+            Register(container, "SomeName");
             var foo = container.GetInstance<IFoo>("SomeName");
             Assert.IsType<FooWithDependency>(foo);
         }
@@ -953,7 +953,7 @@ namespace LightInject.Tests
             var instance2 = container.GetInstance<IEnumerable<IFoo>>();
             Assert.NotSame(instance1, instance2);
         }
-               
+
         [Fact]
         public void GetAllInstances_NonGeneric_ReturnsAllInstances()
         {
@@ -1109,7 +1109,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.RegisterFallback((serviceType, serviceName) => true, request => Activator.CreateInstance(request.ServiceType), new PerContainerLifetime());
             var foo = container.GetInstance(typeof(Foo));
-            var bar = container.GetInstance(typeof(Bar));            
+            var bar = container.GetInstance(typeof(Bar));
             Assert.IsAssignableFrom<Foo>(foo);
             Assert.IsAssignableFrom<Bar>(bar);
         }
@@ -1156,7 +1156,7 @@ namespace LightInject.Tests
         [Fact]
         public void CanGetInstance_FuncForUnknownService_ReturnsFalse()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             Assert.False(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
         }
 
@@ -1179,9 +1179,9 @@ namespace LightInject.Tests
         [Fact]
         public void CanGetInstance_ParameterizedFuncForUnknownService_ReturnsFalse()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             Assert.False(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
-        }       
+        }
 
         [Fact]
         public void GetInstance_RegisterAfterGetInstance_ReturnsDependencyOfSecondRegistration()
@@ -1189,7 +1189,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
             container.Register<IBar, Bar>();
-            container.GetInstance<IFoo>();            
+            container.GetInstance<IFoo>();
             //container.Register<IBar, AnotherBar>();
 
             //var instance = (FooWithDependency)container.GetInstance<IFoo>();
@@ -1205,19 +1205,19 @@ namespace LightInject.Tests
                 GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance();
             }
         }
- 
+
         [Fact]
         public void GetInstance_SingletonUsingMultipleThreads_ReturnsSameInstance()
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(SingletonFoo), new PerContainerLifetime());
             SingletonFoo.Instances = 0;
-            
+
             for (int i = 0; i < 100; i++)
             {
                 RunParallel(container);
             }
-                      
+
             Assert.Equal(1, SingletonFoo.Instances);
         }
 
@@ -1233,7 +1233,7 @@ namespace LightInject.Tests
             catch (Exception)
             {
                 var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-                Assert.DoesNotContain("Recursive", exception.InnerException.Message);                
+                Assert.DoesNotContain("Recursive", exception.InnerException.Message);
             }
         }
 
@@ -1242,7 +1242,7 @@ namespace LightInject.Tests
         {
             var firstContainer = CreateContainer();
             var secondContainer = CreateContainer();
-            
+
             using (Scope firstResolutionScope = firstContainer.BeginScope())
             {
                 using (Scope secondResolutionScope = secondContainer.BeginScope())
@@ -1256,9 +1256,9 @@ namespace LightInject.Tests
         public void Dispose_ServiceContainer_DisposesDisposableLifeTimeInstances()
         {
             var lifetime = new DisposableLifetime();
-            
+
             using (var container = new ServiceContainer())
-            {               
+            {
                 container.Register<IFoo, Foo>(lifetime);
                 container.GetInstance<IFoo>();
             }
@@ -1273,8 +1273,8 @@ namespace LightInject.Tests
             DisposableFoo foo;
             using (var container = new ServiceContainer())
             {
-                container.Register<IFoo, DisposableFoo>(new PerContainerLifetime());                
-                foo = (DisposableFoo)container.GetInstance<IFoo>();                
+                container.Register<IFoo, DisposableFoo>(new PerContainerLifetime());
+                foo = (DisposableFoo)container.GetInstance<IFoo>();
             }
 
             Assert.True(foo.IsDisposed);
@@ -1399,8 +1399,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
-           
-            Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());            
+
+            Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
         }
 
         [Fact]
@@ -1421,8 +1421,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register(typeof(IFoo<>), typeof(FooWithGenericConstraint<>));
-            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof (IFoo<int>)));
-            Assert.Equal(ErrorMessages.UnknownGenericDependency, exception.Message);            
+            var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance(typeof(IFoo<int>)));
+            Assert.Equal(ErrorMessages.UnknownGenericDependency, exception.Message);
         }
 
         [Fact]
@@ -1446,10 +1446,10 @@ namespace LightInject.Tests
             container.Register(typeof(IFoo<>), typeof(Foo<>), "AnotherFoo");
 
             var instances = container.GetAllInstances<IFoo<int>>();
-            
+
             Assert.Single(instances);
         }
-       
+
         [Fact]
         public void GetAllInstances_ServiceWithGenericConstraint_ReturnsAllMatchingInstances()
         {
@@ -1475,7 +1475,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             var instance = container.Create(typeof(Foo));
-            Assert.IsAssignableFrom<Foo>(instance);            
+            Assert.IsAssignableFrom<Foo>(instance);
         }
 
         [Fact]
@@ -1491,7 +1491,7 @@ namespace LightInject.Tests
                 null);
 
             var instance = container.GetInstance<Foo>();
-            Assert.IsAssignableFrom<Foo>(instance);   
+            Assert.IsAssignableFrom<Foo>(instance);
         }
 
         [Fact]
@@ -1520,7 +1520,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
-            container.RegisterConstructorDependency<IBar>((factory, info) => new Bar());            
+            container.RegisterConstructorDependency<IBar>((factory, info) => new Bar());
             container.RegisterConstructorDependency<IBar>((factory, info) => new AnotherBar());
             var instance = (FooWithDependency)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom<AnotherBar>(instance.Bar);
@@ -1542,7 +1542,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IFoo, FooWithDependency>();
-            container.RegisterConstructorDependency<IBar>((factory, info, arguments ) => (Bar)arguments[0]);
+            container.RegisterConstructorDependency<IBar>((factory, info, arguments) => (Bar)arguments[0]);
             var instance = (FooWithDependency)container.GetInstance<IBar, IFoo>(new Bar());
             Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
@@ -1557,16 +1557,16 @@ namespace LightInject.Tests
             var instance = (FooWithDependency)container.GetInstance<IBar, IFoo>(new Bar());
             Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
-       
+
         [Fact]
         public void RegisterConstructorDependency_AfterFirstGetInstance_ShouldLogWarning()
         {
             string message = null;
-            var options = new ContainerOptions() {LogFactory = type => (entry => message = entry.Message) };
+            var options = new ContainerOptions() { LogFactory = type => (entry => message = entry.Message) };
             var container = CreateContainer(options);
-            container.Register<IFoo, Foo>();            
+            container.Register<IFoo, Foo>();
             container.GetInstance<IFoo>();
-            container.RegisterConstructorDependency<IBar>((factory, info) => new AnotherBar());                        
+            container.RegisterConstructorDependency<IBar>((factory, info) => new AnotherBar());
             Assert.StartsWith("Attempt to register", message);
         }
 
@@ -1688,32 +1688,32 @@ namespace LightInject.Tests
             Assert.IsAssignableFrom<Bar>(foo.Bar);
         }
 
-        
+
 #if NET452 || NET40 || NET46 || NETCOREAPP2_0
         [Fact]
         public void RegisterFrom_CompositionRoot_CallsCompositionRootExecutor()
         {
-            var container = (ServiceContainer)CreateContainer();            
+            var container = (ServiceContainer)CreateContainer();
             var compositionRootExecutorMock = new CompositionRootExecutorMock();
             container.CompositionRootExecutor = compositionRootExecutorMock;
-            
+
             container.RegisterFrom<CompositionRootMock>();
 
             compositionRootExecutorMock.Assert(c => c.Execute(typeof(CompositionRootMock)), Invoked.Once);
         }
-#endif        
+#endif
         [Fact]
         public void GetInstance_SingletonInstance_EmitterIsProperlyPoppedOnConstructorException()
         {
             var container = CreateContainer();
             container.Register<IBar, BrokenBar>(new PerContainerLifetime());
             container.Register<FooWithBrokenDependency>(new PerContainerLifetime());
-            
+
             try
             {
                 container.GetInstance<FooWithBrokenDependency>();
             }
-            catch(BrokenBarException)
+            catch (BrokenBarException)
             {
             }
 
@@ -1750,9 +1750,9 @@ namespace LightInject.Tests
             var container = (ServiceContainer)CreateContainer();
             container.SetDefaultLifetime<PerContainerLifetime>();
             var compositionRootExtractorMock = new TypeExtractorMock();
-            compositionRootExtractorMock.Arrange(m => m.Execute(The<Assembly>.IsAnyValue)).Returns(new Type[] {});
+            compositionRootExtractorMock.Arrange(m => m.Execute(The<Assembly>.IsAnyValue)).Returns(new Type[] { });
             container.CompositionRootTypeExtractor = compositionRootExtractorMock;
-                       
+
             container.RegisterAssembly(typeof(Foo).GetTypeInfo().Assembly);
 
             var foo1 = container.GetInstance<IFoo>();
@@ -1824,7 +1824,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, InternalFooWithInternalConstructor>();
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
-            //StringAssert.Contains(exception.InnerException.Message, "Missing public constructor for Type");            
+            //StringAssert.Contains(exception.InnerException.Message, "Missing public constructor for Type");
         }
 
         [Fact]
@@ -1835,7 +1835,7 @@ namespace LightInject.Tests
             var instance = container.GetInstance<IFoo>();
             Assert.NotNull(instance);
         }
-     
+
         #endregion
     }
 
@@ -1844,5 +1844,5 @@ namespace LightInject.Tests
         IFoo CreateFoo(int value);
     }
 
-    
+
 }

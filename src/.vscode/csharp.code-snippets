@@ -1,0 +1,7 @@
+{
+  "Inheritdoc": {
+    "prefix": "idoc",
+    "body": ["/// <inheritdoc/>"],
+    "description": "Inheritdoc"
+  }
+}

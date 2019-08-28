@@ -9,11 +9,11 @@ namespace LightInject.Tests
     using Xunit;
     using System.Threading.Tasks;
 
-#if NET452 || NET46
-    
+#if NET452 || NET46 || NETCOREAPP2_0
+
     public class AsyncTests : TestBase
     {
-        [Fact]        
+        [Fact]
         public void GetInstance_Continuation_ThrowException()
         {
             var container = new ServiceContainer();
@@ -24,7 +24,10 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 var instance = container.GetInstance<IAsyncFoo>();
-                Assert.Throws<AggregateException>(() => instance.GetBar().Wait());                
+                // This no longer throws since we injected lazy is closed around the scope.
+                // Assert.Throws<AggregateException>(() => instance.GetBar().Wait());
+                var bar = instance.GetBar().Result;
+                Assert.NotNull(bar);
             }
         }
 

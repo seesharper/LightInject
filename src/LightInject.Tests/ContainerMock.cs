@@ -7,7 +7,7 @@ namespace LightInject.Tests
     using LightMock;
 
     internal class ContainerMock : MockContext<IServiceContainer>, IServiceContainer
-    {        
+    {
 
         public IEnumerable<ServiceRegistration> AvailableServices { get; private set; }
 
@@ -179,7 +179,7 @@ namespace LightInject.Tests
 
         public IServiceRegistry RegisterAssembly(Assembly assembly)
         {
-            return ((IInvocationContext<IServiceContainer>)this).Invoke(c => c.RegisterAssembly(assembly));            
+            return ((IInvocationContext<IServiceContainer>)this).Invoke(c => c.RegisterAssembly(assembly));
         }
 
         public IServiceRegistry RegisterAssembly(Assembly assembly, Func<Type, Type, bool> shouldRegister)
@@ -421,6 +421,16 @@ namespace LightInject.Tests
         }
 
         public void Compile<TService>(string serviceType = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetInstance(Type serviceType, Scope scope)
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetInstance(Type serviceType, Scope scope, string serviceName)
         {
             throw new NotImplementedException();
         }

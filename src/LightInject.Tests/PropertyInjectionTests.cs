@@ -2,11 +2,11 @@ namespace LightInject.Tests
 {
     using System;
     using System.Reflection;
-    using System.Text;    
+    using System.Text;
     using LightInject;
     using LightInject.SampleLibrary;
     using Xunit;
-    
+
     public class PropertyInjectionTests : TestBase
     {
         [Fact]
@@ -19,7 +19,7 @@ namespace LightInject.Tests
             Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
 
-        [Fact]        
+        [Fact]
         public void GetInstance_UnKnownDependency_ReturnsInstanceWithoutDependency()
         {
             var container = CreateContainer();
@@ -37,7 +37,7 @@ namespace LightInject.Tests
             var instance = (FooWithGenericPropertyDependency<IBar>)container.GetInstance<IFoo<IBar>>();
             Assert.IsAssignableFrom<Bar>(instance.Dependency);
         }
-        
+
         [Fact]
         public void GetInstance_DependencyWithTransientLifeCycle_InjectsTransientDependency()
         {
@@ -54,7 +54,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(new PerScopeLifetime());
-            container.Register<IFoo, FooWithProperyDependency>();            
+            container.Register<IFoo, FooWithProperyDependency>();
             FooWithProperyDependency instance1;
             FooWithProperyDependency instance2;
             using (container.BeginScope())
@@ -64,7 +64,7 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 instance2 = (FooWithProperyDependency)container.GetInstance<IFoo>();
-            }            
+            }
             Assert.NotEqual(instance1.Bar, instance2.Bar);
         }
 
@@ -109,7 +109,7 @@ namespace LightInject.Tests
             {
                 var instance = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
                 Assert.Equal(instance.Bar1, instance.Bar2);
-            }            
+            }
         }
 
         [Fact]
@@ -117,7 +117,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.Register<IBar, Bar>(new PerScopeLifetime());
-            container.Register<IFoo, FooWithSamePropertyDependencyTwice>();           
+            container.Register<IFoo, FooWithSamePropertyDependencyTwice>();
 
             FooWithSamePropertyDependencyTwice instance1;
             FooWithSamePropertyDependencyTwice instance2;
@@ -128,7 +128,7 @@ namespace LightInject.Tests
             using (container.BeginScope())
             {
                 instance2 = (FooWithSamePropertyDependencyTwice)container.GetInstance<IFoo>();
-            }            
+            }
             Assert.NotEqual(instance1.Bar1, instance2.Bar2);
         }
 
@@ -136,7 +136,7 @@ namespace LightInject.Tests
         public void GetInstance_ValueTypeDependency_InjectsDependency()
         {
             var container = CreateContainer();
-            container.RegisterInstance(42);           
+            container.RegisterInstance(42);
             container.Register<IFoo, FooWithValueTypePropertyDependency>();
             var instance = (FooWithValueTypePropertyDependency)container.GetInstance<IFoo>();
             Assert.Equal(42, instance.Value);
@@ -212,7 +212,7 @@ namespace LightInject.Tests
             container.Register<IFoo, FooWithStaticDependency>();
             container.GetInstance<IFoo>();
             Assert.Null(FooWithStaticDependency.Bar);
-        }    
+        }
 
         [Fact]
         public void InjectProperties_KnownClassWithPropertyDependency_InjectsPropertyDependencies()
@@ -230,11 +230,12 @@ namespace LightInject.Tests
         [Fact]
         public void InjectProperties_FuncDependency_InjectsDependency()
         {
-            var container = CreateContainer();            
-            container.Register<IBar, Bar>((factory, bar) => new Bar());
+            var container = CreateContainer();
+            container.Register<IBar, Bar>();
+            // container.Register<IBar, Bar>((factory, bar) => new Bar());
             var fooWithFuncPropertyDependency = new FooWithFuncPropertyDependency();
 
-            var result = (FooWithFuncPropertyDependency)container.InjectProperties(fooWithFuncPropertyDependency);            
+            var result = (FooWithFuncPropertyDependency)container.InjectProperties(fooWithFuncPropertyDependency);
             Assert.NotNull(result.BarFunc);
         }
 
@@ -243,7 +244,7 @@ namespace LightInject.Tests
         [Fact]
         public void InjectProperties_UnknownClassWithPropertyDependency_InjectsPropertyDependencies()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             container.Register<IBar, Bar>();
             var fooWithProperyDependency = new FooWithProperyDependency();
 
@@ -269,7 +270,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IBar, Bar>();
             container.Register<IBar, AnotherBar>("AnotherBar");
-            container.Register(f => new FooWithProperyDependency(){ Bar = f.GetInstance<IBar>("AnotherBar") });
+            container.Register(f => new FooWithProperyDependency() { Bar = f.GetInstance<IBar>("AnotherBar") });
             var fooWithProperyDependency = new FooWithProperyDependency();
 
             var result = (FooWithProperyDependency)container.InjectProperties(fooWithProperyDependency);
@@ -286,7 +287,7 @@ namespace LightInject.Tests
             var barWithPropertyDependency = new BarWithPropertyDependency();
             var exception =
                 Assert.Throws<InvalidOperationException>(() => container.InjectProperties(barWithPropertyDependency));
-            Assert.Equal(ErrorMessages.RecursivePropertyDependency, exception.Message);            
+            Assert.Equal(ErrorMessages.RecursivePropertyDependency, exception.Message);
         }
 
         [Fact]
@@ -321,7 +322,7 @@ namespace LightInject.Tests
         public void ToString_PropertyDependency_ReturnsDescriptiveDescription()
         {
             PropertyDependency propertyDependency = new PropertyDependency();
-            propertyDependency.Property = typeof (FooWithProperyDependency).GetTypeInfo().GetProperty("Bar");
+            propertyDependency.Property = typeof(FooWithProperyDependency).GetTypeInfo().GetProperty("Bar");
             var description = propertyDependency.ToString();
             Assert.StartsWith("[Target Type", description);
         }
@@ -329,7 +330,8 @@ namespace LightInject.Tests
         [Fact]
         public void Setting_EnablePropertyInjection_false_disables_property_injection()
         {
-            var container = new ServiceContainer(new ContainerOptions {
+            var container = new ServiceContainer(new ContainerOptions
+            {
                 EnablePropertyInjection = false
             });
             container.Register<object, Foo>();

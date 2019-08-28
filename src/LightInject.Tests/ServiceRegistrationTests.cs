@@ -4,21 +4,25 @@ namespace LightInject.Tests
 
     using System.Diagnostics;
     using SampleLibrary;
-    
+
     using Xunit;
-    
+
     public class ServiceRegistrationTests
     {
-        [Fact] 
+        [Fact]
         public void Equals_SameTypeSameServiceName_AreEqual()
         {
-            var firstRegistration = new ServiceRegistration();
-            firstRegistration.ServiceType = typeof(int);
-            firstRegistration.ServiceName = string.Empty;
+            var firstRegistration = new ServiceRegistration
+            {
+                ServiceType = typeof(int),
+                ServiceName = string.Empty
+            };
 
-            var secondRegistration = new ServiceRegistration();
-            secondRegistration.ServiceType = typeof(int);
-            secondRegistration.ServiceName = string.Empty;
+            var secondRegistration = new ServiceRegistration
+            {
+                ServiceType = typeof(int),
+                ServiceName = string.Empty
+            };
 
             Assert.Equal(firstRegistration, secondRegistration);
         }
@@ -58,10 +62,10 @@ namespace LightInject.Tests
             firstRegistration.ServiceType = typeof(int);
             firstRegistration.ServiceName = string.Empty;
 
-           
+
             Assert.False(firstRegistration.Equals(null));
         }
-    
+
         [Fact]
         public void GetInstance_OverrideImplementingType_CreateInstanceOfOverriddenImplementingType()
         {
@@ -85,9 +89,9 @@ namespace LightInject.Tests
         public void ToString_WithAllProperties_ReturnsEasyToReadRepresentation()
         {
             var sr = new ServiceRegistration();
-            sr.ServiceType = typeof (IFoo);
+            sr.ServiceType = typeof(IFoo);
             sr.ServiceName = "AnotherFoo";
-            sr.ImplementingType = typeof (AnotherFoo);
+            sr.ImplementingType = typeof(AnotherFoo);
             var toString = sr.ToString();
             Assert.Equal("ServiceType: 'LightInject.SampleLibrary.IFoo', ServiceName: 'AnotherFoo', ImplementingType: 'LightInject.SampleLibrary.AnotherFoo', Lifetime: 'Transient'", toString);
         }
@@ -119,12 +123,12 @@ namespace LightInject.Tests
         public void Register_ServiceAfterFirstGetInstance_TracesWarning()
         {
             string message = null;
-            var container = new ServiceContainer(new ContainerOptions {LogFactory = t => m => message = m.Message});
-            
+            var container = new ServiceContainer(new ContainerOptions { LogFactory = t => m => message = m.Message });
+
             //SampleTraceListener sampleTraceListener = new SampleTraceListener(m => message = m);
             try
-            {                
-              ///  Trace.Listeners.Add(sampleTraceListener);
+            {
+                ///  Trace.Listeners.Add(sampleTraceListener);
                 container.Register<IFoo, Foo>();
                 container.GetInstance<IFoo>();
                 container.Register<IFoo, Foo>();
@@ -134,14 +138,14 @@ namespace LightInject.Tests
             {
                 //Trace.Listeners.Remove(sampleTraceListener);
             }
-        }       
+        }
 
         [Fact]
         public void Register_ImplementingTypeNotImplementingServiceType_ThrowsException()
         {
             var container = new ServiceContainer();
             Assert.Throws<ArgumentOutOfRangeException>("implementingType",
-                () => container.Register(typeof (IFoo), typeof (Bar)));
+                () => container.Register(typeof(IFoo), typeof(Bar)));
 
         }
 
@@ -149,7 +153,7 @@ namespace LightInject.Tests
         public void Register_GenericImplementingTypeWithMissingArgument_ThrowsException()
         {
             var container = new ServiceContainer();
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof (IFoo), typeof (Foo<>)));
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => container.Register(typeof(IFoo), typeof(Foo<>)));
             Assert.Equal("implementingType", exception.ParamName);
             Assert.StartsWith("The generic parameter(s) T found in type", exception.Message);
         }
