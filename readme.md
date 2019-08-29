@@ -2,6 +2,8 @@
 [![NuGet](https://img.shields.io/nuget/v/LightInject.svg?maxAge=2592000)](https://www.nuget.org/packages/LightInject)
 [![GitHub tag](https://img.shields.io/github/tag/seesharper/lightinject.svg?maxAge=2592000)](https://github.com/seesharper/LightInject/releases/latest)
 
+<a href="https://www.buymeacoffee.com/Y3bqWk1" target="_blank"><img src="https://bmc-cdn.nyc3.digitaloceanspaces.com/BMC-button-images/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
+
 ## Installing ##
 
 **LightInject** provides two distribution models via NuGet
