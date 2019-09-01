@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.0.0
+    LightInject version 6.1.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2239,6 +2239,7 @@ namespace LightInject
             EnableVariance = true;
             EnablePropertyInjection = true;
             LogFactory = t => message => { };
+            EnableCurrentScope = true;
         }
 
         /// <summary>
@@ -2281,6 +2282,16 @@ namespace LightInject
         /// The default value is true.
         /// </remarks>
         public bool EnablePropertyInjection { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether a current scope is maintained when starting and ending scopes.
+        /// If services are requested directly from the scope, there we can turn this feature off to improve
+        /// the performance when starting and ending scopes.
+        /// </summary>
+        /// <remarks>
+        /// The default value is true for backward compatibility.
+        /// </remarks>
+        public bool EnableCurrentScope { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions() => new ContainerOptions();
     }
@@ -2528,7 +2539,18 @@ namespace LightInject
         }
 
         /// <inheritdoc/>
-        public Scope BeginScope() => ScopeManagerProvider.GetScopeManager(this).BeginScope();
+        public Scope BeginScope()
+        {
+            if (options.EnableCurrentScope)
+            {
+                return ScopeManagerProvider.GetScopeManager(this).BeginScope();
+            }
+            else
+            {
+                return new Scope(this);
+            }
+
+        }
 
         /// <inheritdoc/>
         public object InjectProperties(object instance)
@@ -6088,6 +6110,15 @@ namespace LightInject
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Scope"/> class.
+        /// </summary>
+        /// <param name="serviceFactory">The <see cref="IServiceFactory"/> that created this <see cref="Scope"/>.</param>
+        public Scope(IServiceFactory serviceFactory)
+        {
+            this.serviceFactory = serviceFactory;
+        }
+
+        /// <summary>
         /// Raised when the <see cref="Scope"/> is completed.
         /// </summary>
         public event EventHandler<EventArgs> Completed;
@@ -6158,7 +6189,7 @@ namespace LightInject
 
         private void OnCompleted()
         {
-            scopeManager.EndScope(this);
+            scopeManager?.EndScope(this);
             var completedHandler = Completed;
             completedHandler?.Invoke(this, new EventArgs());
         }
