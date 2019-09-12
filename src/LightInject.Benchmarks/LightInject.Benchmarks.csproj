@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.11.5" />
-    <PackageReference Include="DryIoc" Version="4.0.5" />
+    <PackageReference Include="DryIoc" Version="4.0.7" />
     <PackageReference Include="Grace" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
     <PackageReference Include="SimpleInjector" Version="4.6.2" />

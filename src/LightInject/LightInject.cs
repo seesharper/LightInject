@@ -1118,25 +1118,6 @@ namespace LightInject
         IScopeManager GetScopeManager(IServiceFactory serviceFactory);
     }
 
-    internal interface IScopedServiceFactory
-    {
-        object GetInstance(Type serviceType, Scope scope);
-
-        object GetInstance(Type serviceType, Scope scope, string serviceName);
-
-        IEnumerable<object> GetAllInstances(Type serviceType, Scope scope);
-
-        object GetInstance(Type serviceType, object[] arguments, Scope scope);
-
-        object GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope);
-
-        object TryGetInstance(Type serviceType, Scope scope);
-
-        object TryGetInstance(Type serviceType, string serviceName, Scope scope);
-
-        object Create(Type serviceType, Scope scope);
-    }
-
     /// <summary>
     /// This class is not for public use and is used internally
     /// to load runtime arguments onto the evaluation stack.
@@ -1847,6 +1828,69 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Extends the <see cref="ImmutableMapTree{TValue}"/> class.
+    /// </summary>
+    public static class ImmutableMapTreeExtensions
+    {
+        /// <summary>
+        /// Searches for a <typeparamref name="TValue"/> using the given <paramref name="key"/>.
+        /// </summary>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="tree">The target <see cref="ImmutableMapTree{TValue}"/>.</param>
+        /// <param name="key">The key of the <see cref="ImmutableMapTree{TValue}"/> to get.</param>
+        /// <returns>If found, the <typeparamref name="TValue"/> with the given <paramref name="key"/>, otherwise the default <typeparamref name="TValue"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TValue Search<TValue>(this ImmutableMapTree<TValue> tree, int key)
+        {
+            while (tree.Height != 0 && tree.Key != key)
+            {
+                tree = key < tree.Key ? tree.Left : tree.Right;
+            }
+
+            if (!tree.IsEmpty)
+            {
+                return tree.Value;
+            }
+
+            return default(TValue);
+        }
+
+        /// <summary>
+        /// Adds a new element to the <see cref="ImmutableMapTree{TValue}"/>.
+        /// </summary>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="tree">The target <see cref="ImmutableMapTree{TValue}"/>.</param>
+        /// <param name="key">The key to be associated with the value.</param>
+        /// <param name="value">The value to be added to the tree.</param>
+        /// <returns>A new <see cref="ImmutableMapTree{TValue}"/> that contains the new key/value pair.</returns>
+        public static ImmutableMapTree<TValue> Add<TValue>(this ImmutableMapTree<TValue> tree, int key, TValue value)
+        {
+            if (tree.IsEmpty)
+            {
+                return new ImmutableMapTree<TValue>(key, value, tree, tree);
+            }
+
+            if (key > tree.Key)
+            {
+                return AddToRightBranch(tree, key, value);
+            }
+
+            if (key < tree.Key)
+            {
+                return AddToLeftBranch(tree, key, value);
+            }
+
+            return new ImmutableMapTree<TValue>(key, value, tree);
+        }
+
+        private static ImmutableMapTree<TValue> AddToLeftBranch<TValue>(ImmutableMapTree<TValue> tree, int key, TValue value)
+        => new ImmutableMapTree<TValue>(tree.Key, tree.Value, tree.Left.Add(key, value), tree.Right);
+
+        private static ImmutableMapTree<TValue> AddToRightBranch<TValue>(ImmutableMapTree<TValue> tree, int key, TValue value)
+            => new ImmutableMapTree<TValue>(tree.Key, tree.Value, tree.Left, tree.Right.Add(key, value));
+    }
+
+    /// <summary>
     /// Extends the <see cref="ImmutableHashTree{TKey,TValue}"/> class.
     /// </summary>
     public static class ImmutableHashTreeExtensions
@@ -2326,7 +2370,7 @@ namespace LightInject
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
-    public class ServiceContainer : IServiceContainer, IScopedServiceFactory
+    public class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
         private readonly Action<LogEntry> log;
@@ -2549,7 +2593,6 @@ namespace LightInject
             {
                 return new Scope(this);
             }
-
         }
 
         /// <inheritdoc/>
@@ -3129,90 +3172,6 @@ namespace LightInject
             return GetInstance(serviceType);
         }
 
-        object IScopedServiceFactory.GetInstance(Type serviceType, Scope scope)
-        {
-            var instanceDelegate = delegates.Search(serviceType);
-            if (instanceDelegate == null)
-            {
-                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
-            }
-
-            return instanceDelegate(constants.Items, scope);
-        }
-
-        object IScopedServiceFactory.GetInstance(Type serviceType, Scope scope, string serviceName)
-        {
-            var key = Tuple.Create(serviceType, serviceName);
-            var instanceDelegate = namedDelegates.Search(key);
-            if (instanceDelegate == null)
-            {
-                instanceDelegate = CreateNamedDelegate(key, throwError: true);
-            }
-
-            return instanceDelegate(constants.Items, scope);
-        }
-
-        IEnumerable<object> IScopedServiceFactory.GetAllInstances(Type serviceType, Scope scope)
-        {
-            return (IEnumerable<object>)((IScopedServiceFactory)this).GetInstance(serviceType.GetEnumerableType(), scope);
-        }
-
-        object IScopedServiceFactory.GetInstance(Type serviceType, object[] arguments, Scope scope)
-        {
-            var instanceDelegate = delegates.Search(serviceType);
-            if (instanceDelegate == null)
-            {
-                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
-            }
-
-            object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
-
-            return instanceDelegate(constantsWithArguments, scope);
-        }
-
-        object IScopedServiceFactory.GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope)
-        {
-            var key = Tuple.Create(serviceType, serviceName);
-            var instanceDelegate = namedDelegates.Search(key);
-            if (instanceDelegate == null)
-            {
-                instanceDelegate = CreateNamedDelegate(key, throwError: true);
-            }
-
-            object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
-
-            return instanceDelegate(constantsWithArguments, scope);
-        }
-
-        object IScopedServiceFactory.TryGetInstance(Type serviceType, Scope scope)
-        {
-            var instanceDelegate = delegates.Search(serviceType);
-            if (instanceDelegate == null)
-            {
-                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: false);
-            }
-
-            return instanceDelegate(constants.Items, scope);
-        }
-
-        object IScopedServiceFactory.TryGetInstance(Type serviceType, string serviceName, Scope scope)
-        {
-            var key = Tuple.Create(serviceType, serviceName);
-            var instanceDelegate = namedDelegates.Search(key);
-            if (instanceDelegate == null)
-            {
-                instanceDelegate = CreateNamedDelegate(key, throwError: false);
-            }
-
-            return instanceDelegate(constants.Items, scope);
-        }
-
-        object IScopedServiceFactory.Create(Type serviceType, Scope scope)
-        {
-            Register(serviceType);
-            return ((IScopedServiceFactory)this).GetInstance(serviceType, scope);
-        }
-
         /// <inheritdoc/>
         public IServiceRegistry SetDefaultLifetime<T>()
             where T : ILifetime, new()
@@ -3262,6 +3221,91 @@ namespace LightInject
                 AssemblyLoader,
 #endif
                 ScopeManagerProvider);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object GetInstance(Type serviceType, Scope scope)
+        {
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
+            }
+
+            return instanceDelegate(constants.Items, scope);
+        }
+
+        internal object GetInstance(Type serviceType, Scope scope, string serviceName)
+        {
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: true);
+            }
+
+            return instanceDelegate(constants.Items, scope);
+        }
+
+        internal IEnumerable<object> GetAllInstances(Type serviceType, Scope scope)
+        {
+            return (IEnumerable<object>)GetInstance(serviceType.GetEnumerableType(), scope);
+        }
+
+        internal object GetInstance(Type serviceType, object[] arguments, Scope scope)
+        {
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: true);
+            }
+
+            object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
+
+            return instanceDelegate(constantsWithArguments, scope);
+        }
+
+        internal object GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope)
+        {
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: true);
+            }
+
+            object[] constantsWithArguments = constants.Items.Concat(new object[] { arguments }).ToArray();
+
+            return instanceDelegate(constantsWithArguments, scope);
+        }
+
+        internal object TryGetInstance(Type serviceType, Scope scope)
+        {
+            var instanceDelegate = delegates.Search(serviceType);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateDefaultDelegate(serviceType, throwError: false);
+            }
+
+            return instanceDelegate(constants.Items, scope);
+        }
+
+        internal object TryGetInstance(Type serviceType, string serviceName, Scope scope)
+        {
+            var key = Tuple.Create(serviceType, serviceName);
+            var instanceDelegate = namedDelegates.Search(key);
+            if (instanceDelegate == null)
+            {
+                instanceDelegate = CreateNamedDelegate(key, throwError: false);
+            }
+
+            return instanceDelegate(constants.Items, scope);
+        }
+
+        internal object Create(Type serviceType, Scope scope)
+        {
+            Register(serviceType);
+            return GetInstance(serviceType, scope);
         }
 
         private static void EmitEnumerable(IList<Action<IEmitter>> serviceEmitters, Type elementType, IEmitter emitter)
@@ -4019,7 +4063,7 @@ namespace LightInject
                 var createScopedGenericFuncMethod = FuncHelper.CreateScopedGenericFuncMethod.MakeGenericMethod(returnType);
                 return e =>
                 {
-                    e.PushConstant(constants.Add(this), typeof(IScopedServiceFactory));
+                    e.PushConstant(constants.Add(this), typeof(ServiceContainer));
 
                     int scopeManagerIndex = CreateScopeManagerIndex();
 
@@ -4040,7 +4084,7 @@ namespace LightInject
                 var createScopedGenericNamedFuncMethod = FuncHelper.CreateScopedGenericNamedFuncMethod.MakeGenericMethod(returnType);
                 return e =>
                 {
-                    e.PushConstant(constants.Add(this), typeof(IScopedServiceFactory));
+                    e.PushConstant(constants.Add(this), typeof(ServiceContainer));
 
                     int scopeManagerIndex = CreateScopeManagerIndex();
 
@@ -4142,7 +4186,7 @@ namespace LightInject
             var createScopedLazyMethod = LazyHelper.CreateScopedLazyMethod.MakeGenericMethod(returnType);
             return e =>
             {
-                e.PushConstant(constants.Add(this), typeof(IScopedServiceFactory));
+                e.PushConstant(constants.Add(this), typeof(ServiceContainer));
 
                 int scopeManagerIndex = CreateScopeManagerIndex();
 
@@ -4369,43 +4413,83 @@ namespace LightInject
                 var instanceIndex = constants.Add(instance);
                 emitter.PushConstant(instanceIndex, instance.GetType());
             }
-            else
+            else if (serviceRegistration.Lifetime is PerScopeLifetime)
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+                PushScope(emitter);
 
-                int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
-                int scopeManagerIndex = CreateScopeManagerIndex();
-                var scopeVariable = emitter.DeclareLocal(typeof(Scope));
+                emitter.Emit(OpCodes.Call, ScopeLoader.ValidateScopeMethod.MakeGenericMethod(serviceRegistration.ServiceType));
 
-                // Push the scope into the stack
-                emitter.PushArgument(1);
-
-                // Push the scope manager into the stack.
-                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
-
-                // Get the scope
-                emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
-
-                // Store the scope
-                emitter.Store(scopeVariable);
-
-                // Push the lifetime onto the stack
-                emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
-
+                // Push the getinstance delegate
                 emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
 
-                // Push the constants arguments
                 emitter.PushArgument(0);
 
-                // Push the scope
+                emitter.Push(instanceDelegateIndex);
+
+                emitter.Call(ScopeLoader.GetScopedInstanceMethod);
+            }
+            else if (serviceRegistration.Lifetime is PerRequestLifeTime)
+            {
+                var scopeVariable = emitter.DeclareLocal(typeof(Scope));
+                int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+                var invokeMethod = typeof(GetInstanceDelegate).GetTypeInfo().GetDeclaredMethod("Invoke");
+                emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+                emitter.PushArgument(0);
+
+                PushScope(emitter);
+
+                emitter.Store(scopeVariable);
                 emitter.Push(scopeVariable);
-
-                // Create the scoped function
-                emitter.Emit(OpCodes.Call, FuncHelper.CreateScopedFuncMethod);
-
+                emitter.Emit(OpCodes.Callvirt, invokeMethod);
                 emitter.Push(scopeVariable);
+                emitter.Emit(OpCodes.Call, ScopeLoader.ValidateTrackedTransientMethod);
+            }
+            else
+            {
+                var nonClosingGetInstanceMethod = LifetimeHelper.GetNonClosingGetInstanceMethod(serviceRegistration.Lifetime.GetType());
+                if (nonClosingGetInstanceMethod != null)
+                {
+                    int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+                    int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
+                    emitter.PushConstant(lifetimeIndex, serviceRegistration.Lifetime.GetType());
+                    emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+                    PushScope(emitter);
+                    emitter.PushArgument(0);
+                    emitter.Call(nonClosingGetInstanceMethod);
+                }
+                else
+                {
+                    int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
 
-                emitter.Call(LifetimeHelper.GetInstanceMethod);
+                    int lifetimeIndex = CreateLifetimeIndex(serviceRegistration.Lifetime);
+
+                    var scopeVariable = emitter.DeclareLocal(typeof(Scope));
+
+                    // Push the scope into the stack
+                    PushScope(emitter);
+
+                    // Store the scope
+                    emitter.Store(scopeVariable);
+
+                    // Push the lifetime onto the stack
+                    emitter.PushConstant(lifetimeIndex, typeof(ILifetime));
+
+                    emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+
+                    // Push the constants arguments
+                    emitter.PushArgument(0);
+
+                    // Push the scope
+                    emitter.Push(scopeVariable);
+
+                    // Create the scoped function
+                    emitter.Emit(OpCodes.Call, FuncHelper.CreateScopedFuncMethod);
+
+                    emitter.Push(scopeVariable);
+
+                    emitter.Call(LifetimeHelper.GetInstanceMethod);
+                }
             }
 
             if (IsNotServiceFactory(serviceRegistration.ServiceType))
@@ -4416,6 +4500,28 @@ namespace LightInject
             bool IsNotServiceFactory(Type serviceType)
             {
                 return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
+            }
+        }
+
+        private void PushScope(IEmitter emitter)
+        {
+            if (options.EnableCurrentScope)
+            {
+                int scopeManagerIndex = CreateScopeManagerIndex();
+
+                // Push the scope into the stack
+                emitter.PushArgument(1);
+
+                // Push the scope manager into the stack.
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                // Get the scope
+                emitter.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+            }
+            else
+            {
+                // Push the scope onto the stack.
+                emitter.PushArgument(1);
             }
         }
 
@@ -5897,13 +6003,7 @@ namespace LightInject
         /// <inheritdoc/>
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
-            var instance = createInstance();
-            if (instance is IDisposable disposable)
-            {
-                TrackInstance(scope, disposable);
-            }
-
-            return instance;
+            throw new NotImplementedException("Optimized");
         }
 
         /// <summary>
@@ -5913,16 +6013,6 @@ namespace LightInject
         public ILifetime Clone()
         {
             return new PerRequestLifeTime();
-        }
-
-        private static void TrackInstance(Scope scope, IDisposable disposable)
-        {
-            if (scope == null)
-            {
-                throw new InvalidOperationException("Attempt to create a disposable instance without a current scope.");
-            }
-
-            scope.TrackInstance(disposable);
         }
     }
 
@@ -5945,43 +6035,13 @@ namespace LightInject
         /// <returns>The requested services instance.</returns>
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
-            if (scope == null)
-            {
-                throw new InvalidOperationException(
-                    "Attempt to create a scoped instance without a current scope.");
-            }
-
-            return instances.GetOrAdd(scope, s => CreateScopedInstance(s, createInstance));
+            throw new NotImplementedException("Optimized");
         }
 
         /// <inheritdoc/>
         public ILifetime Clone()
         {
             return new PerScopeLifetime();
-        }
-
-        private static void RegisterForDisposal(Scope scope, object instance)
-        {
-            if (instance is IDisposable disposable)
-            {
-                scope.TrackInstance(disposable);
-            }
-        }
-
-        private object CreateScopedInstance(Scope scope, Func<object> createInstance)
-        {
-            scope.Completed += OnScopeCompleted;
-            var instance = createInstance();
-
-            RegisterForDisposal(scope, instance);
-            return instance;
-        }
-
-        private void OnScopeCompleted(object sender, EventArgs e)
-        {
-            var scope = (Scope)sender;
-            scope.Completed -= OnScopeCompleted;
-            instances.TryRemove(scope, out object removedInstance);
         }
     }
 
@@ -6089,12 +6149,15 @@ namespace LightInject
         /// </summary>
         public Scope ParentScope;
 
-        private readonly object disposableObjectsLock = new object();
-        private readonly HashSet<IDisposable> disposableObjects = new HashSet<IDisposable>(ReferenceEqualityComparer<IDisposable>.Default);
-        private readonly IScopeManager scopeManager;
-        private readonly IServiceFactory serviceFactory;
+        private readonly object lockObject = new object();
 
-        private readonly IScopedServiceFactory scopedServiceFactory;
+        private readonly IScopeManager scopeManager;
+
+        private readonly ServiceContainer serviceFactory;
+
+        private List<IDisposable> disposableObjects;
+
+        private ImmutableMapTree<object> createdInstances = ImmutableMapTree<object>.Empty;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Scope"/> class.
@@ -6104,8 +6167,7 @@ namespace LightInject
         public Scope(IScopeManager scopeManager, Scope parentScope)
         {
             this.scopeManager = scopeManager;
-            serviceFactory = scopeManager.ServiceFactory;
-            scopedServiceFactory = (IScopedServiceFactory)serviceFactory;
+            serviceFactory = (ServiceContainer)scopeManager.ServiceFactory;
             ParentScope = parentScope;
         }
 
@@ -6113,7 +6175,7 @@ namespace LightInject
         /// Initializes a new instance of the <see cref="Scope"/> class.
         /// </summary>
         /// <param name="serviceFactory">The <see cref="IServiceFactory"/> that created this <see cref="Scope"/>.</param>
-        public Scope(IServiceFactory serviceFactory)
+        public Scope(ServiceContainer serviceFactory)
         {
             this.serviceFactory = serviceFactory;
         }
@@ -6127,10 +6189,15 @@ namespace LightInject
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
         /// </summary>
         /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
-        public virtual void TrackInstance(IDisposable disposable)
+        public void TrackInstance(IDisposable disposable)
         {
-            lock (disposableObjectsLock)
+            lock (lockObject)
             {
+                if (disposableObjects == null)
+                {
+                    disposableObjects = new List<IDisposable>();
+                }
+
                 disposableObjects.Add(disposable);
             }
         }
@@ -6140,8 +6207,25 @@ namespace LightInject
         /// </summary>
         public void Dispose()
         {
-            DisposeTrackedInstances();
-            OnCompleted();
+            if (disposableObjects != null && disposableObjects.Count > 0)
+            {
+                HashSet<IDisposable> disposedObjects = new HashSet<IDisposable>(ReferenceEqualityComparer<IDisposable>.Default);
+
+                for (var i = disposableObjects.Count - 1; i >= 0; i--)
+                {
+                    if (disposableObjects[i] is IDisposable disposable)
+                    {
+                        if (disposedObjects.Add(disposable))
+                        {
+                            disposable.Dispose();
+                        }
+                    }
+                }
+            }
+
+            scopeManager?.EndScope(this);
+            var completedHandler = Completed;
+            completedHandler?.Invoke(this, new EventArgs());
             IsDisposed = true;
         }
 
@@ -6150,48 +6234,60 @@ namespace LightInject
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType) =>
-            scopedServiceFactory.GetInstance(serviceType, this);
+            serviceFactory.GetInstance(serviceType, this);
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName) =>
-            scopedServiceFactory.GetInstance(serviceType, this, serviceName);
+            serviceFactory.GetInstance(serviceType, this, serviceName);
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, object[] arguments) =>
-            scopedServiceFactory.GetInstance(serviceType, arguments, this);
+            serviceFactory.GetInstance(serviceType, arguments, this);
 
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName, object[] arguments)
-            => scopedServiceFactory.GetInstance(serviceType, serviceName, arguments, this);
+            => serviceFactory.GetInstance(serviceType, serviceName, arguments, this);
 
         /// <inheritdoc/>
         public object TryGetInstance(Type serviceType)
-            => scopedServiceFactory.TryGetInstance(serviceType, this);
+            => serviceFactory.TryGetInstance(serviceType, this);
 
         /// <inheritdoc/>
         public object TryGetInstance(Type serviceType, string serviceName)
-            => scopedServiceFactory.TryGetInstance(serviceType, serviceName, this);
+            => serviceFactory.TryGetInstance(serviceType, serviceName, this);
 
         /// <inheritdoc/>
         public IEnumerable<object> GetAllInstances(Type serviceType)
-            => scopedServiceFactory.GetAllInstances(serviceType, this);
+            => serviceFactory.GetAllInstances(serviceType, this);
 
         /// <inheritdoc/>
-        public object Create(Type serviceType) => scopedServiceFactory.Create(serviceType, this);
+        public object Create(Type serviceType) => serviceFactory.Create(serviceType, this);
 
-        private void DisposeTrackedInstances()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments, int instanceDelegateIndex)
         {
-            foreach (var disposableObject in disposableObjects.Reverse())
+            var createdInstance = createdInstances.Search(instanceDelegateIndex);
+            if (createdInstance != null)
             {
-                disposableObject.Dispose();
+                return createdInstance;
             }
-        }
 
-        private void OnCompleted()
-        {
-            scopeManager?.EndScope(this);
-            var completedHandler = Completed;
-            completedHandler?.Invoke(this, new EventArgs());
+            lock (lockObject)
+            {
+                createdInstance = createdInstances.Search(instanceDelegateIndex);
+                if (createdInstance == null)
+                {
+                    createdInstance = getInstanceDelegate(arguments, this);
+                    if (createdInstance is IDisposable disposable)
+                    {
+                        TrackInstance(disposable);
+                    }
+
+                    Interlocked.Exchange(ref createdInstances, createdInstances.Add(instanceDelegateIndex, createdInstance));
+                }
+
+                return createdInstance;
+            }
         }
 
         private class ReferenceEqualityComparer<T> : IEqualityComparer<T>
@@ -7179,6 +7275,142 @@ namespace LightInject
     }
 
     /// <summary>
+    /// A balanced binary search tree implemented as an AVL tree
+    /// where the key is an integer which means we don't need GetHashCode.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
+    public sealed class ImmutableMapTree<TValue>
+    {
+        /// <summary>
+        /// An empty <see cref="ImmutableMapTree{TValue}"/>.
+        /// </summary>
+        public static readonly ImmutableMapTree<TValue> Empty = new ImmutableMapTree<TValue>();
+
+        /// <summary>
+        /// The key of this <see cref="ImmutableMapTree{TValue}"/>.
+        /// </summary>
+        public readonly int Key;
+
+        /// <summary>
+        /// The value of this <see cref="ImmutableMapTree{TValue}"/>.
+        /// </summary>
+        public readonly TValue Value;
+
+        /// <summary>
+        /// The left node of this <see cref="ImmutableMapTree{TValue}"/>.
+        /// </summary>
+        public readonly ImmutableMapTree<TValue> Left;
+
+        /// <summary>
+        /// The right node of this <see cref="ImmutableMapTree{TValue}"/>.
+        /// </summary>
+        public readonly ImmutableMapTree<TValue> Right;
+
+        /// <summary>
+        /// The height of this node.
+        /// </summary>
+        /// <remarks>
+        /// An empty node has a height of 0 and a node without children has a height of 1.
+        /// </remarks>
+        public readonly int Height;
+
+        /// <summary>
+        /// Indicates that this <see cref="ImmutableMapTree{TValue}"/> is empty.
+        /// </summary>
+        public readonly bool IsEmpty;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableMapTree{TValue}"/> class.
+        /// </summary>
+        /// <param name="key">The key for this node.</param>
+        /// <param name="value">The value for this node.</param>
+        /// <param name="hashTree">The <see cref="ImmutableMapTree{TValue}"/> that contains existing duplicates.</param>
+        public ImmutableMapTree(int key, TValue value, ImmutableMapTree<TValue> hashTree)
+        {
+            Key = key;
+            Value = value;
+            Height = hashTree.Height;
+            Left = hashTree.Left;
+            Right = hashTree.Right;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableMapTree{TValue}"/> class.
+        /// </summary>
+        /// <param name="key">The key for this node.</param>
+        /// <param name="value">The value for this node.</param>
+        /// <param name="left">The left node.</param>
+        /// <param name="right">The right node.</param>
+        public ImmutableMapTree(int key, TValue value, ImmutableMapTree<TValue> left, ImmutableMapTree<TValue> right)
+        {
+            var balance = left.Height - right.Height;
+
+            if (balance == -2)
+            {
+                if (right.IsLeftHeavy())
+                {
+                    right = RotateRight(right);
+                }
+
+                // Rotate left
+                Key = right.Key;
+                Value = right.Value;
+                Left = new ImmutableMapTree<TValue>(key, value, left, right.Left);
+                Right = right.Right;
+            }
+            else if (balance == 2)
+            {
+                if (left.IsRightHeavy())
+                {
+                    left = RotateLeft(left);
+                }
+
+                // Rotate right
+                Key = left.Key;
+                Value = left.Value;
+                Right = new ImmutableMapTree<TValue>(key, value, left.Right, right);
+                Left = left.Left;
+            }
+            else
+            {
+                Key = key;
+                Value = value;
+                Left = left;
+                Right = right;
+            }
+
+            Height = 1 + Math.Max(Left.Height, Right.Height);
+        }
+
+        private ImmutableMapTree()
+        {
+            IsEmpty = true;
+        }
+
+        private static ImmutableMapTree<TValue> RotateLeft(ImmutableMapTree<TValue> left)
+        {
+            return new ImmutableMapTree<TValue>(
+                left.Right.Key,
+                left.Right.Value,
+                new ImmutableMapTree<TValue>(left.Key, left.Value, left.Right.Left, left.Left),
+                left.Right.Right);
+        }
+
+        private static ImmutableMapTree<TValue> RotateRight(ImmutableMapTree<TValue> right)
+        {
+            return new ImmutableMapTree<TValue>(
+                right.Left.Key,
+                right.Left.Value,
+                right.Left.Left,
+                new ImmutableMapTree<TValue>(right.Key, right.Value, right.Left.Right, right.Right));
+        }
+
+        private bool IsLeftHeavy() => Left.Height > Right.Height;
+
+        private bool IsRightHeavy() => Right.Height > Left.Height;
+    }
+
+    /// <summary>
     /// Represents an MSIL instruction to be emitted into a dynamic method.
     /// </summary>
     public class Instruction
@@ -7690,24 +7922,78 @@ namespace LightInject
 
     internal static class LifetimeHelper
     {
+        public static readonly MethodInfo GetInstanceMethod;
+
+        public static readonly MethodInfo GetCurrentScopeMethod;
+
+        private static ThreadSafeDictionary<Type, MethodInfo> nonClosingGetInstanceMethods
+            = new ThreadSafeDictionary<Type, MethodInfo>();
+
         static LifetimeHelper()
         {
             GetInstanceMethod = typeof(ILifetime).GetTypeInfo().GetDeclaredMethod("GetInstance");
             GetCurrentScopeMethod = typeof(IScopeManager).GetTypeInfo().GetDeclaredProperty("CurrentScope").GetMethod;
         }
 
-        public static MethodInfo GetInstanceMethod { get; private set; }
+        public static MethodInfo GetNonClosingGetInstanceMethod(Type lifetimeType)
+        {
+            return nonClosingGetInstanceMethods.GetOrAdd(lifetimeType, ResolveNonClosingGetInstanceMethod);
+        }
 
-        public static MethodInfo GetCurrentScopeMethod { get; private set; }
+        private static MethodInfo ResolveNonClosingGetInstanceMethod(Type lifetimeType)
+        {
+            Type[] parameterTypes = { typeof(GetInstanceDelegate), typeof(Scope), typeof(object[]) };
+            return lifetimeType.GetTypeInfo().DeclaredMethods.SingleOrDefault(m => m.GetParameters().Select(p => p.ParameterType).SequenceEqual(parameterTypes));
+        }
     }
 
     internal static class ScopeLoader
     {
         public static readonly MethodInfo GetThisOrCurrentScopeMethod;
 
+        public static readonly MethodInfo GetScopedInstanceMethod;
+
+        public static readonly MethodInfo ValidateScopeMethod;
+
+        public static readonly MethodInfo ValidateTrackedTransientMethod;
+
         static ScopeLoader()
         {
             GetThisOrCurrentScopeMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("GetThisOrCurrentScope");
+            GetScopedInstanceMethod = typeof(Scope).GetTypeInfo().GetDeclaredMethod("GetScopedInstance");
+            ValidateScopeMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("ValidateScope");
+            ValidateTrackedTransientMethod = typeof(ScopeLoader).GetTypeInfo().GetDeclaredMethod("ValidateTrackedTransient");
+        }
+
+        public static object ValidateTrackedTransient(object instance, Scope scope)
+        {
+            if (instance is IDisposable disposable)
+            {
+                if (scope == null)
+                {
+                    string message = $@"The disposable instance ({instance.GetType()}) was created outside a scope. If 'ContainerOptions.EnableCurrentScope=false',
+the service must be requested directly from the scope. If `ContainerOptions.EnableCurrentScope=true`, the service can be requested from the container,
+but either way the scope has to be started with 'container.BeginScope()'";
+                    throw new InvalidOperationException(message);
+                }
+
+                scope.TrackInstance(disposable);
+            }
+
+            return instance;
+        }
+
+        public static Scope ValidateScope<TService>(Scope scope)
+        {
+            if (scope == null)
+            {
+                string message = $@"Attempt to create a scoped instance ({typeof(TService)}) outside a scope. If 'ContainerOptions.EnableCurrentScope=false',
+the service must be requested directly from the scope. If `ContainerOptions.EnableCurrentScope=true`, the service can be requested from the container,
+but either way the scope has to be started with 'container.BeginScope()'";
+                throw new InvalidOperationException(message);
+            }
+
+            return scope;
         }
 
         public static Scope GetThisOrCurrentScope(Scope scope, IScopeManager scopemanager)
@@ -7739,11 +8025,11 @@ namespace LightInject
         public static Func<object> CreateScopedFunc(GetInstanceDelegate getInstanceDelegate, object[] constants, Scope scope)
             => () => getInstanceDelegate(constants, scope);
 
-        public static Func<T> CreateScopedGenericFunc<T>(IScopedServiceFactory serviceFactory, Scope scope)
-            => () => (T)serviceFactory.GetInstance(typeof(T), scope);
+        public static Func<T> CreateScopedGenericFunc<T>(ServiceContainer serviceContainer, Scope scope)
+            => () => (T)serviceContainer.GetInstance(typeof(T), scope);
 
-        public static Func<string, T> CreateScopedGenericNamedFunc<T>(IScopedServiceFactory serviceFactory, Scope scope)
-            => (serviceName) => (T)serviceFactory.GetInstance(typeof(T), scope, serviceName);
+        public static Func<string, T> CreateScopedGenericNamedFunc<T>(ServiceContainer serviceContainer, Scope scope)
+            => (serviceName) => (T)serviceContainer.GetInstance(typeof(T), scope, serviceName);
     }
 
     internal static class ServiceFactoryLoader
@@ -7793,8 +8079,8 @@ namespace LightInject
             CreateScopedLazyFromDelegateMethod = typeof(LazyHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedLazyFromDelegate");
         }
 
-        public static Lazy<T> CreateScopedLazy<T>(IScopedServiceFactory serviceFactory, Scope scope)
-            => new Lazy<T>(() => (T)serviceFactory.GetInstance(typeof(T), scope));
+        public static Lazy<T> CreateScopedLazy<T>(ServiceContainer serviceContainer, Scope scope)
+            => new Lazy<T>(() => (T)serviceContainer.GetInstance(typeof(T), scope));
 
         public static Lazy<T> CreateScopedLazyFromDelegate<T>(GetInstanceDelegate getInstanceDelegate, object[] constants, Scope scope)
             => new Lazy<T>(() => (T)getInstanceDelegate(constants, scope));

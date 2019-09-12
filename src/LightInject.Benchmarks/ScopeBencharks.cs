@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
 
-namespace LightInject.BenchMarks
+namespace LightInject.Benchmarks
 {
     [MemoryDiagnoser]
     public class ScopeBenchmarks
@@ -22,10 +22,10 @@ namespace LightInject.BenchMarks
         public void Setup()
         {
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddTransient<Foo>();
+            serviceCollection.AddScoped<DisposableFoo>();
 
-            serviceContainer = new ServiceContainer();
-            serviceContainer.Register<Foo>();
+            serviceContainer = new ServiceContainer(new ContainerOptions() { EnableCurrentScope = false });
+            serviceContainer.RegisterScoped<DisposableFoo>();
 
             lightInjectScope = serviceContainer.BeginScope();
 
@@ -37,7 +37,7 @@ namespace LightInject.BenchMarks
             simpleInjectorContainer.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
 
 
-            simpleInjectorContainer.Register<Foo>(Lifestyle.Scoped);
+            simpleInjectorContainer.Register<DisposableFoo>(Lifestyle.Scoped);
             simpleInjectorScope = AsyncScopedLifestyle.BeginScope(simpleInjectorContainer);
 
 
@@ -46,26 +46,35 @@ namespace LightInject.BenchMarks
         [Benchmark]
         public void UsingLightInject()
         {
-            var instance = lightInjectScope.GetInstance<Foo>();
+            var instance = lightInjectScope.GetInstance<DisposableFoo>();
         }
 
         [Benchmark]
         public void UsingSimpleInjector()
         {
-            var instance = simpleInjectorScope.GetInstance<Foo>();
+            var instance = simpleInjectorScope.GetInstance<DisposableFoo>();
         }
 
         [Benchmark]
         public void UsingMicrosoft()
         {
 #pragma warning disable IDE0059
-            var instance = microsoftScope.ServiceProvider.GetService<Foo>();
+            var instance = microsoftScope.ServiceProvider.GetService<DisposableFoo>();
         }
     }
 
+
+    public class DisposableFoo : IDisposable
+    {
+        public void Dispose()
+        {
+            // throw new NotImplementedException();
+        }
+    }
 
     public class Foo
     {
 
     }
+
 }
