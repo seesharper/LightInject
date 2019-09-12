@@ -1626,9 +1626,9 @@ namespace LightInject.Tests
         public void GetInstance_RegisteredPropertyDependency_ReturnsInstanceWithDependency()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithProperyDependency>();
+            container.Register<IFoo, FooWithPropertyDependency>();
             container.RegisterPropertyDependency<IBar>((factory, info) => new Bar());
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            var instance = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
 
@@ -1636,9 +1636,9 @@ namespace LightInject.Tests
         public void GetInstance_RegisteredPropertyDependency_IgnoresRegistrationAfterFirstRequest()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithProperyDependency>();
+            container.Register<IFoo, FooWithPropertyDependency>();
             container.RegisterPropertyDependency<IBar>((factory, info) => new Bar());
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            var instance = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             container.RegisterPropertyDependency<IBar>((factory, info) => new AnotherBar());
             Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
@@ -1647,10 +1647,10 @@ namespace LightInject.Tests
         public void GetInstance_RegisteredPropertyDependency_CanUpdateRegistrationBeforeFirstRequest()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithProperyDependency>();
+            container.Register<IFoo, FooWithPropertyDependency>();
             container.RegisterPropertyDependency<IBar>((factory, info) => new Bar());
             container.RegisterPropertyDependency<IBar>((factory, info) => new AnotherBar());
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            var instance = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom<AnotherBar>(instance.Bar);
         }
 
@@ -1658,10 +1658,10 @@ namespace LightInject.Tests
         public void GetInstance_RegisterPropertyDependencyUsingFactoryParameter_ReturnsInstanceWithDependency()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithProperyDependency>();
+            container.Register<IFoo, FooWithPropertyDependency>();
             container.Register<IBar, Bar>();
             container.RegisterPropertyDependency((factory, info) => factory.GetInstance<IBar>());
-            var instance = (FooWithProperyDependency)container.GetInstance<IFoo>();
+            var instance = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom<Bar>(instance.Bar);
         }
 
@@ -1680,11 +1680,11 @@ namespace LightInject.Tests
         public void GetInstance_UsingInitializer_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo, FooWithProperyDependency>();
+            container.Register<IFoo, FooWithPropertyDependency>();
             container.Initialize(
                 registration => true,
-                (factory, instance) => ((FooWithProperyDependency)instance).Bar = new Bar());
-            var foo = (FooWithProperyDependency)container.GetInstance<IFoo>();
+                (factory, instance) => ((FooWithPropertyDependency)instance).Bar = new Bar());
+            var foo = (FooWithPropertyDependency)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom<Bar>(foo.Bar);
         }
 

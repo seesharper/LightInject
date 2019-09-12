@@ -2412,17 +2412,18 @@ namespace LightInject
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
         public ServiceContainer()
-            : this(ContainerOptions.Default)
+            : this((o) => { })
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
-        /// <param name="options">The <see cref="ContainerOptions"/> instances that represents the configurable options.</param>
-        public ServiceContainer(ContainerOptions options)
+        /// <param name="configureOptions">A delegate used to configure <see cref="ContainerOptions"/>.</param>
+        public ServiceContainer(Action<ContainerOptions> configureOptions)
         {
-            this.options = options;
+            this.options = new ContainerOptions();
+            configureOptions(options);
             log = options.LogFactory(typeof(ServiceContainer));
             var concreteTypeExtractor = new CachedTypeExtractor(new ConcreteTypeExtractor());
             CompositionRootTypeExtractor = new CachedTypeExtractor(new CompositionRootTypeExtractor(new CompositionRootAttributeExtractor()));
@@ -2445,6 +2446,24 @@ namespace LightInject
 #if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
             AssemblyLoader = new AssemblyLoader();
 #endif
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
+        /// </summary>
+        /// <param name="options">The <see cref="ContainerOptions"/> instances that represents the configurable options.</param>
+        public ServiceContainer(ContainerOptions options)
+        : this(o =>
+        {
+            o.LogFactory = options.LogFactory;
+            o.DefaultServiceSelector = options.DefaultServiceSelector;
+            o.EnableCurrentScope = options.EnableCurrentScope;
+            o.EnablePropertyInjection = options.EnablePropertyInjection;
+            o.EnableVariance = options.EnableVariance;
+            o.VarianceFilter = options.VarianceFilter;
+        })
+        {
         }
 
         private ServiceContainer(
