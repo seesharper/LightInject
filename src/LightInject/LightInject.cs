@@ -2412,7 +2412,7 @@ namespace LightInject
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
         public ServiceContainer()
-            : this((o) => { })
+            : this(ContainerOptions.Default)
         {
         }
 

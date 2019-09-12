@@ -15,5 +15,18 @@ namespace LightInject.Tests
             var foo = container.GetInstance<FooWithPropertyDependency>();
             Assert.Null(foo.Bar);
         }
+
+        [Fact]
+        public void ShouldRespectDefaultOptionsWhenNoOptionsArePassed()
+        {
+            ContainerOptions.Default.EnablePropertyInjection = false;
+            var container = new ServiceContainer();
+            container.Register<IBar, Bar>();
+            container.Register<FooWithPropertyDependency>();
+
+            var foo = container.GetInstance<FooWithPropertyDependency>();
+            Assert.Null(foo.Bar);
+            ContainerOptions.Default.EnablePropertyInjection = true;
+        }
     }
 }
