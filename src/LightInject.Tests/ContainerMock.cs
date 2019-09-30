@@ -434,5 +434,10 @@ namespace LightInject.Tests
         {
             throw new NotImplementedException();
         }
+		
+        public IEnumerable<ServiceRegistration> GetRegisteredServices(Type serviceType)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
