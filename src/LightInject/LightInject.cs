@@ -671,6 +671,13 @@ namespace LightInject
         /// <param name="serviceType">The type of class for which to create an instance.</param>
         /// <returns>An instance of the <paramref name="serviceType"/>.</returns>
         object Create(Type serviceType);
+
+        /// <summary>
+        /// Get a list of ServiceRegistrations available for the requested serviceType.
+        /// </summary>
+        /// <param name="serviceType">The Type for which registrations should be returned.</param>
+        /// <returns>An IEnumerable (possibly empty) of <see cref="ServiceRegistration"/>s.</returns>
+        IEnumerable<ServiceRegistration> GetRegisteredServices(Type serviceType);
     }
 
     /// <summary>
@@ -3241,6 +3248,14 @@ namespace LightInject
                 AssemblyLoader,
 #endif
                 ScopeManagerProvider);
+        }
+
+        /// <inheritdoc/>
+        public IEnumerable<ServiceRegistration> GetRegisteredServices(Type serviceType)
+        {
+            return availableServices.ContainsKey(serviceType)
+                ? availableServices[serviceType].Values
+                : Enumerable.Empty<ServiceRegistration>();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -6282,6 +6297,9 @@ namespace LightInject
 
         /// <inheritdoc/>
         public object Create(Type serviceType) => serviceFactory.Create(serviceType, this);
+
+        /// <inheritdoc/>
+        public IEnumerable<ServiceRegistration> GetRegisteredServices(Type serviceType) => serviceFactory.GetRegisteredServices(serviceType);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal object GetScopedInstance(GetInstanceDelegate getInstanceDelegate, object[] arguments, int instanceDelegateIndex)
