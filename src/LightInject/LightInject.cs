@@ -5973,6 +5973,7 @@ namespace LightInject
     /// <summary>
     /// Ensures that only one instance of a given service can exist within the current <see cref="IServiceContainer"/>.
     /// </summary>
+    [LifeSpan(30)]
     public class PerContainerLifetime : ILifetime, IDisposable, ICloneableLifeTime
     {
         private readonly object syncRoot = new object();
@@ -6018,6 +6019,7 @@ namespace LightInject
     /// <summary>
     /// Ensures that a new instance is created for each request in addition to tracking disposable instances.
     /// </summary>
+    [LifeSpan(10)]
     public class PerRequestLifeTime : ILifetime, ICloneableLifeTime
     {
         /// <inheritdoc/>
@@ -6043,6 +6045,7 @@ namespace LightInject
     /// If the service instance implements <see cref="IDisposable"/>,
     /// it will be disposed when the <see cref="Scope"/> ends.
     /// </remarks>
+    [LifeSpan(20)]
     public class PerScopeLifetime : ILifetime, ICloneableLifeTime
     {
         private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
@@ -6325,6 +6328,27 @@ namespace LightInject
                 return obj.GetHashCode();
             }
         }
+    }
+
+    /// <summary>
+    /// Use to indicate the lifespan of a given <see cref="ILifetime"/>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public class LifeSpanAttribute : Attribute
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LifeSpanAttribute"/> class.
+        /// </summary>
+        /// <param name="value">A value that indicates the lifespan of a given <see cref="ILifetime"/>.</param>
+        public LifeSpanAttribute(int value)
+        {
+            Value = value;
+        }
+
+        /// <summary>
+        /// Gets a value that indicates the lifespan of a given <see cref="ILifetime"/>.
+        /// </summary>
+        public int Value { get; }
     }
 
     /// <summary>
