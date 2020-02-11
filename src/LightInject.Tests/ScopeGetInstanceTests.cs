@@ -2,6 +2,8 @@
 {
     using System;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using SampleLibrary;
     using Xunit;
     using Xunit.Sdk;
@@ -471,6 +473,45 @@
             {
                 var foo = scope.GetInstance<Foo>();
                 Assert.IsType<Foo>(foo);
+            }
+        }
+
+
+        [Fact]
+        public void ShouldReturnSameInstanceWhenInstanceIsRequestedInParallel()
+        {
+            var container = CreateContainer(new ContainerOptions() { EnableCurrentScope = false });
+            container.RegisterScoped<FooWithSlowConstructor>();
+            FooWithSlowConstructor.InstanceCount = 0;
+            using (var scope = container.BeginScope())
+            {
+                Parallel.Invoke(
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>(),
+                    () => scope.GetInstance<FooWithSlowConstructor>()
+                    );
+            }
+
+
+            Assert.Equal(1, FooWithSlowConstructor.InstanceCount);
+        }
+
+        public class FooWithSlowConstructor
+        {
+            public static int InstanceCount;
+
+            public FooWithSlowConstructor()
+            {
+                InstanceCount++;
             }
         }
     }

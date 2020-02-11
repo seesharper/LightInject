@@ -2393,8 +2393,8 @@ namespace LightInject
 
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
 
-        private readonly ThreadSafeDictionary<ServiceRegistration, int> servicesToDelegatesIndex =
-            new ThreadSafeDictionary<ServiceRegistration, int>();
+        private readonly LazyConcurrentDictionary<ServiceRegistration, int> servicesToDelegatesIndex =
+            new LazyConcurrentDictionary<ServiceRegistration, int>();
 
         private ImmutableHashTable<Type, GetInstanceDelegate> delegates =
             ImmutableHashTable<Type, GetInstanceDelegate>.Empty;
@@ -4874,6 +4874,23 @@ namespace LightInject
         }
     }
 
+    public class LazyConcurrentDictionary<TKey, TValue>
+    {
+        private readonly ConcurrentDictionary<TKey, Lazy<TValue>> concurrentDictionary;
+
+        public LazyConcurrentDictionary()
+        {
+            this.concurrentDictionary = new ConcurrentDictionary<TKey, Lazy<TValue>>();
+        }
+
+        public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
+        {
+            var lazyResult = this.concurrentDictionary.GetOrAdd(key, k => new Lazy<TValue>(() => valueFactory(k), LazyThreadSafetyMode.ExecutionAndPublication));
+
+            return lazyResult.Value;
+        }
+    }
+
 #if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
 
     /// <summary>
@@ -7295,22 +7312,22 @@ namespace LightInject
             Duplicates = ImmutableList<KeyValue<TKey, TValue>>.Empty;
         }
 
-        private static ImmutableHashTree<TKey, TValue> RotateLeft(ImmutableHashTree<TKey, TValue> left)
+        private static ImmutableHashTree<TKey, TValue> RotateLeft(ImmutableHashTree<TKey, TValue> node)
         {
             return new ImmutableHashTree<TKey, TValue>(
-                left.Right.Key,
-                left.Right.Value,
-                new ImmutableHashTree<TKey, TValue>(left.Key, left.Value, left.Right.Left, left.Left),
-                left.Right.Right);
+                node.Right.Key,
+                node.Right.Value,
+                new ImmutableHashTree<TKey, TValue>(node.Key, node.Value, node.Left, node.Right.Left),
+                node.Right.Right);
         }
 
-        private static ImmutableHashTree<TKey, TValue> RotateRight(ImmutableHashTree<TKey, TValue> right)
+        private static ImmutableHashTree<TKey, TValue> RotateRight(ImmutableHashTree<TKey, TValue> node)
         {
             return new ImmutableHashTree<TKey, TValue>(
-                right.Left.Key,
-                right.Left.Value,
-                right.Left.Left,
-                new ImmutableHashTree<TKey, TValue>(right.Key, right.Value, right.Left.Right, right.Right));
+                node.Left.Key,
+                node.Left.Value,
+                node.Left.Left,
+                new ImmutableHashTree<TKey, TValue>(node.Key, node.Value, node.Left.Right, node.Right));
         }
 
         private bool IsLeftHeavy() => Left.Height > Right.Height;
@@ -7431,22 +7448,22 @@ namespace LightInject
             IsEmpty = true;
         }
 
-        private static ImmutableMapTree<TValue> RotateLeft(ImmutableMapTree<TValue> left)
+        private static ImmutableMapTree<TValue> RotateLeft(ImmutableMapTree<TValue> node)
         {
             return new ImmutableMapTree<TValue>(
-                left.Right.Key,
-                left.Right.Value,
-                new ImmutableMapTree<TValue>(left.Key, left.Value, left.Right.Left, left.Left),
-                left.Right.Right);
+                node.Right.Key,
+                node.Right.Value,
+                new ImmutableMapTree<TValue>(node.Key, node.Value, node.Left, node.Right.Left),
+                node.Right.Right);
         }
 
-        private static ImmutableMapTree<TValue> RotateRight(ImmutableMapTree<TValue> right)
+        private static ImmutableMapTree<TValue> RotateRight(ImmutableMapTree<TValue> node)
         {
             return new ImmutableMapTree<TValue>(
-                right.Left.Key,
-                right.Left.Value,
-                right.Left.Left,
-                new ImmutableMapTree<TValue>(right.Key, right.Value, right.Left.Right, right.Right));
+                node.Left.Key,
+                node.Left.Value,
+                node.Left.Left,
+                new ImmutableMapTree<TValue>(node.Key, node.Value, node.Left.Right, node.Right));
         }
 
         private bool IsLeftHeavy() => Left.Height > Right.Height;
