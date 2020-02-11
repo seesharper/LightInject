@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.1.0
+    LightInject version 6.2.1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -4874,19 +4874,35 @@ namespace LightInject
         }
     }
 
+    /// <summary>
+    /// A wrapper around <see cref="ConcurrentDictionary{TKey, TValue}"/> that ensures
+    /// that the value factory is only executed once.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the key.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
     public class LazyConcurrentDictionary<TKey, TValue>
     {
         private readonly ConcurrentDictionary<TKey, Lazy<TValue>> concurrentDictionary;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LazyConcurrentDictionary{TKey, TValue}"/> class.
+        /// </summary>
         public LazyConcurrentDictionary()
         {
             this.concurrentDictionary = new ConcurrentDictionary<TKey, Lazy<TValue>>();
         }
 
+        /// <summary>
+        /// Adds a key/value pair to the <see cref="LazyConcurrentDictionary{TKey, TValue}"/>
+        /// by using the specified function if the key does not already exist, or returns
+        /// the existing value if the key exists.
+        /// </summary>
+        /// <param name="key">The key of the element to add.</param>
+        /// <param name="valueFactory">The function used to generate a value for the key.</param>
+        /// <returns>The value for the key.</returns>
         public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
         {
             var lazyResult = this.concurrentDictionary.GetOrAdd(key, k => new Lazy<TValue>(() => valueFactory(k), LazyThreadSafetyMode.ExecutionAndPublication));
-
             return lazyResult.Value;
         }
     }
