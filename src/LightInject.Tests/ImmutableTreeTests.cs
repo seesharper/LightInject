@@ -1,5 +1,7 @@
 namespace LightInject.Tests
 {
+    using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Text;
 
@@ -7,7 +9,7 @@ namespace LightInject.Tests
 
     using Xunit;
 
-    
+
     public class ImmutableHashTreeTests
     {
         [Fact]
@@ -110,7 +112,7 @@ namespace LightInject.Tests
             var firstKey = new FooWithSameHashCode(1);
             var secondKey = new FooWithSameHashCode(2);
             var thirdKey = new FooWithSameHashCode(3);
-            
+
             var node = root.Add(firstKey, 10).Add(secondKey, 20).Add(thirdKey, 30);
 
             var result = node.Search(thirdKey);
@@ -123,7 +125,7 @@ namespace LightInject.Tests
         public void Search_UnknownKeyWithSameHashcodeAsExisting_ReturnsDefaultValue()
         {
             var root = ImmutableHashTree<FooWithSameHashCode, int>.Empty;
-            var node = root.Add(new FooWithSameHashCode(1), 10).Add(new FooWithSameHashCode(2), 20 );
+            var node = root.Add(new FooWithSameHashCode(1), 10).Add(new FooWithSameHashCode(2), 20);
 
             var result = node.Search(new FooWithSameHashCode(30));
 
@@ -242,6 +244,60 @@ namespace LightInject.Tests
             var node = root.Add(new FooWithSameHashCode(42), 42).Add(new FooWithSameHashCode(84), 84);
             var nodes = node.InOrder();
             Assert.Equal(2, nodes.Count());
-        }       
+        }
+
+        [Fact]
+        public void Issue54()
+        {
+            var map = ImmutableHashTree<int, int>.Empty;
+            map = map.Add(37, 37);
+            map = map.Add(39, 39);
+            map = map.Add(17, 17);
+            map = map.Add(10, 10);
+            map = map.Add(13, 13);
+            map = map.Add(16, 16);
+            map = map.Add(14, 14);
+            map = map.Add(15, 15);
+            map = map.Add(46, 46);
+            map = map.Add(47, 47);
+
+            var result = map.Search(10);
+        }
+
+
+        [Fact]
+        public void SmokeTest()
+        {
+            var keys = GetRandomKeys();
+            var map = ImmutableHashTree<int, int>.Empty;
+
+            for (int i = 0; i < keys.Length; i++)
+            {
+                map = map.Add(keys[i], keys[i]);
+            }
+
+            for (int i = 0; i < keys.Length; i++)
+            {
+                Assert.Equal(keys[i], map.Search(keys[i]));
+            }
+
+        }
+
+        private int[] GetRandomKeys()
+        {
+            List<int> keys = new List<int>();
+            var random = new Random();
+            while (keys.Count < 100)
+            {
+                var key = random.Next(1, 1000);
+                if (!keys.Contains(key))
+                {
+                    keys.Add(key);
+                }
+            }
+
+            return keys.ToArray();
+        }
+
     }
 }
