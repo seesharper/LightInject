@@ -102,7 +102,7 @@ public class AnotherFoo : IFoo {}
 ```c#
 container.Register<IFoo, Foo>();
 container.Register<IFoo, AnotherFoo>("AnotherFoo");
-var instances = container.GetInstance<IEnumerable<IFoo>>()
+var instances = container.GetInstance<IEnumerable<IFoo>>();
 Assert.AreEqual(2, instances.Count());
 ```
 
