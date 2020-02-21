@@ -13,5 +13,6 @@
     "MSIL",
     "Stloc",
     "Xunit"
-  ]
+  ],
+  "dotnet-test-explorer.testArguments": "-c release -f netcoreapp2.0"
 }

@@ -148,12 +148,53 @@ namespace LightInject.Tests
             Assert.Equal(long.MinValue, RegisterAndGet<FooWithLongAsMin>().Value);
         }
 
+        [Fact]
+        public void ShouldHandleULongWithDefault()
+        {
+            Assert.Equal((ulong)0, RegisterAndGet<FooWithULongAsDefault>().Value);
+        }
+
+        [Fact]
+        public void ShouldHandleULongWithMaxValue()
+        {
+            Assert.Equal(ulong.MaxValue, RegisterAndGet<FooWithULongAsMax>().Value);
+        }
+
+        [Fact]
+        public void ShouldHandleULongWithMinValue()
+        {
+            Assert.Equal(ulong.MinValue, RegisterAndGet<FooWithULongAsMin>().Value);
+        }
+
+        [Fact]
+        public void ShouldHandleIntEnumWithDefault()
+        {
+            Assert.Equal(IntEnum.None, RegisterAndGet<FooWithIntEnumAsDefault>().Value);
+        }
+
+        [Fact]
+        public void ShouldHandleIntEnumWithValueSet()
+        {
+            Assert.Equal(IntEnum.SomeValue, RegisterAndGet<FooWithIntEnumSet>().Value);
+        }
+
+
+        [Fact]
+        public void ShouldHandleStringWithDefault()
+        {
+            Assert.Equal((string)null, RegisterAndGet<FooWithStringAsDefault>().Value);
+        }
+
+        [Fact]
+        public void ShouldHandleStringWithValueSet()
+        {
+            Assert.Equal("SomeValue", RegisterAndGet<FooWithStringSet>().Value);
+        }
 
         private T RegisterAndGet<T>()
         {
             var container = CreateContainer();
             container.Register<T>();
-
             return container.GetInstance<T>();
         }
 
@@ -181,7 +222,6 @@ namespace LightInject.Tests
     {
         public FooWithGenericDefaultValue(T value = default)
         {
-
         }
     }
 
@@ -433,7 +473,83 @@ namespace LightInject.Tests
         public long Value { get; }
     }
 
+    public class FooWithULongAsDefault
+    {
+        public FooWithULongAsDefault(ulong value = default)
+        {
+            Value = value;
+        }
 
+        public ulong Value { get; }
+    }
+
+
+    public class FooWithULongAsMax
+    {
+        public FooWithULongAsMax(ulong value = ulong.MaxValue)
+        {
+            Value = value;
+        }
+
+        public ulong Value { get; }
+    }
+
+    public class FooWithULongAsMin
+    {
+        public FooWithULongAsMin(ulong value = ulong.MinValue)
+        {
+            Value = value;
+        }
+
+        public ulong Value { get; }
+    }
+
+    public class FooWithIntEnumAsDefault
+    {
+        public FooWithIntEnumAsDefault(IntEnum value = default)
+        {
+            Value = value;
+        }
+
+        public IntEnum Value { get; }
+    }
+
+
+    public class FooWithIntEnumSet
+    {
+        public FooWithIntEnumSet(IntEnum value = IntEnum.SomeValue)
+        {
+            Value = value;
+        }
+
+        public IntEnum Value { get; }
+    }
+
+    public class FooWithStringAsDefault
+    {
+        public FooWithStringAsDefault(string value = default)
+        {
+            Value = value;
+        }
+
+        public string Value { get; }
+    }
+
+    public class FooWithStringSet
+    {
+        public FooWithStringSet(string value = "SomeValue")
+        {
+            Value = value;
+        }
+
+        public string Value { get; }
+    }
+
+    public enum IntEnum
+    {
+        None,
+        SomeValue
+    }
 
 
     /// <summary>

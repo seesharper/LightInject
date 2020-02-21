@@ -1035,6 +1035,13 @@ namespace LightInject
         /// </summary>
         /// <param name="code">The MSIL instruction to be put onto the stream.</param>
         /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        void PushBool(bool arg);
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         void Emit(OpCode code, int arg);
 
         /// <summary>
@@ -1042,7 +1049,21 @@ namespace LightInject
         /// </summary>
         /// <param name="code">The MSIL instruction to be put onto the stream.</param>
         /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        void Emit(OpCode code, uint arg);
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         void Emit(OpCode code, long arg);
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        void Emit(OpCode code, ulong arg);
 
         /// <summary>
         /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
@@ -2023,6 +2044,11 @@ namespace LightInject
         /// <param name="type">The requested stack type.</param>
         public static void UnboxOrCast(this IEmitter emitter, Type type)
         {
+            if (emitter.StackType == null)
+            {
+                return;
+            }
+
             // bool is represented as an int32 so there is no need to cast or unbox
             if (type == typeof(bool) && emitter.StackType == typeof(int))
             {
@@ -2053,6 +2079,17 @@ namespace LightInject
             {
                 return;
             }
+
+            if (type == typeof(ulong) && emitter.StackType == typeof(long))
+            {
+                return;
+            }
+
+            if (type.GetTypeInfo().IsEnum)
+            {
+                return;
+            }
+
 
             if (!type.GetTypeInfo().IsAssignableFrom(emitter.StackType.GetTypeInfo()))
             {
@@ -4006,55 +4043,81 @@ namespace LightInject
             Type[] typesUsingInt32AsDefaultValue = new Type[] { typeof(bool), typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint) };
             Type[] typesThatNeedsConversionToInt64 = new Type[] { typeof(long), typeof(ulong) };
 
+            Type parameterType = constructorDependency.Parameter.ParameterType;
+            if (parameterType.GetTypeInfo().IsEnum)
+            {
+                parameterType = Enum.GetUnderlyingType(parameterType);
+            }
+
             return (emitter) =>
             {
                 var parameter = constructorDependency.Parameter;
-                if (parameter.ParameterType == typeof(bool))
+                if (parameterType == typeof(bool))
                 {
-                    var defaultValue = ((bool)parameter.DefaultValue) ? 1 : 0;
-                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
+                    emitter.PushBool((bool)parameter.DefaultValue);
                 }
-                else if (parameter.ParameterType == typeof(byte))
+                else if (parameterType == typeof(byte))
                 {
                     var defaultValue = parameter.DefaultValue != null ? (byte)parameter.DefaultValue : 0;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
 
-                else if (parameter.ParameterType == typeof(sbyte))
+                else if (parameterType == typeof(sbyte))
                 {
                     var defaultValue = parameter.DefaultValue != null ? (sbyte)parameter.DefaultValue : 0;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
 
-                else if (parameter.ParameterType == typeof(short))
+                else if (parameterType == typeof(short))
                 {
                     var defaultValue = parameter.DefaultValue != null ? (short)parameter.DefaultValue : 0;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
 
-                else if (parameter.ParameterType == typeof(ushort))
+                else if (parameterType == typeof(ushort))
                 {
                     var defaultValue = parameter.DefaultValue != null ? (ushort)parameter.DefaultValue : 0;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
 
-                else if (parameter.ParameterType == typeof(uint))
+                else if (parameterType == typeof(uint))
                 {
                     uint unsignedDefaultValue = parameter.DefaultValue != null ? (uint)parameter.DefaultValue : 0;
                     emitter.Emit(OpCodes.Ldc_I4, (int)unsignedDefaultValue);
                 }
 
-                else if (parameter.ParameterType == typeof(int))
+                else if (parameterType == typeof(int))
                 {
                     var defaultValue = parameter.DefaultValue != null ? (int)parameter.DefaultValue : 0;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
 
-                else if (parameter.ParameterType == typeof(long))
+                else if (parameterType == typeof(long))
                 {
                     var defaultValue = parameter.DefaultValue != null ? (long)parameter.DefaultValue : 0;
                     emitter.Emit(OpCodes.Ldc_I8, defaultValue);
                 }
+                else if (parameterType == typeof(ulong))
+                {
+                    ulong unsignedDefaultValue = parameter.DefaultValue != null ? (ulong)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I8, unsignedDefaultValue);
+                }
+                else if (parameterType == typeof(string))
+                {
+                    if (parameter.DefaultValue == null)
+                    {
+                        emitter.Emit(OpCodes.Ldnull);
+                    }
+                    else
+                    {
+                        emitter.Emit(OpCodes.Ldstr, (string)parameter.DefaultValue);
+                    }
+                    // var defaultValue = parameter.DefaultValue != null ? (string)parameter.DefaultValue : null;
+                    // emitter.Emit(OpCodes.Ldstr, defaultValue);
+                }
+
+
+
 
                 // if (parameter.ParameterType.GetTypeInfo().IsPrimitive)
                 // {
@@ -5149,6 +5212,11 @@ namespace LightInject
             }
         }
 
+        // public void Emit(OpCode code, ulong arg)
+        // {
+
+        // }
+
         /// <summary>
         /// Puts the specified instruction and metadata token for the specified constructor onto the Microsoft intermediate language (MSIL) stream of instructions.
         /// </summary>
@@ -5295,6 +5363,10 @@ namespace LightInject
             else if (code == OpCodes.Ret)
             {
             }
+            else if (code == OpCodes.Ldnull)
+            {
+                stack.Push(Expression.Constant(null));
+            }
             else
             {
                 throw new NotSupportedException(code.ToString());
@@ -5370,6 +5442,42 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
+        }
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        public void PushULong(OpCode code, ulong arg)
+        {
+            if (code == OpCodes.Ldc_I8)
+            {
+                stack.Push(Expression.Constant(arg, typeof(ulong)));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        public void PushUInt(uint arg)
+        {
+            stack.Push(Expression.Constant(arg, typeof(uint)));
+        }
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        public void PushBool(bool arg)
+        {
+            stack.Push(Expression.Constant(arg, typeof(bool)));
         }
 
         /// <summary>
@@ -7856,6 +7964,10 @@ namespace LightInject
             else if (code == OpCodes.Ret)
             {
             }
+            else if (code == OpCodes.Ldnull)
+            {
+                stack.Push(null);
+            }
             else
             {
                 throw new NotSupportedException(code.ToString());
@@ -8079,7 +8191,70 @@ namespace LightInject
 
             instructions.Add(new Instruction<string>(code, arg, il => il.Emit(code, arg)));
         }
+
+        /// <inheritdoc/>
+        public void Emit(OpCode code, ulong arg)
+        {
+            if (code == OpCodes.Ldc_I8)
+            {
+                stack.Push(typeof(ulong));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            instructions.Add(new Instruction<ulong>(code, arg, il => il.PushULong(code, arg)));
+        }
+
+        public void Emit(OpCode code, uint arg)
+        {
+            if (code == OpCodes.Ldc_I4)
+            {
+                stack.Push(typeof(ulong));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            instructions.Add(new Instruction<uint>(code, arg, il => il.PushUInt(arg)));
+        }
+
+        public void PushBool(bool arg)
+        {
+            stack.Push(typeof(bool));
+            instructions.Add(new Instruction<bool>(OpCodes.Ldc_I4, arg, il => il.PushBool(arg)));
+        }
     }
+
+#if NET452 || NET46 || NETCOREAPP2_0
+    internal static class ILGeneratorExtensions
+    {
+
+        internal static void PushULong(this ILGenerator generator, OpCode code, ulong arg)
+        {
+            long value = (long)arg;
+            generator.Emit(OpCodes.Ldc_I8, value);
+        }
+
+        internal static void PushUInt(this ILGenerator generator, uint arg)
+        {
+            int value = (int)arg;
+            generator.Emit(OpCodes.Ldc_I4_0, value);
+        }
+
+        internal static void PushBool(this ILGenerator generator, bool arg)
+        {
+            var value = arg ? 1 : 0;
+            generator.Emit(OpCodes.Ldc_I4, value);
+        }
+    }
+
+
+#endif
+
+
 #if NET452
 
     /// <summary>
