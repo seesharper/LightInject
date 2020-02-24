@@ -191,6 +191,24 @@ namespace LightInject.Tests
             Assert.Equal("SomeValue", RegisterAndGet<FooWithStringSet>().Value);
         }
 
+        [Fact]
+        public void ShouldHandleDefaultReferenceType()
+        {
+            Assert.Null(RegisterAndGet<FooWithCustomReferenceTypeSetToNull>().Value);
+        }
+
+        [Fact]
+        public void ShouldHandleValueTypeSetToDefault()
+        {
+            Assert.Equal(0, RegisterAndGet<FooWithCustomValueTypeSetToDefault>().Value.Value);
+        }
+
+        [Fact]
+        public void ShouldHandleValueTypeSetToNewInstance()
+        {
+            Assert.Equal(0, RegisterAndGet<FooWithCustomValueTypeSetToNewInstance>().Value.Value);
+        }
+
         private T RegisterAndGet<T>()
         {
             var container = CreateContainer();
@@ -543,6 +561,58 @@ namespace LightInject.Tests
         }
 
         public string Value { get; }
+    }
+
+    public class FooWithCustomReferenceTypeSetToNull
+    {
+        public FooWithCustomReferenceTypeSetToNull(CustomReferenceType value = null)
+        {
+            Value = value;
+        }
+
+        public CustomReferenceType Value { get; }
+    }
+
+    public class FooWithCustomValueTypeSetToDefault
+    {
+        public FooWithCustomValueTypeSetToDefault(CustomValueType value = default(CustomValueType))
+        {
+            Value = value;
+        }
+
+        public CustomValueType Value { get; }
+    }
+
+
+    public class FooWithCustomValueTypeSetToNewInstance
+    {
+        public FooWithCustomValueTypeSetToNewInstance(CustomValueType value = new CustomValueType())
+        {
+            Value = value;
+        }
+
+        public CustomValueType Value { get; }
+    }
+
+    public class CustomReferenceType
+    {
+
+    }
+
+    public class FooWithCustomValueType
+    {
+
+    }
+
+
+    public struct CustomValueType
+    {
+        public int Value;
+
+        public CustomValueType(int value)
+        {
+            Value = value;
+        }
     }
 
     public enum IntEnum

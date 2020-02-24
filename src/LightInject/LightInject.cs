@@ -4070,6 +4070,7 @@ namespace LightInject
             return (emitter) =>
             {
                 var parameter = constructorDependency.Parameter;
+
                 if (parameterType == typeof(bool))
                 {
                     emitter.PushBool((bool)parameter.DefaultValue);
@@ -4133,38 +4134,18 @@ namespace LightInject
                     // var defaultValue = parameter.DefaultValue != null ? (string)parameter.DefaultValue : null;
                     // emitter.Emit(OpCodes.Ldstr, defaultValue);
                 }
+                else if (parameterType.GetTypeInfo().IsClass)
+                {
+                    emitter.Emit(OpCodes.Ldnull);
+                }
 
-
-
-
-                // if (parameter.ParameterType.GetTypeInfo().IsPrimitive)
-                // {
-                //     if (typesUsingInt32AsDefaultValue.Contains(parameter.ParameterType))
-                //     {
-                //         if (parameter.DefaultValue == null)
-                //         {
-                //             emitter.Emit(OpCodes.Ldc_I4_0);
-                //         }
-                //         else
-                //         {
-                //             int defaultValue = 0;
-                //             if (parameter.ParameterType == typeof(bool))
-                //             {
-                //                 defaultValue = ((bool)parameter.DefaultValue) ? 1 : 0;
-                //             }
-                //             else if (parameter.ParameterType == typeof(byte))
-                //             {
-
-                //             }
-                //             else
-                //             {
-                //                 defaultValue = (int)parameter.DefaultValue;
-                //             }
-
-                //             emitter.Emit(OpCodes.Ldc_I4, defaultValue);
-                //         }
-                //     }
-                // }
+                else if (parameterType.GetTypeInfo().IsValueType)
+                {
+                    var local = emitter.DeclareLocal(parameterType);
+                    emitter.Emit(OpCodes.Ldloca, local.LocalIndex);
+                    emitter.Emit(OpCodes.Initobj, parameterType);
+                    emitter.Emit(OpCodes.Ldloc, local.LocalIndex);
+                }
             };
         }
 
@@ -8017,6 +7998,10 @@ namespace LightInject
             {
                 stack.Push(variables[arg].LocalType);
             }
+            else if (code == OpCodes.Ldloca)
+            {
+                stack.Push(variables[arg].LocalType.MakePointerType());
+            }
             else if (code == OpCodes.Stloc)
             {
                 stack.Pop();
@@ -8110,6 +8095,10 @@ namespace LightInject
             {
                 stack.Pop();
                 stack.Push(type);
+            }
+            else if (code == OpCodes.Initobj)
+            {
+                stack.Pop();
             }
             else
             {
