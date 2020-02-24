@@ -1037,6 +1037,12 @@ namespace LightInject
         /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         void PushBool(bool arg);
 
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+
+        void PushConstantValue(object arg, Type type);
+#endif
+
+
         /// <summary>
         /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
         /// </summary>
@@ -4044,6 +4050,18 @@ namespace LightInject
             Type[] typesThatNeedsConversionToInt64 = new Type[] { typeof(long), typeof(ulong) };
 
             Type parameterType = constructorDependency.Parameter.ParameterType;
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+            return (emitter) =>
+            {
+                var defaultValue = constructorDependency.Parameter.DefaultValue;
+                if (defaultValue == null)
+                {
+                    defaultValue = TypeHelper.GetDefaultValue(parameterType);
+                }
+                emitter.PushConstantValue(defaultValue, parameterType);
+            };
+
+#endif
             if (parameterType.GetTypeInfo().IsEnum)
             {
                 parameterType = Enum.GetUnderlyingType(parameterType);
@@ -5212,11 +5230,6 @@ namespace LightInject
             }
         }
 
-        // public void Emit(OpCode code, ulong arg)
-        // {
-
-        // }
-
         /// <summary>
         /// Puts the specified instruction and metadata token for the specified constructor onto the Microsoft intermediate language (MSIL) stream of instructions.
         /// </summary>
@@ -5479,6 +5492,12 @@ namespace LightInject
         {
             stack.Push(Expression.Constant(arg, typeof(bool)));
         }
+
+        public void PushConstantValue(object arg, Type type)
+        {
+            stack.Push(Expression.Constant(arg, type));
+        }
+
 
         /// <summary>
         /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
@@ -8221,6 +8240,15 @@ namespace LightInject
             instructions.Add(new Instruction<uint>(code, arg, il => il.PushUInt(arg)));
         }
 
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+          public void PushConstantValue(object arg, Type type)
+          {
+              stack.Push(type);
+              instructions.Add(new Instruction<object>(OpCodes.Nop, arg, il => il.PushConstantValue(arg, type)));
+          }
+
+#endif
+
         public void PushBool(bool arg)
         {
             stack.Push(typeof(bool));
@@ -8606,6 +8634,18 @@ but either way the scope has to be started with 'container.BeginScope()'";
             {
                 return null;
             }
+        }
+
+        public static object GetDefaultValue(Type type)
+        {
+            var openGenericGetDefaultValueInternalMethod = typeof(TypeHelper).GetTypeInfo().GetDeclaredMethod(nameof(GetDefaultValueInternal));
+            var closedGenerictDefaultValueInternalMethod = openGenericGetDefaultValueInternalMethod.MakeGenericMethod(type);
+            return closedGenerictDefaultValueInternalMethod.Invoke(null, new object[] { });
+        }
+
+        private static T GetDefaultValueInternal<T>()
+        {
+            return default(T);
         }
 
 #if NET452 || NET46 || NETCOREAPP2_0
