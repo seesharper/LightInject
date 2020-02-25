@@ -2038,7 +2038,6 @@ namespace LightInject
                 return;
             }
 
-            // bool is represented as an int32 so there is no need to cast or unbox
             if (type == typeof(bool) && emitter.StackType == typeof(int))
             {
                 return;
