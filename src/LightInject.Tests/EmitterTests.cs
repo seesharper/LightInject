@@ -657,6 +657,14 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void Emit_InvalidOpCodeForLong_ThrowsException()
+        {
+            var emitter = new Emitter(null, new Type[] { });
+
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Call, (long)42));
+        }
+
+        [Fact]
         public void ToString_Instruction_ReturnsCodeAsString()
         {
             var instruction = new Instruction(OpCodes.Stloc, null);
