@@ -209,6 +209,20 @@ namespace LightInject.Tests
             Assert.Equal(0, RegisterAndGet<FooWithCustomValueTypeSetToNewInstance>().Value.Value);
         }
 
+        [Fact]
+        public void ShouldUseConstructorWithTheMostResolvableParameters()
+        {
+            var container = CreateContainer();
+            container.Register<ServiceA>();
+            container.Register<ServiceB>();
+            container.Register<FooWithMultipleConstructors>();
+
+            var instance = container.GetInstance<FooWithMultipleConstructors>();
+
+            Assert.True(instance.ConstructorCalled);
+        }
+
+
         private T RegisterAndGet<T>()
         {
             var container = CreateContainer();
@@ -217,24 +231,38 @@ namespace LightInject.Tests
         }
 
 
-        // [Fact]
-        // public void ShouldHandleClassWithDefaultValue()
-        // {
-        //     var container = CreateContainer();
-        //     container.Register<FooWithPrimitiveTypes>();
+        public class FooWithMultipleConstructors
+        {
+            public bool ConstructorCalled;
 
-        //     var instance = container.GetInstance<FooWithPrimitiveTypes>();
-        // }
+            public FooWithMultipleConstructors(ServiceA service, ServiceB serviceB)
+            {
+            }
 
-        // [Fact]
-        // public void ShouldHandleClassWithDefaultValue2()
-        // {
-        //     var container = CreateContainer();
-        //     container.Register<FooWithGenericDefaultValue<int>>();
+            public FooWithMultipleConstructors(ServiceA service, ServiceB serviceB, ServiceC serviceC = null)
+            {
+                ConstructorCalled = true;
+            }
+        }
 
-        //     var instance = container.GetInstance<FooWithGenericDefaultValue<int>>();
-        // }
+        public class ServiceA
+        {
+
+        }
+
+        public class ServiceB
+        {
+
+        }
+
+        public class ServiceC
+        {
+
+        }
     }
+
+
+
 
     public class FooWithGenericDefaultValue<T>
     {

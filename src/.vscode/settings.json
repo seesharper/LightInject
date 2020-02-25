@@ -9,6 +9,8 @@
     "Ldelem",
     "Ldlen",
     "Ldloc",
+    "Ldloca",
+    "Ldnull",
     "Ldstr",
     "MSIL",
     "Stloc",
