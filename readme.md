@@ -696,6 +696,34 @@ Assert.AreEqual(42, foo.Value);
 Assert.IsNotNull(foo.Bar);
 ```
 
+#### Default/Optional parameters
+
+LightInject will allow for default values to be used when a constructor dependency cannot be resolved.
+
+```c#
+public class Foo
+{
+	public Foo(string value = "42")
+  {
+    Value = value;
+  }
+  
+  public string Value { get; }
+}
+```
+
+We can still resolve `Foo` even though we have not registered a `string` service. 
+
+```c#
+container.Register<Foo>();
+var instance = container.GetInstance<Foo>();
+Assert.AreEqual("42", instance.Value)
+```
+
+> Note that the use cases for optional dependencies should be rare and are to be used with caution.
+
+
+
 ### Property Injection ###
 
 ```c#
