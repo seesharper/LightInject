@@ -2347,6 +2347,7 @@ namespace LightInject
             EnablePropertyInjection = true;
             LogFactory = t => message => { };
             EnableCurrentScope = true;
+            EnableOptionalArguments = false;
         }
 
         /// <summary>
@@ -2399,6 +2400,14 @@ namespace LightInject
         /// The default value is true for backward compatibility.
         /// </remarks>
         public bool EnableCurrentScope { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether optional arguments should be allowed when resolving constructor dependencies.
+        /// </summary>
+        /// <remarks>
+        /// The default value is false.
+        /// </remarks>
+        public bool EnableOptionalArguments { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions() => new ContainerOptions();
     }
@@ -2498,7 +2507,7 @@ namespace LightInject
             GenericArgumentMapper = new GenericArgumentMapper();
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor, GenericArgumentMapper);
             ConstructorDependencySelector = new ConstructorDependencySelector();
-            ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
+            ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance, options.EnableOptionalArguments);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
 #if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
@@ -2525,6 +2534,7 @@ namespace LightInject
             o.EnablePropertyInjection = options.EnablePropertyInjection;
             o.EnableVariance = options.EnableVariance;
             o.VarianceFilter = options.VarianceFilter;
+            o.EnableOptionalArguments = options.EnableOptionalArguments;
         })
         {
         }
@@ -4006,7 +4016,7 @@ namespace LightInject
                 emitter = GetEmitMethod(dependency.ServiceType, dependency.Name);
                 if (emitter == null && dependency.IsRequired)
                 {
-                    if (dependency is ConstructorDependency constructorDependency && constructorDependency.Parameter.HasDefaultValue)
+                    if (dependency is ConstructorDependency constructorDependency && constructorDependency.Parameter.HasDefaultValue && options.EnableOptionalArguments)
                     {
                         emitter = GetEmitMethodForDefaultValue(constructorDependency);
                         if (emitter == null)
@@ -4024,10 +4034,10 @@ namespace LightInject
             return emitter;
         }
 
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
         private Action<IEmitter> GetEmitMethodForDefaultValue(ConstructorDependency constructorDependency)
         {
             Type parameterType = constructorDependency.Parameter.ParameterType;
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
             return (emitter) =>
             {
                 var defaultValue = constructorDependency.Parameter.DefaultValue;
@@ -4038,8 +4048,14 @@ namespace LightInject
 
                 emitter.PushConstantValue(defaultValue, parameterType);
             };
-
+        }
 #endif
+
+#if NET452 || NET46 || NETCOREAPP2_0
+        private Action<IEmitter> GetEmitMethodForDefaultValue(ConstructorDependency constructorDependency)
+        {
+            Type parameterType = constructorDependency.Parameter.ParameterType;
+
             if (parameterType.GetTypeInfo().IsEnum)
             {
                 parameterType = Enum.GetUnderlyingType(parameterType);
@@ -4118,6 +4134,7 @@ namespace LightInject
                 }
             };
         }
+#endif
 
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
@@ -5619,14 +5636,17 @@ namespace LightInject
     public class MostResolvableConstructorSelector : IConstructorSelector
     {
         private readonly Func<Type, string, bool> canGetInstance;
+        private readonly bool enableOptionalArguments;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MostResolvableConstructorSelector"/> class.
         /// </summary>
         /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
-        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance)
+        /// <param name="enableOptionalArguments">Determines if optional arguments should be considered a resolvable dependency.</param>
+        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance, bool enableOptionalArguments = false)
         {
             this.canGetInstance = canGetInstance;
+            this.enableOptionalArguments = enableOptionalArguments;
         }
 
         /// <inheritdoc/>
@@ -5672,7 +5692,7 @@ namespace LightInject
 
         private bool CanCreateParameterDependency(ParameterInfo parameterInfo)
         {
-            return canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo)) || parameterInfo.HasDefaultValue;
+            return canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo)) || (parameterInfo.HasDefaultValue && enableOptionalArguments);
         }
     }
 
@@ -8498,21 +8518,6 @@ but either way the scope has to be started with 'container.BeginScope()'";
                 return null;
             }
         }
-
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
-        public static object GetDefaultValue(Type type)
-        {
-            var openGenericGetDefaultValueInternalMethod = typeof(TypeHelper).GetTypeInfo().GetDeclaredMethod(nameof(GetDefaultValueInternal));
-            var closedGenerictDefaultValueInternalMethod = openGenericGetDefaultValueInternalMethod.MakeGenericMethod(type);
-            return closedGenerictDefaultValueInternalMethod.Invoke(null, new object[] { });
-        }
-
-        private static T GetDefaultValueInternal<T>()
-        {
-            return default(T);
-        }
-#endif
-
 #if NET452 || NET46 || NETCOREAPP2_0
 
         /// <summary>
@@ -8676,6 +8681,20 @@ but either way the scope has to be started with 'container.BeginScope()'";
 
             return type.GetElementType();
         }
+
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+        public static object GetDefaultValue(Type type)
+        {
+            var openGenericGetDefaultValueInternalMethod = typeof(TypeHelper).GetTypeInfo().GetDeclaredMethod(nameof(GetDefaultValueInternal));
+            var closedGenerictDefaultValueInternalMethod = openGenericGetDefaultValueInternalMethod.MakeGenericMethod(type);
+            return closedGenerictDefaultValueInternalMethod.Invoke(null, new object[] { });
+        }
+
+        private static T GetDefaultValueInternal<T>()
+        {
+            return default(T);
+        }
+#endif
     }
 
     internal static class EnumerableTypeExtensions

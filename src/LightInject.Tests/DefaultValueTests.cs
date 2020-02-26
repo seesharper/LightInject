@@ -95,6 +95,7 @@ namespace LightInject.Tests
             Assert.Equal(ushort.MinValue, RegisterAndGet<FooWithUShortAsMin>().Value);
         }
 
+        [Fact]
         public void ShouldHandleIntWithDefault()
         {
             Assert.Equal((int)0, RegisterAndGet<FooWithIntAsDefault>().Value);
@@ -212,7 +213,7 @@ namespace LightInject.Tests
         [Fact]
         public void ShouldUseConstructorWithTheMostResolvableParameters()
         {
-            var container = CreateContainer();
+            var container = CreateContainer(new ContainerOptions() { EnableOptionalArguments = true });
             container.Register<ServiceA>();
             container.Register<ServiceB>();
             container.Register<FooWithMultipleConstructors>();
@@ -225,7 +226,7 @@ namespace LightInject.Tests
 
         private T RegisterAndGet<T>()
         {
-            var container = CreateContainer();
+            var container = CreateContainer(new ContainerOptions() { EnableOptionalArguments = true });
             container.Register<T>();
             return container.GetInstance<T>();
         }
