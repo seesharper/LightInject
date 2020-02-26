@@ -1030,12 +1030,29 @@ namespace LightInject
         /// <param name="arg">The String to be emitted.</param>
         void Emit(OpCode code, string arg);
 
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+
+        /// <summary>
+        /// Pushes the argument as a constant expression.
+        /// </summary>
+        /// <param name="arg">The argument value to be pushed.</param>
+        /// <param name="type">The type of the argument to be pushed.</param>
+        void PushConstantValue(object arg, Type type);
+#endif
+
         /// <summary>
         /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
         /// </summary>
         /// <param name="code">The MSIL instruction to be put onto the stream.</param>
         /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
         void Emit(OpCode code, int arg);
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        void Emit(OpCode code, long arg);
 
         /// <summary>
         /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
@@ -2016,6 +2033,51 @@ namespace LightInject
         /// <param name="type">The requested stack type.</param>
         public static void UnboxOrCast(this IEmitter emitter, Type type)
         {
+            if (emitter.StackType == null)
+            {
+                return;
+            }
+
+            if (type == typeof(bool) && emitter.StackType == typeof(int))
+            {
+                return;
+            }
+
+            if (type == typeof(byte) && emitter.StackType == typeof(int))
+            {
+                return;
+            }
+
+            if (type == typeof(sbyte) && emitter.StackType == typeof(int))
+            {
+                return;
+            }
+
+            if (type == typeof(short) && emitter.StackType == typeof(int))
+            {
+                return;
+            }
+
+            if (type == typeof(ushort) && emitter.StackType == typeof(int))
+            {
+                return;
+            }
+
+            if (type == typeof(uint) && emitter.StackType == typeof(int))
+            {
+                return;
+            }
+
+            if (type == typeof(ulong) && emitter.StackType == typeof(long))
+            {
+                return;
+            }
+
+            if (type.GetTypeInfo().IsEnum)
+            {
+                return;
+            }
+
             if (!type.GetTypeInfo().IsAssignableFrom(emitter.StackType.GetTypeInfo()))
             {
                 emitter.Emit(type.GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, type);
@@ -2285,6 +2347,7 @@ namespace LightInject
             EnablePropertyInjection = true;
             LogFactory = t => message => { };
             EnableCurrentScope = true;
+            EnableOptionalArguments = false;
         }
 
         /// <summary>
@@ -2337,6 +2400,14 @@ namespace LightInject
         /// The default value is true for backward compatibility.
         /// </remarks>
         public bool EnableCurrentScope { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether optional arguments should be allowed when resolving constructor dependencies.
+        /// </summary>
+        /// <remarks>
+        /// The default value is false.
+        /// </remarks>
+        public bool EnableOptionalArguments { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions() => new ContainerOptions();
     }
@@ -2436,7 +2507,7 @@ namespace LightInject
             GenericArgumentMapper = new GenericArgumentMapper();
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, CompositionRootTypeExtractor, CompositionRootExecutor, GenericArgumentMapper);
             ConstructorDependencySelector = new ConstructorDependencySelector();
-            ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
+            ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance, options.EnableOptionalArguments);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
 #if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
@@ -2463,6 +2534,7 @@ namespace LightInject
             o.EnablePropertyInjection = options.EnablePropertyInjection;
             o.EnableVariance = options.EnableVariance;
             o.VarianceFilter = options.VarianceFilter;
+            o.EnableOptionalArguments = options.EnableOptionalArguments;
         })
         {
         }
@@ -3938,17 +4010,131 @@ namespace LightInject
             }
 
             emitter = GetEmitMethod(dependency.ServiceType, dependency.ServiceName);
+
             if (emitter == null)
             {
                 emitter = GetEmitMethod(dependency.ServiceType, dependency.Name);
                 if (emitter == null && dependency.IsRequired)
                 {
-                    throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
+                    if (dependency is ConstructorDependency constructorDependency && constructorDependency.Parameter.HasDefaultValue && options.EnableOptionalArguments)
+                    {
+                        emitter = GetEmitMethodForDefaultValue(constructorDependency);
+                        if (emitter == null)
+                        {
+                            throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
+                        }
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
+                    }
                 }
             }
 
             return emitter;
         }
+
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+        private Action<IEmitter> GetEmitMethodForDefaultValue(ConstructorDependency constructorDependency)
+        {
+            Type parameterType = constructorDependency.Parameter.ParameterType;
+            return (emitter) =>
+            {
+                var defaultValue = constructorDependency.Parameter.DefaultValue;
+                if (defaultValue == null)
+                {
+                    defaultValue = TypeHelper.GetDefaultValue(parameterType);
+                }
+
+                emitter.PushConstantValue(defaultValue, parameterType);
+            };
+        }
+#endif
+
+#if NET452 || NET46 || NETCOREAPP2_0
+        private Action<IEmitter> GetEmitMethodForDefaultValue(ConstructorDependency constructorDependency)
+        {
+            Type parameterType = constructorDependency.Parameter.ParameterType;
+
+            if (parameterType.GetTypeInfo().IsEnum)
+            {
+                parameterType = Enum.GetUnderlyingType(parameterType);
+            }
+
+            return (emitter) =>
+            {
+                var parameter = constructorDependency.Parameter;
+
+                if (parameterType == typeof(bool))
+                {
+                    var defaultValue = ((bool)parameter.DefaultValue) ? 1 : 0;
+                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
+                }
+                else if (parameterType == typeof(byte))
+                {
+                    var defaultValue = parameter.DefaultValue != null ? (byte)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
+                }
+                else if (parameterType == typeof(sbyte))
+                {
+                    var defaultValue = parameter.DefaultValue != null ? (sbyte)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
+                }
+                else if (parameterType == typeof(short))
+                {
+                    var defaultValue = parameter.DefaultValue != null ? (short)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
+                }
+                else if (parameterType == typeof(ushort))
+                {
+                    var defaultValue = parameter.DefaultValue != null ? (ushort)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
+                }
+                else if (parameterType == typeof(uint))
+                {
+                    uint unsignedDefaultValue = parameter.DefaultValue != null ? (uint)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I4, (int)unsignedDefaultValue);
+                }
+                else if (parameterType == typeof(int))
+                {
+                    var defaultValue = parameter.DefaultValue != null ? (int)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
+                }
+                else if (parameterType == typeof(long))
+                {
+                    var defaultValue = parameter.DefaultValue != null ? (long)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I8, defaultValue);
+                }
+                else if (parameterType == typeof(ulong))
+                {
+                    ulong unsignedDefaultValue = parameter.DefaultValue != null ? (ulong)parameter.DefaultValue : 0;
+                    emitter.Emit(OpCodes.Ldc_I8, (long)unsignedDefaultValue);
+                }
+                else if (parameterType == typeof(string))
+                {
+                    if (parameter.DefaultValue == null)
+                    {
+                        emitter.Emit(OpCodes.Ldnull);
+                    }
+                    else
+                    {
+                        emitter.Emit(OpCodes.Ldstr, (string)parameter.DefaultValue);
+                    }
+                }
+                else if (parameterType.GetTypeInfo().IsClass)
+                {
+                    emitter.Emit(OpCodes.Ldnull);
+                }
+                else if (parameterType.GetTypeInfo().IsValueType)
+                {
+                    var local = emitter.DeclareLocal(parameterType);
+                    emitter.Emit(OpCodes.Ldloca, local.LocalIndex);
+                    emitter.Emit(OpCodes.Initobj, parameterType);
+                    emitter.Emit(OpCodes.Ldloc, local.LocalIndex);
+                }
+            };
+        }
+#endif
 
         private void EmitDependencyUsingFactoryExpression(IEmitter emitter, Dependency dependency)
         {
@@ -5155,6 +5341,10 @@ namespace LightInject
             else if (code == OpCodes.Ret)
             {
             }
+            else if (code == OpCodes.Ldnull)
+            {
+                stack.Push(Expression.Constant(null));
+            }
             else
             {
                 throw new NotSupportedException(code.ToString());
@@ -5213,6 +5403,33 @@ namespace LightInject
             {
                 throw new NotSupportedException(code.ToString());
             }
+        }
+
+        /// <summary>
+        /// Puts the specified instruction and numerical argument onto the Microsoft intermediate language (MSIL) stream of instructions.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be put onto the stream.</param>
+        /// <param name="arg">The numerical argument pushed onto the stream immediately after the instruction.</param>
+        public void Emit(OpCode code, long arg)
+        {
+            if (code == OpCodes.Ldc_I8)
+            {
+                stack.Push(Expression.Constant(arg, typeof(long)));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Pushes the argument value as a constant expression.
+        /// </summary>
+        /// <param name="arg">The argument value to be pushed.</param>
+        /// <param name="type">The type of the argument value to be pushed.</param>
+        public void PushConstantValue(object arg, Type type)
+        {
+            stack.Push(Expression.Constant(arg, type));
         }
 
         /// <summary>
@@ -5419,14 +5636,17 @@ namespace LightInject
     public class MostResolvableConstructorSelector : IConstructorSelector
     {
         private readonly Func<Type, string, bool> canGetInstance;
+        private readonly bool enableOptionalArguments;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MostResolvableConstructorSelector"/> class.
         /// </summary>
         /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
-        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance)
+        /// <param name="enableOptionalArguments">Determines if optional arguments should be considered a resolvable dependency.</param>
+        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance, bool enableOptionalArguments = false)
         {
             this.canGetInstance = canGetInstance;
+            this.enableOptionalArguments = enableOptionalArguments;
         }
 
         /// <inheritdoc/>
@@ -5472,7 +5692,7 @@ namespace LightInject
 
         private bool CanCreateParameterDependency(ParameterInfo parameterInfo)
         {
-            return canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo));
+            return canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo)) || (parameterInfo.HasDefaultValue && enableOptionalArguments);
         }
     }
 
@@ -7699,6 +7919,10 @@ namespace LightInject
             else if (code == OpCodes.Ret)
             {
             }
+            else if (code == OpCodes.Ldnull)
+            {
+                stack.Push(null);
+            }
             else
             {
                 throw new NotSupportedException(code.ToString());
@@ -7729,6 +7953,10 @@ namespace LightInject
             {
                 stack.Push(variables[arg].LocalType);
             }
+            else if (code == OpCodes.Ldloca)
+            {
+                stack.Push(variables[arg].LocalType.MakePointerType());
+            }
             else if (code == OpCodes.Stloc)
             {
                 stack.Pop();
@@ -7739,6 +7967,21 @@ namespace LightInject
             }
 
             instructions.Add(new Instruction<int>(code, arg, il => il.Emit(code, arg)));
+        }
+
+        /// <inheritdoc/>
+        public void Emit(OpCode code, long arg)
+        {
+            if (code == OpCodes.Ldc_I8)
+            {
+                stack.Push(typeof(long));
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            instructions.Add(new Instruction<long>(code, arg, il => il.Emit(code, arg)));
         }
 
         /// <inheritdoc/>
@@ -7807,6 +8050,10 @@ namespace LightInject
             {
                 stack.Pop();
                 stack.Push(type);
+            }
+            else if (code == OpCodes.Initobj)
+            {
+                stack.Pop();
             }
             else
             {
@@ -7907,7 +8154,18 @@ namespace LightInject
 
             instructions.Add(new Instruction<string>(code, arg, il => il.Emit(code, arg)));
         }
+
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+        /// <inheritdoc/>
+        public void PushConstantValue(object arg, Type type)
+        {
+            stack.Push(type);
+            instructions.Add(new Instruction<object>(OpCodes.Nop, arg, il => il.PushConstantValue(arg, type)));
+        }
+
+#endif
     }
+
 #if NET452
 
     /// <summary>
@@ -8260,7 +8518,6 @@ but either way the scope has to be started with 'container.BeginScope()'";
                 return null;
             }
         }
-
 #if NET452 || NET46 || NETCOREAPP2_0
 
         /// <summary>
@@ -8424,6 +8681,20 @@ but either way the scope has to be started with 'container.BeginScope()'";
 
             return type.GetElementType();
         }
+
+#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+        public static object GetDefaultValue(Type type)
+        {
+            var openGenericGetDefaultValueInternalMethod = typeof(TypeHelper).GetTypeInfo().GetDeclaredMethod(nameof(GetDefaultValueInternal));
+            var closedGenerictDefaultValueInternalMethod = openGenericGetDefaultValueInternalMethod.MakeGenericMethod(type);
+            return closedGenerictDefaultValueInternalMethod.Invoke(null, new object[] { });
+        }
+
+        private static T GetDefaultValueInternal<T>()
+        {
+            return default(T);
+        }
+#endif
     }
 
     internal static class EnumerableTypeExtensions
