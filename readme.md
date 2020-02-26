@@ -696,7 +696,7 @@ Assert.AreEqual(42, foo.Value);
 Assert.IsNotNull(foo.Bar);
 ```
 
-#### Default/Optional parameters
+#### Optional arguments
 
 LightInject will allow for default values to be used when a constructor dependency cannot be resolved.
 
@@ -715,6 +715,7 @@ public class Foo
 We can still resolve `Foo` even though we have not registered a `string` service. 
 
 ```c#
+var container = new ServiceContainer(options => options.EnableOptionalArguments = true);
 container.Register<Foo>();
 var instance = container.GetInstance<Foo>();
 Assert.AreEqual("42", instance.Value)
