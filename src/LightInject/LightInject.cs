@@ -5643,10 +5643,19 @@ namespace LightInject
         /// </summary>
         /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
         /// <param name="enableOptionalArguments">Determines if optional arguments should be considered a resolvable dependency.</param>
-        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance, bool enableOptionalArguments = false)
+        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance, bool enableOptionalArguments)
         {
             this.canGetInstance = canGetInstance;
             this.enableOptionalArguments = enableOptionalArguments;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MostResolvableConstructorSelector"/> class.
+        /// </summary>
+        /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
+        public MostResolvableConstructorSelector(Func<Type, string, bool> canGetInstance)
+        : this(canGetInstance, false)
+        {
         }
 
         /// <inheritdoc/>
