@@ -223,6 +223,17 @@ namespace LightInject.Tests
             Assert.True(instance.ConstructorCalled);
         }
 
+        [Fact]
+        public void ShouldHandleInterfaceSetToNull()
+        {
+            Assert.Equal(null, RegisterAndGet<FooWithInterfaceSetToNull>().Value);
+        }
+
+        [Fact]
+        public void ShouldHandleInterfaceSetToDefault()
+        {
+            Assert.Equal(null, RegisterAndGet<FooWithInterfaceSetToDefault>().Value);
+        }
 
         private T RegisterAndGet<T>()
         {
@@ -260,437 +271,463 @@ namespace LightInject.Tests
         {
 
         }
-    }
 
-
-
-
-    public class FooWithGenericDefaultValue<T>
-    {
-        public FooWithGenericDefaultValue(T value = default)
+        public class FooWithGenericDefaultValue<T>
         {
-        }
-    }
-
-    public class FooWithBoolAsDefault
-    {
-        public FooWithBoolAsDefault(bool value = default)
-        {
-            Value = value;
+            public FooWithGenericDefaultValue(T value = default)
+            {
+            }
         }
 
-        public bool Value { get; }
-    }
-
-    public class FooWithBoolAsTrue
-    {
-        public FooWithBoolAsTrue(bool value = true)
+        public class FooWithBoolAsDefault
         {
-            Value = value;
+            public FooWithBoolAsDefault(bool value = default)
+            {
+                Value = value;
+            }
+
+            public bool Value { get; }
         }
 
-        public bool Value { get; }
-    }
-
-    public class FooWithBoolAsFalse
-    {
-        public FooWithBoolAsFalse(bool value = false)
+        public class FooWithBoolAsTrue
         {
-            Value = value;
+            public FooWithBoolAsTrue(bool value = true)
+            {
+                Value = value;
+            }
+
+            public bool Value { get; }
         }
 
-        public bool Value { get; }
-    }
-
-    public class FooWithByteAsDefault
-    {
-        public FooWithByteAsDefault(byte value = default)
+        public class FooWithBoolAsFalse
         {
-            Value = value;
+            public FooWithBoolAsFalse(bool value = false)
+            {
+                Value = value;
+            }
+
+            public bool Value { get; }
         }
 
-        public byte Value { get; }
-    }
-
-    public class FooWithByteAsMax
-    {
-        public FooWithByteAsMax(byte value = byte.MaxValue)
+        public class FooWithByteAsDefault
         {
-            Value = value;
+            public FooWithByteAsDefault(byte value = default)
+            {
+                Value = value;
+            }
+
+            public byte Value { get; }
         }
 
-        public byte Value { get; }
-    }
-
-    public class FooWithByteAsMin
-    {
-        public FooWithByteAsMin(byte value = byte.MinValue)
+        public class FooWithByteAsMax
         {
-            Value = value;
+            public FooWithByteAsMax(byte value = byte.MaxValue)
+            {
+                Value = value;
+            }
+
+            public byte Value { get; }
         }
 
-        public byte Value { get; }
-    }
-
-
-    public class FooWithSByteAsDefault
-    {
-        public FooWithSByteAsDefault(sbyte value = default)
+        public class FooWithByteAsMin
         {
-            Value = value;
+            public FooWithByteAsMin(byte value = byte.MinValue)
+            {
+                Value = value;
+            }
+
+            public byte Value { get; }
         }
 
-        public sbyte Value { get; }
-    }
 
-
-    public class FooWithSByteAsMax
-    {
-        public FooWithSByteAsMax(sbyte value = sbyte.MaxValue)
+        public class FooWithSByteAsDefault
         {
-            Value = value;
+            public FooWithSByteAsDefault(sbyte value = default)
+            {
+                Value = value;
+            }
+
+            public sbyte Value { get; }
         }
 
-        public sbyte Value { get; }
-    }
 
-    public class FooWithSByteAsMin
-    {
-        public FooWithSByteAsMin(sbyte value = sbyte.MinValue)
+        public class FooWithSByteAsMax
         {
-            Value = value;
+            public FooWithSByteAsMax(sbyte value = sbyte.MaxValue)
+            {
+                Value = value;
+            }
+
+            public sbyte Value { get; }
         }
 
-        public sbyte Value { get; }
-    }
-
-    public class FooWithShortAsDefault
-    {
-        public FooWithShortAsDefault(short value = default)
+        public class FooWithSByteAsMin
         {
-            Value = value;
+            public FooWithSByteAsMin(sbyte value = sbyte.MinValue)
+            {
+                Value = value;
+            }
+
+            public sbyte Value { get; }
         }
 
-        public short Value { get; }
-    }
-
-
-    public class FooWithShortAsMax
-    {
-        public FooWithShortAsMax(short value = short.MaxValue)
+        public class FooWithShortAsDefault
         {
-            Value = value;
+            public FooWithShortAsDefault(short value = default)
+            {
+                Value = value;
+            }
+
+            public short Value { get; }
         }
 
-        public short Value { get; }
-    }
 
-    public class FooWithShortAsMin
-    {
-        public FooWithShortAsMin(short value = short.MinValue)
+        public class FooWithShortAsMax
         {
-            Value = value;
+            public FooWithShortAsMax(short value = short.MaxValue)
+            {
+                Value = value;
+            }
+
+            public short Value { get; }
         }
 
-        public short Value { get; }
-    }
-
-    public class FooWithUShortAsDefault
-    {
-        public FooWithUShortAsDefault(ushort value = default)
+        public class FooWithShortAsMin
         {
-            Value = value;
+            public FooWithShortAsMin(short value = short.MinValue)
+            {
+                Value = value;
+            }
+
+            public short Value { get; }
         }
 
-        public ushort Value { get; }
-    }
-
-
-    public class FooWithUShortAsMax
-    {
-        public FooWithUShortAsMax(ushort value = ushort.MaxValue)
+        public class FooWithUShortAsDefault
         {
-            Value = value;
+            public FooWithUShortAsDefault(ushort value = default)
+            {
+                Value = value;
+            }
+
+            public ushort Value { get; }
         }
 
-        public ushort Value { get; }
-    }
 
-    public class FooWithUShortAsMin
-    {
-        public FooWithUShortAsMin(ushort value = ushort.MinValue)
+        public class FooWithUShortAsMax
         {
-            Value = value;
+            public FooWithUShortAsMax(ushort value = ushort.MaxValue)
+            {
+                Value = value;
+            }
+
+            public ushort Value { get; }
         }
 
-        public ushort Value { get; }
-    }
-
-    public class FooWithIntAsDefault
-    {
-        public FooWithIntAsDefault(int value = default)
+        public class FooWithUShortAsMin
         {
-            Value = value;
+            public FooWithUShortAsMin(ushort value = ushort.MinValue)
+            {
+                Value = value;
+            }
+
+            public ushort Value { get; }
         }
 
-        public int Value { get; }
-    }
-
-
-    public class FooWithIntAsMax
-    {
-        public FooWithIntAsMax(int value = int.MaxValue)
+        public class FooWithIntAsDefault
         {
-            Value = value;
+            public FooWithIntAsDefault(int value = default)
+            {
+                Value = value;
+            }
+
+            public int Value { get; }
         }
 
-        public int Value { get; }
-    }
 
-    public class FooWithIntAsMin
-    {
-        public FooWithIntAsMin(int value = int.MinValue)
+        public class FooWithIntAsMax
         {
-            Value = value;
+            public FooWithIntAsMax(int value = int.MaxValue)
+            {
+                Value = value;
+            }
+
+            public int Value { get; }
         }
 
-        public int Value { get; }
-    }
-
-
-    public class FooWithUIntAsDefault
-    {
-        public FooWithUIntAsDefault(uint value = default)
+        public class FooWithIntAsMin
         {
-            Value = value;
+            public FooWithIntAsMin(int value = int.MinValue)
+            {
+                Value = value;
+            }
+
+            public int Value { get; }
         }
 
-        public uint Value { get; }
-    }
 
-
-    public class FooWithUIntAsMax
-    {
-        public FooWithUIntAsMax(uint value = uint.MaxValue)
+        public class FooWithUIntAsDefault
         {
-            Value = value;
+            public FooWithUIntAsDefault(uint value = default)
+            {
+                Value = value;
+            }
+
+            public uint Value { get; }
         }
 
-        public uint Value { get; }
-    }
 
-    public class FooWithUIntAsMin
-    {
-        public FooWithUIntAsMin(uint value = uint.MinValue)
+        public class FooWithUIntAsMax
         {
-            Value = value;
+            public FooWithUIntAsMax(uint value = uint.MaxValue)
+            {
+                Value = value;
+            }
+
+            public uint Value { get; }
         }
 
-        public uint Value { get; }
-    }
-
-    public class FooWithLongAsDefault
-    {
-        public FooWithLongAsDefault(long value = default)
+        public class FooWithUIntAsMin
         {
-            Value = value;
+            public FooWithUIntAsMin(uint value = uint.MinValue)
+            {
+                Value = value;
+            }
+
+            public uint Value { get; }
         }
 
-        public long Value { get; }
-    }
-
-
-    public class FooWithLongAsMax
-    {
-        public FooWithLongAsMax(long value = long.MaxValue)
+        public class FooWithLongAsDefault
         {
-            Value = value;
+            public FooWithLongAsDefault(long value = default)
+            {
+                Value = value;
+            }
+
+            public long Value { get; }
         }
 
-        public long Value { get; }
-    }
 
-    public class FooWithLongAsMin
-    {
-        public FooWithLongAsMin(long value = long.MinValue)
+        public class FooWithLongAsMax
         {
-            Value = value;
+            public FooWithLongAsMax(long value = long.MaxValue)
+            {
+                Value = value;
+            }
+
+            public long Value { get; }
         }
 
-        public long Value { get; }
-    }
-
-    public class FooWithULongAsDefault
-    {
-        public FooWithULongAsDefault(ulong value = default)
+        public class FooWithLongAsMin
         {
-            Value = value;
+            public FooWithLongAsMin(long value = long.MinValue)
+            {
+                Value = value;
+            }
+
+            public long Value { get; }
         }
 
-        public ulong Value { get; }
-    }
-
-
-    public class FooWithULongAsMax
-    {
-        public FooWithULongAsMax(ulong value = ulong.MaxValue)
+        public class FooWithULongAsDefault
         {
-            Value = value;
+            public FooWithULongAsDefault(ulong value = default)
+            {
+                Value = value;
+            }
+
+            public ulong Value { get; }
         }
 
-        public ulong Value { get; }
-    }
 
-    public class FooWithULongAsMin
-    {
-        public FooWithULongAsMin(ulong value = ulong.MinValue)
+        public class FooWithULongAsMax
         {
-            Value = value;
+            public FooWithULongAsMax(ulong value = ulong.MaxValue)
+            {
+                Value = value;
+            }
+
+            public ulong Value { get; }
         }
 
-        public ulong Value { get; }
-    }
-
-    public class FooWithIntEnumAsDefault
-    {
-        public FooWithIntEnumAsDefault(IntEnum value = default)
+        public class FooWithULongAsMin
         {
-            Value = value;
+            public FooWithULongAsMin(ulong value = ulong.MinValue)
+            {
+                Value = value;
+            }
+
+            public ulong Value { get; }
         }
 
-        public IntEnum Value { get; }
-    }
-
-
-    public class FooWithIntEnumSet
-    {
-        public FooWithIntEnumSet(IntEnum value = IntEnum.SomeValue)
+        public class FooWithIntEnumAsDefault
         {
-            Value = value;
+            public FooWithIntEnumAsDefault(IntEnum value = default)
+            {
+                Value = value;
+            }
+
+            public IntEnum Value { get; }
         }
 
-        public IntEnum Value { get; }
-    }
 
-    public class FooWithStringAsDefault
-    {
-        public FooWithStringAsDefault(string value = default)
+        public class FooWithIntEnumSet
         {
-            Value = value;
+            public FooWithIntEnumSet(IntEnum value = IntEnum.SomeValue)
+            {
+                Value = value;
+            }
+
+            public IntEnum Value { get; }
         }
 
-        public string Value { get; }
-    }
-
-    public class FooWithStringSet
-    {
-        public FooWithStringSet(string value = "SomeValue")
+        public class FooWithStringAsDefault
         {
-            Value = value;
+            public FooWithStringAsDefault(string value = default)
+            {
+                Value = value;
+            }
+
+            public string Value { get; }
         }
 
-        public string Value { get; }
-    }
-
-    public class FooWithCustomReferenceTypeSetToNull
-    {
-        public FooWithCustomReferenceTypeSetToNull(CustomReferenceType value = null)
+        public class FooWithStringSet
         {
-            Value = value;
+            public FooWithStringSet(string value = "SomeValue")
+            {
+                Value = value;
+            }
+
+            public string Value { get; }
         }
 
-        public CustomReferenceType Value { get; }
-    }
-
-    public class FooWithCustomValueTypeSetToDefault
-    {
-        public FooWithCustomValueTypeSetToDefault(CustomValueType value = default(CustomValueType))
+        public class FooWithCustomReferenceTypeSetToNull
         {
-            Value = value;
+            public FooWithCustomReferenceTypeSetToNull(CustomReferenceType value = null)
+            {
+                Value = value;
+            }
+
+            public CustomReferenceType Value { get; }
         }
 
-        public CustomValueType Value { get; }
-    }
-
-
-    public class FooWithCustomValueTypeSetToNewInstance
-    {
-        public FooWithCustomValueTypeSetToNewInstance(CustomValueType value = new CustomValueType())
+        public class FooWithCustomValueTypeSetToDefault
         {
-            Value = value;
+            public FooWithCustomValueTypeSetToDefault(CustomValueType value = default(CustomValueType))
+            {
+                Value = value;
+            }
+
+            public CustomValueType Value { get; }
         }
 
-        public CustomValueType Value { get; }
-    }
 
-    public class CustomReferenceType
-    {
-
-    }
-
-    public class FooWithCustomValueType
-    {
-
-    }
-
-
-    public struct CustomValueType
-    {
-        public int Value;
-
-        public CustomValueType(int value)
+        public class FooWithCustomValueTypeSetToNewInstance
         {
-            Value = value;
-        }
-    }
+            public FooWithCustomValueTypeSetToNewInstance(CustomValueType value = new CustomValueType())
+            {
+                Value = value;
+            }
 
-    public enum IntEnum
-    {
-        None,
-        SomeValue
-    }
-
-
-    /// <summary>
-    /// Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
-    /// </summary>
-    public class FooWithPrimitiveTypes
-    {
-        public FooWithPrimitiveTypes(bool boolValue = default,
-                                     byte byteValue = default,
-                                     sbyte sbyteValue = default,
-                                     short shortValue = default,
-                                     ushort ushortValue = default,
-                                     int intvalue = default,
-                                     uint uintValue = default,
-                                     long longValue = default,
-                                     ulong ulongValue = default,
-                                     IntPtr intPtrValue = default,
-                                     UIntPtr uIntPtrValue = default)
-        {
-            BoolValue = boolValue;
-            ByteValue = byteValue;
-            SbyteValue = sbyteValue;
-            ShortValue = shortValue;
-            UshortValue = ushortValue;
-            Intvalue = intvalue;
-            UintValue = uintValue;
-            LongValue = longValue;
-            UlongValue = ulongValue;
-            IntPtrValue = intPtrValue;
-            UIntPtrValue = uIntPtrValue;
+            public CustomValueType Value { get; }
         }
 
-        public bool BoolValue { get; }
-        public byte ByteValue { get; }
-        public sbyte SbyteValue { get; }
-        public short ShortValue { get; }
-        public ushort UshortValue { get; }
-        public int Intvalue { get; }
-        public uint UintValue { get; }
-        public long LongValue { get; }
-        public ulong UlongValue { get; }
-        public IntPtr IntPtrValue { get; }
-        public UIntPtr UIntPtrValue { get; }
+        public class CustomReferenceType
+        {
+
+        }
+
+        public class FooWithCustomValueType
+        {
+
+        }
+
+
+        public struct CustomValueType
+        {
+            public int Value;
+
+            public CustomValueType(int value)
+            {
+                Value = value;
+            }
+        }
+
+        public class FooWithInterfaceSetToNull
+        {
+            public FooWithInterfaceSetToNull(IFoo foo = null)
+            {
+                Value = foo;
+            }
+
+            public IFoo Value { get; }
+        }
+
+        public class FooWithInterfaceSetToDefault
+        {
+            public FooWithInterfaceSetToDefault(IFoo foo = default)
+            {
+                Value = foo;
+            }
+
+            public IFoo Value { get; }
+        }
+
+        public interface IFoo
+        {
+        }
+
+        public class Foo : IFoo
+        {
+
+        }
+
+        public enum IntEnum
+        {
+            None,
+            SomeValue
+        }
+
+
+        /// <summary>
+        /// Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
+        /// </summary>
+        public class FooWithPrimitiveTypes
+        {
+            public FooWithPrimitiveTypes(bool boolValue = default,
+                                         byte byteValue = default,
+                                         sbyte sbyteValue = default,
+                                         short shortValue = default,
+                                         ushort ushortValue = default,
+                                         int intvalue = default,
+                                         uint uintValue = default,
+                                         long longValue = default,
+                                         ulong ulongValue = default,
+                                         IntPtr intPtrValue = default,
+                                         UIntPtr uIntPtrValue = default)
+            {
+                BoolValue = boolValue;
+                ByteValue = byteValue;
+                SbyteValue = sbyteValue;
+                ShortValue = shortValue;
+                UshortValue = ushortValue;
+                Intvalue = intvalue;
+                UintValue = uintValue;
+                LongValue = longValue;
+                UlongValue = ulongValue;
+                IntPtrValue = intPtrValue;
+                UIntPtrValue = uIntPtrValue;
+            }
+
+            public bool BoolValue { get; }
+            public byte ByteValue { get; }
+            public sbyte SbyteValue { get; }
+            public short ShortValue { get; }
+            public ushort UshortValue { get; }
+            public int Intvalue { get; }
+            public uint UintValue { get; }
+            public long LongValue { get; }
+            public ulong UlongValue { get; }
+            public IntPtr IntPtrValue { get; }
+            public UIntPtr UIntPtrValue { get; }
+        }
     }
 }
