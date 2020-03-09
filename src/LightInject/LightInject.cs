@@ -4121,7 +4121,7 @@ namespace LightInject
                         emitter.Emit(OpCodes.Ldstr, (string)parameter.DefaultValue);
                     }
                 }
-                else if (parameterType.GetTypeInfo().IsClass)
+                else if (parameterType.GetTypeInfo().IsClass || parameterType.GetTypeInfo().IsInterface)
                 {
                     emitter.Emit(OpCodes.Ldnull);
                 }
