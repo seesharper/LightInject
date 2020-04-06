@@ -85,7 +85,7 @@ container.RegisterFallback((type, s) => true, request => new Foo());
 var foo = container.GetInstance<IFoo>();
 ```
 
-The first argument to the *RegisterFallback* method makes it possible to possible to decide if the service can be "late-resolved".
+The first argument to the *RegisterFallback* method makes it possible to decide if the service can be "late-resolved".
 The second argument is a *ServiceRequest* instance that provides the requested service type and service name.
 
 ### IEnumerable&lt;T&gt; ###
