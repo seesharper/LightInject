@@ -3793,10 +3793,14 @@ namespace LightInject
         private void EmitNewDecoratorUsingFactoryDelegate(Delegate factoryDelegate, IEmitter emitter, Action<IEmitter> pushInstance)
         {
             var factoryDelegateIndex = constants.Add(factoryDelegate);
-            var serviceFactoryIndex = constants.Add(this);
             Type funcType = factoryDelegate.GetType();
             emitter.PushConstant(factoryDelegateIndex, funcType);
+            var serviceFactoryIndex = constants.Add(this);
             emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
+            var scopeManagerIndex = CreateScopeManagerIndex();
+            emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+            emitter.PushArgument(1);
+            emitter.Emit(OpCodes.Call, ServiceFactoryLoader.LoadServiceFactoryMethod);
             pushInstance(emitter);
             MethodInfo invokeMethod = funcType.GetTypeInfo().GetDeclaredMethod("Invoke");
             emitter.Emit(OpCodes.Callvirt, invokeMethod);
