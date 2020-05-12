@@ -411,6 +411,27 @@
         }
 
         [Fact]
+        public void ShouldPassScopeToDecoratorPredicate()
+        {
+            var container = CreateContainer();
+            IServiceFactory passedFactory = null;
+            container.Register<IFoo, Foo>();
+            container.Decorate<IFoo>((factory, foo) =>
+            {
+                passedFactory = factory;
+                return new FooDecorator(foo);
+            });
+
+            using (var scope = container.BeginScope())
+            {
+                var instance = scope.GetInstance<IFoo>();
+                Assert.Same(scope, passedFactory);
+            }
+
+        }
+
+
+        [Fact]
         public void ShouldUseInitialScopeWhenResolvingParameterizedFunc()
         {
             var container = CreateContainer();
