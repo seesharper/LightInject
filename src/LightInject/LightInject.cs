@@ -4426,18 +4426,19 @@ namespace LightInject
             var openGenericServiceRegistrations =
                 GetOpenGenericServiceRegistrations(openGenericServiceType);
 
-            Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)> candidates = new Dictionary<string, (Type closedGenericImplentingType, ILifetime lifetime)>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, ClosedGenericCandidate> candidates = new Dictionary<string, ClosedGenericCandidate>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var openGenericServiceRegistration in openGenericServiceRegistrations.Values)
             {
                 var closedGenericImplementingTypeCandidate = GenericArgumentMapper.TryMakeGenericType(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
                 if (closedGenericImplementingTypeCandidate != null)
                 {
-                    candidates.Add(openGenericServiceRegistration.ServiceName, (closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
+                    candidates.Add(openGenericServiceRegistration.ServiceName, new ClosedGenericCandidate(closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
+                    //candidates.Add(openGenericServiceRegistration.ServiceName, (closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
                 }
             }
 
-            (Type closedGenericImplentingType, ILifetime lifetime) candidate;
+            ClosedGenericCandidate candidate;
 
             // We have a request for the default service
             if (string.IsNullOrWhiteSpace(serviceName))
@@ -4479,13 +4480,25 @@ namespace LightInject
                 var serviceRegistration = new ServiceRegistration
                 {
                     ServiceType = closedGenericServiceType,
-                    ImplementingType = candidate.closedGenericImplentingType,
+                    ImplementingType = candidate.ClosedGenericImplentingType,
                     ServiceName = serviceName,
-                    Lifetime = CloneLifeTime(candidate.lifetime) ?? DefaultLifetime,
+                    Lifetime = CloneLifeTime(candidate.Lifetime) ?? DefaultLifetime,
                 };
                 Register(serviceRegistration);
                 return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
             }
+        }
+
+        private struct ClosedGenericCandidate
+        {
+            public ClosedGenericCandidate(Type closedGenericImplentingType, ILifetime lifetime)
+            {
+                ClosedGenericImplentingType = closedGenericImplentingType;
+                Lifetime = lifetime;
+            }
+
+            public Type ClosedGenericImplentingType { get; }
+            public ILifetime Lifetime { get; }
         }
 
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)
