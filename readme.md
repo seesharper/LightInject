@@ -666,7 +666,7 @@ public class Foo : IFoo
 ---
 
 ```c#
-container.Register<int, IFoo>((arg, factory) => new Foo(arg));
+container.Register<int, IFoo>((factory, arg) => new Foo(arg));
 var foo = (Foo)container.GetInstance<int, IFoo>(42);
 Assert.AreEqual(42,foo.Value);
 ```
