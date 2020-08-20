@@ -90,7 +90,7 @@ The second argument is a *ServiceRequest* instance that provides the requested s
 
 ### IEnumerable&lt;T&gt; ###
 
-When we register multiple services with the same service type, **LightInject** is capable of resolving these services as an  [IEnumerable&lt;T&gt;](http://msdn.microsoft.com/en-us/library/9eekhta0.aspx).
+When we register multiple services with the same service type, **LightInject** is capable of resolving these services as an  [IEnumerable&lt;T&gt;](https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1).
 
 ```c#
 public class Foo : IFoo {}
@@ -113,7 +113,7 @@ var instances = container.GetAllInstances<IFoo>();
 Assert.AreEqual(2, instances.Count());
 ```
 
-In addition, **LightInject** supports the following [IEnumerable&lt;T&gt;](http://msdn.microsoft.com/en-us/library/9eekhta0.aspx) sub-types. 
+In addition, **LightInject** supports the following [IEnumerable&lt;T&gt;](https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1) sub-types. 
 
 * Array
 * ICollection&lt;T&gt;
@@ -478,7 +478,7 @@ This will throw an exception that states the following:
 
 The reason that this is happening is that the current scope is associated with the thread that created it and when the continuation executes, we are essentially requesting an instance on another thread.
 
-To deal with this issue, **LightInject** now supports scopes across the logical [CallContext](http://msdn.microsoft.com/en-us/library/system.runtime.remoting.messaging.callcontext(v=vs.110).aspx).  
+To deal with this issue, **LightInject** now supports scopes across the logical [CallContext](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.remoting.messaging.callcontext).  
 
 ```c#
 var container = new ServiceContainer();
@@ -495,7 +495,7 @@ using (container.BeginScope())
 ```
 
 > Note that the **PerLogicalCallContextScopeManagerProvider** is only available when running under .Net 4.5.
-> For more information, please refer to the following [article](http://blog.stephencleary.com/2013/04/implicit-async-context-asynclocal.html) by Stephen Cleary.
+> For more information, please refer to the following [article](https://blog.stephencleary.com/2013/04/implicit-async-context-asynclocal.html) by Stephen Cleary.
 
 
 
@@ -924,7 +924,7 @@ Assert.IsInstanceOfType(instance, typeof(Foo<int>));
 
 ## Lazy&lt;T&gt; ##
 
-**LightInject** can resolve a service as an instance of [Lazy&lt;T&gt;](http://msdn.microsoft.com/en-us/library/dd642331.aspx) when we want to postpone resolving the underlying service until it is needed.
+**LightInject** can resolve a service as an instance of [Lazy&lt;T&gt;](https://docs.microsoft.com/en-us/dotnet/api/system.lazy-1) when we want to postpone resolving the underlying service until it is needed.
 
 ```c#
 public interface IFoo {}
@@ -941,7 +941,7 @@ Assert.IsNotNull(lazyFoo.Value);
 
 ## Function Factories ##
 
-Function factories allows services to resolved as a function delegate that in turn is capable of returning the underlying service instance. We can think of this as an alternative to the [Service Locator](http://en.wikipedia.org/wiki/Service_locator_pattern) (anti)pattern.
+Function factories allows services to resolved as a function delegate that in turn is capable of returning the underlying service instance. We can think of this as an alternative to the [Service Locator](https://en.wikipedia.org/wiki/Service_locator_pattern) (anti)pattern.
 
 ```c#
 public interface IFoo {}
@@ -1019,7 +1019,7 @@ using(IFoo foo = fooFactory())
 } <--Instance is disposed here          
 ```
 
->**Note:** *Although this is common practice even in the [BCL](http://en.wikipedia.org/wiki/Base_Class_Library), this kind of interfaces are often referred to as [leaky abstractions](http://en.wikipedia.org/wiki/Leaky_abstraction).*
+>**Note:** *Although this is common practice even in the [BCL](https://en.wikipedia.org/wiki/Base_Class_Library), this kind of interfaces are often referred to as [leaky abstractions](https://en.wikipedia.org/wiki/Leaky_abstraction).*
 
 ## Typed Factories  ##
 
@@ -1176,7 +1176,7 @@ container.GetInstance<IFoo>()
 
 ## Internals ##
 
-When running under the .Net platform, **LightInject** is capable of creating instances of classes that has the [internal](http://msdn.microsoft.com/en-us/library/7c5ka91b.aspx) modifier. 
+When running under the .Net platform, **LightInject** is capable of creating instances of classes that has the [internal](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/internal) modifier. 
 
 The only requirement is that the internal class exposes a public constructor.
 
