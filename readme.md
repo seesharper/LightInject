@@ -167,7 +167,9 @@ We can also register multiple implementations for a given service type using the
 
 ```c#
 var container = CreateContainer();
-container.RegisterOrdered(typeof(IFoo), new[] {typeof(Foo1), typeof(Foo2), typeof(Foo3)},
+container.RegisterOrdered(
+    typeof(IFoo),
+    new[] {typeof(Foo1), typeof(Foo2), typeof(Foo3)},
     type => new PerContainerLifetime());
 
 var instances = container.GetAllInstances<IFoo>().ToArray();
@@ -181,7 +183,9 @@ The `RegisterOrdered` method gives each implementation a service name that can b
 If we need so change this convention, we can do this by passing a format function to the `RegisterOrdered` method.
 
 ```c#
-container.RegisterOrdered(typeof(IFoo<>), new[] { typeof(Foo1<>), typeof(Foo2<>), typeof(Foo3<>) },
+container.RegisterOrdered(
+    typeof(IFoo<>),
+    new[] { typeof(Foo1<>), typeof(Foo2<>), typeof(Foo3<>) },
     type => new PerContainerLifetime(), i => $"A{i.ToString().PadLeft(3,'0')}");
 
 var services = container.AvailableServices.Where(sr => sr.ServiceType == typeof(IFoo<>))
@@ -802,8 +806,9 @@ Use the **Initialize** method to perform service instance initialization/post-pr
 
 ```c#
 container.Register<IFoo, FooWithPropertyDependency>();
-container.Initialize(registration => registration.ServiceType == typeof(IFoo), 
-	(factory, instance) => ((FooWithPropertyDependency)instance).Bar = new Bar());
+container.Initialize(
+    registration => registration.ServiceType == typeof(IFoo), 
+    (factory, instance) => ((FooWithPropertyDependency)instance).Bar = new Bar());
 var foo = (FooWithProperyDependency)container.GetInstance<IFoo>();
 Assert.IsInstanceOfType(foo.Bar, typeof(Bar));
 ```
