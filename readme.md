@@ -12,7 +12,7 @@
 
 <div class="nuget-badge" >
    <p>
-         <code>PM&gt; Install-Package LightInject</code>
+        <code>PM&gt; Install-Package LightInject</code>
    </p>
 </div>
 
@@ -22,7 +22,7 @@ This adds a reference to the LightInject.dll in the target project.
 
 <div class="nuget-badge" >
    <p>
-         <code>PM&gt; Install-Package LightInject.Source </code>
+        <code>PM&gt; Install-Package LightInject.Source </code>
    </p>
 </div>
 
@@ -228,9 +228,9 @@ Consider the following service:
 ```c#
 public class Foo
 {
-	public Foo(Bar bar)
+    public Foo(Bar bar)
     {
-    	Bar = bar;
+        Bar = bar;
     }
 } 
 ```
@@ -245,7 +245,7 @@ var foo = container.GetInstance<Foo>();
 
 In this case we only create a delegate for resolving `Foo` since that is the only service that is directly requested from the container. The code for creating the `Bar` instance is embedded inside the code for creating the `Foo` instance and hence there is only one delegate created.
 
-We call `Foo` a root service since it is directly requested from the container.	
+We call `Foo` a root service since it is directly requested from the container.
 
 In fact lets just have a look at the IL generated for creating the `Foo` instance. 
 
@@ -299,10 +299,10 @@ The container will call the **Dispose** method on all disposable objects created
 ```c#
 container.Register<IFoo,Foo>(new PerScopeLifetime());
 using(container.BeginScope())
-{	
-	var firstInstance = container.GetInstance<IFoo>();
-	var secondInstance = container.GetInstance<IFoo>();
-	Assert.AreSame(firstInstance, secondInstance);
+{    
+    var firstInstance = container.GetInstance<IFoo>();
+    var secondInstance = container.GetInstance<IFoo>();
+    Assert.AreSame(firstInstance, secondInstance);
 }
 ```
 
@@ -316,10 +316,10 @@ The container will call the Dispose method on all disposable objects when the co
 ```c#
 using(container = new ServiceContainer())
 {
-	container.Register<IFoo,Foo>(new PerContainerLifetime());	
-	var firstInstance = container.GetInstance<IFoo>();
-	var secondInstance = container.GetInstance<IFoo>();
-	Assert.AreSame(firstInstance, secondInstance);
+    container.Register<IFoo,Foo>(new PerContainerLifetime());    
+    var firstInstance = container.GetInstance<IFoo>();
+    var secondInstance = container.GetInstance<IFoo>();
+    Assert.AreSame(firstInstance, secondInstance);
 }
 ```
 
@@ -331,11 +331,11 @@ This lifetime is used when the conrete class implements **IDisposable**.
 ```c#
 container.Register<IFoo,Foo>(new PerRequestLifeTime());
 using(container.BeginScope())
-{		
-	var firstInstance = container.GetInstance<IFoo>();
-	var secondInstance = container.GetInstance<IFoo>();
-	Assert.AreNotSame(firstInstance, secondInstance);
-}	
+{        
+    var firstInstance = container.GetInstance<IFoo>();
+    var secondInstance = container.GetInstance<IFoo>();
+    Assert.AreNotSame(firstInstance, secondInstance);
+}    
 ```
 
 >**Note:** *An **InvalidOperationException** is thrown if a service registered with the **PerRequestLifeTime** is requested outside the scope.*
@@ -357,16 +357,16 @@ The following example shows to create a custom lifetime that ensures only one in
 ```c#
 public class PerThreadLifetime : ILifetime
 {
-	ThreadLocal<object> instances = new ThreadLocal<object>(); 	
+    ThreadLocal<object> instances = new ThreadLocal<object>();     
 
-	public object GetInstance(Func<object> instanceFactory, Scope currentScope)
-	{
-		if (instances.value == null)
-		{
-			instances.value = instanceFactory();
-		}
-		return instances.value;
-	}
+    public object GetInstance(Func<object> instanceFactory, Scope currentScope)
+    {
+        if (instances.value == null)
+        {
+            instances.value = instanceFactory();
+        }
+        return instances.value;
+    }
 }
 ```
 
@@ -375,28 +375,28 @@ That is all it takes to create a custom lifetime, but what about disposable serv
 ```c#
 public class PerThreadLifetime : ILifetime
 {
-	ThreadLocal<object> instances = new ThreadLocal<object>(); 	
+    ThreadLocal<object> instances = new ThreadLocal<object>();     
 
-	public object GetInstance(Func<object> instanceFactory, Scope currentScope)
-	{			
-		if (instances.value == null)
-		{				
-			object instance = instanceFactory();				
-			IDisposable disposable = instance as IDisposable;				
-			if (disposable != null)
-			{
-				if (currentScope == null)
-				{
-					throw new InvalidOperationException("Attempt to create an disposable object 
-														without a current scope.")
-				}
-				currentScope.TrackInstance(disposable);
-			}
+    public object GetInstance(Func<object> instanceFactory, Scope currentScope)
+    {            
+        if (instances.value == null)
+        {                
+            object instance = instanceFactory();                
+            IDisposable disposable = instance as IDisposable;                
+            if (disposable != null)
+            {
+                if (currentScope == null)
+                {
+                    throw new InvalidOperationException("Attempt to create an disposable object 
+                                                        without a current scope.");
+                }
+                currentScope.TrackInstance(disposable);
+            }
 
-			instances.value = instance;
-		}
-		return instance.value;
-	}
+            instances.value = instance;
+        }
+        return instance.value;
+    }
 }
 ```
 
@@ -474,7 +474,7 @@ using (container.BeginScope())
 
 This will throw an exception that states the following:
 
-	Attempt to create a scoped instance without a current scope.  
+    Attempt to create a scoped instance without a current scope.  
 
 The reason that this is happening is that the current scope is associated with the thread that created it and when the continuation executes, we are essentially requesting an instance on another thread.
 
@@ -508,18 +508,18 @@ One of the most canonical examples would be in a web application where we need t
 ```c#
 public class CustomerService : ICustomerService
 {
-	public CustomerService(IDbConnection dbConnection)
-	{    
-	}
+    public CustomerService(IDbConnection dbConnection)
+    {
+    }
 }
 ```
 
 ```C#
 public class OrderService : IOrderService
 {
-	public OrderService(IDbConnection dbConnection)
-	{  	  
-	}
+    public OrderService(IDbConnection dbConnection)
+    {
+    }
 }  
 ```
 
@@ -528,7 +528,7 @@ public class OrderService : IOrderService
 ```C#
 public class OrderController
 {
-	public OrderController(ICustomerService customerService, IOrderService orderService)
+    public OrderController(ICustomerService customerService, IOrderService orderService)
     {
     }
 }
@@ -556,8 +556,8 @@ To start a scope manually we can create scope using the `BeginScope` method
 ```c#
 using (container.BeginScope())
 {
-	var dbConnection = container.GetInstance<IDbConnection>();  
-}		
+    var dbConnection = container.GetInstance<IDbConnection>();  
+}        
 ```
 
 > Note: The `Scope` implement `IDisposable` and should always be wrapped in a using block to ensure its disposal
@@ -567,8 +567,8 @@ In this example we start a new scope and retrieve the service from the container
 ```c#
 using (var scope = container.BeginScope())
 {
-	var dbConnection = scope.GetInstance<IDbConnection>();  
-}	
+    var dbConnection = scope.GetInstance<IDbConnection>();  
+}    
 ```
 
 Since we are retrieving the service directly from the scope, the current scope is ignored and we simply use the scope from which the service was requested. This is not only much faster, but it is also a much safer way to deal with scopes.
@@ -577,13 +577,13 @@ This also allows for multiple active scopes.
 
 ```C#
 using (var outerScope = container.BeginScope())
-{	
+{    
     using (var innerScope = container.BeginScope())
     {
         var outerDbConnection = outerScope.GetInstance<IDbConnection>();
         var innerDbConnection = innerScope.GetInstance<IDbConnection>();
     }  
-}	
+}    
 ```
 
 In addition to the `PerScopeLifetime` which ensures disposal and a single instance within a scope, we also have the `PerRequestLifetime`. This lifetime behaves just a transient meaning that we get a new instance for every time it is requested with the only difference to transients being that instances are disposed when the scope ends.
@@ -739,7 +739,7 @@ public interface IBar {}
 
 public class Foo : IFoo
 {
-	public IBar Bar { get; set; }
+    public IBar Bar { get; set; }
 }
 
 public class Bar : IBar {}
@@ -843,9 +843,9 @@ We can also change this behavior globally for all registrations by implementing 
 ```c#
 public class CustomServiceNameProvider : IServiceNameProvider
 {
-	public string GetServiceName(Type serviceType, Type implementingType)
+    public string GetServiceName(Type serviceType, Type implementingType)
     {
-    	return "Provide custom service name here";  
+        return "Provide custom service name here";  
     }
 }
 ```
@@ -1029,7 +1029,7 @@ As opposed to just function factories, typed factories provides better expressiv
 ```c#
 public interface IFooFactory
 {
-	IFoo GetFoo();
+    IFoo GetFoo();
 }
 ```
 
@@ -1274,7 +1274,7 @@ public class SampleTests : ContainerFixture
     
     internal override Configure(IServiceRegistry serviceRegistry)
     {
-    	// Add registrations related to testing here
+        // Add registrations related to testing here
     }
 }
 ```
