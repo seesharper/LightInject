@@ -202,7 +202,7 @@ Registers the value as a constant.
 ```c#
 container.RegisterInstance<string>("SomeValue");
 var value = container.GetInstance<string>();
-Assert.AreEqual("SomeValue, value);
+Assert.AreEqual("SomeValue, value");
 ```
 
 
