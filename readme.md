@@ -525,8 +525,8 @@ public class OrderService : IOrderService
 public class OrderController
 {
 	public OrderController(ICustomerService customerService, IOrderService orderService)
-  {  
-  }
+    {
+    }
 }
 ```
 
@@ -574,11 +574,11 @@ This also allows for multiple active scopes.
 ```C#
 using (var outerScope = container.BeginScope())
 {	
-  using (var innerScope = container.BeginScope())
-  {
- 		var outerDbConnection = outerScope.GetInstance<IDbConnection>();
-    var innerDbConnection = innerScope.GetInstance<IDbConnection>();
-  }  
+    using (var innerScope = container.BeginScope())
+    {
+        var outerDbConnection = outerScope.GetInstance<IDbConnection>();
+        var innerDbConnection = innerScope.GetInstance<IDbConnection>();
+    }  
 }	
 ```
 
@@ -704,12 +704,12 @@ LightInject will allow for default values to be used when a constructor dependen
 ```c#
 public class Foo
 {
-	public Foo(string value = "42")
-  {
-    Value = value;
-  }
-  
-  public string Value { get; }
+    public Foo(string value = "42")
+    {
+        Value = value;
+    }
+
+    public string Value { get; }
 }
 ```
 
@@ -736,10 +736,8 @@ public interface IBar {}
 public class Foo : IFoo
 {
 	public IBar Bar { get; set; }
-```
- 	}
+}
 
-```c#
 public class Bar : IBar {}
 ```
 
