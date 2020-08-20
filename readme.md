@@ -387,8 +387,8 @@ public class PerThreadLifetime : ILifetime
             {
                 if (currentScope == null)
                 {
-                    throw new InvalidOperationException("Attempt to create an disposable object 
-                                                        without a current scope.");
+                    throw new InvalidOperationException(
+                        "Attempt to create an disposable object without a current scope.");
                 }
                 currentScope.TrackInstance(disposable);
             }
