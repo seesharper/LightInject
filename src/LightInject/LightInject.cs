@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.2.1
+    LightInject version 6.3.5
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -4425,7 +4425,6 @@ namespace LightInject
                 if (closedGenericImplementingTypeCandidate != null)
                 {
                     candidates.Add(openGenericServiceRegistration.ServiceName, new ClosedGenericCandidate(closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
-                    //candidates.Add(openGenericServiceRegistration.ServiceName, (closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
                 }
             }
 
@@ -4489,6 +4488,7 @@ namespace LightInject
             }
 
             public Type ClosedGenericImplentingType { get; }
+
             public ILifetime Lifetime { get; }
         }
 
@@ -6248,6 +6248,13 @@ namespace LightInject
             throw new NotImplementedException("Optimized");
         }
 
+        /// <summary>
+        /// An optimized non-closing version of the GetInstance method used to avoid closing over the "current" scope.
+        /// </summary>
+        /// <param name="createInstance">The delegate used to create the service instance.</param>
+        /// <param name="scope">The current scope.</param>
+        /// <param name="arguments">An array containing "constants" to be passed to the underlying dynamic method.</param>
+        /// <returns>The service instance.</returns>
         public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
         {
             if (singleton != null)
