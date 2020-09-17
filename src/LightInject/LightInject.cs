@@ -4629,15 +4629,7 @@ namespace LightInject
 
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)
         {
-            if (serviceRegistration.Lifetime is PerContainerLifetime)
-            {
-                Func<object> instanceDelegate =
-                    () => WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod))();
-                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);
-                var instanceIndex = constants.Add(instance);
-                emitter.PushConstant(instanceIndex, instance.GetType());
-            }
-            else if (serviceRegistration.Lifetime is PerScopeLifetime)
+            if (serviceRegistration.Lifetime is PerScopeLifetime)
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
                 PushScope(emitter);
@@ -6272,6 +6264,24 @@ namespace LightInject
                 if (singleton == null)
                 {
                     singleton = createInstance();
+                }
+            }
+
+            return singleton;
+        }
+
+        public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
+        {
+            if (singleton != null)
+            {
+                return singleton;
+            }
+
+            lock (syncRoot)
+            {
+                if (singleton == null)
+                {
+                    singleton = createInstance(arguments, scope);
                 }
             }
 

@@ -307,10 +307,22 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_PerScopeLifetimeWithRecursiveDependency_ThrowsException()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, FooWithRecursiveDependency>(new PerScopeLifetime());
+            using (var scope = container.BeginScope())
+            {
+                var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
+                Assert.Contains("Recursive dependency detected", exception.ToString());
+            }
+        }
+
+        [Fact]
         public void GetInstance_PerContainerLifetimeWithRecursiveDependency_ThrowsException()
         {
             var container = CreateContainer();
-            container.Register<IFoo>(factory => CreateRecursive(factory), new PerContainerLifetime());
+            container.Register<IFoo, FooWithRecursiveDependency>(new PerContainerLifetime());
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo>());
             Assert.Contains("Recursive dependency detected", exception.ToString());
         }
