@@ -226,13 +226,13 @@ namespace LightInject.Tests
         [Fact]
         public void ShouldHandleInterfaceSetToNull()
         {
-            Assert.Equal(null, RegisterAndGet<FooWithInterfaceSetToNull>().Value);
+            Assert.Null(RegisterAndGet<FooWithInterfaceSetToNull>().Value);
         }
 
         [Fact]
         public void ShouldHandleInterfaceSetToDefault()
         {
-            Assert.Equal(null, RegisterAndGet<FooWithInterfaceSetToDefault>().Value);
+            Assert.Null(RegisterAndGet<FooWithInterfaceSetToDefault>().Value);
         }
 
         private T RegisterAndGet<T>()

@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.2.1
+    LightInject version 6.3.5
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -3582,11 +3582,6 @@ namespace LightInject
             return (GetInstanceDelegate)methodSkeleton.CreateDelegate(typeof(GetInstanceDelegate));
         }
 
-        private Func<object> WrapAsFuncDelegate(GetInstanceDelegate instanceDelegate)
-        {
-            return () => instanceDelegate(constants.Items, null);
-        }
-
         private Action<IEmitter> GetEmitMethod(Type serviceType, string serviceName)
         {
             Action<IEmitter> emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);
@@ -4023,10 +4018,6 @@ namespace LightInject
                     if (dependency is ConstructorDependency constructorDependency && constructorDependency.Parameter.HasDefaultValue && options.EnableOptionalArguments)
                     {
                         emitter = GetEmitMethodForDefaultValue(constructorDependency);
-                        if (emitter == null)
-                        {
-                            throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
-                        }
                     }
                     else
                     {
@@ -4076,43 +4067,43 @@ namespace LightInject
                 }
                 else if (parameterType == typeof(byte))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (byte)parameter.DefaultValue : 0;
+                    int defaultValue = (byte)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(sbyte))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (sbyte)parameter.DefaultValue : 0;
+                    int defaultValue = (sbyte)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(short))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (short)parameter.DefaultValue : 0;
+                    int defaultValue = (short)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(ushort))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (ushort)parameter.DefaultValue : 0;
+                    int defaultValue = (ushort)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(uint))
                 {
-                    uint unsignedDefaultValue = parameter.DefaultValue != null ? (uint)parameter.DefaultValue : 0;
-                    emitter.Emit(OpCodes.Ldc_I4, (int)unsignedDefaultValue);
+                    int defaultValue = (int)(uint)parameter.DefaultValue;
+                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(int))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (int)parameter.DefaultValue : 0;
+                    int defaultValue = (int)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(long))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (long)parameter.DefaultValue : 0;
+                    long defaultValue = (long)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I8, defaultValue);
                 }
                 else if (parameterType == typeof(ulong))
                 {
-                    ulong unsignedDefaultValue = parameter.DefaultValue != null ? (ulong)parameter.DefaultValue : 0;
-                    emitter.Emit(OpCodes.Ldc_I8, (long)unsignedDefaultValue);
+                    long defaultValue = (long)(ulong)parameter.DefaultValue;
+                    emitter.Emit(OpCodes.Ldc_I8, defaultValue);
                 }
                 else if (parameterType == typeof(string))
                 {
@@ -4434,7 +4425,6 @@ namespace LightInject
                 if (closedGenericImplementingTypeCandidate != null)
                 {
                     candidates.Add(openGenericServiceRegistration.ServiceName, new ClosedGenericCandidate(closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
-                    //candidates.Add(openGenericServiceRegistration.ServiceName, (closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
                 }
             }
 
@@ -4498,6 +4488,7 @@ namespace LightInject
             }
 
             public Type ClosedGenericImplentingType { get; }
+
             public ILifetime Lifetime { get; }
         }
 
@@ -4629,15 +4620,7 @@ namespace LightInject
 
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)
         {
-            if (serviceRegistration.Lifetime is PerContainerLifetime)
-            {
-                Func<object> instanceDelegate =
-                    () => WrapAsFuncDelegate(CreateDynamicMethodDelegate(emitMethod))();
-                var instance = serviceRegistration.Lifetime.GetInstance(instanceDelegate, null);
-                var instanceIndex = constants.Add(instance);
-                emitter.PushConstant(instanceIndex, instance.GetType());
-            }
-            else if (serviceRegistration.Lifetime is PerScopeLifetime)
+            if (serviceRegistration.Lifetime is PerScopeLifetime)
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
                 PushScope(emitter);
@@ -6262,6 +6245,18 @@ namespace LightInject
         /// <inheritdoc/>
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
+            throw new NotImplementedException("Optimized");
+        }
+
+        /// <summary>
+        /// An optimized non-closing version of the GetInstance method used to avoid closing over the "current" scope.
+        /// </summary>
+        /// <param name="createInstance">The delegate used to create the service instance.</param>
+        /// <param name="scope">The current scope.</param>
+        /// <param name="arguments">An array containing "constants" to be passed to the underlying dynamic method.</param>
+        /// <returns>The service instance.</returns>
+        public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
+        {
             if (singleton != null)
             {
                 return singleton;
@@ -6271,7 +6266,7 @@ namespace LightInject
             {
                 if (singleton == null)
                 {
-                    singleton = createInstance();
+                    singleton = createInstance(arguments, scope);
                 }
             }
 
@@ -7797,7 +7792,7 @@ namespace LightInject
         /// Returns the string representation of an <see cref="Instruction{T}"/>.
         /// </summary>
         /// <returns>The string representation of an <see cref="Instruction{T}"/>.</returns>
-        public override string ToString() => base.ToString() + " " + Argument;
+        public override string ToString() => $"{base.ToString()} {Argument}";
     }
 
     /// <summary>

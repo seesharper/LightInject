@@ -1,0 +1,20 @@
+{
+  "coverage-gutters.lcovname": "./CoverageResult/coverage.info",
+  "coverage-gutters.xmlname": "./CoverageResult/coverage.opencover.xml",
+  "omnisharp.path": "latest",
+  "cSpell.words": [
+    "Callvirt",
+    "Conv",
+    "Ldarg",
+    "Ldelem",
+    "Ldlen",
+    "Ldloc",
+    "Ldloca",
+    "Ldnull",
+    "Ldstr",
+    "MSIL",
+    "Stloc",
+    "Xunit"
+  ],
+  "dotnet-test-explorer.testArguments": "-c release -f netcoreapp2.0"
+}

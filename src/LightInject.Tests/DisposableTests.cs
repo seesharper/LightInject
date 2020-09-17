@@ -6,15 +6,15 @@ namespace LightInject.Tests
     using LightInject.SampleLibrary;
     using Xunit;
 
-    
 
-    
+
+
     public class DisposableTests
     {
         [Fact]
         public void Dispose_ServiceWithPerScopeLifetime_IsDisposed()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             var disposableFoo = new DisposableFoo();
             container.Register<IFoo>(factory => disposableFoo, new PerScopeLifetime());
             using (container.BeginScope())
@@ -89,6 +89,19 @@ namespace LightInject.Tests
             Assert.IsType<Singleton1>(disposableCallback.Disposed[4]);
         }
 
+        [Fact]
+        public void Dispose_Scope_CallsCompletedHandler()
+        {
+            var container = CreateContainer();
+            bool wasCalled = false;
+            using (var scope = container.BeginScope())
+            {
+                scope.Completed += (s, a) => wasCalled = true;
+            }
+
+            Assert.True(wasCalled);
+        }
+
 
         //[Fact]
         //public void Dispose_Singletons_DisposesInReverseOrderWhenInjected()
@@ -100,7 +113,7 @@ namespace LightInject.Tests
         //    using (var scope = container.BeginScope())
         //    {
         //        container.Register<FakeDisposeCallback>(new PerRootScopeLifetime(scope));
-        //        container.Register<IFakeOuterService, FakeDisposableCallbackOuterService>(new PerRequestLifeTime());                
+        //        container.Register<IFakeOuterService, FakeDisposableCallbackOuterService>(new PerRequestLifeTime());
         //        container.Register<IFakeMultipleService, FakeDisposableCallbackInnerService>("1", new PerRootScopeLifetime(scope));
         //        container.Register<IFakeMultipleService, FakeDisposableCallbackInnerService>("2", new PerRootScopeLifetime(scope));
         //        container.Register<IFakeMultipleService, FakeDisposableCallbackInnerService>("3", new PerRequestLifeTime());
@@ -115,7 +128,7 @@ namespace LightInject.Tests
         //        Assert.Equal(multipleServices.Reverse(), callback.Disposed.Skip(1).Take(3).OfType<IFakeMultipleService>());
         //        Assert.Equal(outer.SingleService, callback.Disposed[4]);
         //    }
-            
+
         //}
 
         private static IServiceContainer CreateContainer()
@@ -128,7 +141,7 @@ namespace LightInject.Tests
         public class FakeDisposeCallback
         {
             public List<object> Disposed
-            {                
+            {
                 get;
             } = new List<object>();
         }
@@ -239,12 +252,12 @@ namespace LightInject.Tests
         public class FakeDisposableCallbackOuterService : FakeDisposableCallbackService, IFakeOuterService
         {
             public IFakeService SingleService
-            {               
+            {
                 get;
             }
 
             public IEnumerable<IFakeMultipleService> MultipleServices
-            {               
+            {
                 get;
             }
 

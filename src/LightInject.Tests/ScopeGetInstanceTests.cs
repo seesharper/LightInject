@@ -486,6 +486,12 @@
         }
 
         [Fact]
+        public void ShouldThrowNotImplementedForPerContainerLifeTime()
+        {
+            Assert.Throws<NotImplementedException>(() => new PerContainerLifetime().GetInstance(null, null));
+        }
+
+        [Fact]
         public void ShouldUseLifetimeEx()
         {
             var container = CreateContainer(new ContainerOptions() { EnableCurrentScope = false });
