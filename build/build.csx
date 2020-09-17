@@ -1,6 +1,6 @@
-#load "nuget:Dotnet.Build, 0.7.1"
+#load "nuget:Dotnet.Build, 0.11.1"
 #load "nuget:github-changelog, 0.1.5"
-#load "nuget:dotnet-steps, 0.0.1"
+#load "nuget:dotnet-steps, 0.0.2"
 #load "BuildContext.csx"
 
 using static ChangeLog;
@@ -10,7 +10,9 @@ using static ReleaseManagement;
 [StepDescription("Runs the tests with test coverage")]
 Step testcoverage = () =>
 {
-    DotNet.TestWithCodeCoverage(projectName, testProjectFolder, coverageArtifactsFolder, targetFramework: "netcoreapp2.0", threshold: 90);
+
+    DotNet.TestWithCodeCoverage(Path.GetDirectoryName(BuildContext.TestProjects[0]), BuildContext.TestCoverageArtifactsFolder, BuildContext.CodeCoverageThreshold, "netcoreapp2.0");
+    //DotNet.TestWithCodeCoverage(projectName, testProjectFolder, coverageArtifactsFolder, targetFramework: "netcoreapp2.0", threshold: 90);
 };
 
 [StepDescription("Runs all the tests for all target frameworks")]
@@ -25,7 +27,7 @@ Step pack = () =>
     test();
     testcoverage();
     DotNet.Pack(projectFolder, nuGetArtifactsFolder, Git.Default.GetCurrentShortCommitHash());
-    NuGet.CreateSourcePackage(repoFolder, projectName, nuGetArtifactsFolder);
+    NuGetUtils.CreateSourcePackage(repoFolder, projectName, nuGetArtifactsFolder);
 };
 
 [DefaultStep]
@@ -46,7 +48,8 @@ AsyncStep deploy = async () =>
         Git.Default.RequireCleanWorkingTree();
         await ReleaseManagerFor(owner, projectName, BuildEnvironment.GitHubAccessToken)
         .CreateRelease(Git.Default.GetLatestTag(), pathToReleaseNotes, Array.Empty<ReleaseAsset>());
-        NuGet.TryPush(nuGetArtifactsFolder);
+        DotNet.Push(nuGetArtifactsFolder);
+
     }
 };
 

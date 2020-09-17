@@ -1,7 +1,9 @@
 namespace LightInject.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Text;
     using LightInject;
     using LightInject.SampleLibrary;
@@ -478,7 +480,18 @@ namespace LightInject.Tests
 
         }
 
+        [Fact]
+        public void GetInstance_AmbiguousService_UsesServiceNameAsKey()
+        {
+            var container = new ServiceContainer();
+            container.ConstructorDependencySelector = new CustomConstructorDependencySelector();
+            container.Register<IBar, Bar>("SomeBar");
+            container.Register<IBar, AnotherBar>("MyCustomBar");
+            container.Register<IFoo, FooWithDependency>();
 
+            var instance = (FooWithDependency)container.GetInstance<IFoo>();
+            Assert.IsType<AnotherBar>(instance.Bar);
+        }
 
 
         [Fact]
@@ -502,6 +515,22 @@ namespace LightInject.Tests
             container.Register<IBar, BarWithFooDependency>();
             container.Register<IFoo, FooWithDependency>("FooWithDependency");
             container.GetInstance<IFoo>("FooWithDependency");
+        }
+
+
+        public class CustomConstructorDependencySelector : ConstructorDependencySelector
+        {
+            public override IEnumerable<ConstructorDependency> Execute(ConstructorInfo constructor)
+            {
+                if (constructor.DeclaringType == typeof(FooWithDependency))
+                {
+                    return new[] { new ConstructorDependency() { ServiceType = typeof(IBar), ServiceName = "MyCustomBar", IsRequired = true, Parameter = constructor.GetParameters()[0] } };
+                }
+                else
+                {
+                    return base.Execute(constructor);
+                }
+            }
         }
 
 

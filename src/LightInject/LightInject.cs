@@ -3582,11 +3582,6 @@ namespace LightInject
             return (GetInstanceDelegate)methodSkeleton.CreateDelegate(typeof(GetInstanceDelegate));
         }
 
-        private Func<object> WrapAsFuncDelegate(GetInstanceDelegate instanceDelegate)
-        {
-            return () => instanceDelegate(constants.Items, null);
-        }
-
         private Action<IEmitter> GetEmitMethod(Type serviceType, string serviceName)
         {
             Action<IEmitter> emitMethod = GetRegisteredEmitMethod(serviceType, serviceName);
@@ -4023,10 +4018,6 @@ namespace LightInject
                     if (dependency is ConstructorDependency constructorDependency && constructorDependency.Parameter.HasDefaultValue && options.EnableOptionalArguments)
                     {
                         emitter = GetEmitMethodForDefaultValue(constructorDependency);
-                        if (emitter == null)
-                        {
-                            throw new InvalidOperationException(string.Format(UnresolvedDependencyError, dependency));
-                        }
                     }
                     else
                     {
@@ -4076,43 +4067,43 @@ namespace LightInject
                 }
                 else if (parameterType == typeof(byte))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (byte)parameter.DefaultValue : 0;
+                    int defaultValue = (byte)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(sbyte))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (sbyte)parameter.DefaultValue : 0;
+                    int defaultValue = (sbyte)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(short))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (short)parameter.DefaultValue : 0;
+                    int defaultValue = (short)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(ushort))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (ushort)parameter.DefaultValue : 0;
+                    int defaultValue = (ushort)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(uint))
                 {
-                    uint unsignedDefaultValue = parameter.DefaultValue != null ? (uint)parameter.DefaultValue : 0;
-                    emitter.Emit(OpCodes.Ldc_I4, (int)unsignedDefaultValue);
+                    int defaultValue = (int)(uint)parameter.DefaultValue;
+                    emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(int))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (int)parameter.DefaultValue : 0;
+                    int defaultValue = (int)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I4, defaultValue);
                 }
                 else if (parameterType == typeof(long))
                 {
-                    var defaultValue = parameter.DefaultValue != null ? (long)parameter.DefaultValue : 0;
+                    long defaultValue = (long)parameter.DefaultValue;
                     emitter.Emit(OpCodes.Ldc_I8, defaultValue);
                 }
                 else if (parameterType == typeof(ulong))
                 {
-                    ulong unsignedDefaultValue = parameter.DefaultValue != null ? (ulong)parameter.DefaultValue : 0;
-                    emitter.Emit(OpCodes.Ldc_I8, (long)unsignedDefaultValue);
+                    long defaultValue = (long)(ulong)parameter.DefaultValue;
+                    emitter.Emit(OpCodes.Ldc_I8, defaultValue);
                 }
                 else if (parameterType == typeof(string))
                 {
@@ -7794,7 +7785,7 @@ namespace LightInject
         /// Returns the string representation of an <see cref="Instruction{T}"/>.
         /// </summary>
         /// <returns>The string representation of an <see cref="Instruction{T}"/>.</returns>
-        public override string ToString() => base.ToString() + " " + Argument;
+        public override string ToString() => $"{base.ToString()} {Argument}";
     }
 
     /// <summary>

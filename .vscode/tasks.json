@@ -6,6 +6,7 @@
       "command": "dotnet",
       "args": ["build", "/property:GenerateFullPaths=true"],
       "type": "shell",
+      "options": { "cwd": "src" },
       "group": "build",
       "presentation": {
         "reveal": "always"
@@ -17,6 +18,7 @@
       "command": "dotnet",
       "args": ["build", "--no-incremental", "/property:GenerateFullPaths=true"],
       "type": "shell",
+      "options": { "cwd": "src" },
       "group": "build",
       "presentation": {
         "reveal": "always",
