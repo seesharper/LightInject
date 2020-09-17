@@ -6254,20 +6254,7 @@ namespace LightInject
         /// <inheritdoc/>
         public object GetInstance(Func<object> createInstance, Scope scope)
         {
-            if (singleton != null)
-            {
-                return singleton;
-            }
-
-            lock (syncRoot)
-            {
-                if (singleton == null)
-                {
-                    singleton = createInstance();
-                }
-            }
-
-            return singleton;
+            throw new NotImplementedException("Optimized");
         }
 
         public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
