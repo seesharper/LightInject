@@ -5,23 +5,16 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": ".NET Core Launch (console)",
+      "name": "Build script debug",
       "type": "coreclr",
       "request": "launch",
-      "preLaunchTask": "build",
-      // If you have changed target frameworks, make sure to update the program path.
-      "program": "${workspaceFolder}/LightInject.Benchmarks/bin/Debug/netcoreapp2.2/LightInject.Benchmarks.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/LightInject.Benchmarks",
-      // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": ".NET Core Attach",
-      "type": "coreclr",
-      "request": "attach",
-      "processId": "${command:pickProcess}"
+      "program": "${env:HOME}/.dotnet/tools/dotnet-script",
+      "args": ["${workspaceFolder}/build/build.csx"],
+      "windows": {
+        "program": "${env:USERPROFILE}/.dotnet/tools/dotnet-script.exe"
+      },
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": true
     }
   ]
 }
