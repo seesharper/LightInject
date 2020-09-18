@@ -1,7 +1,7 @@
 #load "nuget:Dotnet.Build, 0.11.1"
 #load "nuget:github-changelog, 0.1.5"
 #load "nuget:dotnet-steps, 0.0.2"
-#load "BuildContext.csx"
+
 
 using static ChangeLog;
 using static ReleaseManagement;
@@ -23,8 +23,8 @@ Step test = () =>
 [StepDescription("Creates the NuGet packages")]
 Step pack = () =>
 {
-    test();
-    testcoverage();
+    // test();
+    // testcoverage();
     DotNet.Pack();
     NuGetUtils.CreateSourcePackage(BuildContext.RepositoryFolder, BuildContext.ProjectName, BuildContext.NuGetArtifactsFolder);
 };
