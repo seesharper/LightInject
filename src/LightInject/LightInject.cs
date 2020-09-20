@@ -4479,19 +4479,6 @@ namespace LightInject
             }
         }
 
-        private struct ClosedGenericCandidate
-        {
-            public ClosedGenericCandidate(Type closedGenericImplentingType, ILifetime lifetime)
-            {
-                ClosedGenericImplentingType = closedGenericImplentingType;
-                Lifetime = lifetime;
-            }
-
-            public Type ClosedGenericImplentingType { get; }
-
-            public ILifetime Lifetime { get; }
-        }
-
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)
         {
             Type actualServiceType = TypeHelper.GetElementType(serviceType);
@@ -4826,6 +4813,19 @@ namespace LightInject
                 Lifetime = lifetime ?? DefaultLifetime,
             };
             Register(serviceRegistration);
+        }
+
+        private struct ClosedGenericCandidate
+        {
+            public ClosedGenericCandidate(Type closedGenericImplentingType, ILifetime lifetime)
+            {
+                ClosedGenericImplentingType = closedGenericImplentingType;
+                Lifetime = lifetime;
+            }
+
+            public Type ClosedGenericImplentingType { get; }
+
+            public ILifetime Lifetime { get; }
         }
 
         private class Storage<T>
