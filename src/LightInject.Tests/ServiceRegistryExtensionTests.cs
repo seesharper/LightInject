@@ -303,6 +303,31 @@ namespace LightInject.Tests
             AssertTransientRegistration<Foo>(container);
         }
 
+        [Fact]
+        public void ShouldOverrideUsingImplementingType()
+        {
+            var container = CreateContainer();
+
+            container.Register<IFoo, Foo>();
+            container.Override<IFoo, AnotherFoo>();
+
+            Assert.IsType<AnotherFoo>(container.GetInstance<IFoo>());
+        }
+
+        [Fact]
+        public void ShouldOverrideUsingImplementingTypeWithLifetime()
+        {
+            var container = CreateContainer();
+
+            container.Register<IFoo, Foo>();
+            container.Override<IFoo, AnotherFoo>(new PerContainerLifetime());
+            Assert.IsType<AnotherFoo>(container.GetInstance<IFoo>());
+            var firstInstance = container.GetInstance<IFoo>();
+            var secondInstance = container.GetInstance<IFoo>();
+
+            Assert.Same(firstInstance, secondInstance);
+        }
+
         private void AssertTransientRegistration<TService>(IServiceRegistry serviceRegistry, string serviceName = null)
         {
             serviceName = serviceName ?? string.Empty;

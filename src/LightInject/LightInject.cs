@@ -1567,6 +1567,46 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry RegisterTransient<TService>(this IServiceRegistry serviceRegistry, Func<IServiceFactory, TService> factory, string serviceName)
             => serviceRegistry.Register<TService>(factory, serviceName);
+
+        /// <summary>
+        /// Allows a registered service to be overridden by another <see cref="ServiceRegistration"/>.
+        /// Allows the registered <typeparamref name="TService"/> to be overridden by <typeparamref name="TImplementation"/>.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <typeparam name="TService">The type of service to override.</typeparam>
+        /// <typeparam name="TImplementation">The implementing type used to override the current implementing type.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry Override<TService, TImplementation>(this IServiceRegistry serviceRegistry)
+            where TImplementation : TService
+        {
+            return serviceRegistry.Override(sr => sr.ServiceType == typeof(TService), (serviceFactory, registration) =>
+            {
+                registration.FactoryExpression = null;
+                registration.ImplementingType = typeof(TImplementation);
+                return registration;
+            });
+        }
+
+        /// <summary>
+        /// Allows a registered service to be overridden by another <see cref="ServiceRegistration"/>.
+        /// Allows the registered <typeparamref name="TService"/> to be overridden by <typeparamref name="TImplementation"/>.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> to be used when overriding the service.</param>
+        /// <typeparam name="TService">The type of service to override.</typeparam>
+        /// <typeparam name="TImplementation">The implementing type used to override the current implementing type.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry Override<TService, TImplementation>(this IServiceRegistry serviceRegistry, ILifetime lifetime)
+            where TImplementation : TService
+        {
+            return serviceRegistry.Override(sr => sr.ServiceType == typeof(TService), (serviceFactory, registration) =>
+            {
+                registration.FactoryExpression = null;
+                registration.ImplementingType = typeof(TImplementation);
+                registration.Lifetime = lifetime;
+                return registration;
+            });
+        }
     }
 
     /// <summary>
@@ -1859,7 +1899,7 @@ namespace LightInject
                 }
             }
 
-            return default(GetInstanceDelegate);
+            return default;
         }
     }
 
@@ -1888,7 +1928,7 @@ namespace LightInject
                 return tree.Value;
             }
 
-            return default(TValue);
+            return default;
         }
 
         /// <summary>
@@ -1965,7 +2005,7 @@ namespace LightInject
                 }
             }
 
-            return default(TValue);
+            return default;
         }
 
         /// <summary>
@@ -3721,25 +3761,6 @@ namespace LightInject
             return newRegistration;
         }
 
-        private void EmitNewInstanceWithDecorators(ServiceRegistration serviceRegistration, IEmitter emitter)
-        {
-            var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
-            foreach (var serviceOverride in serviceOverrides)
-            {
-                serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
-            }
-
-            var serviceDecorators = GetDecorators(serviceRegistration);
-            if (serviceDecorators.Length > 0)
-            {
-                EmitDecorators(serviceRegistration, serviceDecorators, emitter, dm => EmitNewInstance(serviceRegistration, dm));
-            }
-            else
-            {
-                EmitNewInstance(serviceRegistration, emitter);
-            }
-        }
-
         private DecoratorRegistration[] GetDecorators(ServiceRegistration serviceRegistration)
         {
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();
@@ -4623,12 +4644,36 @@ namespace LightInject
 
         private Action<IEmitter> ResolveEmitMethod(ServiceRegistration serviceRegistration)
         {
-            if (serviceRegistration.Lifetime == null)
+            return emitter =>
             {
-                return methodSkeleton => EmitNewInstanceWithDecorators(serviceRegistration, methodSkeleton);
-            }
+                var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
+                foreach (var serviceOverride in serviceOverrides)
+                {
+                    serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
+                }
 
-            return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstanceWithDecorators(serviceRegistration, ms), methodSkeleton);
+                if (serviceRegistration.Lifetime == null)
+                {
+                    EmitNewInstanceWithDecorators(serviceRegistration, emitter);
+                }
+                else
+                {
+                    EmitLifetime(serviceRegistration, e => EmitNewInstanceWithDecorators(serviceRegistration, e), emitter);
+                }
+            };
+        }
+
+        private void EmitNewInstanceWithDecorators(ServiceRegistration serviceRegistration, IEmitter emitter)
+        {
+            var serviceDecorators = GetDecorators(serviceRegistration);
+            if (serviceDecorators.Length > 0)
+            {
+                EmitDecorators(serviceRegistration, serviceDecorators, emitter, dm => EmitNewInstance(serviceRegistration, dm));
+            }
+            else
+            {
+                EmitNewInstance(serviceRegistration, emitter);
+            }
         }
 
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)
@@ -6349,8 +6394,6 @@ namespace LightInject
     [LifeSpan(20)]
     public class PerScopeLifetime : ILifetime, ICloneableLifeTime
     {
-        private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
-
         /// <summary>
         /// Returns the same service instance within the current <see cref="Scope"/>.
         /// </summary>
@@ -8326,7 +8369,7 @@ namespace LightInject
 
         public static readonly MethodInfo GetCurrentScopeMethod;
 
-        private static ThreadSafeDictionary<Type, MethodInfo> nonClosingGetInstanceMethods
+        private static readonly ThreadSafeDictionary<Type, MethodInfo> NonClosingGetInstanceMethods
             = new ThreadSafeDictionary<Type, MethodInfo>();
 
         static LifetimeHelper()
@@ -8336,9 +8379,7 @@ namespace LightInject
         }
 
         public static MethodInfo GetNonClosingGetInstanceMethod(Type lifetimeType)
-        {
-            return nonClosingGetInstanceMethods.GetOrAdd(lifetimeType, ResolveNonClosingGetInstanceMethod);
-        }
+            => NonClosingGetInstanceMethods.GetOrAdd(lifetimeType, ResolveNonClosingGetInstanceMethod);
 
         private static MethodInfo ResolveNonClosingGetInstanceMethod(Type lifetimeType)
         {
@@ -8509,10 +8550,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
         }
 
         private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetInstanceWithParametersMethods()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
-                () => new ThreadSafeDictionary<Type, MethodInfo>());
-        }
+            => new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
 
         private static MethodInfo CreateGetInstanceWithParametersMethod(Type serviceType)
         {
@@ -8525,39 +8563,22 @@ but either way the scope has to be started with 'container.BeginScope()'";
 
             return closedGenericMethod;
         }
+#pragma warning disable IDE0051
 
-        // ReSharper disable UnusedMember.Local
         private static Func<TArg, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg, TService>(IServiceFactory factory, string serviceName)
+            => arg => factory.GetInstance<TArg, TService>(arg, serviceName);
 
-        // ReSharper restore UnusedMember.Local
-        {
-            return arg => factory.GetInstance<TArg, TService>(arg, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TService>(IServiceFactory factory, string serviceName)
+            => (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
 
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TArg3, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TService>(IServiceFactory factory, string serviceName)
+            => (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
 
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TArg3, TArg4, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TArg4, TService>(IServiceFactory factory, string serviceName)
-
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
-        }
+            => (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
     }
+
+#pragma warning restore IDE0051
 
     /// <summary>
     /// Contains a set of extension method that represents
