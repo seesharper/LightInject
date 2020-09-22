@@ -23,8 +23,8 @@ Step test = () =>
 [StepDescription("Creates the NuGet packages")]
 Step pack = () =>
 {
-    // test();
-    // testcoverage();
+    test();
+    testcoverage();
     DotNet.Pack();
     NuGetUtils.CreateSourcePackage(BuildContext.RepositoryFolder, BuildContext.ProjectName, BuildContext.NuGetArtifactsFolder);
 };
