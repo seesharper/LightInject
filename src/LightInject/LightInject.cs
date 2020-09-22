@@ -1899,7 +1899,7 @@ namespace LightInject
                 }
             }
 
-            return default(GetInstanceDelegate);
+            return default;
         }
     }
 
@@ -1928,7 +1928,7 @@ namespace LightInject
                 return tree.Value;
             }
 
-            return default(TValue);
+            return default;
         }
 
         /// <summary>
@@ -2005,7 +2005,7 @@ namespace LightInject
                 }
             }
 
-            return default(TValue);
+            return default;
         }
 
         /// <summary>
@@ -6394,8 +6394,6 @@ namespace LightInject
     [LifeSpan(20)]
     public class PerScopeLifetime : ILifetime, ICloneableLifeTime
     {
-        private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
-
         /// <summary>
         /// Returns the same service instance within the current <see cref="Scope"/>.
         /// </summary>
@@ -8371,7 +8369,7 @@ namespace LightInject
 
         public static readonly MethodInfo GetCurrentScopeMethod;
 
-        private static ThreadSafeDictionary<Type, MethodInfo> nonClosingGetInstanceMethods
+        private static readonly ThreadSafeDictionary<Type, MethodInfo> NonClosingGetInstanceMethods
             = new ThreadSafeDictionary<Type, MethodInfo>();
 
         static LifetimeHelper()
@@ -8381,9 +8379,7 @@ namespace LightInject
         }
 
         public static MethodInfo GetNonClosingGetInstanceMethod(Type lifetimeType)
-        {
-            return nonClosingGetInstanceMethods.GetOrAdd(lifetimeType, ResolveNonClosingGetInstanceMethod);
-        }
+            => NonClosingGetInstanceMethods.GetOrAdd(lifetimeType, ResolveNonClosingGetInstanceMethod);
 
         private static MethodInfo ResolveNonClosingGetInstanceMethod(Type lifetimeType)
         {
@@ -8554,10 +8550,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
         }
 
         private static Lazy<ThreadSafeDictionary<Type, MethodInfo>> CreateLazyGetInstanceWithParametersMethods()
-        {
-            return new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(
-                () => new ThreadSafeDictionary<Type, MethodInfo>());
-        }
+            => new Lazy<ThreadSafeDictionary<Type, MethodInfo>>(() => new ThreadSafeDictionary<Type, MethodInfo>());
 
         private static MethodInfo CreateGetInstanceWithParametersMethod(Type serviceType)
         {
@@ -8570,39 +8563,22 @@ but either way the scope has to be started with 'container.BeginScope()'";
 
             return closedGenericMethod;
         }
+#pragma warning disable IDE0051
 
-        // ReSharper disable UnusedMember.Local
         private static Func<TArg, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg, TService>(IServiceFactory factory, string serviceName)
+            => arg => factory.GetInstance<TArg, TService>(arg, serviceName);
 
-        // ReSharper restore UnusedMember.Local
-        {
-            return arg => factory.GetInstance<TArg, TService>(arg, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TService>(IServiceFactory factory, string serviceName)
+            => (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
 
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2) => factory.GetInstance<TArg1, TArg2, TService>(arg1, arg2, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TArg3, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TService>(IServiceFactory factory, string serviceName)
+            => (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
 
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2, arg3) => factory.GetInstance<TArg1, TArg2, TArg3, TService>(arg1, arg2, arg3, serviceName);
-        }
-
-        // ReSharper disable UnusedMember.Local
         private static Func<TArg1, TArg2, TArg3, TArg4, TService> CreateGenericGetNamedParameterizedInstanceDelegate<TArg1, TArg2, TArg3, TArg4, TService>(IServiceFactory factory, string serviceName)
-
-        // ReSharper restore UnusedMember.Local
-        {
-            return (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
-        }
+            => (arg1, arg2, arg3, arg4) => factory.GetInstance<TArg1, TArg2, TArg3, TArg4, TService>(arg1, arg2, arg3, arg4, serviceName);
     }
+
+#pragma warning restore IDE0051
 
     /// <summary>
     /// Contains a set of extension method that represents

@@ -22,6 +22,7 @@
     <AssemblyTitle>$(AssemblyName) ($(TargetFramework))</AssemblyTitle>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <WarningsAsErrors>true</WarningsAsErrors>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
   <ItemGroup>
