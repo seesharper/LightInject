@@ -1567,6 +1567,44 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry RegisterTransient<TService>(this IServiceRegistry serviceRegistry, Func<IServiceFactory, TService> factory, string serviceName)
             => serviceRegistry.Register<TService>(factory, serviceName);
+
+        /// <summary>
+        /// Allows a registered service to be overridden by another <see cref="ServiceRegistration"/>.
+        /// Allows the registered <typeparamref name="TService"/> to be overridden by <typeparamref name="TImplementation"/>.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <typeparam name="TService">The type of service to override.</typeparam>
+        /// <typeparam name="TImplementation">The implementing type used to override the current implementing type.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry Override<TService, TImplementation>(this IServiceRegistry serviceRegistry) where TImplementation : TService
+        {
+            return serviceRegistry.Override(sr => sr.ServiceType == typeof(TService), (serviceFactory, registration) =>
+            {
+                registration.FactoryExpression = null;
+                registration.ImplementingType = typeof(TImplementation);
+                return registration;
+            });
+        }
+
+        /// <summary>
+        /// Allows a registered service to be overridden by another <see cref="ServiceRegistration"/>.
+        /// Allows the registered <typeparamref name="TService"/> to be overridden by <typeparamref name="TImplementation"/>.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> to be used when overriding the service.</param>
+        /// <typeparam name="TService">The type of service to override.</typeparam>
+        /// <typeparam name="TImplementation">The implementing type used to override the current implementing type.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry Override<TService, TImplementation>(this IServiceRegistry serviceRegistry, ILifetime lifetime) where TImplementation : TService
+        {
+            return serviceRegistry.Override(sr => sr.ServiceType == typeof(TService), (serviceFactory, registration) =>
+            {
+                registration.FactoryExpression = null;
+                registration.ImplementingType = typeof(TImplementation);
+                registration.Lifetime = lifetime;
+                return registration;
+            });
+        }
     }
 
     /// <summary>
@@ -3721,25 +3759,6 @@ namespace LightInject
             return newRegistration;
         }
 
-        private void EmitNewInstanceWithDecorators(ServiceRegistration serviceRegistration, IEmitter emitter)
-        {
-            var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
-            foreach (var serviceOverride in serviceOverrides)
-            {
-                serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
-            }
-
-            var serviceDecorators = GetDecorators(serviceRegistration);
-            if (serviceDecorators.Length > 0)
-            {
-                EmitDecorators(serviceRegistration, serviceDecorators, emitter, dm => EmitNewInstance(serviceRegistration, dm));
-            }
-            else
-            {
-                EmitNewInstance(serviceRegistration, emitter);
-            }
-        }
-
         private DecoratorRegistration[] GetDecorators(ServiceRegistration serviceRegistration)
         {
             var registeredDecorators = decorators.Items.Where(d => d.ServiceType == serviceRegistration.ServiceType).ToList();
@@ -4621,14 +4640,47 @@ namespace LightInject
             }
         }
 
-        private Action<IEmitter> ResolveEmitMethod(ServiceRegistration serviceRegistration)
+        private Action<IEmitter> ResolveEmitMethod2(ServiceRegistration serviceRegistration)
         {
             if (serviceRegistration.Lifetime == null)
             {
                 return methodSkeleton => EmitNewInstanceWithDecorators(serviceRegistration, methodSkeleton);
             }
 
-            return methodSkeleton => EmitLifetime(serviceRegistration, ms => EmitNewInstanceWithDecorators(serviceRegistration, ms), methodSkeleton);
+            return methodSkeleton => EmitLifetime(serviceRegistration, emitter => EmitNewInstanceWithDecorators(serviceRegistration, emitter), methodSkeleton);
+        }
+
+        private Action<IEmitter> ResolveEmitMethod(ServiceRegistration serviceRegistration)
+        {
+            return emitter =>
+            {
+                var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
+                foreach (var serviceOverride in serviceOverrides)
+                {
+                    serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
+                }
+                if (serviceRegistration.Lifetime == null)
+                {
+                    EmitNewInstanceWithDecorators(serviceRegistration, emitter);
+                }
+                else
+                {
+                    EmitLifetime(serviceRegistration, e => EmitNewInstanceWithDecorators(serviceRegistration, e), emitter);
+                }
+            };
+        }
+
+        private void EmitNewInstanceWithDecorators(ServiceRegistration serviceRegistration, IEmitter emitter)
+        {
+            var serviceDecorators = GetDecorators(serviceRegistration);
+            if (serviceDecorators.Length > 0)
+            {
+                EmitDecorators(serviceRegistration, serviceDecorators, emitter, dm => EmitNewInstance(serviceRegistration, dm));
+            }
+            else
+            {
+                EmitNewInstance(serviceRegistration, emitter);
+            }
         }
 
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)
