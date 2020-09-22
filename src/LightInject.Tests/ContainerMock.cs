@@ -208,6 +208,11 @@ namespace LightInject.Tests
             throw new NotImplementedException();
         }
 
+        public IServiceRegistry RegisterFrom<TCompositionRoot>(TCompositionRoot compositionRoot) where TCompositionRoot : ICompositionRoot
+        {
+            throw new NotImplementedException();
+        }
+
         public IServiceRegistry RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, TDependency> factory)
         {
             throw new NotImplementedException();

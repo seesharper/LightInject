@@ -7,18 +7,16 @@ namespace LightInject.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Security;
-
     using System.Text;
     using System.Threading.Tasks;
-
     using LightInject;
     using LightInject.SampleLibrary;
     using Xunit;
     using Xunit.Sdk;
-    using Foo = LightInject.SampleLibrary.Foo;
-    using IFoo = LightInject.SampleLibrary.IFoo;
-    using IBar = LightInject.SampleLibrary.IBar;
     using Bar = LightInject.SampleLibrary.Bar;
+    using Foo = LightInject.SampleLibrary.Foo;
+    using IBar = LightInject.SampleLibrary.IBar;
+    using IFoo = LightInject.SampleLibrary.IFoo;
 
     public class ServiceContainerTests : TestBase
     {
@@ -1691,7 +1689,7 @@ namespace LightInject.Tests
 
 #if NET452 || NET40 || NET46 || NETCOREAPP2_0
         [Fact]
-        public void RegisterFrom_CompositionRoot_CallsCompositionRootExecutor()
+        public void RegisterFrom_CompositionRootType_CallsCompositionRootExecutor()
         {
             var container = (ServiceContainer)CreateContainer();
             var compositionRootExecutorMock = new CompositionRootExecutorMock();
@@ -1700,6 +1698,19 @@ namespace LightInject.Tests
             container.RegisterFrom<CompositionRootMock>();
 
             compositionRootExecutorMock.Assert(c => c.Execute(typeof(CompositionRootMock)), Invoked.Once);
+        }
+
+        [Fact]
+        public void RegisterFrom_CompositionRoot_CallsCompositionRootExecutor()
+        {
+            var container = (ServiceContainer)CreateContainer();
+            var compositionRootExecutorMock = new CompositionRootExecutorMock();
+            container.CompositionRootExecutor = compositionRootExecutorMock;
+            var compositionRootMock = new CompositionRootMock();
+
+            container.RegisterFrom(compositionRootMock);
+
+            compositionRootExecutorMock.Assert(c => c.Execute(compositionRootMock), Invoked.Once);
         }
 #endif
         [Fact]

@@ -492,6 +492,15 @@ namespace LightInject
             where TCompositionRoot : ICompositionRoot, new();
 
         /// <summary>
+        /// Registers services from the given <paramref name="compositionRoot"/>.
+        /// </summary>
+        /// <param name="compositionRoot">The <see cref="ICompositionRoot"/> from which to register services.</param>
+        /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        IServiceRegistry RegisterFrom<TCompositionRoot>(TCompositionRoot compositionRoot)
+            where TCompositionRoot : ICompositionRoot;
+
+        /// <summary>
         /// Registers a factory delegate to be used when resolving a constructor dependency for
         /// an implicitly registered service.
         /// </summary>
@@ -990,7 +999,8 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a class that is responsible for instantiating and executing an <see cref="ICompositionRoot"/>.
+    /// Represents a class that is responsible for executing an <see cref="ICompositionRoot"/> and making
+    /// sure that we don't execute the same composition root twice.
     /// </summary>
     public interface ICompositionRootExecutor
     {
@@ -999,6 +1009,14 @@ namespace LightInject
         /// </summary>
         /// <param name="compositionRootType">The concrete <see cref="ICompositionRoot"/> type to be instantiated and executed.</param>
         void Execute(Type compositionRootType);
+
+        /// <summary>
+        /// Executes the <see cref="ICompositionRoot.Compose"/> method.
+        /// </summary>
+        /// <typeparam name="TCompositionRoot">The type of <see cref="ICompositionRoot"/> to register from.</typeparam>
+        /// <param name="compositionRoot">The <see cref="ICompositionRoot"/> to be executed.</param>
+        void Execute<TCompositionRoot>(TCompositionRoot compositionRoot)
+            where TCompositionRoot : ICompositionRoot;
     }
 
     /// <summary>
@@ -2779,6 +2797,14 @@ namespace LightInject
         }
 
         /// <inheritdoc/>
+        public IServiceRegistry RegisterFrom<TCompositionRoot>(TCompositionRoot compositionRoot)
+           where TCompositionRoot : ICompositionRoot
+        {
+            CompositionRootExecutor.Execute(compositionRoot);
+            return this;
+        }
+
+        /// <inheritdoc/>
         public IServiceRegistry RegisterConstructorDependency<TDependency>(Func<IServiceFactory, ParameterInfo, TDependency> factory)
         {
             if (isLocked)
@@ -4479,19 +4505,6 @@ namespace LightInject
             }
         }
 
-        private struct ClosedGenericCandidate
-        {
-            public ClosedGenericCandidate(Type closedGenericImplentingType, ILifetime lifetime)
-            {
-                ClosedGenericImplentingType = closedGenericImplentingType;
-                Lifetime = lifetime;
-            }
-
-            public Type ClosedGenericImplentingType { get; }
-
-            public ILifetime Lifetime { get; }
-        }
-
         private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)
         {
             Type actualServiceType = TypeHelper.GetElementType(serviceType);
@@ -4826,6 +4839,19 @@ namespace LightInject
                 Lifetime = lifetime ?? DefaultLifetime,
             };
             Register(serviceRegistration);
+        }
+
+        private struct ClosedGenericCandidate
+        {
+            public ClosedGenericCandidate(Type closedGenericImplentingType, ILifetime lifetime)
+            {
+                ClosedGenericImplentingType = closedGenericImplentingType;
+                Lifetime = lifetime;
+            }
+
+            public Type ClosedGenericImplentingType { get; }
+
+            public ILifetime Lifetime { get; }
         }
 
         private class Storage<T>
@@ -6851,6 +6877,23 @@ namespace LightInject
                     {
                         executedCompositionRoots.Add(compositionRootType);
                         var compositionRoot = activator(compositionRootType);
+                        compositionRoot.Compose(serviceRegistry);
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public void Execute<TCompositionRoot>(TCompositionRoot compositionRoot)
+            where TCompositionRoot : ICompositionRoot
+        {
+            if (!executedCompositionRoots.Contains(typeof(TCompositionRoot)))
+            {
+                lock (syncRoot)
+                {
+                    if (!executedCompositionRoots.Contains(typeof(TCompositionRoot)))
+                    {
+                        executedCompositionRoots.Add(typeof(TCompositionRoot));
                         compositionRoot.Compose(serviceRegistry);
                     }
                 }

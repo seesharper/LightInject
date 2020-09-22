@@ -7,7 +7,12 @@ namespace LightInject.Tests
     {
         public void Execute(Type compositionRootType)
         {
-            ((IInvocationContext<ICompositionRootExecutor>) this).Invoke(c => c.Execute(compositionRootType));
+            ((IInvocationContext<ICompositionRootExecutor>)this).Invoke(c => c.Execute(compositionRootType));
+        }
+
+        public void Execute<TCompositionRoot>(TCompositionRoot compositionRoot) where TCompositionRoot : ICompositionRoot
+        {
+            ((IInvocationContext<ICompositionRootExecutor>)this).Invoke(c => c.Execute(compositionRoot));
         }
     }
 }
