@@ -1576,7 +1576,8 @@ namespace LightInject
         /// <typeparam name="TService">The type of service to override.</typeparam>
         /// <typeparam name="TImplementation">The implementing type used to override the current implementing type.</typeparam>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
-        public static IServiceRegistry Override<TService, TImplementation>(this IServiceRegistry serviceRegistry) where TImplementation : TService
+        public static IServiceRegistry Override<TService, TImplementation>(this IServiceRegistry serviceRegistry)
+            where TImplementation : TService
         {
             return serviceRegistry.Override(sr => sr.ServiceType == typeof(TService), (serviceFactory, registration) =>
             {
@@ -1595,7 +1596,8 @@ namespace LightInject
         /// <typeparam name="TService">The type of service to override.</typeparam>
         /// <typeparam name="TImplementation">The implementing type used to override the current implementing type.</typeparam>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
-        public static IServiceRegistry Override<TService, TImplementation>(this IServiceRegistry serviceRegistry, ILifetime lifetime) where TImplementation : TService
+        public static IServiceRegistry Override<TService, TImplementation>(this IServiceRegistry serviceRegistry, ILifetime lifetime)
+            where TImplementation : TService
         {
             return serviceRegistry.Override(sr => sr.ServiceType == typeof(TService), (serviceFactory, registration) =>
             {
@@ -4640,16 +4642,6 @@ namespace LightInject
             }
         }
 
-        private Action<IEmitter> ResolveEmitMethod2(ServiceRegistration serviceRegistration)
-        {
-            if (serviceRegistration.Lifetime == null)
-            {
-                return methodSkeleton => EmitNewInstanceWithDecorators(serviceRegistration, methodSkeleton);
-            }
-
-            return methodSkeleton => EmitLifetime(serviceRegistration, emitter => EmitNewInstanceWithDecorators(serviceRegistration, emitter), methodSkeleton);
-        }
-
         private Action<IEmitter> ResolveEmitMethod(ServiceRegistration serviceRegistration)
         {
             return emitter =>
@@ -4659,6 +4651,7 @@ namespace LightInject
                 {
                     serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
                 }
+
                 if (serviceRegistration.Lifetime == null)
                 {
                     EmitNewInstanceWithDecorators(serviceRegistration, emitter);
