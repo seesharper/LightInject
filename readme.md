@@ -901,6 +901,11 @@ Allows explicit execution of a composition root.
 container.RegisterFrom<SampleCompositionRoot>();
 ```
 
+Alternatively we can also pass an existing composition root instance.
+
+```c#
+container.RegisterFrom(new SampleCompositionRoot());
+```
 
 ## Generics ##
 
