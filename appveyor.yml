@@ -2,31 +2,29 @@ version: 1.0.{build}
 image: Visual Studio 2017
 
 install:
-- ps: iwr https://raw.githubusercontent.com/dotnet/cli/release/2.1.3xx/scripts/obtain/dotnet-install.ps1 -outfile dotnet-install.ps1
-- ps: .\dotnet-install.ps1 -Version 2.1.300 -InstallDir $env:ProgramFiles/dotnet
-- cmd: choco install dotnet.script
+  - cmd: choco install dotnet.script
 
 build_script:
-- cmd: >-
-    cd build
+  - cmd: >-
+      cd build
 
-    refreshenv
+      refreshenv
 
-    dotnet script build.csx
+      dotnet script build.csx
 
 branches:
   only:
     - master
 
 artifacts:
-- path: build\Artifacts\NuGet\*.nupkg
-  name: NuGet Packages
+  - path: build\Artifacts\NuGet\*.nupkg
+    name: NuGet Packages
 
 test: off
 environment:
-    IS_SECURE_BUILDENVIRONMENT:
-        secure: xYC5jpSucUdHr8YwfxWefw==
-    GITHUB_REPO_TOKEN:
-        secure: FSPXTPuTgFMaZA7DubJoX217SkWhFLN2BGqCCi4gBux967eFtwkhbrafm7ay8cP2
-    NUGET_APIKEY:
-        secure: ynFcRQX0oim3DdR5Y8s4BtynS/NYRG059GvWGckqhpZGNZVvhvvn5UUWgsyPKLKm
+  IS_SECURE_BUILDENVIRONMENT:
+    secure: xYC5jpSucUdHr8YwfxWefw==
+  GITHUB_REPO_TOKEN:
+    secure: FSPXTPuTgFMaZA7DubJoX217SkWhFLN2BGqCCi4gBux967eFtwkhbrafm7ay8cP2
+  NUGET_APIKEY:
+    secure: ynFcRQX0oim3DdR5Y8s4BtynS/NYRG059GvWGckqhpZGNZVvhvvn5UUWgsyPKLKm
