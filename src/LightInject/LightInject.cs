@@ -2956,11 +2956,7 @@ namespace LightInject
         /// <inheritdoc/>
         public IServiceRegistry Override(Func<ServiceRegistration, bool> serviceSelector, Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory)
         {
-            var serviceOverride = new ServiceOverride
-            {
-                CanOverride = serviceSelector,
-                ServiceRegistrationFactory = serviceRegistrationFactory,
-            };
+            var serviceOverride = new ServiceOverride(serviceSelector, serviceRegistrationFactory);
             overrides.Add(serviceOverride);
             return this;
         }
@@ -4649,7 +4645,7 @@ namespace LightInject
                 var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
                 foreach (var serviceOverride in serviceOverrides)
                 {
-                    serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
+                    serviceRegistration = serviceOverride.Execute(this, serviceRegistration);
                 }
 
                 if (serviceRegistration.Lifetime == null)
@@ -5014,9 +5010,45 @@ namespace LightInject
 
         private class ServiceOverride
         {
-            public Func<ServiceRegistration, bool> CanOverride { get; set; }
+            private readonly object lockObject = new object();
 
-            public Func<IServiceFactory, ServiceRegistration, ServiceRegistration> ServiceRegistrationFactory { get; set; }
+            private readonly Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory;
+
+            private bool hasExecuted;
+
+            public ServiceOverride(Func<ServiceRegistration, bool> canOverride, Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory)
+            {
+                CanOverride = canOverride;
+                this.serviceRegistrationFactory = serviceRegistrationFactory;
+            }
+
+            public Func<ServiceRegistration, bool> CanOverride { get; }
+
+            [ExcludeFromCodeCoverage]
+            public ServiceRegistration Execute(IServiceFactory serviceFactory, ServiceRegistration serviceRegistration)
+            {
+                // Excluded since the double checked lock is virtually impossible to produce.
+                if (hasExecuted)
+                {
+                    return serviceRegistration;
+                }
+                else
+                {
+                    lock (lockObject)
+                    {
+                        if (hasExecuted)
+                        {
+                            return serviceRegistration;
+                        }
+                        else
+                        {
+                            hasExecuted = true;
+                            var registration = serviceRegistrationFactory(serviceFactory, serviceRegistration);
+                            return registration;
+                        }
+                    }
+                }
+            }
         }
     }
 
