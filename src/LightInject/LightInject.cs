@@ -5010,11 +5010,11 @@ namespace LightInject
 
         private class ServiceOverride
         {
-            private bool hasExecuted;
-
             private readonly object lockObject = new object();
 
             private readonly Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory;
+
+            private bool hasExecuted;
 
             public ServiceOverride(Func<ServiceRegistration, bool> canOverride, Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory)
             {
