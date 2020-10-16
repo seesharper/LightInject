@@ -3,6 +3,8 @@ namespace LightInject.Tests
     using System;
 
     using System.Diagnostics;
+    using System.Threading;
+    using System.Threading.Tasks;
     using SampleLibrary;
 
     using Xunit;
@@ -84,6 +86,57 @@ namespace LightInject.Tests
 
             Assert.IsAssignableFrom<AnotherFoo>(instance);
         }
+
+        [Fact]
+        public void GetInstance_OverrideLifeTime_CallsFactoryOnlyOnce()
+        {
+            var container = new ServiceContainer();
+
+            container.Register<A>();
+            container.Register<B>();
+            container.RegisterSingleton<C>();
+
+            container.Override(sr => sr.ServiceType == typeof(C), (f, r) =>
+            {
+                r.Lifetime = new PerContainerLifetime();
+                return r;
+            });
+
+            var a = container.GetInstance<A>();
+            Assert.Same(a.C, a.B.C);
+        }
+
+        public class A
+        {
+            public A(B b, C c)
+            {
+                B = b;
+                C = c;
+            }
+
+            public B B { get; }
+            public C C { get; }
+        }
+
+        public class B
+        {
+            public B(C c)
+            {
+                C = c;
+            }
+
+            public C C { get; }
+        }
+
+
+        public class C
+        {
+            public C()
+            {
+                Thread.Sleep(100);
+            }
+        }
+
 
         [Fact]
         public void ToString_WithAllProperties_ReturnsEasyToReadRepresentation()
