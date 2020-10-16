@@ -4645,8 +4645,7 @@ namespace LightInject
                 var serviceOverrides = overrides.Items.Where(so => so.CanOverride(serviceRegistration)).ToArray();
                 foreach (var serviceOverride in serviceOverrides)
                 {
-                    serviceOverride.Execute(this, serviceRegistration);
-                    //serviceRegistration = serviceOverride.ServiceRegistrationFactory(this, serviceRegistration);
+                    serviceRegistration = serviceOverride.Execute(this, serviceRegistration);
                 }
 
                 if (serviceRegistration.Lifetime == null)
