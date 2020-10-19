@@ -1607,6 +1607,16 @@ namespace LightInject
                 return registration;
             });
         }
+
+        /// <summary>
+        /// Allows post-processing of a service instance.
+        /// </summary>
+        /// <param name="serviceRegistry">The target <see cref="IServiceRegistry"/>.</param>
+        /// <param name="processor">An action delegate that exposes the created service instance.</param>
+        /// <typeparam name="TService">The type of service to initialize.</typeparam>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        public static IServiceRegistry Initialize<TService>(this IServiceRegistry serviceRegistry, Action<IServiceFactory, TService> processor)
+            => serviceRegistry.Initialize(sr => sr.ServiceType == typeof(TService), (factory, instance) => processor(factory, (TService)instance));
     }
 
     /// <summary>
@@ -3865,28 +3875,6 @@ namespace LightInject
                     EmitNewInstanceUsingImplementingType(emitter, constructionInfo, null);
                 }
             }
-
-            var processors = initializers.Items.Where(i => i.Predicate(serviceRegistration)).ToArray();
-            if (processors.Length == 0)
-            {
-                return;
-            }
-
-            LocalBuilder instanceVariable = emitter.DeclareLocal(serviceRegistration.ServiceType);
-            emitter.Store(instanceVariable);
-            foreach (var postProcessor in processors)
-            {
-                Type delegateType = postProcessor.Initialize.GetType();
-                var delegateIndex = constants.Add(postProcessor.Initialize);
-                emitter.PushConstant(delegateIndex, delegateType);
-                var serviceFactoryIndex = constants.Add(this);
-                emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
-                emitter.Push(instanceVariable);
-                MethodInfo invokeMethod = delegateType.GetTypeInfo().GetDeclaredMethod("Invoke");
-                emitter.Call(invokeMethod);
-            }
-
-            emitter.Push(instanceVariable);
         }
 
         private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IEmitter emitter, Action<IEmitter> decoratorTargetEmitMethod)
@@ -4670,6 +4658,33 @@ namespace LightInject
             {
                 EmitNewInstance(serviceRegistration, emitter);
             }
+
+            var processors = initializers.Items.Where(i => i.Predicate(serviceRegistration)).ToArray();
+            if (processors.Length == 0)
+            {
+                return;
+            }
+
+            LocalBuilder instanceVariable = emitter.DeclareLocal(serviceRegistration.ServiceType);
+            emitter.Store(instanceVariable);
+            foreach (var postProcessor in processors)
+            {
+                Type delegateType = postProcessor.Initialize.GetType();
+                var delegateIndex = constants.Add(postProcessor.Initialize);
+                emitter.PushConstant(delegateIndex, delegateType);
+
+                var serviceFactoryIndex = constants.Add(this);
+                emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
+                var scopeManagerIndex = CreateScopeManagerIndex();
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+                emitter.PushArgument(1);
+                emitter.Emit(OpCodes.Call, ServiceFactoryLoader.LoadServiceFactoryMethod);
+                emitter.Push(instanceVariable);
+                MethodInfo invokeMethod = delegateType.GetTypeInfo().GetDeclaredMethod("Invoke");
+                emitter.Call(invokeMethod);
+            }
+
+            emitter.Push(instanceVariable);
         }
 
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)
