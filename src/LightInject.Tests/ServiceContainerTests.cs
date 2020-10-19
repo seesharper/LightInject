@@ -1686,6 +1686,20 @@ namespace LightInject.Tests
             Assert.IsAssignableFrom<Bar>(foo.Bar);
         }
 
+        [Fact]
+        public void GetInstance_UsingInitializerWithDecoratedService_PassesDecoratorAsInstance()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate<IFoo, FooDecorator>();
+            container.Initialize<IFoo>((factory, instance) =>
+            {
+                Assert.IsType<FooDecorator>(instance);
+            });
+
+            container.GetInstance<IFoo>();
+        }
+
 
 #if NET452 || NET40 || NET46 || NETCOREAPP2_0
         [Fact]
