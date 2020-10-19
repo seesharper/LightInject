@@ -4672,8 +4672,13 @@ namespace LightInject
                 Type delegateType = postProcessor.Initialize.GetType();
                 var delegateIndex = constants.Add(postProcessor.Initialize);
                 emitter.PushConstant(delegateIndex, delegateType);
+
                 var serviceFactoryIndex = constants.Add(this);
                 emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
+                var scopeManagerIndex = CreateScopeManagerIndex();
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+                emitter.PushArgument(1);
+                emitter.Emit(OpCodes.Call, ServiceFactoryLoader.LoadServiceFactoryMethod);
                 emitter.Push(instanceVariable);
                 MethodInfo invokeMethod = delegateType.GetTypeInfo().GetDeclaredMethod("Invoke");
                 emitter.Call(invokeMethod);
