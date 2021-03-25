@@ -2548,12 +2548,26 @@ namespace LightInject
         private bool isLocked;
         private Type defaultLifetimeType;
 
+        private readonly List<IDisposable> disposableObjects = new List<IDisposable>();
+
+        private MethodInfo OpenGenericTrackInstanceMethod = typeof(ServiceContainer).GetTypeInfo().GetDeclaredMethod(nameof(ServiceContainer.TrackInstance));
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
         /// </summary>
         public ServiceContainer()
             : this(ContainerOptions.Default)
         {
+        }
+
+
+        internal static TService TrackInstance<TService>(TService instance, ServiceContainer container)
+        {
+            if (instance is IDisposable disposable)
+            {
+                container.disposableObjects.Add(disposable);
+            }
+            return instance;
         }
 
         /// <summary>
@@ -3355,6 +3369,12 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
+            var perContainerDisposables = disposableObjects.AsEnumerable().Reverse();
+            foreach (var perContainerDisposable in perContainerDisposables)
+            {
+                perContainerDisposable.Dispose();
+            }
+
         }
 
         /// <summary>
@@ -3874,6 +3894,21 @@ namespace LightInject
                 {
                     EmitNewInstanceUsingImplementingType(emitter, constructionInfo, null);
                 }
+            }
+            if (serviceRegistration.Lifetime is PerContainerLifetime && IsNotServiceFactory(serviceRegistration.ServiceType))
+            {
+                // var instanceVariable = emitter.DeclareLocal(serviceRegistration.ServiceType);
+                // emitter.Store(instanceVariable);
+
+                var closedGenericTrackInstanceMethod = OpenGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
+                var containerIndex = constants.Add(this);
+                emitter.PushConstant(containerIndex, typeof(ServiceContainer));
+                emitter.Emit(OpCodes.Call, closedGenericTrackInstanceMethod);
+            }
+
+            bool IsNotServiceFactory(Type serviceType)
+            {
+                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
             }
         }
 
@@ -4768,7 +4803,7 @@ namespace LightInject
                 }
             }
 
-            if (IsNotServiceFactory(serviceRegistration.ServiceType))
+            if (IsNotServiceFactory(serviceRegistration.ServiceType) && !(serviceRegistration.Lifetime is PerContainerLifetime))
             {
                 disposableLifeTimes.Add(serviceRegistration.Lifetime);
             }
