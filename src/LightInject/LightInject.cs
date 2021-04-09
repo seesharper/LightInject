@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.3.5
+    LightInject version 6.4.1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2533,6 +2533,8 @@ namespace LightInject
 
         private readonly Lazy<IConstructionInfoProvider> constructionInfoProvider;
 
+        private readonly List<IDisposable> disposableObjects = new List<IDisposable>();
+
         private readonly LazyConcurrentDictionary<ServiceRegistration, int> servicesToDelegatesIndex =
             new LazyConcurrentDictionary<ServiceRegistration, int>();
 
@@ -2548,9 +2550,7 @@ namespace LightInject
         private bool isLocked;
         private Type defaultLifetimeType;
 
-        private readonly List<IDisposable> disposableObjects = new List<IDisposable>();
-
-        private MethodInfo OpenGenericTrackInstanceMethod = typeof(ServiceContainer).GetTypeInfo().GetDeclaredMethod(nameof(ServiceContainer.TrackInstance));
+        private MethodInfo openGenericTrackInstanceMethod = typeof(ServiceContainer).GetTypeInfo().GetDeclaredMethod(nameof(ServiceContainer.TrackInstance));
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
@@ -2558,16 +2558,6 @@ namespace LightInject
         public ServiceContainer()
             : this(ContainerOptions.Default)
         {
-        }
-
-
-        internal static TService TrackInstance<TService>(TService instance, ServiceContainer container)
-        {
-            if (instance is IDisposable disposable)
-            {
-                container.disposableObjects.Add(disposable);
-            }
-            return instance;
         }
 
         /// <summary>
@@ -3369,12 +3359,12 @@ namespace LightInject
             {
                 disposableLifetimeInstance.Dispose();
             }
+
             var perContainerDisposables = disposableObjects.AsEnumerable().Reverse();
             foreach (var perContainerDisposable in perContainerDisposables)
             {
                 perContainerDisposable.Dispose();
             }
-
         }
 
         /// <summary>
@@ -3406,6 +3396,16 @@ namespace LightInject
                 AssemblyLoader,
 #endif
                 ScopeManagerProvider);
+        }
+
+        internal static TService TrackInstance<TService>(TService instance, ServiceContainer container)
+        {
+            if (instance is IDisposable disposable)
+            {
+                container.disposableObjects.Add(disposable);
+            }
+
+            return instance;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3895,12 +3895,10 @@ namespace LightInject
                     EmitNewInstanceUsingImplementingType(emitter, constructionInfo, null);
                 }
             }
+
             if (serviceRegistration.Lifetime is PerContainerLifetime && IsNotServiceFactory(serviceRegistration.ServiceType))
             {
-                // var instanceVariable = emitter.DeclareLocal(serviceRegistration.ServiceType);
-                // emitter.Store(instanceVariable);
-
-                var closedGenericTrackInstanceMethod = OpenGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
+                var closedGenericTrackInstanceMethod = openGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
                 var containerIndex = constants.Add(this);
                 emitter.PushConstant(containerIndex, typeof(ServiceContainer));
                 emitter.Emit(OpCodes.Call, closedGenericTrackInstanceMethod);
@@ -6390,7 +6388,7 @@ namespace LightInject
     /// Ensures that only one instance of a given service can exist within the current <see cref="IServiceContainer"/>.
     /// </summary>
     [LifeSpan(30)]
-    public class PerContainerLifetime : ILifetime, IDisposable, ICloneableLifeTime
+    public class PerContainerLifetime : ILifetime, ICloneableLifeTime
     {
         private readonly object syncRoot = new object();
         private volatile object singleton;
@@ -6424,17 +6422,6 @@ namespace LightInject
             }
 
             return singleton;
-        }
-
-        /// <summary>
-        /// Disposes the service instances managed by this <see cref="PerContainerLifetime"/> instance.
-        /// </summary>
-        public void Dispose()
-        {
-            if (singleton is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
         }
 
         /// <inheritdoc/>

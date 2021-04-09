@@ -1,10 +1,10 @@
 {
   "FormattingOptions": {
-    "EnableEditorConfigSupport": false,
+    "EnableEditorConfigSupport": true,
     "OrganizeImports": true
   },
   "RoslynExtensionsOptions": {
-    "EnableAnalyzersSupport": false,
+    "EnableAnalyzersSupport": true,
     "EnableDecompilationSupport": true
   },
   "script": {
