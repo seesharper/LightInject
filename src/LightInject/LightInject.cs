@@ -2513,6 +2513,7 @@ namespace LightInject
     public class ServiceContainer : IServiceContainer
     {
         private const string UnresolvedDependencyError = "Unresolved dependency {0}";
+        private static readonly MethodInfo OpenGenericTrackInstanceMethod = typeof(ServiceContainer).GetTypeInfo().GetDeclaredMethod(nameof(ServiceContainer.TrackInstance));
         private readonly Action<LogEntry> log;
         private readonly Func<Type, Type[], IMethodSkeleton> methodSkeletonFactory;
         private readonly ServiceRegistry<Action<IEmitter>> emitters = new ServiceRegistry<Action<IEmitter>>();
@@ -2549,8 +2550,6 @@ namespace LightInject
 
         private bool isLocked;
         private Type defaultLifetimeType;
-
-        private MethodInfo openGenericTrackInstanceMethod = typeof(ServiceContainer).GetTypeInfo().GetDeclaredMethod(nameof(ServiceContainer.TrackInstance));
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
@@ -3898,7 +3897,7 @@ namespace LightInject
 
             if (serviceRegistration.Lifetime is PerContainerLifetime && IsNotServiceFactory(serviceRegistration.ServiceType))
             {
-                var closedGenericTrackInstanceMethod = openGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
+                var closedGenericTrackInstanceMethod = OpenGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
                 var containerIndex = constants.Add(this);
                 emitter.PushConstant(containerIndex, typeof(ServiceContainer));
                 emitter.Emit(OpCodes.Call, closedGenericTrackInstanceMethod);
