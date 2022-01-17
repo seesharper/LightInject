@@ -2,14 +2,11 @@ namespace LightInject.Tests
 {
     using System;
     using System.Threading;
-
-    using LightInject.SampleLibrary;
-
-
-    using Xunit;
     using System.Threading.Tasks;
+    using LightInject.SampleLibrary;
+    using Xunit;
 
-#if NET452 || NET46 || NETCOREAPP2_0
+#if NET452 || NET46 || NETCOREAPP3_1
 
     public class AsyncTests : TestBase
     {

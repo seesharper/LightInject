@@ -1,4 +1,4 @@
-﻿#if NET452 || NET46 || NETCOREAPP2_0 
+﻿#if NET452 || NET46 || NETCOREAPP3_1
 namespace LightInject.Tests
 {
 

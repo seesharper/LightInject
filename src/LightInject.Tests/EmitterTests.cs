@@ -7,7 +7,7 @@ namespace LightInject.Tests
     using Xunit;
 
 
-#if NETCOREAPP1_1
+#if USE_EXPRESSIONS
     using LocalBuilder = LightInject.LocalBuilder;
     using ILGenerator = LightInject.ILGenerator;
 #endif
@@ -492,7 +492,7 @@ namespace LightInject.Tests
             Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));
         }
 
-#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46 || NETCOREAPP2_0
+#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46 || NETCOREAPP3_1
         [Fact]
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {
@@ -680,13 +680,13 @@ namespace LightInject.Tests
             Assert.Equal("ldarg 1", instruction.ToString(), StringComparer.OrdinalIgnoreCase);
         }
 
-#if NET452 || NET46 || NETCOREAPP2_0
+#if !USE_EXPRESSIONS
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new DynamicMethod(string.Empty, typeof(object), new Type[] { typeof(object[]) }).GetILGenerator();
         }
 #endif
-#if NETCOREAPP1_1
+#if USE_EXPRESSIONS
         private ILGenerator CreateDummyGenerator(Type[] parameterTypes)
         {
             return new LightInject.DynamicMethod(typeof(object), parameterTypes).GetILGenerator();

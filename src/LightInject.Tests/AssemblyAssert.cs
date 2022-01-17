@@ -1,4 +1,4 @@
-﻿#if NET452 || NET46 || NETCOREAPP2_0
+﻿#if NET452 || NET46 || NETCOREAPP3_1
 namespace LightInject.Tests
 {
     using System;
@@ -43,7 +43,7 @@ namespace LightInject.Tests
             {
                 startInformation.Arguments = "\"" + filename + "\" /MD /IL /UNIQUE /VERBOSE";
             }
-            
+
             startInformation.RedirectStandardOutput = true;
             startInformation.UseShellExecute = false;
             return startInformation;
@@ -59,7 +59,7 @@ namespace LightInject.Tests
             else
             {
                 peverifyPath = @"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\x64\peverify.exe";
-            }                                    
+            }
             return peverifyPath;
         }
     }
