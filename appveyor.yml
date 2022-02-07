@@ -1,5 +1,5 @@
 version: 1.0.{build}
-image: Visual Studio 2017
+image: Visual Studio 2019
 
 install:
   - cmd: choco install dotnet.script
@@ -27,4 +27,5 @@ environment:
   GITHUB_REPO_TOKEN:
     secure: FSPXTPuTgFMaZA7DubJoX217SkWhFLN2BGqCCi4gBux967eFtwkhbrafm7ay8cP2
   NUGET_APIKEY:
-    secure: ynFcRQX0oim3DdR5Y8s4BtynS/NYRG059GvWGckqhpZGNZVvhvvn5UUWgsyPKLKm
+    secure: JfKADiDMHJBIYRnlh56cqh0HCqCRmeI6XJtFfGSPUlvI0a1FusqyFL+UVhskSPDBiJBt9NaFz5C+/cWX0+/BLhYRkD/bOl3R+FGfYq+fJ0adlk31wx/1G2FHSNwPfa6U
+
