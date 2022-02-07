@@ -64,7 +64,59 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void Dispose_SingeltonWithFactory_DisposesInReverseOrderOfCreation()
+        {
+            var container = CreateContainer();
+            container.Register<FakeDisposeCallback>(new PerContainerLifetime());
+            container.Register<ISingleton, Singleton1>("1", new PerContainerLifetime());
+            container.Register<ISingleton>(sf => new Singleton2(sf.GetInstance<FakeDisposeCallback>()), "2", new PerContainerLifetime());
+            container.Register<ISingleton>(sf => new Singleton3(sf.GetInstance<FakeDisposeCallback>()), "3", new PerContainerLifetime());
+            container.Register<ISingleton, Singleton4>("4", new PerContainerLifetime());
+            container.Register<ISingleton, Singleton5>("5", new PerContainerLifetime());
+
+            var instances = container.GetAllInstances<ISingleton>();
+
+            var disposableCallback = container.GetInstance<FakeDisposeCallback>();
+
+            container.Dispose();
+
+            Assert.IsType<Singleton5>(disposableCallback.Disposed[0]);
+            Assert.IsType<Singleton4>(disposableCallback.Disposed[1]);
+            Assert.IsType<Singleton3>(disposableCallback.Disposed[2]);
+            Assert.IsType<Singleton2>(disposableCallback.Disposed[3]);
+            Assert.IsType<Singleton1>(disposableCallback.Disposed[4]);
+        }
+
+
+        [Fact]
         public void Dispose_Scoped_DisposesInReverseOrderOfCreation()
+        {
+            var container = CreateContainer();
+            container.Register<FakeDisposeCallback>(new PerContainerLifetime());
+            container.Register<ISingleton, Singleton1>("1", new PerScopeLifetime());
+            container.Register<ISingleton, Singleton2>("2", new PerScopeLifetime());
+            container.Register<ISingleton, Singleton3>("3", new PerScopeLifetime());
+            container.Register<ISingleton, Singleton4>("4", new PerScopeLifetime());
+            container.Register<ISingleton, Singleton5>("5", new PerScopeLifetime());
+            using (var scope = container.BeginScope())
+            {
+                var instances = container.GetAllInstances<ISingleton>();
+            }
+
+            var disposableCallback = container.GetInstance<FakeDisposeCallback>();
+
+            container.Dispose();
+
+            Assert.IsType<Singleton5>(disposableCallback.Disposed[0]);
+            Assert.IsType<Singleton4>(disposableCallback.Disposed[1]);
+            Assert.IsType<Singleton3>(disposableCallback.Disposed[2]);
+            Assert.IsType<Singleton2>(disposableCallback.Disposed[3]);
+            Assert.IsType<Singleton1>(disposableCallback.Disposed[4]);
+        }
+
+
+        [Fact]
+        public void Dispose_ScopedWithFactory_DisposesInReverseOrderOfCreation()
         {
             var container = CreateContainer();
             container.Register<FakeDisposeCallback>(new PerContainerLifetime());
