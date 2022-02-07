@@ -1,4 +1,4 @@
-﻿#if NET452 || NET46 || NETCOREAPP3_1
+﻿#if !USE_EXPRESSIONS
 namespace LightInject.Tests
 {
     using System;

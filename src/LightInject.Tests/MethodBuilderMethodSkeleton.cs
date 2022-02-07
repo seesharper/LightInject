@@ -1,4 +1,4 @@
-﻿#if NET452 || NET46 
+﻿#if !USE_EXPRESSIONS
 namespace LightInject.Tests
 {
     using System;
@@ -19,7 +19,7 @@ namespace LightInject.Tests
         public MethodBuilderMethodSkeleton(Type returnType, Type[] parameterTypes, string outputPath)
         {
             this.outputPath = outputPath;
-        
+
             fileName = Path.GetFileName(outputPath);
             CreateAssemblyBuilder();
             CreateTypeBuilder();
@@ -37,18 +37,18 @@ namespace LightInject.Tests
         }
 
         public Delegate CreateDelegate(Type delegateType)
-        {                       
+        {
             var dynamicType = typeBuilder.CreateType();
-            assemblyBuilder.Save(fileName);            
+            assemblyBuilder.Save(fileName);
             AssemblyAssert.IsValidAssembly(outputPath);
             MethodInfo methodInfo = dynamicType.GetMethod("DynamicMethod", BindingFlags.Static | BindingFlags.Public);
             return Delegate.CreateDelegate(delegateType, methodInfo);
         }
 
         public Delegate CreateDelegate(Type delegateType, object target)
-        {            
+        {
             var dynamicType = typeBuilder.CreateType();
-            assemblyBuilder.Save(fileName);            
+            assemblyBuilder.Save(fileName);
             AssemblyAssert.IsValidAssembly(outputPath);
             MethodInfo methodInfo = dynamicType.GetMethod("DynamicMethod", BindingFlags.Static | BindingFlags.Public);
             return Delegate.CreateDelegate(delegateType, target, methodInfo);
@@ -56,7 +56,7 @@ namespace LightInject.Tests
 
         private void CreateAssemblyBuilder()
         {
-            AppDomain myDomain = AppDomain.CurrentDomain;         
+            AppDomain myDomain = AppDomain.CurrentDomain;
             assemblyBuilder = myDomain.DefineDynamicAssembly(CreateAssemblyName(), AssemblyBuilderAccess.RunAndSave, Path.GetDirectoryName(outputPath));
         }
 

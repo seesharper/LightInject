@@ -1,4 +1,6 @@
-﻿#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46
+﻿//TODO Check USE_EXPRESSIONS
+
+#if !USE_EXPRESSIONS
 using Xunit;
 
 namespace LightInject.Tests

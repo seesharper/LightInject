@@ -6,12 +6,16 @@
     <TestTargetFramework>netcoreapp3.1</TestTargetFramework>
   </PropertyGroup>
   <Choose>
-    <When Condition=" '$(TestTargetFramework)'=='netstandard2.0' ">
+    <When Condition=" '$(TestTargetFramework)'=='netstandard2.0' Or '$(TestTargetFramework)'=='netstandard1.6' Or '$(TestTargetFramework)'=='netstandard1.3' Or '$(TestTargetFramework)'=='netstandard1.1' ">
       <PropertyGroup>
         <DefineConstants>USE_EXPRESSIONS</DefineConstants>
       </PropertyGroup>
     </When>
   </Choose>
+
+  <PropertyGroup Condition= " '$(TestTargetFramework)'=='net452' ">
+
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="3.1.0">
