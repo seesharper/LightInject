@@ -1,10 +1,10 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using LightInject.SampleLibrary;
+using Xunit;
 namespace LightInject.Tests
 {
-    using System;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using LightInject.SampleLibrary;
-    using Xunit;
 
 #if NET452 || NET46 || NETCOREAPP3_1
 

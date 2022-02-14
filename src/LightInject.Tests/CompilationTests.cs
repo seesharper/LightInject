@@ -1,7 +1,5 @@
 ﻿using LightInject.SampleLibrary;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace LightInject.Tests
@@ -21,7 +19,7 @@ namespace LightInject.Tests
             container.Compile();
 
             Assert.Contains(log, e => e.Level == LogLevel.Info && e.Message.Matches("Compiling delegate.*IBar"));
-            Assert.Contains(log, e => e.Level == LogLevel.Info && e.Message.Matches("Compiling delegate.*IFoo"));            
+            Assert.Contains(log, e => e.Level == LogLevel.Info && e.Message.Matches("Compiling delegate.*IFoo"));
 
             log.Clear();
             container.GetInstance<IFoo>();
@@ -37,7 +35,7 @@ namespace LightInject.Tests
             options.LogFactory = (type) => (e) => log.Add(e);
             var container = new ServiceContainer(options);
 
-            container.Register(typeof(OpenGenericFoo<,>));            
+            container.Register(typeof(OpenGenericFoo<,>));
             container.Compile();
 
             Assert.Contains(log, e => e.Level == LogLevel.Warning && e.Message.Matches("Unable to precompile.*OpenGenericFoo"));
@@ -70,11 +68,11 @@ namespace LightInject.Tests
             options.LogFactory = (type) => (e) => log.Add(e);
             var container = new ServiceContainer(options);
 
-            container.Register<IFoo, Foo>("SomeFoo");            
+            container.Register<IFoo, Foo>("SomeFoo");
             container.Compile();
 
             Assert.Contains(log, e => e.Level == LogLevel.Info && e.Message.Matches("Compiling delegate.*IFoo.*SomeFoo"));
-           
+
             log.Clear();
             container.GetInstance<IFoo>();
             Assert.DoesNotContain(log, e => e.Level == LogLevel.Info && e.Message.Matches("Compiling delegate.*IFoo.*SomeFoo"));
@@ -115,6 +113,6 @@ namespace LightInject.Tests
 
             Assert.Contains(log, e => e.Level == LogLevel.Info && e.Message.Matches("Compiling delegate.*IBar"));
             Assert.DoesNotContain(log, e => e.Level == LogLevel.Info && e.Message.Matches("Compiling delegate.*IFoo"));
-        }        
+        }
     }
 }

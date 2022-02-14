@@ -1,4 +1,4 @@
-﻿#if !USE_EXPRESSIONS
+﻿#if USE_ASSEMBLY_VERIFICATION
 namespace LightInject.Tests
 {
     using System;

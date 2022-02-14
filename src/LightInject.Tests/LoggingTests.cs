@@ -1,8 +1,8 @@
-﻿namespace LightInject.Tests
-{
-    using System;
-    using Xunit;
+﻿using System;
+using Xunit;
 
+namespace LightInject.Tests
+{
     public class LoggingTests
     {
         [Fact]
@@ -13,8 +13,8 @@
                 Assert.Equal(LogLevel.Info, entry.Level);
                 Assert.Equal("SomeMessage", entry.Message);
             };
-          
-            logAction.Info("SomeMessage");  
+
+            logAction.Info("SomeMessage");
         }
 
         [Fact]

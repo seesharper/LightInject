@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net46</TargetFrameworks>
     <!-- <TargetFrameworks>netcoreapp1.1;netcoreapp2.0;net46;net452</TargetFrameworks> -->
     <NoWarn>$(NoWarn);CS0579</NoWarn>
-    <TestTargetFramework>netcoreapp3.1</TestTargetFramework>
+    <TestTargetFramework>net46</TestTargetFramework>
   </PropertyGroup>
   <Choose>
     <When Condition=" '$(TestTargetFramework)'=='netstandard2.0' Or '$(TestTargetFramework)'=='netstandard1.6' Or '$(TestTargetFramework)'=='netstandard1.3' Or '$(TestTargetFramework)'=='netstandard1.1' ">
@@ -13,8 +13,8 @@
     </When>
   </Choose>
 
-  <PropertyGroup Condition= " '$(TestTargetFramework)'=='net452' ">
-
+  <PropertyGroup Condition= " '$(TargetFramework)'=='net46' ">
+    <DefineConstants>USE_ASSEMBLY_VERIFICATION</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

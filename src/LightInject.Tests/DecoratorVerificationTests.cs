@@ -1,6 +1,4 @@
-﻿//TODO Check USE_EXPRESSIONS
-
-#if !USE_EXPRESSIONS
+﻿#if USE_ASSEMBLY_VERIFICATION
 using Xunit;
 
 namespace LightInject.Tests

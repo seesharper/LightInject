@@ -8,12 +8,9 @@ namespace LightInject.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
-
     using LightInject;
     using LightInject.SampleLibrary;
-
     using LightMock;
-
     using Xunit;
 
 

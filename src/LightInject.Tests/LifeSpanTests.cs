@@ -1,9 +1,6 @@
-#if NETCOREAPP3_1
-
 using System;
 using System.Linq;
 using Xunit;
-
 
 namespace LightInject.Tests
 {
@@ -30,5 +27,3 @@ namespace LightInject.Tests
 
     }
 }
-
-#endif

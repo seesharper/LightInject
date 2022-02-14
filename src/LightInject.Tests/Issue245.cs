@@ -1,10 +1,10 @@
-﻿namespace LightInject.Tests
-{
-    using System;
-    using System.Linq.Expressions;
-    using System.Reflection;
-    using Xunit;
+﻿using System;
+using System.Linq.Expressions;
+using System.Reflection;
+using Xunit;
 
+namespace LightInject.Tests
+{
     public class Issue245 : TestBase
     {
         [Fact]
@@ -22,9 +22,9 @@
 
         private Func<IServiceFactory, Foo> CreateFactoryDelegate()
         {
-            var constructor = typeof (Foo).GetTypeInfo().GetConstructor(Type.EmptyTypes);
+            var constructor = typeof(Foo).GetTypeInfo().GetConstructor(Type.EmptyTypes);
             var newExpression = Expression.New(constructor);
-            var lambdaExpression = Expression.Lambda(newExpression, Expression.Parameter(typeof (IServiceFactory)));
+            var lambdaExpression = Expression.Lambda(newExpression, Expression.Parameter(typeof(IServiceFactory)));
             var compiledDelegate = lambdaExpression.Compile();
             var test = compiledDelegate.GetMethodInfo().GetParameters();
             return (Func<IServiceFactory, Foo>)compiledDelegate;
@@ -32,7 +32,7 @@
 
         public class Foo
         {
-            
+
         }
 
     }

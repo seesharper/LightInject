@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
+﻿using Xunit;
 
 namespace LightInject.Tests
 {
-    public class Issue396 
+    public class Issue396
     {
         [Fact]
         public void ShouldHandleIssue396()
@@ -22,7 +17,7 @@ namespace LightInject.Tests
             clonedContainer.Register<Class3>();
 
             clonedContainer.GetInstance<Class2>();
-            clonedContainer.GetInstance<Class3>();            
+            clonedContainer.GetInstance<Class3>();
         }
 
         public class Class1

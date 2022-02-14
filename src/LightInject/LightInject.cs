@@ -49,9 +49,6 @@ namespace LightInject
     using System.Reflection;
     using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
-#if NET452
-    using System.Runtime.Remoting.Messaging;
-#endif
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -1048,7 +1045,7 @@ namespace LightInject
         /// <param name="arg">The String to be emitted.</param>
         void Emit(OpCode code, string arg);
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
 
         /// <summary>
         /// Pushes the argument as a constant expression.
@@ -4060,7 +4057,7 @@ namespace LightInject
             return emitter;
         }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
         private Action<IEmitter> GetEmitMethodForDefaultValue(ConstructorDependency constructorDependency)
         {
             Type parameterType = constructorDependency.Parameter.ParameterType;
@@ -4994,7 +4991,7 @@ namespace LightInject
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(returnType, parameterTypes);
@@ -5114,8 +5111,6 @@ namespace LightInject
         }
     }
 
-#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP3_1
-
     /// <summary>
     /// Manages a set of <see cref="Scope"/> instances.
     /// </summary>
@@ -5152,7 +5147,6 @@ namespace LightInject
             return new PerLogicalCallContextScopeManager(serviceFactory);
         }
     }
-#endif
 
     /// <summary>
     /// A thread safe dictionary.
@@ -5212,7 +5206,7 @@ namespace LightInject
         }
     }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
 
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
@@ -6894,12 +6888,11 @@ namespace LightInject
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));
-#if NET452 || NET46 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP3_1
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManager));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
-#endif
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
@@ -8320,65 +8313,9 @@ namespace LightInject
 #endif
     }
 
-#if NET452
 
-    /// <summary>
-    /// Provides storage per logical thread of execution.
-    /// </summary>
-    /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
-    public class LogicalThreadStorage<T>
-    {
-        private readonly string key = Guid.NewGuid().ToString();
 
-        /// <summary>
-        /// Gets or sets the value for the current logical thread of execution.
-        /// </summary>
-        /// <value>
-        /// The value for the current logical thread of execution.
-        /// </value>
-        public T Value
-        {
-            get
-            {
-                var logicalThreadValue = (LogicalThreadValue)CallContext.LogicalGetData(key);
-                return logicalThreadValue != null ? logicalThreadValue.Value : default(T);
-            }
-
-            set
-            {
-                LogicalThreadValue logicalThreadValue = null;
-                if (value != null)
-                {
-                    logicalThreadValue = new LogicalThreadValue { Value = value };
-                }
-
-                CallContext.LogicalSetData(key, logicalThreadValue);
-            }
-        }
-
-        [Serializable]
-        private class LogicalThreadValue : MarshalByRefObject
-        {
-            [NonSerialized]
-            private T value;
-
-            public T Value
-            {
-                get
-                {
-                    return value;
-                }
-
-                set
-                {
-                    this.value = value;
-                }
-            }
-        }
-    }
-#endif
-
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
     /// <summary>
     /// An attribute shim since we don't have this attribute in netstandard.
     /// </summary>
@@ -8387,7 +8324,6 @@ namespace LightInject
     }
 #endif
 
-#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP3_1
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>
@@ -8408,7 +8344,6 @@ namespace LightInject
             set { asyncLocal.Value = value; }
         }
     }
-#endif
 
     internal static class LifetimeHelper
     {
@@ -8814,7 +8749,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
             return type.GetElementType();
         }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
         public static object GetDefaultValue(Type type)
         {
             var openGenericGetDefaultValueInternalMethod = typeof(TypeHelper).GetTypeInfo().GetDeclaredMethod(nameof(GetDefaultValueInternal));

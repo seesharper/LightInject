@@ -1,4 +1,4 @@
-﻿#if NET452 || NET46 
+﻿#if USE_ASSEMBLY_VERIFICATION
 namespace LightInject.Tests
 {
     using Xunit;

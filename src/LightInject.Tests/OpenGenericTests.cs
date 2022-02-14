@@ -1,11 +1,9 @@
-﻿namespace LightInject.Tests
-{
-    using System;
-    using System.Collections;
-    using System.Collections.ObjectModel;
-    using SampleLibrary;
-    using Xunit;
+﻿using System;
+using LightInject.SampleLibrary;
+using Xunit;
 
+namespace LightInject.Tests
+{
     public class OpenGenericTests : TestBase
     {
         [Fact]

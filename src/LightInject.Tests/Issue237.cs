@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
+﻿using Xunit;
 
 namespace LightInject.Tests
 {
@@ -13,12 +8,12 @@ namespace LightInject.Tests
         public void ShouldAutoResolveRemainingArguments()
         {
             var container = CreateContainer();
-            container.Register<IBar1,Bar1>();
+            container.Register<IBar1, Bar1>();
             container.Register<IBar2, Bar2>();
-            container.Register<IFoo, Foo>();               
-            
-            container.RegisterConstructorDependency((factory, info, runtimeArguments) => (string)(runtimeArguments[0]));                               
-            var firstInstance = container.GetInstance<string,IFoo>("SomeValue");
+            container.Register<IFoo, Foo>();
+
+            container.RegisterConstructorDependency((factory, info, runtimeArguments) => (string)(runtimeArguments[0]));
+            var firstInstance = container.GetInstance<string, IFoo>("SomeValue");
             var secondInstance = container.GetInstance<string, IFoo>("AnotherValue");
 
             Assert.Equal("SomeValue", ((Foo)firstInstance).Value);
@@ -38,12 +33,12 @@ namespace LightInject.Tests
 
         public class Bar1 : IBar1
         {
-            
+
         }
 
-        public class Bar2 : IBar2 
+        public class Bar2 : IBar2
         {
-             
+
         }
 
         public class Foo : IFoo
