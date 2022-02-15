@@ -72,7 +72,7 @@ namespace LightInject.Tests
             // the current scope on this thread should reflect that.
             var currentScope = container.ScopeManagerProvider.GetScopeManager(container).CurrentScope;
             Assert.Null(currentScope);
-#if NET452 || NET46
+#if NET452 || NET47 || NET6_0
             if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 Assert.True(scope.IsDisposed);

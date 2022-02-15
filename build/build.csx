@@ -11,7 +11,7 @@ using static ReleaseManagement;
 Step testcoverage = () =>
 {
 
-    DotNet.TestWithCodeCoverage(Path.GetDirectoryName(BuildContext.TestProjects[0]), BuildContext.TestCoverageArtifactsFolder, BuildContext.CodeCoverageThreshold, "netcoreapp2.0");
+    DotNet.TestWithCodeCoverage(Path.GetDirectoryName(BuildContext.TestProjects[0]), BuildContext.TestCoverageArtifactsFolder, BuildContext.CodeCoverageThreshold, "net6.0");
 };
 
 [StepDescription("Runs all the tests for all target frameworks")]

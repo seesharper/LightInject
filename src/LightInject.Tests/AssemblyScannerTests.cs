@@ -234,18 +234,18 @@ namespace LightInject.Tests
         //}
 
 
-#if NET40 || NET452 || NET46 || NETCOREAPP3_1
+#if NET40 || NET452 || NET47 || NET6_0
         [Fact]
         public void Register_AssemblyFileWithoutCompositionRoot_CallsAssemblyScanner()
         {
-			var scannerMock = new AssemblyScannerMock();
+            var scannerMock = new AssemblyScannerMock();
             var serviceContainer = new ServiceContainer();
             var compositionRootExtractorMock = new TypeExtractorMock();
             compositionRootExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(Type.EmptyTypes);
             serviceContainer.CompositionRootTypeExtractor = compositionRootExtractorMock;
             serviceContainer.AssemblyScanner = scannerMock;
             serviceContainer.RegisterAssembly("*LightInject.Tests.dll");
-            scannerMock.Assert(a => a.Scan(typeof(IFoo).Assembly,The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue, The<Func<Type, Type, string>>.IsAnyValue), Invoked.Once);
+            scannerMock.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue, The<Func<Type, Type, string>>.IsAnyValue), Invoked.Once);
         }
 
         [Fact]
@@ -253,7 +253,7 @@ namespace LightInject.Tests
         {
             var container = new ServiceContainer();
             var compositionRootTypeExtractorMock = new TypeExtractorMock();
-            compositionRootTypeExtractorMock.Arrange(t => t.Execute(The<Assembly>.IsAnyValue)).Returns(new [] {typeof(CompositionRootMock)});
+            compositionRootTypeExtractorMock.Arrange(t => t.Execute(The<Assembly>.IsAnyValue)).Returns(new[] { typeof(CompositionRootMock) });
             container.CompositionRootTypeExtractor = compositionRootTypeExtractorMock;
             var assemblyScannerMock = new AssemblyScannerMock();
             container.AssemblyScanner = assemblyScannerMock;
@@ -321,7 +321,7 @@ namespace LightInject.Tests
             serviceContainer.RegisterAssembly(typeof(IFoo).GetTypeInfo().Assembly, () => new PerContainerLifetime(), (s, t) => true);
             scannerMock.Assert(a => a.Scan(typeof(IFoo).GetTypeInfo().Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue, The<Func<Type, Type, string>>.IsAnyValue), Invoked.Once);
         }
-#if NET40 || NET452 || NET46
+#if NET40 || NET452 || NET46 || NET6_0
         [Fact]
         public void Register_SearchPattern_CallsAssemblyScanner()
         {
