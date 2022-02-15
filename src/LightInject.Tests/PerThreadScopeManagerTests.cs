@@ -72,23 +72,7 @@ namespace LightInject.Tests
             // the current scope on this thread should reflect that.
             var currentScope = container.ScopeManagerProvider.GetScopeManager(container).CurrentScope;
             Assert.Null(currentScope);
-#if NET452 || NET47 || NET6_0
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
-            {
-                Assert.True(scope.IsDisposed);
-            }
-            else
-            {
-                scope = null;
-                GC.Collect();
-                Assert.False(scopeReference.IsAlive);
-            }
-#else
-            scope = null;
-            GC.Collect();
-            Assert.False(scopeReference.IsAlive);
-#endif
-
+            Assert.True(scope.IsDisposed);
         }
 
         [Fact]
