@@ -2542,8 +2542,8 @@ namespace LightInject
         private ImmutableHashTable<Type, GetInstanceDelegate> delegates =
             ImmutableHashTable<Type, GetInstanceDelegate>.Empty;
 
-        private ImmutableHashTable<Tuple<Type, string>, GetInstanceDelegate> namedDelegates =
-            ImmutableHashTable<Tuple<Type, string>, GetInstanceDelegate>.Empty;
+        private ImmutableHashTable<(Type, string), GetInstanceDelegate> namedDelegates =
+            ImmutableHashTable<(Type, string), GetInstanceDelegate>.Empty;
 
         private ImmutableHashTree<Type, Func<object[], Scope, object, object>> propertyInjectionDelegates =
             ImmutableHashTree<Type, Func<object[], Scope, object, object>>.Empty;
@@ -3218,7 +3218,7 @@ namespace LightInject
                 }
                 else
                 {
-                    CreateNamedDelegate(Tuple.Create(rootService.ServiceType, rootService.ServiceName), true);
+                    CreateNamedDelegate((rootService.ServiceType, rootService.ServiceName), true);
                 }
             }
 
@@ -3245,7 +3245,7 @@ namespace LightInject
             }
             else
             {
-                CreateNamedDelegate(Tuple.Create(typeof(TService), serviceName), true);
+                CreateNamedDelegate((typeof(TService), serviceName), true);
             }
         }
 
@@ -3278,7 +3278,7 @@ namespace LightInject
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName, object[] arguments)
         {
-            var key = Tuple.Create(serviceType, serviceName);
+            var key = (serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
             if (instanceDelegate == null)
             {
@@ -3305,7 +3305,7 @@ namespace LightInject
         /// <inheritdoc/>
         public object TryGetInstance(Type serviceType, string serviceName)
         {
-            var key = Tuple.Create(serviceType, serviceName);
+            var key = (serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
             if (instanceDelegate == null)
             {
@@ -3318,7 +3318,7 @@ namespace LightInject
         /// <inheritdoc/>
         public object GetInstance(Type serviceType, string serviceName)
         {
-            var key = Tuple.Create(serviceType, serviceName);
+            var key = (serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
             if (instanceDelegate == null)
             {
@@ -3421,7 +3421,7 @@ namespace LightInject
 
         internal object GetInstance(Type serviceType, Scope scope, string serviceName)
         {
-            var key = Tuple.Create(serviceType, serviceName);
+            var key = (serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
             if (instanceDelegate == null)
             {
@@ -3451,7 +3451,7 @@ namespace LightInject
 
         internal object GetInstance(Type serviceType, string serviceName, object[] arguments, Scope scope)
         {
-            var key = Tuple.Create(serviceType, serviceName);
+            var key = (serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
             if (instanceDelegate == null)
             {
@@ -3476,7 +3476,7 @@ namespace LightInject
 
         internal object TryGetInstance(Type serviceType, string serviceName, Scope scope)
         {
-            var key = Tuple.Create(serviceType, serviceName);
+            var key = (serviceType, serviceName);
             var instanceDelegate = namedDelegates.Search(key);
             if (instanceDelegate == null)
             {
@@ -4862,7 +4862,7 @@ namespace LightInject
             return instanceDelegate;
         }
 
-        private GetInstanceDelegate CreateNamedDelegate(Tuple<Type, string> key, bool throwError)
+        private GetInstanceDelegate CreateNamedDelegate((Type, string) key, bool throwError)
         {
             log.Info($"Compiling delegate for resolving service : {key.Item1}, name: {key.Item2}");
             var instanceDelegate = CreateDelegate(key.Item1, key.Item2, throwError);
