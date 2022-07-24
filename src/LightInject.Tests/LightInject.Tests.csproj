@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- <TargetFrameworks>net6.0;net47</TargetFrameworks> -->
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net47</TargetFramework>
     <!-- <TargetFrameworks>netcoreapp1.1;netcoreapp2.0;net46;net452</TargetFrameworks> -->
     <NoWarn>$(NoWarn);CS0579</NoWarn>
     <TestTargetFramework>netcoreapp3.1</TestTargetFramework>
@@ -32,7 +32,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
@@ -48,7 +48,7 @@
   <ItemGroup Condition=" '$(TargetFramework)' == 'net46' OR '$(TargetFramework)' == 'net452'">
     <Reference Include="System" />
     <Reference Include="System.IO" />
-    <Reference Include="System.Runtime" />
+    <!-- <Reference Include="System.Runtime" /> -->
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Linq.Expressions" />
   </ItemGroup>
