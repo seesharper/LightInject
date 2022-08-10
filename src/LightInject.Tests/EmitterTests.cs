@@ -492,14 +492,13 @@ namespace LightInject.Tests
             Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Ldarg_0, (ConstructorInfo)null));
         }
 
-#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET6_0 || NETCOREAPP3_1
         [Fact]
         public void Emit_InvalidOpCode_ThrowsNotSupportedException()
         {
             var emitter = new Emitter(null, new Type[] { });
             Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Xor));
         }
-#endif
+
         [Fact]
         public void Push_Zero_ReturnsCorrectStackType()
         {

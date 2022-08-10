@@ -1715,10 +1715,6 @@ namespace LightInject.Tests
             }
         }
 
-
-
-
-#if NET452 || NET40 || NET47 || NET6_0
         [Fact]
         public void RegisterFrom_CompositionRootType_CallsCompositionRootExecutor()
         {
@@ -1743,7 +1739,7 @@ namespace LightInject.Tests
 
             compositionRootExecutorMock.Assert(c => c.Execute(compositionRootMock), Invoked.Once);
         }
-#endif
+
         [Fact]
         public void GetInstance_SingletonInstance_EmitterIsProperlyPoppedOnConstructorException()
         {

@@ -33,5 +33,5 @@ using Xunit;
 // [assembly: AssemblyVersion("1.0.*")]
 
 [assembly: CompositionRootType(typeof(CompositionRootMock))]
-[assembly: InternalsVisibleTo("DynamicAssembly")]
+[assembly: InternalsVisibleTo("DynamicMethodAssembly")]
 [assembly: CollectionBehavior(DisableTestParallelization = true)]

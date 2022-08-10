@@ -1,5 +1,4 @@
-﻿#if NET452 || NET46 || NETCOREAPP3_1
-namespace LightInject.Tests
+﻿namespace LightInject.Tests
 {
 
     using System;
@@ -73,4 +72,3 @@ namespace LightInject.Tests
         }
     }
 }
-#endif

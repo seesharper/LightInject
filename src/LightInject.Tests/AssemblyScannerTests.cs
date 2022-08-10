@@ -234,7 +234,6 @@ namespace LightInject.Tests
         //}
 
 
-#if NET40 || NET452 || NET47 || NET6_0
         [Fact]
         public void Register_AssemblyFileWithoutCompositionRoot_CallsAssemblyScanner()
         {
@@ -261,7 +260,7 @@ namespace LightInject.Tests
             container.RegisterAssembly("LightInject.Tests.dll");
             assemblyScannerMock.Assert(a => a.Scan(The<Assembly>.IsAnyValue, container), Invoked.Once);
         }
-#endif
+
         [Fact]
         public void Register_Assembly_CallsAssemblyScanner()
         {
@@ -321,7 +320,7 @@ namespace LightInject.Tests
             serviceContainer.RegisterAssembly(typeof(IFoo).GetTypeInfo().Assembly, () => new PerContainerLifetime(), (s, t) => true);
             scannerMock.Assert(a => a.Scan(typeof(IFoo).GetTypeInfo().Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue, The<Func<Type, Type, string>>.IsAnyValue), Invoked.Once);
         }
-#if NET40 || NET452 || NET46 || NET6_0
+
         [Fact]
         public void Register_SearchPattern_CallsAssemblyScanner()
         {
@@ -334,7 +333,6 @@ namespace LightInject.Tests
             serviceContainer.RegisterAssembly("LightInject.Tests.dll");
             scannerMock.Assert(a => a.Scan(typeof(IFoo).Assembly, The<IServiceRegistry>.IsAnyValue, The<Func<ILifetime>>.IsAnyValue, The<Func<Type, Type, bool>>.IsAnyValue, The<Func<Type, Type, string>>.IsAnyValue), Invoked.Once);
         }
-#endif
 
         [Fact]
         public void Register_AssemblyWithLifetimeFactory_RegistersServicesWithGivenLifeTime()

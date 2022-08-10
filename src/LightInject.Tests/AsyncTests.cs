@@ -1,13 +1,7 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using LightInject.SampleLibrary;
 using Xunit;
 namespace LightInject.Tests
 {
-
-#if NET452 || NET46 || NETCOREAPP3_1
-
     public class AsyncTests : TestBase
     {
         [Fact]
@@ -61,5 +55,4 @@ namespace LightInject.Tests
             }
         }
     }
-#endif
 }

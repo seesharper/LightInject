@@ -38,7 +38,7 @@ namespace LightInject.SampleLibrary
 
     }
 
-#if NET452 || NET46 || NETCOREAPP3_1
+
 
     public interface IAsyncFoo
     {
@@ -64,7 +64,7 @@ namespace LightInject.SampleLibrary
 
     }
 
-#endif
+
 
     public interface IFoo { }
 
