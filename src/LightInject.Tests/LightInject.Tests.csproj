@@ -1,20 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- <TargetFrameworks>net6.0;net47</TargetFrameworks> -->
     <TargetFramework>net6.0</TargetFramework>
-    <!-- <TargetFrameworks>netcoreapp1.1;netcoreapp2.0;net46;net452</TargetFrameworks> -->
     <NoWarn>$(NoWarn);CS0579</NoWarn>
-    <TestTargetFramework>netcoreapp3.1</TestTargetFramework>
+    <TestTargetFramework>net6.0</TestTargetFramework>
   </PropertyGroup>
   <Choose>
-    <When Condition=" '$(TestTargetFramework)'=='netstandard2.0' Or '$(TestTargetFramework)'=='netstandard1.6' Or '$(TestTargetFramework)'=='netstandard1.3' ">
+    <When Condition=" '$(TestTargetFramework)'=='netstandard2.0' ">
       <PropertyGroup>
         <DefineConstants>USE_EXPRESSIONS</DefineConstants>
       </PropertyGroup>
     </When>
   </Choose>
-  <PropertyGroup Condition=" '$(TargetFramework)'=='net6.0' ">
+  <PropertyGroup Condition=" '$(TestTargetFramework)'=='net6.0' ">
     <DefineConstants>USE_ASSEMBLY_VERIFICATION</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
@@ -38,11 +36,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' Or '$(TargetFramework)' == 'netstandard1.6'">
+  <!-- <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' Or '$(TargetFramework)' == 'netstandard1.6'">
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
     <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
     <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-  </ItemGroup>
+  </ItemGroup> -->
   <ItemGroup>
     <ProjectReference Include="..\LightInject\LightInject.csproj" AdditionalProperties="TargetFramework=$(TestTargetFramework)" />
   </ItemGroup>
