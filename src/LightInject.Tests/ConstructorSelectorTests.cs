@@ -1,24 +1,15 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+using LightInject.SampleLibrary;
+using Xunit;
 namespace LightInject.Tests
 {
-    using LightInject.SampleLibrary;
-
-    using Xunit;
-
-
-    
     public class ConstructorSelectorTests : TestBase
     {
         [Fact]
         public void Execute_StaticConstructor_IsNotReturned()
         {
             var container = CreateContainer();
-            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);           
+            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
             Assert.Throws<InvalidOperationException>(() => selector.Execute(typeof(FooWithStaticConstructor)));
         }
 
@@ -27,8 +18,8 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.RegisterInstance("SomeValue");
-            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);           
-            var constructorInfo = selector.Execute(typeof(FooWithMultipleParameterizedConstructors));                        
+            var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
+            var constructorInfo = selector.Execute(typeof(FooWithMultipleParameterizedConstructors));
             Assert.Equal(typeof(string), constructorInfo.GetParameters()[0].ParameterType);
         }
 
@@ -37,10 +28,10 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
-            
+
             var message = Assert.Throws<InvalidOperationException>(
                 () => selector.Execute(typeof(FooWithMultipleParameterizedConstructors))).Message;
-            Assert.StartsWith("No resolvable", message); 
+            Assert.StartsWith("No resolvable", message);
         }
 
         [Fact]
@@ -60,6 +51,6 @@ namespace LightInject.Tests
             var container = CreateContainer();
             var selector = new MostResolvableConstructorSelector(container.CanGetInstance);
             Assert.Throws<InvalidOperationException>(() => selector.Execute(typeof(FooWithPrivateConstructor)));
-        }      
+        }
     }
 }

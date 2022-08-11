@@ -1,12 +1,10 @@
-using System;
 using System.Reflection;
+using LightInject.SampleLibrary;
+using LightMock;
+using Xunit;
+
 namespace LightInject.Tests
 {
-    using SampleLibrary;
-    using LightMock;
-    using Xunit;
-
-
     public class LazyCompositionRootTests
     {
         [Fact]
@@ -24,7 +22,7 @@ namespace LightInject.Tests
             compositionRootMock.Arrange(c => c.Compose(container)).Callback<IServiceContainer>(c => c.Register<IFoo, Foo>());
 
             var compositionRootTypeExtractorMock = new TypeExtractorMock();
-            compositionRootTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new[] {typeof(CompositionRootMock)});
+            compositionRootTypeExtractorMock.Arrange(c => c.Execute(The<Assembly>.IsAnyValue)).Returns(new[] { typeof(CompositionRootMock) });
 
             var assemblyScanner = new AssemblyScanner(new ConcreteTypeExtractor(), compositionRootTypeExtractorMock,
                 new CompositionRootExecutor(container, t => compositionRootMock), new GenericArgumentMapper());

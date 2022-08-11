@@ -1,4 +1,4 @@
-#if NET40 || NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46
+#if USE_ASSEMBLY_VERIFICATION
 using Xunit;
 
 namespace LightInject.Tests

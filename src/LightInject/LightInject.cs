@@ -1,4 +1,8 @@
-﻿/*********************************************************************************
+﻿#if NETSTANDARD2_0
+#define USE_EXPRESSIONS
+#endif
+
+/*********************************************************************************
     The MIT License (MIT)
 
     Copyright (c) 2020 bernhard.richter@gmail.com
@@ -49,9 +53,6 @@ namespace LightInject
     using System.Reflection;
     using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
-#if NET452
-    using System.Runtime.Remoting.Messaging;
-#endif
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -530,14 +531,12 @@ namespace LightInject
         IServiceRegistry RegisterPropertyDependency<TDependency>(
             Func<IServiceFactory, PropertyInfo, TDependency> factory);
 
-#if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
         /// <summary>
         /// Registers composition roots from assemblies in the base directory that match the <paramref name="searchPattern"/>.
         /// </summary>
         /// <param name="searchPattern">The search pattern used to filter the assembly files.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         IServiceRegistry RegisterAssembly(string searchPattern);
-#endif
 
         /// <summary>
         /// Decorates the <paramref name="serviceType"/> with the given <paramref name="decoratorType"/>.
@@ -944,8 +943,6 @@ namespace LightInject
         void EndScope(Scope scope);
     }
 
-#if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
-
     /// <summary>
     /// Represents a class that is responsible loading a set of assemblies based on the given search pattern.
     /// </summary>
@@ -958,7 +955,6 @@ namespace LightInject
         /// <returns>A list of assemblies based on the given <paramref name="searchPattern"/>.</returns>
         IEnumerable<Assembly> Load(string searchPattern);
     }
-#endif
 
     /// <summary>
     /// Represents a class that is capable of scanning an assembly and register services into an <see cref="IServiceContainer"/> instance.
@@ -1048,7 +1044,7 @@ namespace LightInject
         /// <param name="arg">The String to be emitted.</param>
         void Emit(OpCode code, string arg);
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if USE_EXPRESSIONS
 
         /// <summary>
         /// Pushes the argument as a constant expression.
@@ -2581,15 +2577,8 @@ namespace LightInject
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance, options.EnableOptionalArguments);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
-#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
             ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
-#else
-            ScopeManagerProvider = new PerThreadScopeManagerProvider();
-#endif
-#if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
             AssemblyLoader = new AssemblyLoader();
-#endif
-
         }
 
         /// <summary>
@@ -2629,9 +2618,7 @@ namespace LightInject
             IAssemblyScanner assemblyScanner,
             IConstructorDependencySelector constructorDependencySelector,
             IConstructorSelector constructorSelector,
-#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
             IAssemblyLoader assemblyLoader,
-#endif
             IScopeManagerProvider scopeManagerProvider)
         {
             this.options = options;
@@ -2653,13 +2640,12 @@ namespace LightInject
             ConstructorDependencySelector = constructorDependencySelector;
             ConstructorSelector = constructorSelector;
             ScopeManagerProvider = scopeManagerProvider;
-#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
+
             AssemblyLoader = assemblyLoader;
             foreach (var availableService in AvailableServices)
             {
                 this.Register(availableService);
             }
-#endif
         }
 
         /// <summary>
@@ -2714,13 +2700,11 @@ namespace LightInject
         /// Gets or sets the <see cref="IAssemblyScanner"/> instance that is responsible for scanning assemblies.
         /// </summary>
         public IAssemblyScanner AssemblyScanner { get; set; }
-#if NET452 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
 
         /// <summary>
         /// Gets or sets the <see cref="IAssemblyLoader"/> instance that is responsible for loading assemblies during assembly scanning.
         /// </summary>
         public IAssemblyLoader AssemblyLoader { get; set; }
-#endif
 
         /// <summary>
         /// Gets a list of <see cref="ServiceRegistration"/> instances that represents the registered services.
@@ -2914,7 +2898,6 @@ namespace LightInject
             return this;
         }
 
-#if NET452 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
         /// <inheritdoc/>
         public IServiceRegistry RegisterAssembly(string searchPattern)
         {
@@ -2925,7 +2908,6 @@ namespace LightInject
 
             return this;
         }
-#endif
 
         /// <inheritdoc/>
         public IServiceRegistry Decorate(Type serviceType, Type decoratorType, Func<ServiceRegistration, bool> predicate)
@@ -3391,9 +3373,7 @@ namespace LightInject
                 AssemblyScanner,
                 ConstructorDependencySelector,
                 ConstructorSelector,
-#if NET452 || NET46 || NETSTANDARD1_6 || NETCOREAPP2_0
                 AssemblyLoader,
-#endif
                 ScopeManagerProvider);
         }
 
@@ -4092,7 +4072,7 @@ namespace LightInject
             return emitter;
         }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if USE_EXPRESSIONS
         private Action<IEmitter> GetEmitMethodForDefaultValue(ConstructorDependency constructorDependency)
         {
             Type parameterType = constructorDependency.Parameter.ParameterType;
@@ -4107,9 +4087,7 @@ namespace LightInject
                 emitter.PushConstantValue(defaultValue, parameterType);
             };
         }
-#endif
-
-#if NET452 || NET46 || NETCOREAPP2_0
+#else
         private Action<IEmitter> GetEmitMethodForDefaultValue(ConstructorDependency constructorDependency)
         {
             Type parameterType = constructorDependency.Parameter.ParameterType;
@@ -4533,7 +4511,7 @@ namespace LightInject
                 var serviceRegistration = new ServiceRegistration
                 {
                     ServiceType = closedGenericServiceType,
-                    ImplementingType = candidate.ClosedGenericImplentingType,
+                    ImplementingType = candidate.ClosedGenericImplementingType,
                     ServiceName = serviceName,
                     Lifetime = CloneLifeTime(candidate.Lifetime) ?? DefaultLifetime,
                 };
@@ -4931,20 +4909,20 @@ namespace LightInject
 
         private struct ClosedGenericCandidate
         {
-            public ClosedGenericCandidate(Type closedGenericImplentingType, ILifetime lifetime)
+            public ClosedGenericCandidate(Type closedGenericImplementingType, ILifetime lifetime)
             {
-                ClosedGenericImplentingType = closedGenericImplentingType;
+                ClosedGenericImplementingType = closedGenericImplementingType;
                 Lifetime = lifetime;
             }
 
-            public Type ClosedGenericImplentingType { get; }
+            public Type ClosedGenericImplementingType { get; }
 
             public ILifetime Lifetime { get; }
         }
 
         private class Storage<T>
         {
-            public T[] Items = new T[0];
+            public T[] Items = Array.Empty<T>();
 
             private readonly object lockObject = new object();
 
@@ -4993,9 +4971,7 @@ namespace LightInject
         private class PropertyDependencyDisabler : IPropertyDependencySelector
         {
             public IEnumerable<PropertyDependency> Execute(Type type)
-            {
-                return new PropertyDependency[0];
-            }
+                => Array.Empty<PropertyDependency>();
         }
 
         private class DynamicMethodSkeleton : IMethodSkeleton
@@ -5004,32 +4980,24 @@ namespace LightInject
             private DynamicMethod dynamicMethod;
 
             public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
-            {
-                CreateDynamicMethod(returnType, parameterTypes);
-            }
+                => CreateDynamicMethod(returnType, parameterTypes);
 
-            public IEmitter GetEmitter()
-            {
-                return emitter;
-            }
+            public IEmitter GetEmitter() => emitter;
 
             public Delegate CreateDelegate(Type delegateType)
-            {
-                return dynamicMethod.CreateDelegate(delegateType);
-            }
+                => dynamicMethod.CreateDelegate(delegateType);
 
-#if NET452 || NET46 || NETCOREAPP2_0
+#if USE_EXPRESSIONS
+            private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
+            {
+                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
+                emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
+            }
+#else
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
             {
                 dynamicMethod = new DynamicMethod(
                     "DynamicMethod", returnType, parameterTypes, typeof(ServiceContainer).GetTypeInfo().Module, true);
-                emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
-            }
-#endif
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
-            private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
-            {
-                dynamicMethod = new DynamicMethod(returnType, parameterTypes);
                 emitter = new Emitter(dynamicMethod.GetILGenerator(), parameterTypes);
             }
 #endif
@@ -5146,8 +5114,6 @@ namespace LightInject
         }
     }
 
-#if NET452 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
-
     /// <summary>
     /// Manages a set of <see cref="Scope"/> instances.
     /// </summary>
@@ -5184,7 +5150,6 @@ namespace LightInject
             return new PerLogicalCallContextScopeManager(serviceFactory);
         }
     }
-#endif
 
     /// <summary>
     /// A thread safe dictionary.
@@ -5244,7 +5209,7 @@ namespace LightInject
         }
     }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if USE_EXPRESSIONS
 
     /// <summary>
     /// Defines and represents a dynamic method that can be compiled and executed.
@@ -5822,7 +5787,7 @@ namespace LightInject
                 return constructorCandidates[0];
             }
 
-            foreach (var constructorCandidate in constructorCandidates.OrderByDescending(c => c.GetParameters().Count()))
+            foreach (var constructorCandidate in constructorCandidates.OrderByDescending(c => c.GetParameters().Length))
             {
                 ParameterInfo[] parameters = constructorCandidate.GetParameters();
                 if (CanCreateParameterDependencies(parameters))
@@ -6888,9 +6853,7 @@ namespace LightInject
             InternalTypes.Add(typeof(Registration));
             InternalTypes.Add(typeof(ServiceContainer));
             InternalTypes.Add(typeof(ConstructionInfo));
-#if NET452 || NET46 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
             InternalTypes.Add(typeof(AssemblyLoader));
-#endif
             InternalTypes.Add(typeof(TypeConstructionInfoBuilder));
             InternalTypes.Add(typeof(ConstructionInfoProvider));
             InternalTypes.Add(typeof(MostResolvableConstructorSelector));
@@ -6915,12 +6878,11 @@ namespace LightInject
             InternalTypes.Add(typeof(GetInstanceDelegate));
             InternalTypes.Add(typeof(ContainerOptions));
             InternalTypes.Add(typeof(CompositionRootAttributeExtractor));
-#if NET452 || NET46 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NETCOREAPP2_0
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManagerProvider));
             InternalTypes.Add(typeof(PerLogicalCallContextScopeManager));
             InternalTypes.Add(typeof(LogicalThreadStorage<>));
-#endif
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+
+#if USE_EXPRESSIONS
             InternalTypes.Add(typeof(DynamicMethod));
             InternalTypes.Add(typeof(ILGenerator));
             InternalTypes.Add(typeof(LocalBuilder));
@@ -7330,7 +7292,6 @@ namespace LightInject
             return propertyInfo.SetMethod == null || propertyInfo.SetMethod.IsStatic || propertyInfo.SetMethod.IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
         }
     }
-#if NET452 || NET46 || NETCOREAPP2_0
 
     /// <summary>
     /// Loads all assemblies from the application base directory that matches the given search pattern.
@@ -7375,62 +7336,9 @@ namespace LightInject
         /// <returns>The path where the LightInject assembly is located.</returns>
         protected virtual string GetAssemblyCodeBasePath()
         {
-            return typeof(ServiceContainer).Assembly.CodeBase;
+            return typeof(ServiceContainer).Assembly.Location;
         }
     }
-#endif
-
-#if NETSTANDARD1_6 || NETSTANDARD2_0
-    /// <summary>
-    /// Loads all assemblies from the application base directory that matches the given search pattern.
-    /// </summary>
-    public class AssemblyLoader : IAssemblyLoader
-    {
-        /// <inheritdoc/>
-        public IEnumerable<Assembly> Load(string searchPattern)
-        {
-            string directory = Path.GetDirectoryName(new Uri(GetAssemblyCodeBasePath()).LocalPath);
-            if (directory != null)
-            {
-                string[] searchPatterns = searchPattern.Split('|');
-                foreach (string file in searchPatterns.SelectMany(sp => Directory.GetFiles(directory, sp)).Where(CanLoad))
-                {
-                    yield return LoadAssembly(file);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Indicates if the current <paramref name="fileName"/> represent a file that can be loaded.
-        /// </summary>
-        /// <param name="fileName">The name of the target file.</param>
-        /// <returns><b>true</b> if the file can be loaded, otherwise <b>false</b>.</returns>
-        protected virtual bool CanLoad(string fileName)
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Loads <see cref="Assembly"/> for the file located in <paramref name="filename"/>.
-        /// </summary>
-        /// <param name="filename">Full path to the file.</param>
-        /// <returns><see cref="Assembly"/> of the file.</returns>
-        protected virtual Assembly LoadAssembly(string filename)
-        {
-            FileInfo fileInfo = new FileInfo(filename);
-            return Assembly.Load(new AssemblyName(fileInfo.Name.Replace(fileInfo.Extension, string.Empty)));
-        }
-
-        /// <summary>
-        /// Gets the path where the LightInject assembly is located.
-        /// </summary>
-        /// <returns>The path where the LightInject assembly is located.</returns>
-        protected virtual string GetAssemblyCodeBasePath()
-        {
-            return typeof(ServiceContainer).GetTypeInfo().Assembly.CodeBase;
-        }
-    }
-#endif
 
     /// <summary>
     /// Defines an immutable representation of a key and a value.
@@ -8330,7 +8238,7 @@ namespace LightInject
             instructions.Add(new Instruction<string>(code, arg, il => il.Emit(code, arg)));
         }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if USE_EXPRESSIONS
         /// <inheritdoc/>
         public void PushConstantValue(object arg, Type type)
         {
@@ -8341,74 +8249,6 @@ namespace LightInject
 #endif
     }
 
-#if NET452
-
-    /// <summary>
-    /// Provides storage per logical thread of execution.
-    /// </summary>
-    /// <typeparam name="T">The type of the value contained in this <see cref="LogicalThreadStorage{T}"/>.</typeparam>
-    public class LogicalThreadStorage<T>
-    {
-        private readonly string key = Guid.NewGuid().ToString();
-
-        /// <summary>
-        /// Gets or sets the value for the current logical thread of execution.
-        /// </summary>
-        /// <value>
-        /// The value for the current logical thread of execution.
-        /// </value>
-        public T Value
-        {
-            get
-            {
-                var logicalThreadValue = (LogicalThreadValue)CallContext.LogicalGetData(key);
-                return logicalThreadValue != null ? logicalThreadValue.Value : default(T);
-            }
-
-            set
-            {
-                LogicalThreadValue logicalThreadValue = null;
-                if (value != null)
-                {
-                    logicalThreadValue = new LogicalThreadValue { Value = value };
-                }
-
-                CallContext.LogicalSetData(key, logicalThreadValue);
-            }
-        }
-
-        [Serializable]
-        private class LogicalThreadValue : MarshalByRefObject
-        {
-            [NonSerialized]
-            private T value;
-
-            public T Value
-            {
-                get
-                {
-                    return value;
-                }
-
-                set
-                {
-                    this.value = value;
-                }
-            }
-        }
-    }
-#endif
-
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
-    /// <summary>
-    /// An attribute shim since we don't have this attribute in netstandard.
-    /// </summary>
-    public class ExcludeFromCodeCoverageAttribute : Attribute
-    {
-    }
-#endif
-
-#if NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0 || NET46 || NETCOREAPP2_0
     /// <summary>
     /// Provides storage per logical thread of execution.
     /// </summary>
@@ -8429,7 +8269,6 @@ namespace LightInject
             set { asyncLocal.Value = value; }
         }
     }
-#endif
 
     internal static class LifetimeHelper
     {
@@ -8505,14 +8344,14 @@ but either way the scope has to be started with 'container.BeginScope()'";
             return scope;
         }
 
-        public static Scope GetThisOrCurrentScope(Scope scope, IScopeManager scopemanager)
+        public static Scope GetThisOrCurrentScope(Scope scope, IScopeManager scopeManager)
         {
             if (scope != null)
             {
                 return scope;
             }
 
-            return scopemanager.CurrentScope;
+            return scopeManager.CurrentScope;
         }
     }
 
@@ -8650,7 +8489,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
 
     /// <summary>
     /// Contains a set of extension method that represents
-    /// a compability layer for reflection methods.
+    /// a compatibility layer for reflection methods.
     /// </summary>
     internal static class TypeHelper
     {
@@ -8671,30 +8510,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
                 return null;
             }
         }
-#if NET452 || NET46 || NETCOREAPP2_0
 
-        /// <summary>
-        /// Gets the method represented by the delegate.
-        /// </summary>
-        /// <param name="del">The target <see cref="Delegate"/>.</param>
-        /// <returns>The method represented by the delegate.</returns>
-        public static MethodInfo GetMethodInfo(this Delegate del) => del.Method;
-
-        /// <summary>
-        /// Gets the custom attributes for this <paramref name="assembly"/>.
-        /// </summary>
-        /// <param name="assembly">The target <see cref="Assembly"/>.</param>
-        /// <param name="attributeType">The type of <see cref="Attribute"/> objects to return.</param>
-        /// <returns>The custom attributes for this <paramref name="assembly"/>.</returns>
-        public static IEnumerable<Attribute> GetCustomAttributes(this Assembly assembly, Type attributeType)
-            => assembly.GetCustomAttributes(attributeType, false).Cast<Attribute>();
-#endif
-
-        /// <summary>
-        /// Gets a value indicating whether the <see cref="Type"/> is an <see cref="IEnumerable{T}"/> type.
-        /// </summary>
-        /// <param name="type">The target <see cref="Type"/>.</param>
-        /// <returns>true if the <see cref="Type"/> is an <see cref="IEnumerable{T}"/>; otherwise, false.</returns>
         public static bool IsEnumerableOfT(this Type type)
         {
             var typeInfo = type.GetTypeInfo();
@@ -8835,12 +8651,12 @@ but either way the scope has to be started with 'container.BeginScope()'";
             return type.GetElementType();
         }
 
-#if NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6 || NETSTANDARD2_0
+#if USE_EXPRESSIONS
         public static object GetDefaultValue(Type type)
         {
             var openGenericGetDefaultValueInternalMethod = typeof(TypeHelper).GetTypeInfo().GetDeclaredMethod(nameof(GetDefaultValueInternal));
-            var closedGenerictDefaultValueInternalMethod = openGenericGetDefaultValueInternalMethod.MakeGenericMethod(type);
-            return closedGenerictDefaultValueInternalMethod.Invoke(null, new object[] { });
+            var closedGenericDefaultValueInternalMethod = openGenericGetDefaultValueInternalMethod.MakeGenericMethod(type);
+            return closedGenericDefaultValueInternalMethod.Invoke(null, new object[] { });
         }
 
         private static T GetDefaultValueInternal<T>()

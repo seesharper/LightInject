@@ -1,15 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using LightInject.SampleLibrary;
+using Xunit;
+
 namespace LightInject.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-
-    using LightInject.SampleLibrary;
-
-    using Xunit;
-
-
     public class ImmutableHashTreeTests
     {
         [Fact]

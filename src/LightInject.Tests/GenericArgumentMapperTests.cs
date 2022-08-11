@@ -1,22 +1,21 @@
 
+using System;
+using System.Collections;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Reflection;
+using LightInject.SampleLibrary;
+using Xunit;
 namespace LightInject.Tests
 {
-    using System;
-    using System.Collections;
-    using System.Collections.ObjectModel;
-    using System.Linq;
-    using System.Reflection;
-    using SampleLibrary;
-    using Xunit;
-
     public class GenericArgumentMapperTests
     {
         [Fact]
         public void Map_GenericTypeDefinitionToImplementingType_IsValid()
-        {        
-            var result = CreateMapper().Map(typeof (IFoo<>), typeof (Foo<>));
+        {
+            var result = CreateMapper().Map(typeof(IFoo<>), typeof(Foo<>));
             Assert.True(result.IsValid);
-        }       
+        }
 
         [Fact]
         public void Map_ImplementedInterfaceToImplementingType_IsValid()
@@ -27,8 +26,8 @@ namespace LightInject.Tests
 
         [Fact]
         public void Map_ClosedGenericToOpenGenericImplementingType_IsValid()
-        {            
-            var result = CreateMapper().Map(typeof (IFoo<string>), typeof (Foo<>));
+        {
+            var result = CreateMapper().Map(typeof(IFoo<string>), typeof(Foo<>));
             Assert.True(result.IsValid);
         }
 
@@ -52,11 +51,11 @@ namespace LightInject.Tests
             var result = CreateMapper().TryMakeGenericType(typeof(ICollection), typeof(Collection<>));
             Assert.Null(result);
         }
-        
+
         [Fact]
         public void Map_PartiallyClosedGeneric_ReturnsArgumentForUnclosedParameter()
         {
-            var result = CreateMapper().Map(typeof(IFoo<string,int>), typeof(HalfClosedFoo<>));
+            var result = CreateMapper().Map(typeof(IFoo<string, int>), typeof(HalfClosedFoo<>));
             Assert.True(result.GetMappedArguments().Single() == typeof(int));
             Assert.True(result.IsValid);
         }
@@ -64,7 +63,7 @@ namespace LightInject.Tests
         [Fact]
         public void Map_PartiallyClosedGenericFromOpenGenericServiceType_IsValid()
         {
-            var result = CreateMapper().Map(typeof(IFoo<,>), typeof(HalfClosedFoo<>));           
+            var result = CreateMapper().Map(typeof(IFoo<,>), typeof(HalfClosedFoo<>));
             Assert.True(result.IsValid);
         }
 

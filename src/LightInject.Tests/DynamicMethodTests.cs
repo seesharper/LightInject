@@ -1,9 +1,10 @@
-#if NETCOREAPP1_1
+#if USE_EXPRESSIONS
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace LightInject.Tests
 {
@@ -15,7 +16,7 @@ namespace LightInject.Tests
     using ILGenerator = LightInject.ILGenerator;
     using LocalBuilder = LightInject.LocalBuilder;
 
-    
+
     public class DynamicMethodTests
     {
         [Fact]
@@ -25,7 +26,7 @@ namespace LightInject.Tests
             ILGenerator generator = dynamicMethod.GetILGenerator();
             Assert.Throws<NotSupportedException>(() => generator.Emit(OpCodes.Add));
         }
-        
+
         [Fact]
         public void Emit_UnknownOpCodeWithConstructorInfo_ThrowsNotSupportedException()
         {

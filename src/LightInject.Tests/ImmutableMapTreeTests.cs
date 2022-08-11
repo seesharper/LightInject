@@ -1,11 +1,10 @@
+using System;
+using System.Collections.Generic;
+using LightInject.SampleLibrary;
+using Xunit;
+
 namespace LightInject.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using LightInject.SampleLibrary;
-    using Xunit;
-
-
     public class ImmutableHashMapTreeTests
     {
         [Fact]

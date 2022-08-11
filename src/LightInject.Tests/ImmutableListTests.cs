@@ -1,10 +1,8 @@
+
+using Xunit;
+
 namespace LightInject.Tests
 {
-    using System.Linq;
-
-    using Xunit;
-
-    
     public class ImmutableListTests
     {
         [Fact]
@@ -16,7 +14,5 @@ namespace LightInject.Tests
 
             Assert.NotSame(list, newList);
         }
-
-        
     }
 }

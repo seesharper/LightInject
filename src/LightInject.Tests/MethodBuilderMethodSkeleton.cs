@@ -1,12 +1,11 @@
-﻿#if NET452 || NET46 
+﻿#if !USE_EXPRESSIONS
+using System;
+using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
+using ILVerifier;
 namespace LightInject.Tests
 {
-    using System;
-    using System.IO;
-    using System.Reflection;
-    using System.Reflection.Emit;
-
-
     public class MethodBuilderMethodSkeleton : IMethodSkeleton
     {
         private readonly string outputPath;
@@ -19,7 +18,7 @@ namespace LightInject.Tests
         public MethodBuilderMethodSkeleton(Type returnType, Type[] parameterTypes, string outputPath)
         {
             this.outputPath = outputPath;
-        
+
             fileName = Path.GetFileName(outputPath);
             CreateAssemblyBuilder();
             CreateTypeBuilder();
@@ -37,27 +36,30 @@ namespace LightInject.Tests
         }
 
         public Delegate CreateDelegate(Type delegateType)
-        {                       
+        {
             var dynamicType = typeBuilder.CreateType();
-            assemblyBuilder.Save(fileName);            
-            AssemblyAssert.IsValidAssembly(outputPath);
+            new Verifier()
+                .WithAssemblyReferenceFromType<ServiceContainer>()
+                .WithAssemblyReferenceFromType<MethodBuilderMethodSkeleton>()
+                .Verify(dynamicType.Assembly);
             MethodInfo methodInfo = dynamicType.GetMethod("DynamicMethod", BindingFlags.Static | BindingFlags.Public);
             return Delegate.CreateDelegate(delegateType, methodInfo);
         }
 
         public Delegate CreateDelegate(Type delegateType, object target)
-        {            
+        {
             var dynamicType = typeBuilder.CreateType();
-            assemblyBuilder.Save(fileName);            
-            AssemblyAssert.IsValidAssembly(outputPath);
+            new Verifier()
+                .WithAssemblyReferenceFromType<ServiceContainer>()
+                .WithAssemblyReferenceFromType<MethodBuilderMethodSkeleton>()
+                .Verify(dynamicType.Assembly);
             MethodInfo methodInfo = dynamicType.GetMethod("DynamicMethod", BindingFlags.Static | BindingFlags.Public);
             return Delegate.CreateDelegate(delegateType, target, methodInfo);
         }
 
         private void CreateAssemblyBuilder()
         {
-            AppDomain myDomain = AppDomain.CurrentDomain;         
-            assemblyBuilder = myDomain.DefineDynamicAssembly(CreateAssemblyName(), AssemblyBuilderAccess.RunAndSave, Path.GetDirectoryName(outputPath));
+            assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("DynamicMethodAssembly"), AssemblyBuilderAccess.Run);
         }
 
         private AssemblyName CreateAssemblyName()
@@ -69,7 +71,7 @@ namespace LightInject.Tests
         private void CreateTypeBuilder()
         {
             var moduleName = Path.GetFileNameWithoutExtension(outputPath);
-            ModuleBuilder module = assemblyBuilder.DefineDynamicModule(moduleName, fileName);
+            ModuleBuilder module = assemblyBuilder.DefineDynamicModule(moduleName);
             typeBuilder = module.DefineType("DynamicType", TypeAttributes.Public);
         }
 

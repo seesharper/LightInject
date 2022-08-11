@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "LightInject\LightInject.csproj", "{CC28E4AA-608E-4BAE-AD4C-6A7E43EADCD1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject", "src/LightInject/LightInject.csproj", "{CC28E4AA-608E-4BAE-AD4C-6A7E43EADCD1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Tests", "LightInject.Tests\LightInject.Tests.csproj", "{DA077205-AAF8-4E44-A83A-C30BAE1D4E26}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Tests", "src/LightInject.Tests/LightInject.Tests.csproj", "{DA077205-AAF8-4E44-A83A-C30BAE1D4E26}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Benchmarks", "LightInject.Benchmarks\LightInject.Benchmarks.csproj", "{24E8B7A3-4F3B-41E1-93D8-F4496FF78B00}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightInject.Benchmarks", "src/LightInject.Benchmarks/LightInject.Benchmarks.csproj", "{24E8B7A3-4F3B-41E1-93D8-F4496FF78B00}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

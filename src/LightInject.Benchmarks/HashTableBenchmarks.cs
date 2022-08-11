@@ -58,7 +58,7 @@ namespace LightInject.Benchmarks
         [Benchmark]
         public void UsingImMap()
         {
-            var map = ImMap<object>.Empty;
+            var map = ImHashMap<int,object>.Empty;
             map = map.AddOrUpdate(1, new object());
             map = map.AddOrUpdate(2, new object());
             map = map.AddOrUpdate(3, new object());

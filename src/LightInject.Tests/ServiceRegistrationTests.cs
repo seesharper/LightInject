@@ -1,14 +1,11 @@
+using System;
+using System.Threading;
+using LightInject.SampleLibrary;
+
+using Xunit;
+
 namespace LightInject.Tests
 {
-    using System;
-
-    using System.Diagnostics;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using SampleLibrary;
-
-    using Xunit;
-
     public class ServiceRegistrationTests
     {
         [Fact]

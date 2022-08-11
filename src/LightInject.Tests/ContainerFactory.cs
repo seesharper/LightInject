@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-
 namespace LightInject.Tests
 {
     internal static class ContainerFactory

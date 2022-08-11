@@ -1,13 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LightMock;
 
 namespace LightInject.Tests
 {
-   
+
 
     internal class CompositionRootMock : MockContext<ICompositionRoot>, ICompositionRoot
     {

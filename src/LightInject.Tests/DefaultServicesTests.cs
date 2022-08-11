@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LightInject.SampleLibrary;
+﻿using LightInject.SampleLibrary;
 using Xunit;
 
 namespace LightInject.Tests

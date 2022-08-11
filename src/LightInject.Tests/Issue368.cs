@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
-using LightInject;
 using Xunit;
 
 namespace LightInject.Tests

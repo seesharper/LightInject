@@ -5,6 +5,7 @@
   "cSpell.words": [
     "Callvirt",
     "Conv",
+    "Initobj",
     "Ldarg",
     "Ldelem",
     "Ldlen",
@@ -13,6 +14,9 @@
     "Ldnull",
     "Ldstr",
     "MSIL",
+    "Newarr",
+    "Newobj",
+    "Stelem",
     "Stloc",
     "Xunit"
   ],

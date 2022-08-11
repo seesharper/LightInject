@@ -1,8 +1,8 @@
-﻿namespace LightInject.Tests
+﻿using System.Linq;
+using Xunit;
+
+namespace LightInject.Tests
 {
-    using System.CodeDom;
-    using System.Linq;
-    using Xunit;
     public class Issue257 : TestBase
     {
         [Fact]

@@ -4,9 +4,14 @@
     {
       "label": "build",
       "command": "dotnet",
-      "args": ["build", "/property:GenerateFullPaths=true"],
+      "args": [
+        "build",
+        "/property:GenerateFullPaths=true"
+      ],
       "type": "shell",
-      "options": { "cwd": "src" },
+      "options": {
+        "cwd": "src"
+      },
       "group": "build",
       "presentation": {
         "reveal": "always"
@@ -16,9 +21,15 @@
     {
       "label": "rebuild",
       "command": "dotnet",
-      "args": ["build", "--no-incremental", "/property:GenerateFullPaths=true"],
+      "args": [
+        "build",
+        "--no-incremental",
+        "/property:GenerateFullPaths=true"
+      ],
       "type": "shell",
-      "options": { "cwd": "src" },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "group": "build",
       "presentation": {
         "reveal": "always",
@@ -30,7 +41,11 @@
       "label": "test",
       "command": "dotnet",
       "type": "process",
-      "args": ["script", "${workspaceFolder}/build/build.csx", "test"],
+      "args": [
+        "script",
+        "${workspaceFolder}/build/build.csx",
+        "test"
+      ],
       "problemMatcher": "$msCompile",
       "group": {
         "kind": "test",
@@ -49,7 +64,11 @@
       "label": "test with coverage",
       "command": "dotnet",
       "type": "process",
-      "args": ["script", "${workspaceFolder}/build/build.csx", "testcoverage"],
+      "args": [
+        "script",
+        "${workspaceFolder}/build/build.csx",
+        "testcoverage"
+      ],
       "problemMatcher": "$msCompile",
       "group": {
         "kind": "test",

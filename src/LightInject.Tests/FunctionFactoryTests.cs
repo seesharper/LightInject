@@ -1,11 +1,8 @@
+using System;
+using LightInject.SampleLibrary;
+using Xunit;
 namespace LightInject.Tests
 {
-    using System;
-    using System.Linq;
-    using LightInject.SampleLibrary;
-    using Xunit;
-
-
     public class FunctionFactoryTests : TestBase
     {
         [Fact]

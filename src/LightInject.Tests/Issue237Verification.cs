@@ -1,4 +1,4 @@
-﻿#if NET452 || NETSTANDARD11 || NETSTANDARD13 || NET46
+﻿#if USE_ASSEMBLY_VERIFICATION
 
 namespace LightInject.Tests
 {

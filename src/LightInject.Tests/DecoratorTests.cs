@@ -1,16 +1,10 @@
+using System;
 using System.Collections.Generic;
-
+using System.Linq;
+using LightInject.SampleLibrary;
+using Xunit;
 namespace LightInject.Tests
 {
-    using System;
-    using System.Linq;
-
-    using LightInject.SampleLibrary;
-
-    using Xunit;
-
-
-    
     public class DecoratorTests : TestBase
     {
         [Fact]
@@ -86,7 +80,7 @@ namespace LightInject.Tests
         public void GetInstance_WithNestedDecorator_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo, Foo>();            
+            container.Register<IFoo, Foo>();
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
             container.Decorate(typeof(IFoo), typeof(AnotherFooDecorator));
             var instance = container.GetInstance<IFoo>();
@@ -119,10 +113,10 @@ namespace LightInject.Tests
         public void GetInstance_OpenGenericDecoratorFollowedByClosedGenericDecorator_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo<>), typeof(Foo<>));           
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
             container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
             container.Decorate(typeof(IFoo<int>), typeof(ClosedGenericFooDecorator));
-            var instance = container.GetInstance<IFoo<int>>();           
+            var instance = container.GetInstance<IFoo<int>>();
             Assert.IsAssignableFrom<ClosedGenericFooDecorator>(instance);
         }
 
@@ -132,7 +126,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register(typeof(IFoo<>), typeof(Foo<>));
             container.Decorate(typeof(IFoo<int>), typeof(ClosedGenericFooDecorator));
-            container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));            
+            container.Decorate(typeof(IFoo<>), typeof(FooDecorator<>));
             var instance = container.GetInstance<IFoo<int>>();
             Assert.IsAssignableFrom<FooDecorator<int>>(instance);
         }
@@ -186,7 +180,7 @@ namespace LightInject.Tests
         public void GetInstance_OpenGenericDecoratorAfterClosedGenericDecorator_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof(IFoo<>), typeof(Foo<>)); 
+            container.Register(typeof(IFoo<>), typeof(Foo<>));
             // Register twice to provoke an decorator index == 1
             container.Decorate<IFoo<int>>((factory, foo) => new FooDecorator<int>(foo));
             container.Decorate<IFoo<int>>((factory, foo) => new FooDecorator<int>(foo));
@@ -230,7 +224,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
             container.Register<IBar, Bar>();
-            container.Decorate<IFoo>((serviceFactory, target) 
+            container.Decorate<IFoo>((serviceFactory, target)
                 => new FooDecoratorWithDependency(target, serviceFactory.GetInstance<IBar>()));
             var instance = (FooDecoratorWithDependency)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom<IFoo>(instance.Foo);
@@ -298,7 +292,7 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
             container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
-            var instance = (LazyFooDecorator)container.GetInstance<IFoo>();                     
+            var instance = (LazyFooDecorator)container.GetInstance<IFoo>();
             Assert.IsAssignableFrom<Foo>(instance.Foo.Value);
         }
 
@@ -334,7 +328,7 @@ namespace LightInject.Tests
         public void GetInstance_LazyDecoratorFollowedByNonLazyDecorator_ReturnsDecoratedInstance()
         {
             var container = CreateContainer();
-            container.Register<IFoo, Foo>();           
+            container.Register<IFoo, Foo>();
             container.Decorate(typeof(IFoo), typeof(LazyFooDecorator));
             container.Decorate(typeof(IFoo), typeof(FooDecorator));
 
@@ -372,7 +366,7 @@ namespace LightInject.Tests
             container.Register<IFoo, AnotherFooWithDependency>("AnotherFooWithDependency");
 
             container.GetAllInstances<IFoo>();
-            
+
             Assert.Equal(1, BarDecorator.Instances);
         }
 
@@ -528,26 +522,26 @@ namespace LightInject.Tests
             container.Decorate(typeof(IFoo<,>), typeof(HalfClosedOpenGenericFooDecorator<>));
             var instance = container.GetInstance<IFoo<string, int>>();
             Assert.IsType<HalfClosedOpenGenericFooDecorator<int>>(instance);
-        }       
+        }
 
         [Fact]
         public void GetInstance_HalfClosedDecoratorWithInvalidGenericArgument_DotNotApplyDecorator()
         {
             var options = new ContainerOptions();
             List<string> logMessages = new List<string>();
-            options.LogFactory = type => (entry => logMessages.Add(entry.Message)); 
+            options.LogFactory = type => (entry => logMessages.Add(entry.Message));
             var container = CreateContainer(options);
             container.Register(typeof(IFoo<,>), typeof(OpenGenericFoo<,>));
             container.Decorate(typeof(IFoo<,>), typeof(HalfClosedOpenGenericFooDecorator<>));
             var instance = container.GetInstance<IFoo<int, int>>();
-            Assert.IsType<OpenGenericFoo<int,int>>(instance);
+            Assert.IsType<OpenGenericFoo<int, int>>(instance);
             Assert.Contains(logMessages, s => s.StartsWith("Skipping decorator"));
         }
 
         [Fact]
         public void GetInstance_HalfClosedDecoratorWithMissingGenericArgument_DotNotApplyDecorator()
         {
-            var container = CreateContainer();            
+            var container = CreateContainer();
             container.Register(typeof(IFoo<,>), typeof(OpenGenericFoo<,>));
             container.Decorate(typeof(IFoo<,>), typeof(HalfClosedOpenGenericFooDecorator<,>));
             var instance = container.GetInstance<IFoo<int, int>>();
@@ -558,9 +552,9 @@ namespace LightInject.Tests
         [Fact]
         public void GetInstance_DecoratorWithBaseGenericConstraint_AppliesDecorator()
         {
-            var container = CreateContainer();            
-            container.Register<IFoo<InheritedBar>, Foo<InheritedBar>>();            
-            container.Decorate(typeof(IFoo<>), typeof(FooDecoratorWithBarBaseConstraint<>));            
+            var container = CreateContainer();
+            container.Register<IFoo<InheritedBar>, Foo<InheritedBar>>();
+            container.Decorate(typeof(IFoo<>), typeof(FooDecoratorWithBarBaseConstraint<>));
             var instance = container.GetInstance<IFoo<InheritedBar>>();
             Assert.IsType<FooDecoratorWithBarBaseConstraint<InheritedBar>>(instance);
         }

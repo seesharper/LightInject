@@ -1,6 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0;netstandard2.0;netstandard1.6;netstandard1.3;netstandard1.1;net46;net452</TargetFrameworks>
+    <!-- <TargetFrameworks>netcoreapp3.1;netstandard2.0;netstandard1.6;netstandard1.3;net46</TargetFrameworks> -->
+    <TargetFrameworks>net6.0;netstandard2.0;netcoreapp3.1</TargetFrameworks>
     <!-- <TargetFrameworks>netstandard2.0;netcoreapp2.0;netstandard1.6;netstandard1.3;netstandard1.1;net46;net452</TargetFrameworks> -->
     <Version>6.4.1</Version>
     <Authors>Bernhard Richter</Authors>
@@ -25,16 +27,24 @@
     <WarningsAsErrors>true</WarningsAsErrors>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
+  <Choose>
+    <When Condition=" '$(TargetFramework)'=='netstandard2.0' Or '$(TestTargetFramework)'=='netstandard2.0'">
+      <PropertyGroup>
+        <DefineConstants>USE_EXPRESSIONS</DefineConstants>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
   <ItemGroup>
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+    <!-- <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    </PackageReference> -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
