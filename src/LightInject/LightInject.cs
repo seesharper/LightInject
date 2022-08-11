@@ -1,4 +1,8 @@
-﻿/*********************************************************************************
+﻿#if NETSTANDARD2_0
+#define USE_EXPRESSIONS
+#endif
+
+/*********************************************************************************
     The MIT License (MIT)
 
     Copyright (c) 2020 bernhard.richter@gmail.com
@@ -4507,7 +4511,7 @@ namespace LightInject
                 var serviceRegistration = new ServiceRegistration
                 {
                     ServiceType = closedGenericServiceType,
-                    ImplementingType = candidate.ClosedGenericImplentingType,
+                    ImplementingType = candidate.ClosedGenericImplementingType,
                     ServiceName = serviceName,
                     Lifetime = CloneLifeTime(candidate.Lifetime) ?? DefaultLifetime,
                 };
@@ -4905,20 +4909,20 @@ namespace LightInject
 
         private struct ClosedGenericCandidate
         {
-            public ClosedGenericCandidate(Type closedGenericImplentingType, ILifetime lifetime)
+            public ClosedGenericCandidate(Type closedGenericImplementingType, ILifetime lifetime)
             {
-                ClosedGenericImplentingType = closedGenericImplentingType;
+                ClosedGenericImplementingType = closedGenericImplementingType;
                 Lifetime = lifetime;
             }
 
-            public Type ClosedGenericImplentingType { get; }
+            public Type ClosedGenericImplementingType { get; }
 
             public ILifetime Lifetime { get; }
         }
 
         private class Storage<T>
         {
-            public T[] Items = new T[0];
+            public T[] Items = Array.Empty<T>();
 
             private readonly object lockObject = new object();
 
@@ -4967,9 +4971,7 @@ namespace LightInject
         private class PropertyDependencyDisabler : IPropertyDependencySelector
         {
             public IEnumerable<PropertyDependency> Execute(Type type)
-            {
-                return new PropertyDependency[0];
-            }
+                => Array.Empty<PropertyDependency>();
         }
 
         private class DynamicMethodSkeleton : IMethodSkeleton
@@ -4978,19 +4980,12 @@ namespace LightInject
             private DynamicMethod dynamicMethod;
 
             public DynamicMethodSkeleton(Type returnType, Type[] parameterTypes)
-            {
-                CreateDynamicMethod(returnType, parameterTypes);
-            }
+                => CreateDynamicMethod(returnType, parameterTypes);
 
-            public IEmitter GetEmitter()
-            {
-                return emitter;
-            }
+            public IEmitter GetEmitter() => emitter;
 
             public Delegate CreateDelegate(Type delegateType)
-            {
-                return dynamicMethod.CreateDelegate(delegateType);
-            }
+                => dynamicMethod.CreateDelegate(delegateType);
 
 #if USE_EXPRESSIONS
             private void CreateDynamicMethod(Type returnType, Type[] parameterTypes)
@@ -5792,7 +5787,7 @@ namespace LightInject
                 return constructorCandidates[0];
             }
 
-            foreach (var constructorCandidate in constructorCandidates.OrderByDescending(c => c.GetParameters().Count()))
+            foreach (var constructorCandidate in constructorCandidates.OrderByDescending(c => c.GetParameters().Length))
             {
                 ParameterInfo[] parameters = constructorCandidate.GetParameters();
                 if (CanCreateParameterDependencies(parameters))
@@ -8349,14 +8344,14 @@ but either way the scope has to be started with 'container.BeginScope()'";
             return scope;
         }
 
-        public static Scope GetThisOrCurrentScope(Scope scope, IScopeManager scopemanager)
+        public static Scope GetThisOrCurrentScope(Scope scope, IScopeManager scopeManager)
         {
             if (scope != null)
             {
                 return scope;
             }
 
-            return scopemanager.CurrentScope;
+            return scopeManager.CurrentScope;
         }
     }
 
@@ -8494,7 +8489,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
 
     /// <summary>
     /// Contains a set of extension method that represents
-    /// a compability layer for reflection methods.
+    /// a compatibility layer for reflection methods.
     /// </summary>
     internal static class TypeHelper
     {
@@ -8515,7 +8510,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
                 return null;
             }
         }
-    
+
         public static bool IsEnumerableOfT(this Type type)
         {
             var typeInfo = type.GetTypeInfo();
@@ -8660,8 +8655,8 @@ but either way the scope has to be started with 'container.BeginScope()'";
         public static object GetDefaultValue(Type type)
         {
             var openGenericGetDefaultValueInternalMethod = typeof(TypeHelper).GetTypeInfo().GetDeclaredMethod(nameof(GetDefaultValueInternal));
-            var closedGenerictDefaultValueInternalMethod = openGenericGetDefaultValueInternalMethod.MakeGenericMethod(type);
-            return closedGenerictDefaultValueInternalMethod.Invoke(null, new object[] { });
+            var closedGenericDefaultValueInternalMethod = openGenericGetDefaultValueInternalMethod.MakeGenericMethod(type);
+            return closedGenericDefaultValueInternalMethod.Invoke(null, new object[] { });
         }
 
         private static T GetDefaultValueInternal<T>()

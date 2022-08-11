@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !USE_EXPRESSIONS
+using System;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -83,3 +84,4 @@ namespace LightInject.Tests
         }
     }
 }
+#endif

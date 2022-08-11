@@ -9,7 +9,7 @@ namespace LightInject.Tests
     {
         internal static IServiceContainer CreateContainerForAssemblyVerification()
         {
-            var path = Path.Combine(Path.GetDirectoryName(new Uri(typeof(VerificationContainerFactory).Assembly.CodeBase).LocalPath), "DynamicAssembly.dll");
+            var path = Path.Combine(Path.GetDirectoryName(new Uri(typeof(VerificationContainerFactory).Assembly.Location).LocalPath), "DynamicAssembly.dll");
 
             //var path = Path.Combine(Path.GetDirectoryName(typeof(VerificationContainerFactory).Assembly.Location), "DynamicAssembly.dll");
 
@@ -28,8 +28,7 @@ namespace LightInject.Tests
             var factoryField = typeof(ServiceContainer).GetField("methodSkeletonFactory", BindingFlags.Instance | BindingFlags.NonPublic);
 
             factoryField.SetValue(container, methodSkeletonFactory);
-
-            //var serviceContainer = new ServiceContainer((returnType, parameterTypes) => new MethodBuilderMethodSkeleton(returnType, parameterTypes, path));
+            
             return container;
         }
     }

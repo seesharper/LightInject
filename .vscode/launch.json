@@ -9,12 +9,14 @@
       "type": "coreclr",
       "request": "launch",
       "program": "${env:HOME}/.dotnet/tools/dotnet-script",
-      "args": ["${workspaceFolder}/build/build.csx"],
+      "args": [
+        "${workspaceFolder}/build/build.csx"
+      ],
       "windows": {
         "program": "${env:USERPROFILE}/.dotnet/tools/dotnet-script.exe"
       },
       "cwd": "${workspaceFolder}",
-      "stopAtEntry": true
+      "stopAtEntry": false
     }
   ]
 }

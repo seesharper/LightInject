@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <NoWarn>$(NoWarn);CS0579</NoWarn>
+    <!-- <TestTargetFrameworks>net6.0;netstandard2.0</TestTargetFrameworks> -->
     <TestTargetFramework>net6.0</TestTargetFramework>
   </PropertyGroup>
   <Choose>
@@ -16,18 +17,18 @@
     <DefineConstants>USE_ASSEMBLY_VERIFICATION</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="3.1.0">
+    <PackageReference Include="coverlet.collector" Version="3.1.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="LightMock" Version="1.0.1" />
+    <PackageReference Include="LightMock" Version="2.0.1" />
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
-    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="4.3.0" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xUnit.Analyzers" Version="0.10.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.0" />
+    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="4.7.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xUnit.Analyzers" Version="1.0.0" />
     <PackageReference Include="ILVerifier" Version="0.0.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
