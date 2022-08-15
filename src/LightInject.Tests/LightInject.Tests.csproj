@@ -13,7 +13,7 @@
       </PropertyGroup>
     </When>
   </Choose>
-  <PropertyGroup Condition=" '$(TestTargetFramework)'=='net6.0' ">
+  <PropertyGroup Condition=" '$(TestTargetFramework)'=='net6.1' ">
     <DefineConstants>USE_ASSEMBLY_VERIFICATION</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

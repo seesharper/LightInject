@@ -1043,7 +1043,8 @@ namespace LightInject.Tests
             var container = CreateContainer();
             container.Register(typeof(IFoo), typeof(FooWithRecursiveDependency));
             var exception = Assert.Throws<InvalidOperationException>(() => container.GetAllInstances<IFoo>());
-            Assert.Equal(ErrorMessages.RecursiveDependency, exception.InnerException.InnerException.InnerException.Message);
+            var test = exception.GetBaseException();
+            Assert.Equal(ErrorMessages.RecursiveDependency, exception.GetBaseException().Message);
         }
 
         [Fact]
