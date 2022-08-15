@@ -4903,6 +4903,7 @@ namespace LightInject
                 var serviceEmitter = GetEmitMethod(serviceType, serviceName);
                 if (serviceEmitter == null && throwError)
                 {
+                    servicesToDelegatesIndex.Remove(new ServiceRegistration() { ServiceType = serviceType, ServiceName = serviceName });
                     throw new InvalidOperationException(
                         string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
                 }
@@ -4916,7 +4917,7 @@ namespace LightInject
                     catch (InvalidOperationException ex)
                     {
                         dependencyStack.Clear();
-                        servicesToDelegatesIndex.Remove(sr => sr.ServiceType == serviceType);
+                        servicesToDelegatesIndex.Remove(new ServiceRegistration() { ServiceType = serviceType, ServiceName = serviceName });
                         throw new InvalidOperationException(
                             string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName),
                             ex);
@@ -5261,13 +5262,9 @@ namespace LightInject
             return false;
         }
 
-        public void Remove(Func<TKey, bool> predicate)
+        public void Remove(TKey key)
         {
-            var entry = concurrentDictionary.SingleOrDefault(kvp => predicate(kvp.Key)).Key;
-            if (entry != null)
-            {
-                _ = concurrentDictionary.TryRemove(entry, out var lazy);
-            }
+            concurrentDictionary.TryRemove(key, out var lazy);
         }
     }
 
