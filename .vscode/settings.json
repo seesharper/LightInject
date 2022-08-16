@@ -4,6 +4,7 @@
   "omnisharp.path": "latest",
   "cSpell.words": [
     "Callvirt",
+    "Castclass",
     "Conv",
     "Initobj",
     "Ldarg",

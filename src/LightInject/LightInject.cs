@@ -2412,6 +2412,7 @@ namespace LightInject
             LogFactory = t => message => { };
             EnableCurrentScope = true;
             EnableOptionalArguments = false;
+            OptimizeForLargeObjectGraphs = false;
         }
 
         /// <summary>
@@ -2472,6 +2473,15 @@ namespace LightInject
         /// The default value is false.
         /// </remarks>
         public bool EnableOptionalArguments { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to optimize for very large object graphs.
+        /// This is usually not needed unless there is a lot of transients involved.
+        /// </summary>
+        /// <remarks>
+        /// The default value is false.
+        /// </remarks>
+        public bool OptimizeForLargeObjectGraphs { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions() => new ContainerOptions();
     }
@@ -4648,7 +4658,14 @@ namespace LightInject
 
                 if (serviceRegistration.Lifetime == null)
                 {
-                    EmitNewInstanceWithDecorators(serviceRegistration, emitter);
+                    if (options.OptimizeForLargeObjectGraphs)
+                    {
+                        EmitLifetime(serviceRegistration, e => EmitNewInstanceWithDecorators(serviceRegistration, e), emitter);
+                    }
+                    else
+                    {
+                        EmitNewInstanceWithDecorators(serviceRegistration, emitter);
+                    }
                 }
                 else
                 {
@@ -4697,8 +4714,33 @@ namespace LightInject
             emitter.Push(instanceVariable);
         }
 
+        private int GetInstanceDelegateIndex(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod)
+        {
+            if (servicesToDelegatesIndex.ContainsUninitializedValue(serviceRegistration))
+            {
+                throw new InvalidOperationException(
+                        string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceRegistration.ServiceType, serviceRegistration.ServiceName));
+            }
+
+            return servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
+        }
+
+
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)
         {
+            if (serviceRegistration.Lifetime == null)
+            {
+                int instanceDelegateIndex = GetInstanceDelegateIndex(serviceRegistration, emitMethod);
+                var invokeMethod = typeof(GetInstanceDelegate).GetTypeInfo().GetDeclaredMethod("Invoke");
+                emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
+                emitter.PushArgument(0);
+                PushScope(emitter);
+                emitter.Emit(OpCodes.Callvirt, invokeMethod);
+                return;
+            }
+
+
+
             if (serviceRegistration.Lifetime is PerScopeLifetime)
             {
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
@@ -4860,6 +4902,7 @@ namespace LightInject
                 var serviceEmitter = GetEmitMethod(serviceType, serviceName);
                 if (serviceEmitter == null && throwError)
                 {
+                    servicesToDelegatesIndex.Remove(new ServiceRegistration() { ServiceType = serviceType, ServiceName = serviceName });
                     throw new InvalidOperationException(
                         string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
                 }
@@ -4873,6 +4916,7 @@ namespace LightInject
                     catch (InvalidOperationException ex)
                     {
                         dependencyStack.Clear();
+                        servicesToDelegatesIndex.Remove(new ServiceRegistration() { ServiceType = serviceType, ServiceName = serviceName });
                         throw new InvalidOperationException(
                             string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName),
                             ex);
@@ -5206,6 +5250,29 @@ namespace LightInject
         {
             var lazyResult = this.concurrentDictionary.GetOrAdd(key, k => new Lazy<TValue>(() => valueFactory(k), LazyThreadSafetyMode.ExecutionAndPublication));
             return lazyResult.Value;
+        }
+
+        /// <summary>
+        /// Determines if the dictionary contains an uninitialized value with the given <paramref name="key"/>. 
+        /// </summary>
+        /// <param name="key">The key for which to check for an uninitialized value.</param>
+        /// <returns>true if the dictionary contains an uninitialized value at the given <paramref name="key"/>.</returns>
+        public bool ContainsUninitializedValue(TKey key)
+        {
+            if (concurrentDictionary.TryGetValue(key, out var value))
+            {
+                return !value.IsValueCreated;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Removes an entry with the given <paramref name="key"/> if it exists it the dictionary. 
+        /// </summary>
+        /// <param name="key">The key for which to remove an entry.</param>
+        public void Remove(TKey key)
+        {
+            concurrentDictionary.TryRemove(key, out var lazy);
         }
     }
 
