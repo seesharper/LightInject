@@ -4664,8 +4664,7 @@ namespace LightInject
                     }
                     else
                     {
-                        EmitLifetime(serviceRegistration, e => EmitNewInstanceWithDecorators(serviceRegistration, e), emitter);
-                        //EmitNewInstanceWithDecorators(serviceRegistration, emitter);
+                        EmitNewInstanceWithDecorators(serviceRegistration, emitter);
                     }
                 }
                 else
@@ -4717,7 +4716,7 @@ namespace LightInject
 
         private int GetInstanceDelegateIndex(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod)
         {
-            if (servicesToDelegatesIndex.ContainsUninitializedValued(serviceRegistration))
+            if (servicesToDelegatesIndex.ContainsUninitializedValue(serviceRegistration))
             {
                 throw new InvalidOperationException(
                         string.Format("Recursive dependency detected: ServiceType:{0}, ServiceName:{1}]", serviceRegistration.ServiceType, serviceRegistration.ServiceName));
@@ -5253,7 +5252,12 @@ namespace LightInject
             return lazyResult.Value;
         }
 
-        public bool ContainsUninitializedValued(TKey key)
+        /// <summary>
+        /// Determines if the dictionary contains an uninitialized value with the given <paramref name="key"/>. 
+        /// </summary>
+        /// <param name="key">The key for which to check for an uninitialized value.</param>
+        /// <returns>true if the dictionary contains an uninitialized value at the given <paramref name="key"/>.</returns>
+        public bool ContainsUninitializedValue(TKey key)
         {
             if (concurrentDictionary.TryGetValue(key, out var value))
             {
@@ -5262,6 +5266,10 @@ namespace LightInject
             return false;
         }
 
+        /// <summary>
+        /// Removes an entry with the given <paramref name="key"/> if it exists it the dictionary. 
+        /// </summary>
+        /// <param name="key">The key for which to remove an entry.</param>
         public void Remove(TKey key)
         {
             concurrentDictionary.TryRemove(key, out var lazy);
