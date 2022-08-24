@@ -25,7 +25,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.5.0
+    LightInject version 6.5.1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -2605,6 +2605,7 @@ namespace LightInject
             o.EnableVariance = options.EnableVariance;
             o.VarianceFilter = options.VarianceFilter;
             o.EnableOptionalArguments = options.EnableOptionalArguments;
+            o.OptimizeForLargeObjectGraphs = options.OptimizeForLargeObjectGraphs;
         })
         {
         }
