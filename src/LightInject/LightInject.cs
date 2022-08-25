@@ -6688,6 +6688,10 @@ namespace LightInject
                             disposable.Dispose();
                         }
                     }
+                    else
+                    {
+                        throw new InvalidOperationException($"The type {disposableObjects[i].GetType()} only implements `IAsyncDisposable` and can only be disposed in an asynchronous scope started with `BeginScopeAsync()`");
+                    }
                 }
             }
 
