@@ -598,6 +598,29 @@ var container = new ServiceContainer(o => o.EnableCurrentScope = false);
 
 This also improves performance ever so slightly as we don't need to maintain a current scope when scopes are started and ended. 
 
+### IAsyncDisposable
+
+LightInject also supports [IAsyncDisposable](https://docs.microsoft.com/en-us/dotnet/api/system.iasyncdisposable) meaning that [IAsyncDisposable.DisposeAsync](https://docs.microsoft.com/en-us/dotnet/api/system.iasyncdisposable.disposeasync) will be called if the scope is started with a using-block adding the await `await` keyword.
+
+```csharp
+await using (var scope = container.BeginScope())
+{
+    asyncDisposable = container.GetInstance<AsyncDisposable>();
+}
+```
+
+The `Scope` returned from `BeginScope` also implements `IAsyncDisposable` and will call `DisposeAsync` on all scoped services resolved within the `Scope`. 
+Services only implementing `IDisposable` will also be disposed the the async scope ends.
+
+If on the other hand, a service ONLY implements `IAsyncDisposable` and is resolved within a synchronous scope, an exception will be thrown 
+
+```csharp
+using (var scope = container.BeginScope())
+{
+    asyncDisposable = container.GetInstance<AsyncDisposable>();
+}
+```
+
 ## Dependencies ##
 
 
