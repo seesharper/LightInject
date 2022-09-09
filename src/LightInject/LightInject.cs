@@ -4747,7 +4747,7 @@ namespace LightInject
                 int instanceDelegateIndex = servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
                 PushScope(emitter);
 
-                emitter.Emit(OpCodes.Call, ScopeLoader.ValidateScopeMethod.MakeGenericMethod(serviceRegistration.ServiceType));
+                emitter.Emit(OpCodes.Call, ScopeLoader.ValidateScopeMethod.MakeGenericMethod(serviceRegistration.ServiceType.UnderlyingSystemType));
 
                 // Push the getinstance delegate
                 emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
