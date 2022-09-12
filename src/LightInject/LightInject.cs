@@ -26,7 +26,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.5.1
+    LightInject version 6.6.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -57,6 +57,7 @@ namespace LightInject
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// A delegate that represents the dynamic method compiled to resolved service instances.
@@ -6606,7 +6607,7 @@ namespace LightInject
     /// <summary>
     /// Represents a scope.
     /// </summary>
-    public class Scope : IServiceFactory, IDisposable
+    public class Scope : IServiceFactory, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// Gets a value indicating whether this scope has been disposed.
@@ -6624,7 +6625,7 @@ namespace LightInject
 
         private readonly ServiceContainer serviceFactory;
 
-        private List<IDisposable> disposableObjects;
+        private List<object> disposableObjects;
 
         private ImmutableMapTree<object> createdInstances = ImmutableMapTree<object>.Empty;
 
@@ -6657,14 +6658,14 @@ namespace LightInject
         /// <summary>
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
         /// </summary>
-        /// <param name="disposable">The <see cref="IDisposable"/> object to register.</param>
-        public void TrackInstance(IDisposable disposable)
+        /// <param name="disposable">The <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/> object to register.</param>
+        public void TrackInstance(object disposable)
         {
             lock (lockObject)
             {
                 if (disposableObjects == null)
                 {
-                    disposableObjects = new List<IDisposable>();
+                    disposableObjects = new List<object>();
                 }
 
                 disposableObjects.Add(disposable);
@@ -6689,6 +6690,10 @@ namespace LightInject
                             disposable.Dispose();
                         }
                     }
+                    else
+                    {
+                        throw new InvalidOperationException($"The type {disposableObjects[i].GetType()} only implements `IAsyncDisposable` and can only be disposed in an asynchronous scope started with `BeginScopeAsync()`");
+                    }
                 }
             }
 
@@ -6696,6 +6701,76 @@ namespace LightInject
             var completedHandler = Completed;
             completedHandler?.Invoke(this, new EventArgs());
             IsDisposed = true;
+        }
+
+        /// <inheritdoc/>
+        public ValueTask DisposeAsync()
+        {
+            if (disposableObjects != null && disposableObjects.Count > 0)
+            {
+                HashSet<object> disposedObjects = new HashSet<object>();
+
+                for (var i = disposableObjects.Count - 1; i >= 0; i--)
+                {
+                    object objectToDispose = disposableObjects[i];
+                    if (objectToDispose is IAsyncDisposable asyncDisposable)
+                    {
+                        if (!disposedObjects.Add(objectToDispose))
+                        {
+                            continue;
+                        }
+
+                        ValueTask valueTask = asyncDisposable.DisposeAsync();
+                        if (!valueTask.IsCompletedSuccessfully)
+                        {
+                            // If we end up here, it means that the ValueTask is not completed
+                            return Await(i, valueTask, disposableObjects, disposedObjects);
+                        }
+
+                        // If its a IValueTaskSource backed ValueTask,
+                        // inform it its result has been read so it can reset
+                        valueTask.GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        if (!disposedObjects.Add(objectToDispose))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            ((IDisposable)objectToDispose).Dispose();
+                        }
+                    }
+                }
+            }
+            return default;
+
+            static async ValueTask Await(int i, ValueTask vt, List<object> toDispose, HashSet<object> disposedObjects)
+            {
+                await vt.ConfigureAwait(false);
+
+                // vt is acting on the disposable at index i,
+                // decrement it and move to the next iteration
+                i--;
+
+                for (; i >= 0; i--)
+                {
+                    object objectToDispose = toDispose[i];
+                    if (!disposedObjects.Add(objectToDispose))
+                    {
+                        continue;
+                    }
+                    if (objectToDispose is IAsyncDisposable asyncDisposable)
+                    {
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        ((IDisposable)objectToDispose).Dispose();
+                    }
+                }
+            }
         }
 
         /// <inheritdoc/>
@@ -6747,9 +6822,9 @@ namespace LightInject
                 if (createdInstance == null)
                 {
                     createdInstance = getInstanceDelegate(arguments, this);
-                    if (createdInstance is IDisposable disposable)
+                    if (createdInstance is IDisposable || createdInstance is IAsyncDisposable)
                     {
-                        TrackInstance(disposable);
+                        TrackInstance(createdInstance);
                     }
 
                     Interlocked.Exchange(ref createdInstances, createdInstances.Add(instanceDelegateIndex, createdInstance));
@@ -8384,7 +8459,7 @@ namespace LightInject
 
         public static object ValidateTrackedTransient(object instance, Scope scope)
         {
-            if (instance is IDisposable disposable)
+            if (instance is IDisposable || instance is IAsyncDisposable)
             {
                 if (scope == null)
                 {
@@ -8394,7 +8469,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
                     throw new InvalidOperationException(message);
                 }
 
-                scope.TrackInstance(disposable);
+                scope.TrackInstance(instance);
             }
 
             return instance;
