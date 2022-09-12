@@ -1,4 +1,5 @@
-﻿#if NETSTANDARD2_0
+﻿#nullable disable
+#if NETSTANDARD2_0
 #define USE_EXPRESSIONS
 #endif
 

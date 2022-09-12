@@ -13,6 +13,7 @@
     <Copyright>Bernhard Richter</Copyright>
     <PackageTags>Ioc Dependency-Injection Inversion-of-Control WinRT Windows-Runtime</PackageTags>
     <Description>An ultra lightweight Inversion of Control container for the .Net framework. See LightInject.Source for the source distribution.</Description>
+    <LangVersion>8.0</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
