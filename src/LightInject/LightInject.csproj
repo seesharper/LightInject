@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net6.0;netstandard2.0;netcoreapp3.1</TargetFrameworks>
-    <Version>6.5.2</Version>
+    <Version>6.6.0</Version>
     <Authors>Bernhard Richter</Authors>
     <PackageProjectUrl>https://www.lightinject.net</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
@@ -24,7 +24,6 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <WarningsAsErrors>true</WarningsAsErrors>
-    <LangVersion>latest</LangVersion>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
   <Choose>
