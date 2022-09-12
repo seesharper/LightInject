@@ -2,8 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net6.0;netstandard2.0;netcoreapp3.1</TargetFrameworks>
-    <!-- <TargetFrameworks>net6.0;netcoreapp3.1</TargetFrameworks>     -->
-    <Version>6.5.0</Version>
+    <Version>6.5.2</Version>
     <Authors>Bernhard Richter</Authors>
     <PackageProjectUrl>https://www.lightinject.net</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
@@ -12,6 +11,7 @@
     <Copyright>Bernhard Richter</Copyright>
     <PackageTags>Ioc Dependency-Injection Inversion-of-Control</PackageTags>
     <Description>An ultra lightweight Inversion of Control container for the .Net framework. See LightInject.Source for the source distribution.</Description>
+    <LangVersion>8.0</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
@@ -34,17 +34,16 @@
       </PropertyGroup>
     </When>
   </Choose>
-
   <ItemGroup>
     <!-- <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference> -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
@@ -56,7 +55,6 @@
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Linq.Expressions" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetFramework)' == 'net46' OR '$(TargetFramework)' == 'net452' OR '$(TargetFramework)' == 'netstandard1.1' OR '$(TargetFramework)' == 'netstandard1.3' OR '$(TargetFramework)' == 'netstandard1.6'">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
