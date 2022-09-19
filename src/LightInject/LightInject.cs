@@ -3,6 +3,11 @@
 #define USE_EXPRESSIONS
 #endif
 
+#if NETCOREAPP3_1_OR_GREATER || NET5_0_OR_GREATER
+#define USE_ASYNCDISPOSABLE    
+#endif
+
+
 /*********************************************************************************
     The MIT License (MIT)
 
@@ -6607,7 +6612,11 @@ namespace LightInject
     /// <summary>
     /// Represents a scope.
     /// </summary>
+#if USE_ASYNCDISPOSABLE
     public class Scope : IServiceFactory, IDisposable, IAsyncDisposable
+#else
+    public class Scope : IServiceFactory, IDisposable
+#endif
     {
         /// <summary>
         /// Gets a value indicating whether this scope has been disposed.
@@ -6702,7 +6711,7 @@ namespace LightInject
             completedHandler?.Invoke(this, new EventArgs());
             IsDisposed = true;
         }
-
+#if USE_ASYNCDISPOSABLE
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
@@ -6772,7 +6781,7 @@ namespace LightInject
                 }
             }
         }
-
+#endif
         /// <inheritdoc/>
         public Scope BeginScope() => serviceFactory.BeginScope();
 
@@ -6822,7 +6831,11 @@ namespace LightInject
                 if (createdInstance == null)
                 {
                     createdInstance = getInstanceDelegate(arguments, this);
+#if USE_ASYNCDISPOSABLE                    
                     if (createdInstance is IDisposable || createdInstance is IAsyncDisposable)
+#else                    
+                    if (createdInstance is IDisposable)
+#endif
                     {
                         TrackInstance(createdInstance);
                     }
@@ -8459,7 +8472,11 @@ namespace LightInject
 
         public static object ValidateTrackedTransient(object instance, Scope scope)
         {
+#if USE_ASYNCDISPOSABLE
             if (instance is IDisposable || instance is IAsyncDisposable)
+#else
+            if (instance is IDisposable)
+#endif
             {
                 if (scope == null)
                 {
