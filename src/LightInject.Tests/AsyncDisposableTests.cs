@@ -1,3 +1,4 @@
+#if USE_ASYNCDISPOSABLE
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -139,3 +140,4 @@ namespace LightInject.Tests
         }
     }
 }
+#endif
