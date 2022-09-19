@@ -14,7 +14,7 @@
     </When>
   </Choose>
   <PropertyGroup Condition=" '$(TestTargetFramework)'=='net6.0' ">
-    <DefineConstants>USE_ASSEMBLY_VERIFICATION</DefineConstants>
+    <DefineConstants>USE_ASSEMBLY_VERIFICATION;USE_ASYNCDISPOSABLE</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TestTargetFramework)' == 'net46' OR '$(TestTargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />

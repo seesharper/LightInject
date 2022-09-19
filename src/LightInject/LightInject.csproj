@@ -33,6 +33,13 @@
       </PropertyGroup>
     </When>
   </Choose>
+  <Choose>
+    <When Condition=" '$(TargetFramework)'=='net6.0' Or '$(TestTargetFramework)'=='net6.0'">
+      <PropertyGroup>
+        <DefineConstants>USE_ASYNCDISPOSABLE</DefineConstants>
+      </PropertyGroup>
+    </When>
+  </Choose>
   <ItemGroup>
     <!-- <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
@@ -45,8 +52,5 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
-  </ItemGroup>
+  </ItemGroup> 
 </Project>
