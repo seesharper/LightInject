@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net6.0;netstandard2.0;netcoreapp3.1;net462</TargetFrameworks>
-    <Version>6.6.0</Version>
+    <Version>6.6.1</Version>
     <Authors>Bernhard Richter</Authors>
     <PackageProjectUrl>https://www.lightinject.net</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
@@ -52,5 +52,5 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-  </ItemGroup> 
+  </ItemGroup>
 </Project>

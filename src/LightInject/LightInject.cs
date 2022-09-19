@@ -31,7 +31,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.6.0
+    LightInject version 6.6.1
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
