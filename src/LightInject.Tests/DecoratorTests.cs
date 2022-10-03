@@ -18,6 +18,16 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_WithDecorator_CanReturnWithoutDecorating()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, Foo>();
+            container.Decorate<IFoo>((sf, foo) => foo);
+            var instance = container.GetInstance<IFoo>();
+            Assert.IsAssignableFrom<Foo>(instance);
+        }
+
+        [Fact]
         public void GetInstance_DecoratorWithDependency_ReturnsDecoratedInstanceWithDependency()
         {
             var container = CreateContainer();
