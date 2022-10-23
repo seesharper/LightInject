@@ -3747,8 +3747,11 @@ namespace LightInject
                 if (registrations.Count > 1)
                 {
                     var serviceNames = registrations.Keys.OrderBy(k => k).ToArray();
-                    var defaultServiceName = string.Empty;
                     serviceName = options.DefaultServiceSelector(serviceNames);
+                }
+                else
+                {
+                    serviceName = string.Empty;
                 }
             }
 
