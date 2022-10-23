@@ -38,19 +38,21 @@ namespace LightInject.Tests
             Assert.IsAssignableFrom<Foo>(instance.Value);
         }
 
-        [Fact]
-        public void CanGetInstance_LazyForKnownService_ReturnsTrue()
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_LazyForKnownService_ReturnsTrue(string serviceName)
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            Assert.True(container.CanGetInstance(typeof(Lazy<IFoo>), string.Empty));
+            Assert.True(container.CanGetInstance(typeof(Lazy<IFoo>), serviceName));
         }
 
-        [Fact]
-        public void CanGetInstance_LazyForUnknownService_ReturnsFalse()
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_LazyForUnknownService_ReturnsFalse(string serviceName)
         {
             var container = CreateContainer();
-            Assert.False(container.CanGetInstance(typeof(Lazy<IFoo>), string.Empty));
+            Assert.False(container.CanGetInstance(typeof(Lazy<IFoo>), serviceName));
         }
 
         [Fact]

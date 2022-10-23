@@ -1127,59 +1127,67 @@ namespace LightInject.Tests
 
         }
 
-        [Fact]
-        public void CanGetInstance_KnownService_ReturnsTrue()
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_KnownService_ReturnsTrue(string serviceName)
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            var canCreateInstance = container.CanGetInstance(typeof(IFoo), string.Empty);
+            var canCreateInstance = container.CanGetInstance(typeof(IFoo), serviceName);
             Assert.True(canCreateInstance);
         }
-        [Fact]
-        public void CanGetInstance_UnknownService_ReturnFalse()
+        
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_UnknownService_ReturnFalse(string serviceName)
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            var canCreateInstance = container.CanGetInstance(typeof(IBar), string.Empty);
+            var canCreateInstance = container.CanGetInstance(typeof(IBar), serviceName);
             Assert.False(canCreateInstance);
         }
 
-        [Fact]
-        public void CanGetInstance_FuncForKnownService_ReturnsTrue()
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_FuncForKnownService_ReturnsTrue(string serviceName)
         {
             var container = CreateContainer();
             container.Register<IFoo, Foo>();
-            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), serviceName));
         }
 
-        [Fact]
-        public void CanGetInstance_FuncForUnknownService_ReturnsFalse()
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_FuncForUnknownService_ReturnsFalse(string serviceName)
         {
             var container = CreateContainer();
-            Assert.False(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+            Assert.False(container.CanGetInstance(typeof(Func<IFoo>), serviceName));
         }
 
-        [Fact]
-        public void CanGetInstance_ExplicitlyRegisteredFunc_ReturnsTrue()
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_ExplicitlyRegisteredFunc_ReturnsTrue(string serviceName)
         {
             var container = CreateContainer();
             container.Register<Func<IFoo>>(f => (() => new Foo()));
-            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), serviceName));
         }
 
-        [Fact]
-        public void CanGetInstance_ParameterizedFuncForKnownService_ReturnsTrue()
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_ParameterizedFuncForKnownService_ReturnsTrue(string serviceName)
         {
             var container = CreateContainer();
             container.Register<int, IFoo>((factory, i) => new FooWithOneParameter(i));
-            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+            Assert.True(container.CanGetInstance(typeof(Func<IFoo>), serviceName));
         }
 
-        [Fact]
-        public void CanGetInstance_ParameterizedFuncForUnknownService_ReturnsFalse()
+        [Theory]
+        [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
+        public void CanGetInstance_ParameterizedFuncForUnknownService_ReturnsFalse(string serviceName)
         {
             var container = CreateContainer();
-            Assert.False(container.CanGetInstance(typeof(Func<IFoo>), string.Empty));
+            Assert.False(container.CanGetInstance(typeof(Func<IFoo>), serviceName));
         }
 
         [Fact]
