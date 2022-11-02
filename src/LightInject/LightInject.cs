@@ -600,6 +600,15 @@ namespace LightInject
             Func<IServiceFactory, ServiceRegistration, ServiceRegistration> serviceRegistrationFactory);
 
         /// <summary>
+        /// Allows a registered service to be overridden by the given <paramref name="instance"/>.
+        /// This method must be used when the container is locked becaused another type was already resolved.
+        /// Only works when <typeparamref name="TService"/> was not resolved yet in the container.
+        /// </summary>
+        /// <typeparam name="TService">The service type which should be overridden</typeparam>
+        /// <param name="instance">The instance returned when this service is requested</param>
+        IServiceRegistry OverrideInstance<TService>(object instance);
+
+        /// <summary>
         /// Allows post-processing of a service instance.
         /// </summary>
         /// <param name="predicate">A function delegate that determines if the given service can be post-processed.</param>
@@ -2971,6 +2980,20 @@ namespace LightInject
         {
             var serviceOverride = new ServiceOverride(serviceSelector, serviceRegistrationFactory);
             overrides.Add(serviceOverride);
+            return this;
+        }
+
+        /// <inheritdoc/>
+        public IServiceRegistry OverrideInstance<TService>(object instance)
+        {
+            Override(r => r.ServiceType == typeof(TService),
+                (f, r) => new ServiceRegistration()
+                {
+                    ServiceType = typeof(TService),
+                    Value = instance,
+                    Lifetime = null,
+                    ServiceName = ""
+                });
             return this;
         }
 
