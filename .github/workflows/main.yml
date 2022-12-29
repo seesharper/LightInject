@@ -11,7 +11,9 @@ jobs:
       - name: Install .Net Core
         uses: actions/setup-dotnet@v2.0.0
         with:
-          dotnet-version: 7.0.100
+          dotnet-version: |
+            6.0.x
+            7.0.x
       - name: Install dotnet-script
         run: dotnet tool install --global dotnet-script
       - name: Install dotnet-ilverify
