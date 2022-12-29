@@ -569,6 +569,49 @@ namespace LightInject.Tests
             Assert.IsType<FooDecoratorWithBarBaseConstraint<InheritedBar>>(instance);
         }
 
+        [Fact]
+        public void GetInstance_DecoratorImplementingDisposable_DisposesDecorator()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, DisposableFoo>(new PerScopeLifetime());
+            container.Decorate<IFoo, DisposableFooDecorator>();
+            DisposableFooDecorator instance = null;
+            using (var scope = container.BeginScope())
+            {
+                instance = (DisposableFooDecorator)scope.GetInstance<IFoo>();
+            }
+
+            Assert.True(instance.Disposed);
+        }
+
+        [Fact]
+        public void GetInstance_DecoratorImplementingDisposableRegisteredAsSingleton_DisposesDecorator()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo, DisposableFoo>(new PerContainerLifetime());
+            container.Decorate<IFoo, DisposableFooDecorator>();
+            DisposableFooDecorator instance = null;
+
+
+            instance = (DisposableFooDecorator)container.GetInstance<IFoo>();
+            container.Dispose();
+            Assert.True(instance.Disposed);
+        }
+
+        [Fact]
+        public void GetInstance_ServicaeAsFactoryAndDecoratorImplementingDisposableRegisteredAsSingleton_DisposesDecorator()
+        {
+            var container = CreateContainer();
+            container.Register<IFoo>(sf => new DisposableFoo(), new PerContainerLifetime());
+            container.Decorate<IFoo, DisposableFooDecorator>();
+            DisposableFooDecorator instance = null;
+
+
+            instance = (DisposableFooDecorator)container.GetInstance<IFoo>();
+            container.Dispose();
+            Assert.True(instance.Disposed);
+        }
+
         private IFoo CreateFooWithDependency(IServiceFactory factory)
         {
             return new FooWithDependency(factory.GetInstance<IBar>());
@@ -582,6 +625,21 @@ namespace LightInject.Tests
         private static FooDecorator GetFooDecorator(IFoo target)
         {
             return new FooDecorator(target);
+        }
+    }
+
+
+    public class DisposableFooDecorator : IFoo, IDisposable
+    {
+        public bool Disposed { get; set; }
+
+        public DisposableFooDecorator(IFoo foo)
+        {
+        }
+
+        public void Dispose()
+        {
+            Disposed = true;
         }
     }
 }
