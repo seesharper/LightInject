@@ -3896,18 +3896,18 @@ namespace LightInject
                 }
             }
 
-            if (serviceRegistration.Lifetime is PerContainerLifetime && IsNotServiceFactory(serviceRegistration.ServiceType))
-            {
-                var closedGenericTrackInstanceMethod = OpenGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
-                var containerIndex = constants.Add(this);
-                emitter.PushConstant(containerIndex, typeof(ServiceContainer));
-                emitter.Emit(OpCodes.Call, closedGenericTrackInstanceMethod);
-            }
+            // if (serviceRegistration.Lifetime is PerContainerLifetime && IsNotServiceFactory(serviceRegistration.ServiceType))
+            // {
+            //     var closedGenericTrackInstanceMethod = OpenGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
+            //     var containerIndex = constants.Add(this);
+            //     emitter.PushConstant(containerIndex, typeof(ServiceContainer));
+            //     emitter.Emit(OpCodes.Call, closedGenericTrackInstanceMethod);
+            // }
 
-            bool IsNotServiceFactory(Type serviceType)
-            {
-                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
-            }
+            // bool IsNotServiceFactory(Type serviceType)
+            // {
+            //     return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
+            // }
         }
 
         private void EmitDecorators(ServiceRegistration serviceRegistration, IEnumerable<DecoratorRegistration> serviceDecorators, IEmitter emitter, Action<IEmitter> decoratorTargetEmitMethod)
@@ -4697,6 +4697,15 @@ namespace LightInject
                 EmitNewInstance(serviceRegistration, emitter);
             }
 
+            if (serviceRegistration.Lifetime is PerContainerLifetime && IsNotServiceFactory(serviceRegistration.ServiceType))
+            {
+                var closedGenericTrackInstanceMethod = OpenGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
+                var containerIndex = constants.Add(this);
+                emitter.PushConstant(containerIndex, typeof(ServiceContainer));
+                emitter.Emit(OpCodes.Call, closedGenericTrackInstanceMethod);
+            }
+
+
             var processors = initializers.Items.Where(i => i.Predicate(serviceRegistration)).ToArray();
             if (processors.Length == 0)
             {
@@ -4723,6 +4732,12 @@ namespace LightInject
             }
 
             emitter.Push(instanceVariable);
+
+
+            bool IsNotServiceFactory(Type serviceType)
+            {
+                return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
+            }
         }
 
         private int GetInstanceDelegateIndex(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod)

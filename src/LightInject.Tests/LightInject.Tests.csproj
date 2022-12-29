@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <NoWarn>$(NoWarn);CS0579</NoWarn>
     <TestTargetFrameworks>net6.0;netstandard2.0</TestTargetFrameworks>
     <TestTargetFramework>net6.0</TestTargetFramework>

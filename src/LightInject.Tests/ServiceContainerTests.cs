@@ -1136,7 +1136,7 @@ namespace LightInject.Tests
             var canCreateInstance = container.CanGetInstance(typeof(IFoo), serviceName);
             Assert.True(canCreateInstance);
         }
-        
+
         [Theory]
         [MemberData(nameof(StringDataGenerator.NullOrWhiteSpaceData), MemberType = typeof(StringDataGenerator))]
         public void CanGetInstance_UnknownService_ReturnFalse(string serviceName)
