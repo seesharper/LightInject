@@ -6798,7 +6798,7 @@ namespace LightInject
                 }
             }
         }
-
+#endif
         private void EndScope()
         {
             scopeManager?.EndScope(this);
@@ -6806,8 +6806,8 @@ namespace LightInject
             completedHandler?.Invoke(this, new EventArgs());
             IsDisposed = true;
         }
-#endif
-        /// <inheritdoc/>
+
+        /// <inheritdoc/>            
         public Scope BeginScope() => serviceFactory.BeginScope();
 
         /// <inheritdoc/>
