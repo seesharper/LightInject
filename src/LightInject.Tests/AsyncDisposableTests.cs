@@ -9,6 +9,26 @@ namespace LightInject.Tests
     public class AsyncDisposableTests : TestBase
     {
         [Fact]
+        public async Task ShouldCallCompletedHandlerOnDisposeAsync()
+        {
+            var container = CreateContainer();
+            List<object> disposedObjects = new();
+
+            container.RegisterScoped<AsyncDisposable>(sf => new AsyncDisposable(disposedObject => disposedObjects.Add(disposedObject)));
+
+            AsyncDisposable asyncDisposable = null;
+            bool hasCompleted = false;
+            await using (var scope = container.BeginScope())
+            {
+                scope.Completed += (o, e) => hasCompleted = true;
+                asyncDisposable = container.GetInstance<AsyncDisposable>();
+            }
+
+            Assert.Contains(asyncDisposable, disposedObjects);
+            Assert.True(hasCompleted);
+        }
+        
+        [Fact]
         public async Task ShouldDisposeAsyncDisposable()
         {
             var container = CreateContainer();
@@ -17,6 +37,7 @@ namespace LightInject.Tests
             container.RegisterScoped<AsyncDisposable>(sf => new AsyncDisposable(disposedObject => disposedObjects.Add(disposedObject)));
 
             AsyncDisposable asyncDisposable = null;
+
             await using (var scope = container.BeginScope())
             {
                 asyncDisposable = container.GetInstance<AsyncDisposable>();
