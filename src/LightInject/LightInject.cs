@@ -6724,10 +6724,7 @@ namespace LightInject
                 }
             }
 
-            scopeManager?.EndScope(this);
-            var completedHandler = Completed;
-            completedHandler?.Invoke(this, new EventArgs());
-            IsDisposed = true;
+            EndScope();
         }
 #if USE_ASYNCDISPOSABLE
         /// <inheritdoc/>
@@ -6771,6 +6768,8 @@ namespace LightInject
                     }
                 }
             }
+
+            EndScope();
             return default;
 
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose, HashSet<object> disposedObjects)
@@ -6800,7 +6799,15 @@ namespace LightInject
             }
         }
 #endif
-        /// <inheritdoc/>
+        private void EndScope()
+        {
+            scopeManager?.EndScope(this);
+            var completedHandler = Completed;
+            completedHandler?.Invoke(this, new EventArgs());
+            IsDisposed = true;
+        }
+
+        /// <inheritdoc/>            
         public Scope BeginScope() => serviceFactory.BeginScope();
 
         /// <inheritdoc/>
