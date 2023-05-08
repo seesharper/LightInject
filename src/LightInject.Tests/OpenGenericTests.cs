@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using LightInject.SampleLibrary;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace LightInject.Tests
         public void GetInstance_PartiallyClosedGeneric_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof (IFoo<,>), typeof (HalfClosedFoo<>));
+            container.Register(typeof(IFoo<,>), typeof(HalfClosedFoo<>));
 
             var instance = container.GetInstance<IFoo<string, int>>();
 
@@ -43,9 +44,9 @@ namespace LightInject.Tests
         public void GetInstance_PartialClosedAbstractClass_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof (Foo<,>), typeof (HalfClosedFooInhertingFromBaseClass<>));
+            container.Register(typeof(Foo<,>), typeof(HalfClosedFooInhertingFromBaseClass<>));
 
-            var instance = container.GetInstance<Foo<string,int>>();
+            var instance = container.GetInstance<Foo<string, int>>();
 
             Assert.IsType<HalfClosedFooInhertingFromBaseClass<int>>(instance);
         }
@@ -54,7 +55,7 @@ namespace LightInject.Tests
         public void GetInstance_ConcreteClass_ReturnsInstance()
         {
             var container = CreateContainer();
-            container.Register(typeof (Foo<>));
+            container.Register(typeof(Foo<>));
 
             var instance = container.GetInstance<Foo<int>>();
 
@@ -84,9 +85,9 @@ namespace LightInject.Tests
         [Fact]
         public void GetInstance_NoMatchingOpenGeneric_ThrowsException()
         {
-             var container = CreateContainer();
+            var container = CreateContainer();
 
-             Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo<int>>());
+            Assert.Throws<InvalidOperationException>(() => container.GetInstance<IFoo<int>>());
 
         }
 
@@ -100,6 +101,50 @@ namespace LightInject.Tests
             var instance = container.GetInstance<IFoo<int>>("somefoo");
 
             Assert.IsType<Foo<int>>(instance);
+        }
+
+        [Fact]
+        public void ShouldMapNestGenericArguments()
+        {
+            var container = CreateContainer();
+
+            container.Register(typeof(IHandler<>), typeof(Handler<>), "Handler");
+            container.Register(typeof(IHandler<>), typeof(AnotherHandler<>), "AnotherHandler");
+
+            var handlerInstance = container.GetInstance<IHandler<Message<string>>>();
+            Assert.IsType<Handler<string>>(handlerInstance);
+            var anotherHandlerInstance = container.GetInstance<IHandler<AnotherMessage<string>>>();
+            Assert.IsType<AnotherHandler<string>>(anotherHandlerInstance);
+        }
+    }
+
+    public interface IHandler<TCommand>
+    {
+    }
+
+    public class Message<TMessage>
+    {
+
+    }
+
+    public class AnotherMessage<TAnotherMessage>
+    {
+
+    }
+
+    public class Handler<TCommand> : IHandler<Message<TCommand>>
+    {
+        public Handler()
+        {
+
+        }
+    }
+
+    public class AnotherHandler<TCommand> : IHandler<AnotherMessage<TCommand>>
+    {
+        public AnotherHandler()
+        {
+
         }
     }
 }
