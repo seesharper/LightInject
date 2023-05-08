@@ -6,7 +6,7 @@ using BenchmarkDotNet.Attributes;
 
 namespace LightInject.Benchmarks
 {
-    [SimpleJob(launchCount: 3, warmupCount: 10, targetCount: 30)]
+    [SimpleJob(launchCount: 3, warmupCount: 10)]
     public class ListInsertTests
     {
         private DisposableFoo[] items = new DisposableFoo[10];

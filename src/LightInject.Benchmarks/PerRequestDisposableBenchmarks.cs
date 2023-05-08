@@ -4,7 +4,7 @@ using SimpleInjector;
 
 namespace LightInject.Benchmarks
 {
-    [SimpleJob(launchCount: 1, warmupCount: 1, targetCount: 3)]
+    [SimpleJob(launchCount: 1, warmupCount: 1)]
     [MemoryDiagnoser]
     public class PerRequestDisposableBenchmarks
     {
