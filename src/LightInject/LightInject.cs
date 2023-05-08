@@ -4484,9 +4484,14 @@ namespace LightInject
             foreach (var openGenericServiceRegistration in openGenericServiceRegistrations.Values)
             {
                 var closedGenericImplementingTypeCandidate = GenericArgumentMapper.TryMakeGenericType(closedGenericServiceType, openGenericServiceRegistration.ImplementingType);
+
                 if (closedGenericImplementingTypeCandidate != null)
                 {
-                    candidates.Add(openGenericServiceRegistration.ServiceName, new ClosedGenericCandidate(closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
+                    // Ensure that we only add candidates that are assignable to the requested service type.
+                    if (closedGenericServiceType.IsAssignableFrom(closedGenericImplementingTypeCandidate))
+                    {
+                        candidates.Add(openGenericServiceRegistration.ServiceName, new ClosedGenericCandidate(closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
+                    }
                 }
             }
 
@@ -7171,6 +7176,9 @@ namespace LightInject
         /// <returns>A <see cref="GenericMappingResult"/>.</returns>
         public GenericMappingResult Map(Type genericServiceType, Type openGenericImplementingType)
         {
+            // string[] genericParameterNames = GetGenericArgumentsOrParameters(genericServiceType).Select(t => t.Name).ToArray();
+
+
             string[] genericParameterNames =
                 openGenericImplementingType.GetTypeInfo().GenericTypeParameters.Select(t => t.Name).ToArray();
 
