@@ -59,6 +59,7 @@ namespace LightInject
     using System.Reflection;
     using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -385,6 +386,8 @@ namespace LightInject
         /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory);
+
+
 
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
@@ -2420,6 +2423,7 @@ namespace LightInject
             EnableCurrentScope = true;
             EnableOptionalArguments = false;
             OptimizeForLargeObjectGraphs = false;
+            AllowMultipleRegistrations = false;
         }
 
         /// <summary>
@@ -2490,6 +2494,9 @@ namespace LightInject
         /// </remarks>
         public bool OptimizeForLargeObjectGraphs { get; set; }
 
+        public bool AllowMultipleRegistrations { get; set; }
+
+
         private static ContainerOptions CreateDefaultContainerOptions() => new ContainerOptions();
     }
 
@@ -2520,6 +2527,35 @@ namespace LightInject
         public string Message { get; private set; }
     }
 
+    internal class ServiceKey
+    {
+        public ServiceKey(Type serviceType, string serviceName)
+        {
+            ServiceType = serviceType;
+            ServiceName = serviceName;
+        }
+
+        public string ServiceName { get; private set; } = string.Empty;
+
+        public Type ServiceType { get; private set; }
+
+        public override int GetHashCode()
+        {
+            return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as ServiceKey;
+            if (other == null)
+            {
+                return false;
+            }
+
+            return ServiceType == other.ServiceType && ServiceName == other.ServiceName;
+        }
+    }
+
     /// <summary>
     /// An ultra lightweight service container.
     /// </summary>
@@ -2533,6 +2569,8 @@ namespace LightInject
         private readonly ServiceRegistry<Delegate> constructorDependencyFactories = new ServiceRegistry<Delegate>();
         private readonly ServiceRegistry<Delegate> propertyDependencyFactories = new ServiceRegistry<Delegate>();
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
+        private readonly ConcurrentDictionary<Type, List<ServiceRegistration>> allRegistrations = new ConcurrentDictionary<Type, List<ServiceRegistration>>();
+        private readonly ConcurrentDictionary<ServiceKey, List<Action<IEmitter>>> allEmitters = new ConcurrentDictionary<ServiceKey, List<Action<IEmitter>>>();
 
         private readonly object lockObject = new object();
         private readonly ContainerOptions options;
@@ -2796,6 +2834,9 @@ namespace LightInject
             return this;
         }
 
+        private int registrationOrder = 0;
+
+
         /// <inheritdoc/>
         public IServiceRegistry Register(ServiceRegistration serviceRegistration)
         {
@@ -2805,6 +2846,10 @@ namespace LightInject
                 serviceRegistration.ServiceName,
                 s => AddServiceRegistration(sr),
                 (k, existing) => UpdateServiceRegistration(existing, sr));
+            var registrationList = allRegistrations.GetOrAdd(serviceRegistration.ServiceType, t => new List<ServiceRegistration>());
+            registrationOrder++;
+            registrationList.Add(serviceRegistration);
+            serviceRegistration.RegistrationOrder = registrationOrder;
             return this;
         }
 
@@ -3180,7 +3225,7 @@ namespace LightInject
         /// <inheritdoc/>
         public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifeTimeFactory)
         {
-            return RegisterOrdered(serviceType, implementingTypes, lifeTimeFactory, i => i.ToString().PadLeft(3, '0'));
+            return RegisterOrdered2(serviceType, implementingTypes, lifeTimeFactory, i => i.ToString().PadLeft(3, '0'));
         }
 
         /// <inheritdoc/>
@@ -3199,6 +3244,47 @@ namespace LightInject
 
             return this;
         }
+
+        public IServiceRegistry RegisterOrdered2(
+            Type serviceType,
+            Type[] implementingTypes,
+            Func<Type, ILifetime> lifeTimeFactory,
+            Func<int, string> serviceNameFormatter)
+        {
+            var offset = GetAvailableServices(serviceType).Count;
+            List<ServiceRegistration> registrations = new List<ServiceRegistration>();
+            foreach (var implementingType in implementingTypes)
+            {
+                var registration = new ServiceRegistration();
+                registration.ServiceType = serviceType;
+                registration.ImplementingType = implementingType;
+                registration.ServiceName = string.Empty;
+                registrations.Add(registration);
+                // Register(serviceType, implementingType, serviceNameFormatter(offset), lifeTimeFactory(implementingType));
+            }
+            RegisterOrdered(serviceType, registrations.ToArray());
+
+            return this;
+        }
+
+        public IServiceRegistry RegisterOrdered(Type serviceType, ServiceRegistration[] serviceRegistrations)
+        {
+
+            List<Action<IEmitter>> emitters = new List<Action<IEmitter>>();
+            foreach (var registration in serviceRegistrations)
+            {
+                var emitMethod = ResolveEmitMethod(registration);
+                emitters.Add(emitMethod);
+            }
+
+            Action<IEmitter> emitAction = (emitter) => EmitEnumerable(emitters.ToArray(), serviceType, emitter);
+
+            Type enumerableType = typeof(IEnumerable<>).MakeGenericType(serviceType);
+
+            RegisterEmitMethod(enumerableType, string.Empty, emitAction);
+            return this;
+        }
+
 
         /// <inheritdoc/>
         public void Compile(Func<ServiceRegistration, bool> predicate)
@@ -3740,13 +3826,31 @@ namespace LightInject
 
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
-            var registrations = GetEmitMethods(serviceType);
+            if (options.AllowMultipleRegistrations)
+            {
+                var emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<Action<IEmitter>>());
+                if (string.IsNullOrWhiteSpace(serviceName))
+                {
+                    if (emitters.Count > 1)
+                    {
+                        return emitters.Last();
+                    }
+                    else
+                    {
+                        serviceName = string.Empty;
+                    }
+                }
+            }
+
+
+
+            var emitMethods = GetEmitMethods(serviceType);
 
             if (string.IsNullOrWhiteSpace(serviceName))
             {
-                if (registrations.Count > 1)
+                if (emitMethods.Count > 1)
                 {
-                    var serviceNames = registrations.Keys.OrderBy(k => k).ToArray();
+                    var serviceNames = emitMethods.Keys.OrderBy(k => k).ToArray();
                     serviceName = options.DefaultServiceSelector(serviceNames);
                 }
                 else
@@ -3755,7 +3859,7 @@ namespace LightInject
                 }
             }
 
-            registrations.TryGetValue(serviceName, out Action<IEmitter> emitMethod);
+            emitMethods.TryGetValue(serviceName, out Action<IEmitter> emitMethod);
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
@@ -3769,6 +3873,8 @@ namespace LightInject
 
         private void RegisterEmitMethod(Type serviceType, string serviceName, Action<IEmitter> emitMethod)
         {
+            allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<Action<IEmitter>>()).Add(emitMethod);
+
             GetEmitMethods(serviceType).TryAdd(serviceName, emitMethod);
         }
 
@@ -3783,6 +3889,7 @@ namespace LightInject
 
             Action<IEmitter> emitMethod = ResolveEmitMethod(newRegistration);
             var serviceEmitters = GetEmitMethods(newRegistration.ServiceType);
+            allEmitters.GetOrAdd(new ServiceKey(newRegistration.ServiceType, newRegistration.ServiceName), _ => new List<Action<IEmitter>>()).Add(emitMethod);
             serviceEmitters[newRegistration.ServiceName] = emitMethod;
             return newRegistration;
         }
@@ -4479,6 +4586,8 @@ namespace LightInject
             var openGenericServiceRegistrations =
                 GetOpenGenericServiceRegistrations(openGenericServiceType);
 
+            //var test = GetEmitMethod(openGenericServiceType, serviceName);
+
             Dictionary<string, ClosedGenericCandidate> candidates = new Dictionary<string, ClosedGenericCandidate>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var openGenericServiceRegistration in openGenericServiceRegistrations.Values)
@@ -4575,10 +4684,17 @@ namespace LightInject
 
             if (options.EnableVariance && options.VarianceFilter(serviceType))
             {
-                emitMethods = emitters
+                if (options.AllowMultipleRegistrations)
+                {
+                    emitMethods = allEmitters.Where(kv => actualServiceType.GetTypeInfo().IsAssignableFrom(kv.Key.ServiceType.GetTypeInfo())).SelectMany(kv => kv.Value).ToList();
+                }
+                else
+                {
+                    emitMethods = emitters
                     .Where(kv => actualServiceType.GetTypeInfo().IsAssignableFrom(kv.Key.GetTypeInfo()))
                     .SelectMany(kv => kv.Value).OrderBy(kv => kv.Key).Select(kv => kv.Value)
                     .ToList();
+                }
             }
             else
             {
@@ -6193,6 +6309,9 @@ namespace LightInject
         /// </summary>
         public object Value { get; set; }
 
+
+        public int RegistrationOrder { get; set; }
+
         /// <summary>
         /// Serves as a hash function for a particular type.
         /// </summary>
@@ -6218,7 +6337,24 @@ namespace LightInject
                 return false;
             }
 
+            // Need to include ImplementingType, FactoryExpression and Lifetime in the comparison
             var result = ServiceName == other.ServiceName && ServiceType == other.ServiceType;
+            if (result && Lifetime != null && other.Lifetime != null)
+            {
+                result = Lifetime.Equals(other.Lifetime);
+            }
+            if (result && ImplementingType != null && other.ImplementingType != null)
+            {
+                result = ImplementingType == other.ImplementingType;
+            }
+
+            // Cannot compare delegates like this. 
+            if (result && FactoryExpression != null && other.FactoryExpression != null)
+            {
+                result = FactoryExpression.Equals(other.FactoryExpression);
+            }
+
+
             return result;
         }
 
@@ -6693,6 +6829,10 @@ namespace LightInject
         /// <param name="disposable">The <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/> object to register.</param>
         public void TrackInstance(object disposable)
         {
+            if (disposable is Scope)
+            {
+                return;
+            }
             lock (lockObject)
             {
                 if (disposableObjects == null)

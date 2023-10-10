@@ -438,5 +438,10 @@ namespace LightInject.Tests
         {
             throw new NotImplementedException();
         }
+
+        public IServiceRegistry RegisterOrdered(ServiceRegistration[] serviceRegistrations)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

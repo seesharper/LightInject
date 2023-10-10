@@ -32,6 +32,7 @@
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xUnit.Analyzers" Version="1.1.0" />
     <PackageReference Include="ILVerifier" Version="0.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Specification.Tests" Version="8.0.0-rc.1.23419.4" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
