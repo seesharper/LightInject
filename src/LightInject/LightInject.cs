@@ -2569,7 +2569,7 @@ namespace LightInject
         private readonly ServiceRegistry<Delegate> constructorDependencyFactories = new ServiceRegistry<Delegate>();
         private readonly ServiceRegistry<Delegate> propertyDependencyFactories = new ServiceRegistry<Delegate>();
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
-        private readonly ConcurrentDictionary<Type, List<ServiceRegistration>> allRegistrations = new ConcurrentDictionary<Type, List<ServiceRegistration>>();
+        private readonly ConcurrentDictionary<ServiceKey, List<ServiceRegistration>> allRegistrations = new ConcurrentDictionary<ServiceKey, List<ServiceRegistration>>();
         private readonly ConcurrentDictionary<ServiceKey, List<Action<IEmitter>>> allEmitters = new ConcurrentDictionary<ServiceKey, List<Action<IEmitter>>>();
 
         private readonly object lockObject = new object();
@@ -2840,13 +2840,15 @@ namespace LightInject
         /// <inheritdoc/>
         public IServiceRegistry Register(ServiceRegistration serviceRegistration)
         {
+            serviceRegistration.ServiceName ??= string.Empty;
             var services = GetAvailableServices(serviceRegistration.ServiceType);
             var sr = serviceRegistration;
             services.AddOrUpdate(
                 serviceRegistration.ServiceName,
                 s => AddServiceRegistration(sr),
                 (k, existing) => UpdateServiceRegistration(existing, sr));
-            var registrationList = allRegistrations.GetOrAdd(serviceRegistration.ServiceType, t => new List<ServiceRegistration>());
+            var serviceKey = new ServiceKey(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
+            var registrationList = allRegistrations.GetOrAdd(serviceKey, t => new List<ServiceRegistration>());
             registrationOrder++;
             registrationList.Add(serviceRegistration);
             serviceRegistration.RegistrationOrder = registrationOrder;
@@ -3140,7 +3142,7 @@ namespace LightInject
         {
             Ensure.IsNotNull(instance, "instance");
             Ensure.IsNotNull(serviceType, "type");
-            Ensure.IsNotNull(serviceName, "serviceName");
+
             RegisterValue(serviceType, instance, serviceName);
             return this;
         }
@@ -3445,10 +3447,16 @@ namespace LightInject
                 disposableLifetimeInstance.Dispose();
             }
 
+            List<IDisposable> disposedObjects = new List<IDisposable>();
             var perContainerDisposables = disposableObjects.AsEnumerable().Reverse();
             foreach (var perContainerDisposable in perContainerDisposables)
             {
+                disposableObjects.Add(perContainerDisposable);
                 perContainerDisposable.Dispose();
+            }
+            foreach (var disposed in disposedObjects)
+            {
+                disposableObjects.Remove(disposed);
             }
         }
 
@@ -3826,6 +3834,7 @@ namespace LightInject
 
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
+            serviceName ??= string.Empty;
             if (options.AllowMultipleRegistrations)
             {
                 var emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<Action<IEmitter>>());
@@ -4387,19 +4396,19 @@ namespace LightInject
                 emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
                 if (emitter == null)
                 {
-                    emitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
+                    emitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType, serviceName);
                 }
             }
             else if (serviceType.IsArray)
             {
-                emitter = CreateEmitMethodForArrayServiceRequest(serviceType);
+                emitter = CreateEmitMethodForArrayServiceRequest(serviceType, serviceName);
             }
             else if (serviceType.IsReadOnlyCollectionOfT() || serviceType.IsReadOnlyListOfT())
             {
                 emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
                 if (emitter == null)
                 {
-                    emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType);
+                    emitter = CreateEmitMethodForReadOnlyCollectionServiceRequest(serviceType, serviceName);
                 }
             }
             else if (serviceType.IsListOfT())
@@ -4407,7 +4416,7 @@ namespace LightInject
                 emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
                 if (emitter == null)
                 {
-                    emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                    emitter = CreateEmitMethodForListServiceRequest(serviceType, serviceName);
                 }
             }
             else if (serviceType.IsCollectionOfT())
@@ -4415,7 +4424,7 @@ namespace LightInject
                 emitter = CreateEmitMethodBasedOnClosedGenericServiceRequest(serviceType, serviceName);
                 if (emitter == null)
                 {
-                    emitter = CreateEmitMethodForListServiceRequest(serviceType);
+                    emitter = CreateEmitMethodForListServiceRequest(serviceType, serviceName);
                 }
             }
             else if (serviceType.IsClosedGeneric())
@@ -4515,16 +4524,16 @@ namespace LightInject
             return emitter => EmitNewInstanceWithDecorators(serviceRegistration, emitter);
         }
 
-        private Action<IEmitter> CreateEmitMethodForArrayServiceRequest(Type serviceType)
+        private Action<IEmitter> CreateEmitMethodForArrayServiceRequest(Type serviceType, string serviceName)
         {
-            Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
+            Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType, serviceName);
             return enumerableEmitter;
         }
 
-        private Action<IEmitter> CreateEmitMethodForListServiceRequest(Type serviceType)
+        private Action<IEmitter> CreateEmitMethodForListServiceRequest(Type serviceType, string serviceName)
         {
             // Note replace this with getEmitMethod();
-            Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType);
+            Action<IEmitter> enumerableEmitter = CreateEmitMethodForEnumerableServiceServiceRequest(serviceType, serviceName);
 
             MethodInfo openGenericToArrayMethod = typeof(Enumerable).GetTypeInfo().GetDeclaredMethod("ToList");
             MethodInfo closedGenericToListMethod = openGenericToArrayMethod.MakeGenericMethod(TypeHelper.GetElementType(serviceType));
@@ -4535,14 +4544,14 @@ namespace LightInject
             };
         }
 
-        private Action<IEmitter> CreateEmitMethodForReadOnlyCollectionServiceRequest(Type serviceType)
+        private Action<IEmitter> CreateEmitMethodForReadOnlyCollectionServiceRequest(Type serviceType, string serviceName)
         {
             Type elementType = TypeHelper.GetElementType(serviceType);
             Type closedGenericReadOnlyCollectionType = typeof(ReadOnlyCollection<>).MakeGenericType(elementType);
             ConstructorInfo constructorInfo =
                 closedGenericReadOnlyCollectionType.GetTypeInfo().DeclaredConstructors.Single();
 
-            Action<IEmitter> listEmitMethod = CreateEmitMethodForListServiceRequest(serviceType);
+            Action<IEmitter> listEmitMethod = CreateEmitMethodForListServiceRequest(serviceType, serviceName);
 
             return emitter =>
             {
@@ -4655,16 +4664,25 @@ namespace LightInject
             }
         }
 
-        private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType)
+        private Action<IEmitter> CreateEmitMethodForEnumerableServiceServiceRequest(Type serviceType, string serviceName)
         {
             Type actualServiceType = TypeHelper.GetElementType(serviceType);
 
             if (actualServiceType.GetTypeInfo().IsGenericType)
             {
                 Type openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
-                var openGenericServiceRegistrations = GetOpenGenericServiceRegistrations(openGenericServiceType);
+                ICollection<ServiceRegistration> openGenericServiceRegistrations;
+                if (options.AllowMultipleRegistrations)
+                {
+                    openGenericServiceRegistrations = allRegistrations.SelectMany(r => r.Value).Where(r => r.ServiceType == openGenericServiceType).ToList();
+                }
+                else
+                {
+                    openGenericServiceRegistrations = GetOpenGenericServiceRegistrations(openGenericServiceType).Values;
+                }
 
-                var constructableOpenGenericServices = openGenericServiceRegistrations.Values.Select(r => new { r.Lifetime, r.ServiceName, closedGenericImplementingType = GenericArgumentMapper.TryMakeGenericType(actualServiceType, r.ImplementingType) })
+
+                var constructableOpenGenericServices = openGenericServiceRegistrations.Select(r => new { r.Lifetime, r.ServiceName, closedGenericImplementingType = GenericArgumentMapper.TryMakeGenericType(actualServiceType, r.ImplementingType) })
                 .Where(t => t.closedGenericImplementingType != null);
 
                 foreach (var constructableOpenGenericService in constructableOpenGenericServices)
@@ -4818,7 +4836,7 @@ namespace LightInject
                 EmitNewInstance(serviceRegistration, emitter);
             }
 
-            if (serviceRegistration.Lifetime is PerContainerLifetime && IsNotServiceFactory(serviceRegistration.ServiceType))
+            if (serviceRegistration.Lifetime is PerContainerLifetime && IsNotServiceFactory(serviceRegistration.ServiceType) && serviceRegistration.Value == null)
             {
                 var closedGenericTrackInstanceMethod = OpenGenericTrackInstanceMethod.MakeGenericMethod(emitter.StackType);
                 var containerIndex = constants.Add(this);

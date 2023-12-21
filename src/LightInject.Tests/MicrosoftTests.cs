@@ -1,9 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 using LightInject.SampleLibrary;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
@@ -345,8 +345,8 @@ public class MicrosoftTests : TestBase
         container.RegisterTransient<ServiceAcceptingFactoryService>();
 
         // Act
-        var service1 = container.GetInstance<ServiceAcceptingFactoryService>();
-        var service2 = container.GetInstance<ServiceAcceptingFactoryService>();
+        var service1 = rootScope.GetInstance<ServiceAcceptingFactoryService>();
+        var service2 = rootScope.GetInstance<ServiceAcceptingFactoryService>();
 
         // Assert
         Assert.Equal(42, service1.TransientService.Value);
@@ -591,11 +591,11 @@ public class MicrosoftTests : TestBase
         var rootScope = container.BeginScope();
         container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
         container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(ConstrainedFakeOpenGenericService<>));
-        
+
         var poco = new PocoClass();
         container.RegisterInstance(poco);
         container.Register<IFakeSingletonService, FakeService>(new RootScopeLifetime(rootScope));
-        
+
         // Act
         var allServices = container.GetAllInstances<IFakeOpenGenericService<PocoClass>>().ToList();
         var constrainedServices = container.GetAllInstances<IFakeOpenGenericService<IFakeSingletonService>>().ToList();
@@ -607,6 +607,310 @@ public class MicrosoftTests : TestBase
         Assert.Equal(1, constrainedServices.Count);
         Assert.Same(singletonService, constrainedServices[0].Value);
     }
+
+    [Fact]
+    public void ConstrainedOpenGenericServicesReturnsEmptyWithNoMatches()
+    {
+        // Arrange
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(ConstrainedFakeOpenGenericService<>));
+        container.Register<IFakeSingletonService, FakeService>(new RootScopeLifetime(rootScope));
+
+        // Act
+        var constrainedServices = rootScope.GetAllInstances<IFakeOpenGenericService<IFakeSingletonService>>().ToList();
+        // Assert
+        Assert.Equal(0, constrainedServices.Count);
+    }
+
+    [Fact]
+    public void InterfaceConstrainedOpenGenericServicesCanBeResolved()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        // Arrange
+
+        container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+        container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(ClassWithInterfaceConstraint<>));
+
+        var enumerableVal = new ClassImplementingIEnumerable();
+        container.RegisterInstance(enumerableVal);
+        container.Register<IFakeSingletonService, FakeService>(new RootScopeLifetime(rootScope));
+
+        // Act
+        var allServices = rootScope.GetAllInstances<IFakeOpenGenericService<ClassImplementingIEnumerable>>().ToList();
+        var constrainedServices = rootScope.GetAllInstances<IFakeOpenGenericService<IFakeSingletonService>>().ToList();
+        var singletonService = rootScope.GetInstance<IFakeSingletonService>();
+        // Assert
+        Assert.Equal(2, allServices.Count);
+        Assert.Same(enumerableVal, allServices[0].Value);
+        Assert.Same(enumerableVal, allServices[1].Value);
+        Assert.Equal(1, constrainedServices.Count);
+        Assert.Same(singletonService, constrainedServices[0].Value);
+    }
+
+    [Fact]
+    public void AbstractClassConstrainedOpenGenericServicesCanBeResolved()
+    {
+        // Arrange
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+        container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(ClassWithAbstractClassConstraint<>));
+
+
+        var poco = new PocoClass();
+
+        container.RegisterInstance(poco);
+        var classInheritingClassInheritingAbstractClass = new ClassInheritingClassInheritingAbstractClass();
+
+        container.RegisterInstance(classInheritingClassInheritingAbstractClass);
+
+        // Act
+        var allServices = rootScope.GetAllInstances<IFakeOpenGenericService<ClassInheritingClassInheritingAbstractClass>>().ToList();
+        var constrainedServices = rootScope.GetAllInstances<IFakeOpenGenericService<PocoClass>>().ToList();
+        // Assert
+        Assert.Equal(2, allServices.Count);
+        Assert.Same(classInheritingClassInheritingAbstractClass, allServices[0].Value);
+        Assert.Same(classInheritingClassInheritingAbstractClass, allServices[1].Value);
+        Assert.Equal(1, constrainedServices.Count);
+        Assert.Same(poco, constrainedServices[0].Value);
+    }
+
+    [Fact]
+    public void ClosedServicesPreferredOverOpenGenericServices()
+    {
+        // Arrange
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        container.RegisterTransient(typeof(IFakeOpenGenericService<PocoClass>), typeof(FakeService));
+        container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+        container.Register<PocoClass>(new RootScopeLifetime(rootScope));
+
+        // Act
+        var service = rootScope.GetInstance<IFakeOpenGenericService<PocoClass>>();
+
+        // Assert
+        Assert.IsType<FakeService>(service);
+    }
+
+    [Fact]
+    public void AttemptingToResolveNonexistentServiceReturnsNull()
+    {
+        // Arrange
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        // Act
+        var service = rootScope.TryGetInstance<INonexistentService>();
+
+        // Assert
+        Assert.Null(service);
+    }
+
+    [Fact]
+    public void NonexistentServiceCanBeIEnumerableResolved()
+    {
+        // Arrange
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        // Act
+        var services = rootScope.GetInstance<IEnumerable<INonexistentService>>();
+
+        // Assert
+        Assert.Empty(services);
+    }
+
+    public static TheoryData ServiceContainerPicksConstructorWithLongestMatchesData
+    {
+        get
+        {
+            var containerOptions = new ContainerOptions { EnableCurrentScope = false, AllowMultipleRegistrations = true };
+
+            var fakeService = new FakeService();
+            var multipleService = new FakeService();
+            var factoryService = new TransientFactoryService();
+            var scopedService = new FakeService();
+
+            return new TheoryData<IServiceRegistry, TypeWithSupersetConstructors>
+                {
+                    {
+                        new ServiceContainer(containerOptions)
+                            .RegisterInstance<IFakeService>(fakeService),
+                        new TypeWithSupersetConstructors(fakeService)
+                    },
+                    {
+                        new ServiceContainer(containerOptions)
+                            .RegisterInstance<IFactoryService>(factoryService),
+                        new TypeWithSupersetConstructors(factoryService)
+                    },
+                    {
+                        new ServiceContainer(containerOptions)
+                            .RegisterInstance<IFakeService>(fakeService)
+                            .RegisterInstance<IFactoryService>(factoryService),
+                       new TypeWithSupersetConstructors(fakeService, factoryService)
+                    },
+                    {
+                        new ServiceContainer(containerOptions)
+                            .RegisterInstance<IFakeService>(fakeService)
+                            .RegisterInstance<IFakeMultipleService>(multipleService)
+                            .RegisterInstance<IFactoryService>(factoryService),
+                       new TypeWithSupersetConstructors(fakeService, multipleService, factoryService)
+                    },
+                    {
+                        new ServiceContainer(containerOptions)
+                            .RegisterInstance<IFakeService>(fakeService)
+                            .RegisterInstance<IFakeMultipleService>(multipleService)
+                            .RegisterInstance<IFakeScopedService>(scopedService)
+                            .RegisterInstance<IFactoryService>(factoryService),
+                       new TypeWithSupersetConstructors(multipleService, factoryService, fakeService, scopedService)
+                    }
+             };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ServiceContainerPicksConstructorWithLongestMatchesData))]
+    public void ServiceContainerPicksConstructorWithLongestMatches(
+            IServiceRegistry serviceRegistry,
+            TypeWithSupersetConstructors expected)
+    {
+        // Arrange
+
+        serviceRegistry.RegisterTransient<TypeWithSupersetConstructors>();
+        var container = (IServiceContainer)serviceRegistry;
+
+        // Act
+        var actual = container.GetInstance<TypeWithSupersetConstructors>();
+
+        // Assert
+        Assert.NotNull(actual);
+        Assert.Same(expected.Service, actual.Service);
+        Assert.Same(expected.FactoryService, actual.FactoryService);
+        Assert.Same(expected.MultipleService, actual.MultipleService);
+        Assert.Same(expected.ScopedService, actual.ScopedService);
+    }
+
+    [Fact]
+    public void DisposesInReverseOrderOfCreation()
+    {
+        // Arrange
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        container.Register<FakeDisposeCallback>(new PerRootScopeLifetime(rootScope));
+        container.Register<IFakeOuterService, FakeDisposableCallbackOuterService>(new PerRequestLifeTime());
+        container.Register<IFakeMultipleService, FakeDisposableCallbackInnerService>(new PerRootScopeLifetime(rootScope));
+        container.RegisterScoped<IFakeMultipleService, FakeDisposableCallbackInnerService>();
+        container.Register<IFakeMultipleService, FakeDisposableCallbackInnerService>(new PerRequestLifeTime());
+        container.Register<IFakeService, FakeDisposableCallbackInnerService>(new PerRootScopeLifetime(rootScope));
+
+        var callback = rootScope.GetInstance<FakeDisposeCallback>();
+        var outer = rootScope.GetInstance<IFakeOuterService>();
+        var multipleServices = outer.MultipleServices.ToArray();
+
+        // Act        
+        rootScope.Dispose();
+
+        // Assert
+        Assert.Equal(outer, callback.Disposed[0]);
+        Assert.Equal(multipleServices.Reverse(), callback.Disposed.Skip(1).Take(3).OfType<IFakeMultipleService>());
+        Assert.Equal(outer.SingleService, callback.Disposed[4]);
+    }
+
+    [Fact]
+    public void ResolvesMixedOpenClosedGenericsAsEnumerable()
+    {
+        // Arrange
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var instance = new FakeOpenGenericService<PocoClass>(null);
+
+        container.RegisterTransient<PocoClass, PocoClass>();
+        container.Register(typeof(IFakeOpenGenericService<PocoClass>), typeof(FakeService), new PerRootScopeLifetime(rootScope));
+        container.Register(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>), new PerRootScopeLifetime(rootScope));
+        container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(instance);
+
+        // var serviceCollection = new TestServiceCollection();
+
+
+        // serviceCollection.AddTransient<PocoClass, PocoClass>();
+        // serviceCollection.AddSingleton(typeof(IFakeOpenGenericService<PocoClass>), typeof(FakeService));
+        // serviceCollection.AddSingleton(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+        // serviceCollection.AddSingleton<IFakeOpenGenericService<PocoClass>>(instance);
+
+        // var serviceProvider = CreateServiceProvider(serviceCollection);
+
+        var enumerable = container.GetInstance<IEnumerable<IFakeOpenGenericService<PocoClass>>>().ToArray();
+
+        // Assert
+        Assert.Equal(3, enumerable.Length);
+        Assert.NotNull(enumerable[0]);
+        Assert.NotNull(enumerable[1]);
+        Assert.NotNull(enumerable[2]);
+
+        // NOTE IS this important? Assert.Equal(instance, enumerable[2]);
+        // Since we register the open generic service in flight, this comes last. 
+        Assert.True(enumerable[0] is FakeService, string.Join(", ", enumerable.Select(e => e.GetType())));
+        Assert.IsType<FakeService>(enumerable[0]);
+    }
+
+    [Theory]
+    [InlineData(typeof(IFakeService), typeof(FakeService), typeof(IFakeService), ServiceLifetime.Scoped)]
+    [InlineData(typeof(IFakeService), typeof(FakeService), typeof(IFakeService), ServiceLifetime.Singleton)]
+    [InlineData(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>), typeof(IFakeOpenGenericService<IServiceFactory>), ServiceLifetime.Scoped)]
+    [InlineData(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>), typeof(IFakeOpenGenericService<IServiceFactory>), ServiceLifetime.Singleton)]
+    public void ResolvesDifferentInstancesForServiceWhenResolvingEnumerable(Type serviceType, Type implementation, Type resolve, ServiceLifetime lifetime)
+    {
+        // Arrange
+        var container = CreateContainer();
+        container.RegisterScoped<IServiceFactory>(f => f);
+        var rootScope = container.BeginScope();
+
+        if (lifetime == ServiceLifetime.Scoped)
+        {
+            container.RegisterScoped(serviceType, implementation);
+            container.RegisterScoped(serviceType, implementation);
+            container.RegisterScoped(serviceType, implementation);
+        }
+        else
+        {
+            container.Register(serviceType, implementation, new PerRootScopeLifetime(rootScope));
+            container.Register(serviceType, implementation, new PerRootScopeLifetime(rootScope));
+            container.Register(serviceType, implementation, new PerRootScopeLifetime(rootScope));
+        }
+
+
+        // var serviceCollection = new TestServiceCollection
+        //     {
+        //         ServiceDescriptor.Describe(serviceType, implementation, lifetime),
+        //         ServiceDescriptor.Describe(serviceType, implementation, lifetime),
+        //         ServiceDescriptor.Describe(serviceType, implementation, lifetime)
+        //     };
+
+        // var serviceProvider = CreateServiceProvider(serviceCollection);
+
+
+        using (var scope = container.BeginScope())
+        {
+            var enumerable = (scope.GetInstance(typeof(IEnumerable<>).MakeGenericType(resolve)) as IEnumerable)
+                .OfType<object>().ToArray();
+            var service = scope.GetInstance(resolve);
+
+            // Assert
+            Assert.Equal(3, enumerable.Length);
+            Assert.NotNull(enumerable[0]);
+            Assert.NotNull(enumerable[1]);
+            Assert.NotNull(enumerable[2]);
+
+            Assert.NotEqual(enumerable[0], enumerable[1]);
+            Assert.NotEqual(enumerable[1], enumerable[2]);
+            Assert.Equal(service, enumerable[2]);
+        }
+    }
+
 
 
 
