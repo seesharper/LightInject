@@ -4704,7 +4704,25 @@ namespace LightInject
             {
                 if (options.AllowMultipleRegistrations)
                 {
-                    emitMethods = allEmitters.Where(kv => actualServiceType.GetTypeInfo().IsAssignableFrom(kv.Key.ServiceType.GetTypeInfo())).SelectMany(kv => kv.Value).ToList();
+                    if (serviceName == "*")
+                    {                                                                                                                        
+                        var serviceKeys = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).ToList();
+                        
+                        var query = from r in allRegistrations.SelectMany(r => r.Value)
+                                    join k in serviceKeys on new ServiceKey(r.ServiceType, r.ServiceName) equals k
+                                    select r;
+
+                        
+                        // allRegistrations.Join(serviceKeys, r => new ServiceKey(r.ServiceType, r.ServiceName), k => k, (r, k) => r).ToList().ForEach(r => Register(r));
+                        
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).ToList();
+                    }
+                    else
+                    {
+                        var serviceKeys = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName == serviceName).ToList();
+                        emitMethods = serviceKeys.SelectMany(k => allEmitters[k]).ToList();
+                    }
+
                 }
                 else
                 {
@@ -4716,6 +4734,7 @@ namespace LightInject
             }
             else
             {
+                // TODO Make tests with variance off. 
                 emitMethods = GetEmitMethods(actualServiceType).OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
             }
 

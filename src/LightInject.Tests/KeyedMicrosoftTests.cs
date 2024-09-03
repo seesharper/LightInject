@@ -118,6 +118,94 @@ public class KeyedMicrosoftTests : TestBase
         Assert.Equal(new[] { service2, service3, service4 }, services);
     }
 
+    [Fact]
+    public void ResolveKeyedServicesAnyKey()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+
+        var service1 = new Service();
+        var service2 = new Service();
+        var service3 = new Service();
+        var service4 = new Service();
+        var service5 = new Service();
+        var service6 = new Service();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService>("first-service", service1);
+        serviceCollection.AddKeyedSingleton<IService>("service", service2);
+        serviceCollection.AddKeyedSingleton<IService>("service", service3);
+        serviceCollection.AddKeyedSingleton<IService>("service", service4);
+        serviceCollection.AddKeyedSingleton<IService>(null, service5);
+        serviceCollection.AddSingleton<IService>(service6);
+
+        container.RegisterInstance<IService>(service1, "first-service");
+        container.RegisterInstance<IService>(service2, "service");
+        container.RegisterInstance<IService>(service3, "service");
+        container.RegisterInstance<IService>(service4, "service");
+        container.RegisterInstance<IService>(service5, null);
+        container.RegisterInstance<IService>(service6);
+
+        var test = KeyedService.AnyKey.ToString();
+        // var provider = CreateServiceProvider(serviceCollection);
+
+        // // Return all services registered with a non null key
+        // //var allServices = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
+        var allServices = rootScope.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()).ToList();
+        Assert.Equal(4, allServices.Count);
+        Assert.Equal(new[] { service1, service2, service3, service4 }, allServices);
+
+        // Check again (caching)
+        var allServices2 = rootScope.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()).ToList();
+        Assert.Equal(allServices, allServices2);
+    }
+
+    [Fact]
+    public void ResolveKeyedServicesAnyKeyWithAnyKeyRegistration()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var service1 = new Service();
+        var service2 = new Service();
+        var service3 = new Service();
+        var service4 = new Service();
+        var service5 = new Service();
+        var service6 = new Service();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedTransient<IService>(KeyedService.AnyKey, (sp, key) => new Service());
+        serviceCollection.AddKeyedSingleton<IService>("first-service", service1);
+        serviceCollection.AddKeyedSingleton<IService>("service", service2);
+        serviceCollection.AddKeyedSingleton<IService>("service", service3);
+        serviceCollection.AddKeyedSingleton<IService>("service", service4);
+        serviceCollection.AddKeyedSingleton<IService>(null, service5);
+        serviceCollection.AddSingleton<IService>(service6);
+
+        container.RegisterTransient<IService>((factory) => new Service(), KeyedService.AnyKey.ToString());
+        container.RegisterInstance<IService>(service1, "first-service");
+        container.RegisterInstance<IService>(service2, "service");
+        container.RegisterInstance<IService>(service3, "service");
+        container.RegisterInstance<IService>(service4, "service");
+        container.RegisterInstance<IService>(service5, null);
+        container.RegisterInstance<IService>(service6);
+
+
+        // var provider = CreateServiceProvider(serviceCollection);
+
+
+        // _ = provider.GetKeyedService<IService>("something-else");
+        // _ = provider.GetKeyedService<IService>("something-else-again");
+
+        container.TryGetInstance<IService>("something-else");
+        container.TryGetInstance<IService>("something-else-again");
+
+        // Return all services registered with a non null key, but not the one "created" with KeyedService.AnyKey
+        var allServices = rootScope.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()).ToList();
+        Assert.Equal(5, allServices.Count);
+        Assert.Equal(new[] { service1, service2, service3, service4 }, allServices.Skip(1));
+    }
+
+
 
     internal interface IService { }
 
