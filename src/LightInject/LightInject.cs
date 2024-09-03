@@ -2527,6 +2527,20 @@ namespace LightInject
         public string Message { get; private set; }
     }
 
+    internal class EmitMethodInfo
+    {
+        public EmitMethodInfo(Action<IEmitter> emitMethod, int registrationOrder)
+        {
+            EmitMethod = emitMethod;
+            RegistrationOrder = registrationOrder;
+        }
+
+        public Action<IEmitter> EmitMethod { get; private set; }
+
+        public int RegistrationOrder { get; private set; }
+    }
+
+
     internal class ServiceKey
     {
         public ServiceKey(Type serviceType, string serviceName)
@@ -2570,7 +2584,7 @@ namespace LightInject
         private readonly ServiceRegistry<Delegate> propertyDependencyFactories = new ServiceRegistry<Delegate>();
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
         private readonly ConcurrentDictionary<ServiceKey, List<ServiceRegistration>> allRegistrations = new ConcurrentDictionary<ServiceKey, List<ServiceRegistration>>();
-        private readonly ConcurrentDictionary<ServiceKey, List<Action<IEmitter>>> allEmitters = new ConcurrentDictionary<ServiceKey, List<Action<IEmitter>>>();
+        private readonly ConcurrentDictionary<ServiceKey, List<EmitMethodInfo>> allEmitters = new ConcurrentDictionary<ServiceKey, List<EmitMethodInfo>>();
 
         private readonly object lockObject = new object();
         private readonly ContainerOptions options;
@@ -3837,12 +3851,12 @@ namespace LightInject
             serviceName ??= string.Empty;
             if (options.AllowMultipleRegistrations)
             {
-                var emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<Action<IEmitter>>());
+                var emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<EmitMethodInfo>());
                 if (string.IsNullOrWhiteSpace(serviceName))
                 {
                     if (emitters.Count > 1)
                     {
-                        return emitters.Last();
+                        return emitters.Last().EmitMethod;
                     }
                     else
                     {
@@ -3882,7 +3896,9 @@ namespace LightInject
 
         private void RegisterEmitMethod(Type serviceType, string serviceName, Action<IEmitter> emitMethod)
         {
-            allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<Action<IEmitter>>()).Add(emitMethod);
+            registrationOrder++;
+            var emitMethodInfo = new EmitMethodInfo(emitMethod, registrationOrder);
+            allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<EmitMethodInfo>()).Add(emitMethodInfo);
 
             GetEmitMethods(serviceType).TryAdd(serviceName, emitMethod);
         }
@@ -3898,7 +3914,9 @@ namespace LightInject
 
             Action<IEmitter> emitMethod = ResolveEmitMethod(newRegistration);
             var serviceEmitters = GetEmitMethods(newRegistration.ServiceType);
-            allEmitters.GetOrAdd(new ServiceKey(newRegistration.ServiceType, newRegistration.ServiceName), _ => new List<Action<IEmitter>>()).Add(emitMethod);
+            registrationOrder++;
+            var emitMethodInfo = new EmitMethodInfo(emitMethod, registrationOrder);
+            allEmitters.GetOrAdd(new ServiceKey(newRegistration.ServiceType, newRegistration.ServiceName), _ => new List<EmitMethodInfo>()).Add(emitMethodInfo);
             serviceEmitters[newRegistration.ServiceName] = emitMethod;
             return newRegistration;
         }
@@ -4705,22 +4723,22 @@ namespace LightInject
                 if (options.AllowMultipleRegistrations)
                 {
                     if (serviceName == "*")
-                    {                                                                                                                        
-                        var serviceKeys = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).ToList();
-                        
-                        var query = from r in allRegistrations.SelectMany(r => r.Value)
-                                    join k in serviceKeys on new ServiceKey(r.ServiceType, r.ServiceName) equals k
-                                    select r;
+                    {
+                        // var serviceKeys = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).ToList();
 
-                        
+                        // var query = from r in allRegistrations.SelectMany(r => r.Value)
+                        //             join k in serviceKeys on new ServiceKey(r.ServiceType, r.ServiceName) equals k
+                        //             select r;
+
+
                         // allRegistrations.Join(serviceKeys, r => new ServiceKey(r.ServiceType, r.ServiceName), k => k, (r, k) => r).ToList().ForEach(r => Register(r));
-                        
-                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).ToList();
+
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                     {
                         var serviceKeys = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName == serviceName).ToList();
-                        emitMethods = serviceKeys.SelectMany(k => allEmitters[k]).ToList();
+                        emitMethods = serviceKeys.SelectMany(k => allEmitters[k]).Select(emi => emi.EmitMethod).ToList();
                     }
 
                 }
