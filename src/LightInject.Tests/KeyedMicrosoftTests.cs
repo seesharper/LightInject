@@ -205,6 +205,59 @@ public class KeyedMicrosoftTests : TestBase
         Assert.Equal(new[] { service1, service2, service3, service4 }, allServices.Skip(1));
     }
 
+    [Fact]
+    public void ResolveKeyedGenericServices()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var service1 = new FakeService();
+        var service2 = new FakeService();
+        var service3 = new FakeService();
+        var service4 = new FakeService();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("first-service", service1);
+        serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("service", service2);
+        serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("service", service3);
+        serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("service", service4);
+
+        container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(service1, "first-service");
+        container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(service2, "service");
+        container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(service3, "service");
+        container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(service4, "service");
+
+
+
+        //var provider = CreateServiceProvider(serviceCollection);
+
+        //var firstSvc = provider.GetKeyedServices<IFakeOpenGenericService<PocoClass>>("first-service").ToList();
+        var firstSvc = rootScope.GetInstance<IEnumerable<IFakeOpenGenericService<PocoClass>>>("first-service").ToList();
+        Assert.Single(firstSvc);
+        Assert.Same(service1, firstSvc[0]);
+
+        var services = rootScope.GetInstance<IEnumerable<IFakeOpenGenericService<PocoClass>>>("service").ToList();
+        Assert.Equal(new[] { service2, service3, service4 }, services);
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceSingletonInstance()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        
+        var service = new Service();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService>("service1", service);
+        container.RegisterInstance<IService>(service, "service1");
+
+
+        
+
+        Assert.Null(rootScope.GetInstance<IService>());
+        // Assert.Same(service, provider.GetKeyedService<IService>("service1"));
+        // Assert.Same(service, provider.GetKeyedService(typeof(IService), "service1"));
+    }
+
 
 
     internal interface IService { }
