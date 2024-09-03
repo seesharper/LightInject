@@ -244,18 +244,18 @@ public class KeyedMicrosoftTests : TestBase
     {
         var container = CreateContainer();
         var rootScope = container.BeginScope();
-        
+
         var service = new Service();
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddKeyedSingleton<IService>("service1", service);
         container.RegisterInstance<IService>(service, "service1");
 
 
-        
 
-        Assert.Null(rootScope.GetInstance<IService>());
-        // Assert.Same(service, provider.GetKeyedService<IService>("service1"));
-        // Assert.Same(service, provider.GetKeyedService(typeof(IService), "service1"));
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        Assert.Same(service, rootScope.GetInstance<IService>("service1"));
+        Assert.Same(service, rootScope.GetInstance(typeof(IService), "service1"));
     }
 
 

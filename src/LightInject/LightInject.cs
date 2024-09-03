@@ -3852,15 +3852,24 @@ namespace LightInject
             if (options.AllowMultipleRegistrations)
             {
                 var emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<EmitMethodInfo>());
+                if (emitters.Count == 0)
+                {
+                    return CreateEmitMethodForUnknownService(serviceType, serviceName);
+                }
                 if (string.IsNullOrWhiteSpace(serviceName))
                 {
-                    if (emitters.Count > 1)
+                    if (emitters.Count == 1)
+                    {
+                        return emitters[0].EmitMethod;
+                    }
+                    else if (emitters.Count > 1)
                     {
                         return emitters.Last().EmitMethod;
                     }
                     else
                     {
-                        serviceName = string.Empty;
+                        return null;
+                        // serviceName = string.Empty;
                     }
                 }
             }
@@ -4771,7 +4780,7 @@ namespace LightInject
 
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
-            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1;
+            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1 && options.AllowMultipleRegistrations == false;
         }
 
         private ConstructionInfo GetConstructionInfo(Registration registration)
