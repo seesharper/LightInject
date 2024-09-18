@@ -1054,6 +1054,10 @@ namespace LightInject
         /// <param name="arg">The String to be emitted.</param>
         void Emit(OpCode code, string arg);
 
+        void SetServiceKey(string serviceKey);
+
+        string GetServiceKey();
+
 #if USE_EXPRESSIONS
 
         /// <summary>
@@ -1166,6 +1170,10 @@ namespace LightInject
     /// </summary>
     public static class RuntimeArgumentsLoader
     {
+        public static MethodInfo LoadMethod = typeof(RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("Load");
+        public static MethodInfo LoadServiceNameMethod = typeof(RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("LoadServiceName");
+
+
         /// <summary>
         /// Loads the runtime arguments onto the evaluation stack.
         /// </summary>
@@ -1179,6 +1187,16 @@ namespace LightInject
             }
 
             return arguments;
+        }
+
+        public static string LoadServiceName(object[] constants)
+        {
+            if (constants.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            return constants[constants.Length - 1] as string;
         }
     }
 
@@ -2529,17 +2547,19 @@ namespace LightInject
 
     internal class EmitMethodInfo
     {
-        public EmitMethodInfo(Action<IEmitter> emitMethod, int registrationOrder)
+        public EmitMethodInfo(Action<IEmitter> emitMethod, int registrationOrder, bool createdFromWildCardService)
         {
             EmitMethod = emitMethod;
             RegistrationOrder = registrationOrder;
+            CreatedFromWildcardService = createdFromWildCardService;
         }
 
         public Action<IEmitter> EmitMethod { get; private set; }
 
         public int RegistrationOrder { get; private set; }
-    }
 
+        public bool CreatedFromWildcardService { get; private set; }
+    }
 
     internal class ServiceKey
     {
@@ -2567,6 +2587,11 @@ namespace LightInject
             }
 
             return ServiceType == other.ServiceType && ServiceName == other.ServiceName;
+        }
+
+        public override string ToString()
+        {
+            return ServiceType.Name + " - " + ServiceName;
         }
     }
 
@@ -3534,7 +3559,7 @@ namespace LightInject
                 instanceDelegate = CreateNamedDelegate(key, throwError: true);
             }
 
-            return instanceDelegate(constants.Items, scope);
+            return instanceDelegate(constants.Items.Concat(new object[] { serviceName }).ToArray(), scope);
         }
 
         internal IEnumerable<object> GetAllInstances(Type serviceType, Scope scope)
@@ -3848,41 +3873,85 @@ namespace LightInject
 
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
-            serviceName ??= string.Empty;
             if (options.AllowMultipleRegistrations)
             {
-                var emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<EmitMethodInfo>());
-                if (emitters.Count == 0)
-                {
-                    return CreateEmitMethodForUnknownService(serviceType, serviceName);
-                }
-                if (string.IsNullOrWhiteSpace(serviceName))
-                {
-                    if (emitters.Count == 1)
-                    {
-                        return emitters[0].EmitMethod;
-                    }
-                    else if (emitters.Count > 1)
-                    {
-                        return emitters.Last().EmitMethod;
-                    }
-                    else
-                    {
-                        return null;
-                        // serviceName = string.Empty;
-                    }
-                }
+                return GetRegisteredEmitMethodWithMicrosoftCompatibility(serviceType, serviceName);
+            }
+            else
+            {
+                return GetRegisteredEmitMethodWithoutMicrosoftCompatibility(serviceType, serviceName);
+            }
+        }
+
+        private Action<IEmitter> GetRegisteredEmitMethodWithMicrosoftCompatibility(Type serviceType, string serviceName)
+        {
+            serviceName ??= string.Empty;
+
+            var emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<EmitMethodInfo>());
+
+            if (emitters.Count == 1)
+            {
+                return emitters[0].EmitMethod;
+            }
+
+            if (emitters.Count > 1)
+            {
+                return emitters.Last().EmitMethod;
             }
 
 
+            if (emitters.Count == 0)
+            {
+                return CreateEmitMethodForUnknownService(serviceType, serviceName);
+            }
 
-            var emitMethods = GetEmitMethods(serviceType);
+
+            return null;
+
+            //     if (serviceName != string.Empty)
+            //     {
+            //         emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, "*"), _ => new List<EmitMethodInfo>());
+            //         if (emitters.Count > 0)
+            //         {
+            //             return emitters.Last().EmitMethod;
+            //         }
+            //     }
+
+            //     if (emitters.Count == 0)
+            //     {
+            //         return CreateEmitMethodForUnknownService(serviceType, serviceName);
+            //     }
+            // }
+            // if (string.IsNullOrWhiteSpace(serviceName))
+            // {
+            //     if (emitters.Count == 1)
+            //     {
+            //         return emitters[0].EmitMethod;
+            //     }
+            //     else if (emitters.Count > 1)
+            //     {
+            //         return emitters.Last().EmitMethod;
+            //     }
+            //     else
+            //     {
+            //         return null;
+            //         // serviceName = string.Empty;
+            //     }
+            // }
+
+
+            // return null;
+        }
+
+        private Action<IEmitter> GetRegisteredEmitMethodWithoutMicrosoftCompatibility(Type serviceType, string serviceName)
+        {
+            var registrations = GetEmitMethods(serviceType);
 
             if (string.IsNullOrWhiteSpace(serviceName))
             {
-                if (emitMethods.Count > 1)
+                if (registrations.Count > 1)
                 {
-                    var serviceNames = emitMethods.Keys.OrderBy(k => k).ToArray();
+                    var serviceNames = registrations.Keys.OrderBy(k => k).ToArray();
                     serviceName = options.DefaultServiceSelector(serviceNames);
                 }
                 else
@@ -3891,22 +3960,23 @@ namespace LightInject
                 }
             }
 
-            emitMethods.TryGetValue(serviceName, out Action<IEmitter> emitMethod);
+            registrations.TryGetValue(serviceName, out Action<IEmitter> emitMethod);
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
+
 
         private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
             var emitMethod = ResolveEmitMethod(serviceRegistration);
-            RegisterEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName, emitMethod);
+            RegisterEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName, emitMethod, serviceRegistration.IsCreatedFromWildcardService);
 
             return serviceRegistration;
         }
 
-        private void RegisterEmitMethod(Type serviceType, string serviceName, Action<IEmitter> emitMethod)
+        private void RegisterEmitMethod(Type serviceType, string serviceName, Action<IEmitter> emitMethod, bool createdFromWildcardService = false)
         {
             registrationOrder++;
-            var emitMethodInfo = new EmitMethodInfo(emitMethod, registrationOrder);
+            var emitMethodInfo = new EmitMethodInfo(emitMethod, registrationOrder, createdFromWildcardService);
             allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<EmitMethodInfo>()).Add(emitMethodInfo);
 
             GetEmitMethods(serviceType).TryAdd(serviceName, emitMethod);
@@ -3924,7 +3994,7 @@ namespace LightInject
             Action<IEmitter> emitMethod = ResolveEmitMethod(newRegistration);
             var serviceEmitters = GetEmitMethods(newRegistration.ServiceType);
             registrationOrder++;
-            var emitMethodInfo = new EmitMethodInfo(emitMethod, registrationOrder);
+            var emitMethodInfo = new EmitMethodInfo(emitMethod, registrationOrder, false);
             allEmitters.GetOrAdd(new ServiceKey(newRegistration.ServiceType, newRegistration.ServiceName), _ => new List<EmitMethodInfo>()).Add(emitMethodInfo);
             serviceEmitters[newRegistration.ServiceName] = emitMethod;
             return newRegistration;
@@ -4198,6 +4268,16 @@ namespace LightInject
 
         private Action<IEmitter> GetEmitMethodForDependency(Dependency dependency)
         {
+            if (dependency.IsServiceKey)
+            {
+                return emitter =>
+                {
+                    emitter.Emit(OpCodes.Ldarg_0);
+                    emitter.Emit(OpCodes.Call, RuntimeArgumentsLoader.LoadServiceNameMethod);
+                };
+            }
+
+
             if (dependency.FactoryExpression != null)
             {
                 return skeleton => EmitDependencyUsingFactoryExpression(skeleton, dependency);
@@ -4399,9 +4479,34 @@ namespace LightInject
             emitter.Push(instanceVariable);
         }
 
+        private Action<IEmitter> CreateEmitMethodBasedOnWildcardService(Type serviceType, string serviceName)
+        {
+            var wildcardServices = allRegistrations.TryGetValue(new ServiceKey(serviceType, "*"), out var registrations) ? registrations : new List<ServiceRegistration>();
+            var wildcardRegistration = registrations.Last();
+            var serviceRegistration = new ServiceRegistration
+            {
+                ServiceType = serviceType,
+                ServiceName = serviceName,
+                FactoryExpression = wildcardRegistration.FactoryExpression,
+                ImplementingType = wildcardRegistration.ImplementingType,
+                Lifetime = CloneLifeTime(wildcardRegistration.Lifetime) ?? DefaultLifetime,
+                IsCreatedFromWildcardService = true,
+            };
+
+            Register(serviceRegistration);
+            return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
+        }
+
+
         private Action<IEmitter> CreateEmitMethodForUnknownService(Type serviceType, string serviceName)
         {
             Action<IEmitter> emitter = null;
+
+            if (CanUseWildcardRegistration(serviceType, serviceName))
+            {
+                return CreateEmitMethodBasedOnWildcardService(serviceType, serviceName);
+            }
+
             if (CanRedirectRequestForDefaultServiceToSingleNamedService(serviceType, serviceName))
             {
                 emitter = CreateServiceEmitterBasedOnSingleNamedInstance(serviceType);
@@ -4742,7 +4847,7 @@ namespace LightInject
 
                         // allRegistrations.Join(serviceKeys, r => new ServiceKey(r.ServiceType, r.ServiceName), k => k, (r, k) => r).ToList().ForEach(r => Register(r));
 
-                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                     {
@@ -4781,6 +4886,15 @@ namespace LightInject
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
             return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1 && options.AllowMultipleRegistrations == false;
+        }
+
+        private bool CanUseWildcardRegistration(Type serviceType, string serviceName)
+        {
+            if (string.IsNullOrWhiteSpace(serviceName) || !options.AllowMultipleRegistrations || serviceType.IsEnumerableOfT())
+            {
+                return false;
+            }
+            return allEmitters.Keys.Any(k => k.ServiceType == serviceType && k.ServiceName == "*");
         }
 
         private ConstructionInfo GetConstructionInfo(Registration registration)
@@ -6055,6 +6169,7 @@ namespace LightInject
         public ConstructorInfo Execute(Type implementingType)
         {
             ConstructorInfo[] constructorCandidates = implementingType.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
+
             if (constructorCandidates.Length == 0)
             {
                 throw new InvalidOperationException("Missing public constructor for Type: " + implementingType.FullName);
@@ -6094,7 +6209,9 @@ namespace LightInject
 
         private bool CanCreateParameterDependency(ParameterInfo parameterInfo)
         {
-            return canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo)) || (parameterInfo.HasDefaultValue && enableOptionalArguments);
+            var test = parameterInfo.GetCustomAttributes().Any(a => a.GetType().Name == "ServiceKeyAttribute");
+            var result = canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo)) || (parameterInfo.HasDefaultValue && enableOptionalArguments) || parameterInfo.GetCustomAttributes().Any(a => a.GetType().Name == "ServiceKeyAttribute");
+            return result; ;
         }
     }
 
@@ -6115,6 +6232,7 @@ namespace LightInject
                             {
                                 ServiceName = string.Empty,
                                 ServiceType = p.ParameterType,
+                                IsServiceKey = p.GetCustomAttributes().Any(a => a.GetType().Name == "ServiceKeyAttribute"),
                                 Parameter = p,
                                 IsRequired = true,
                             });
@@ -6373,6 +6491,9 @@ namespace LightInject
         /// </summary>
         public object Value { get; set; }
 
+        internal bool IsCreatedFromWildcardService { get; set; }
+
+
 
         public int RegistrationOrder { get; set; }
 
@@ -6566,6 +6687,11 @@ namespace LightInject
         /// Gets or sets a value indicating whether this dependency is required.
         /// </summary>
         public bool IsRequired { get; set; }
+
+        /// <summary>
+        /// Gets or sets a bool value that indicates if this parameter represents the service key/name.
+        /// </summary>
+        public bool IsServiceKey { get; set; }
 
         /// <summary>
         /// Returns textual information about the dependency.
@@ -8267,6 +8393,8 @@ namespace LightInject
 
         private readonly List<Instruction> instructions = new List<Instruction>();
 
+        private string serviceKey;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Emitter"/> class.
         /// </summary>
@@ -8276,6 +8404,16 @@ namespace LightInject
         {
             this.generator = generator;
             this.parameterTypes = parameterTypes;
+        }
+
+        public void SetServiceKey(string serviceKey)
+        {
+            this.serviceKey = serviceKey;
+        }
+
+        public string GetServiceKey()
+        {
+            return serviceKey;
         }
 
         /// <inheritdoc/>

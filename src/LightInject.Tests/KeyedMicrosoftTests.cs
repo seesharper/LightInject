@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -15,7 +16,11 @@ public class KeyedMicrosoftTests : TestBase
         {
             options.AllowMultipleRegistrations = true;
             options.EnableCurrentScope = false;
-        });
+            options.OptimizeForLargeObjectGraphs = false;
+        })
+        {
+            AssemblyScanner = new NoOpAssemblyScanner()
+        };
     }
 
     [Fact]
@@ -190,7 +195,7 @@ public class KeyedMicrosoftTests : TestBase
         container.RegisterInstance<IService>(service6);
 
 
-        // var provider = CreateServiceProvider(serviceCollection);
+        //var provider = CreateServiceProvider(serviceCollection);
 
 
         // _ = provider.GetKeyedService<IService>("something-else");
@@ -258,6 +263,55 @@ public class KeyedMicrosoftTests : TestBase
         Assert.Same(service, rootScope.GetInstance(typeof(IService), "service1"));
     }
 
+    [Fact]
+    public void ResolveKeyedServiceSingletonInstanceWithKeyInjection()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceKey = "this-is-my-service";
+        var serviceCollection = new ServiceCollection();
+
+
+        serviceCollection.AddKeyedSingleton<IService, Service>(serviceKey);
+
+        // Note: This has to be solved in the adapter layer
+        // Alternative is to look for the ServiceKeyAttribute rewrite the registration
+        // using a function factory.
+        //container.RegisterSingleton<IService, Service>(serviceKey);
+        container.RegisterSingleton<IService>((factory) => new Service(serviceKey), serviceKey);
+
+        // var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        var svc = rootScope.GetInstance<IService>(serviceKey);
+        Assert.NotNull(svc);
+        Assert.Equal(serviceKey, svc.ToString());
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceSingletonInstanceWithAnyKey()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService, Service>(KeyedService.AnyKey);
+        container.Register<IService, Service>(KeyedService.AnyKey.ToString(), new PerRootScopeLifetime(rootScope));
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+
+        var serviceKey1 = "some-key";
+        var svc1 = rootScope.GetInstance<IService>(serviceKey1);
+        Assert.NotNull(svc1);
+        Assert.Equal(serviceKey1, svc1.ToString());
+
+        var serviceKey2 = "some-other-key";
+        var svc2 = rootScope.GetInstance<IService>(serviceKey2);
+        Assert.NotNull(svc2);
+        Assert.Equal(serviceKey2, svc2.ToString());
+    }
+
 
 
     internal interface IService { }
@@ -272,4 +326,18 @@ public class KeyedMicrosoftTests : TestBase
 
         public override string? ToString() => _id;
     }
+
+    internal class NoOpAssemblyScanner : IAssemblyScanner
+    {
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
+        {
+
+        }
+
+        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)
+        {
+
+        }
+    }
 }
+
