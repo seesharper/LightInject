@@ -312,6 +312,29 @@ public class KeyedMicrosoftTests : TestBase
         Assert.Equal(serviceKey2, svc2.ToString());
     }
 
+    [Fact]
+    public void ResolveKeyedServicesSingletonInstanceWithAnyKey()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        var service1 = new FakeService();
+        var service2 = new FakeService();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>(KeyedService.AnyKey, service1);
+        serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("some-key", service2);
+        container.Register<IFakeOpenGenericService<PocoClass>>(sf => service1, KeyedService.AnyKey.ToString(), new PerRootScopeLifetime(rootScope));
+        container.Register<IFakeOpenGenericService<PocoClass>>(sf => service2, "some-key", new PerRootScopeLifetime(rootScope));
+
+        // container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(service1, KeyedService.AnyKey.ToString());
+        // container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(service2, "some-key");
+
+
+        // var provider = CreateServiceProvider(serviceCollection);
+        var services = rootScope.GetInstance<IEnumerable<IFakeOpenGenericService<PocoClass>>>("some-key").ToList();
+        // var services = provider.GetKeyedServices<IFakeOpenGenericService<PocoClass>>("some-key").ToList();
+        Assert.Equal(new[] { service1, service2 }, services);
+    }
 
 
     internal interface IService { }

@@ -4838,16 +4838,12 @@ namespace LightInject
                 {
                     if (serviceName == "*")
                     {
-                        // var serviceKeys = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).ToList();
-
-                        // var query = from r in allRegistrations.SelectMany(r => r.Value)
-                        //             join k in serviceKeys on new ServiceKey(r.ServiceType, r.ServiceName) equals k
-                        //             select r;
-
-
-                        // allRegistrations.Join(serviceKeys, r => new ServiceKey(r.ServiceType, r.ServiceName), k => k, (r, k) => r).ToList().ForEach(r => Register(r));
-
                         emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                    }
+                    else
+                    if (serviceName.Length > 0)
+                    {
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName == serviceName || k.ServiceName == "*").SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                     {
