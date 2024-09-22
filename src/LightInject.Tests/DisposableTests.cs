@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using LightInject.SampleLibrary;
 using Xunit;
 namespace LightInject.Tests
@@ -317,49 +319,64 @@ namespace LightInject.Tests
         }
     }
 
+    /// <summary>
+    /// An <see cref="ILifetime"/> implementation that makes it possible to mimic the notion of a root scope.
+    /// </summary>
+    [LifeSpan(30)]
     internal class PerRootScopeLifetime : ILifetime, ICloneableLifeTime
     {
-        private readonly ThreadSafeDictionary<Scope, object> instances = new ThreadSafeDictionary<Scope, object>();
-
+        private readonly object syncRoot = new object();
         private readonly Scope rootScope;
+        private object instance;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PerRootScopeLifetime"/> class.
+        /// </summary>
+        /// <param name="rootScope">The root <see cref="Scope"/>.</param>
         public PerRootScopeLifetime(Scope rootScope)
-        {
-            this.rootScope = rootScope;
-        }
+            => this.rootScope = rootScope;
 
+        /// <inheritdoc/>
+        [ExcludeFromCodeCoverage]
         public object GetInstance(Func<object> createInstance, Scope scope)
+            => throw new NotImplementedException("Uses optimized non closing method");
+
+        /// <inheritdoc/>
+        public ILifetime Clone()
+            => new PerRootScopeLifetime(rootScope);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable IDE0060
+        public object GetInstance(GetInstanceDelegate createInstance, Scope scope, object[] arguments)
         {
-            return instances.GetOrAdd(rootScope, s => CreateScopedInstance(s, createInstance));
+#pragma warning restore IDE0060
+            if (instance != null)
+            {
+                return instance;
+            }
+
+            lock (syncRoot)
+            {
+                if (instance == null)
+                {
+                    instance = createInstance(arguments, rootScope);
+                    RegisterForDisposal(instance);
+                }
+            }
+
+            return instance;
         }
 
-        private void RegisterForDisposal(Scope scope, object instance)
+        private void RegisterForDisposal(object instance)
         {
             if (instance is IDisposable disposable)
             {
                 rootScope.TrackInstance(disposable);
             }
-        }
-
-        private object CreateScopedInstance(Scope scope, Func<object> createInstance)
-        {
-            rootScope.Completed += OnScopeCompleted;
-            var instance = createInstance();
-
-            RegisterForDisposal(rootScope, instance);
-            return instance;
-        }
-
-        private void OnScopeCompleted(object sender, EventArgs e)
-        {
-            var scope = (Scope)sender;
-            scope.Completed -= OnScopeCompleted;
-            instances.TryRemove(scope, out object removedInstance);
-        }
-
-        public ILifetime Clone()
-        {
-            return new PerRootScopeLifetime(rootScope);
+            else if (instance is IAsyncDisposable asyncDisposable)
+            {
+                rootScope.TrackInstance(asyncDisposable);
+            }
         }
     }
 }

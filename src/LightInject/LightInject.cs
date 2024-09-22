@@ -4272,8 +4272,10 @@ namespace LightInject
             {
                 return emitter =>
                 {
-                    emitter.Emit(OpCodes.Ldarg_0);
-                    emitter.Emit(OpCodes.Call, RuntimeArgumentsLoader.LoadServiceNameMethod);
+                    emitter.Emit(OpCodes.Ldstr, dependency.ConstructionInfo.ServiceName);
+
+                    // emitter.Emit(OpCodes.Ldarg_0);
+                    // emitter.Emit(OpCodes.Call, RuntimeArgumentsLoader.LoadServiceNameMethod);
                 };
             }
 
@@ -5053,6 +5055,7 @@ namespace LightInject
             {
                 int instanceDelegateIndex = GetInstanceDelegateIndex(serviceRegistration, emitMethod);
                 var invokeMethod = typeof(GetInstanceDelegate).GetTypeInfo().GetDeclaredMethod("Invoke");
+                //Push the service key here?
                 emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
                 emitter.PushArgument(0);
                 PushScope(emitter);
@@ -6321,6 +6324,19 @@ namespace LightInject
             constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
             constructionInfo.Constructor = constructorSelector.Execute(implementingType);
             constructionInfo.ConstructorDependencies.AddRange(GetConstructorDependencies(constructionInfo.Constructor));
+            foreach (var constructorDependency in constructionInfo.ConstructorDependencies)
+            {
+                constructorDependency.ConstructionInfo = constructionInfo;
+            }
+            foreach (var propertyDependency in constructionInfo.PropertyDependencies)
+            {
+                propertyDependency.ConstructionInfo = constructionInfo;
+            }
+
+            if (registration is ServiceRegistration serviceRegistration)
+            {
+                constructionInfo.ServiceName = serviceRegistration.ServiceName;
+            }
 
             return constructionInfo;
         }
@@ -6652,6 +6668,8 @@ namespace LightInject
         /// Gets or sets the function delegate to be used to create the service instance.
         /// </summary>
         public Delegate FactoryDelegate { get; set; }
+
+        public string ServiceName { get; set; }
     }
 
     /// <summary>
@@ -6688,6 +6706,9 @@ namespace LightInject
         /// Gets or sets a bool value that indicates if this parameter represents the service key/name.
         /// </summary>
         public bool IsServiceKey { get; set; }
+
+        public ConstructionInfo ConstructionInfo { get; set; }
+
 
         /// <summary>
         /// Returns textual information about the dependency.

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using LightInject.SampleLibrary;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -12,15 +13,18 @@ public class KeyedMicrosoftTests : TestBase
 {
     internal override IServiceContainer CreateContainer()
     {
-        return new ServiceContainer(options =>
+        var container = new ServiceContainer(options =>
         {
             options.AllowMultipleRegistrations = true;
             options.EnableCurrentScope = false;
-            options.OptimizeForLargeObjectGraphs = false;
+            options.OptimizeForLargeObjectGraphs = true;
         })
         {
             AssemblyScanner = new NoOpAssemblyScanner()
         };
+        container.ConstructorDependencySelector = new AnnotatedConstructorDependencySelector();
+        container.ConstructorSelector = new AnnotatedConstructorSelector(container.CanGetInstance);
+        return container;
     }
 
     [Fact]
@@ -336,6 +340,43 @@ public class KeyedMicrosoftTests : TestBase
         Assert.Equal(new[] { service1, service2 }, services);
     }
 
+    [Fact]
+    public void ResolveKeyedServiceSingletonInstanceWithKeyedParameter()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService, Service>("service1");
+        serviceCollection.AddKeyedSingleton<IService, Service>("service2");
+        serviceCollection.AddSingleton<OtherService>();
+        container.Register<IService, Service>("service1", new PerRootScopeLifetime(rootScope));
+        container.Register<IService, Service>("service2", new PerRootScopeLifetime(rootScope));
+        container.Register<OtherService>(new PerRootScopeLifetime(rootScope));
+
+
+        //var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        var svc = rootScope.GetInstance<OtherService>();
+        Assert.NotNull(svc);
+        Assert.Equal("service1", svc.Service1.ToString());
+        Assert.Equal("service2", svc.Service2.ToString());
+    }
+
+    [Fact]
+    public void Test()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        container.Register<IFoo, FooWithDependency>("foo");
+        container.Register<IBar, Bar>("Bar");
+        container.Register<IBar, AnotherBar>("AnotherBar");
+
+        var foo = rootScope.GetInstance<IFoo>("foo");
+    }
+
+
 
     internal interface IService { }
 
@@ -350,6 +391,21 @@ public class KeyedMicrosoftTests : TestBase
         public override string? ToString() => _id;
     }
 
+    internal class OtherService
+    {
+        public OtherService(
+            [FromKeyedServices("service1")] IService service1,
+            [FromKeyedServices("service2")] IService service2)
+        {
+            Service1 = service1;
+            Service2 = service2;
+        }
+
+        public IService Service1 { get; }
+
+        public IService Service2 { get; }
+    }
+
     internal class NoOpAssemblyScanner : IAssemblyScanner
     {
         public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
@@ -361,6 +417,66 @@ public class KeyedMicrosoftTests : TestBase
         {
 
         }
+    }
+}
+
+/// <summary>
+/// A <see cref="ConstructorDependencySelector"/> that looks for the <see cref="InjectAttribute"/> 
+/// to determine the name of service to be injected.
+/// </summary>
+public class AnnotatedConstructorDependencySelector : ConstructorDependencySelector
+{
+    /// <summary>
+    /// Selects the constructor dependencies for the given <paramref name="constructor"/>.
+    /// </summary>
+    /// <param name="constructor">The <see cref="ConstructionInfo"/> for which to select the constructor dependencies.</param>
+    /// <returns>A list of <see cref="ConstructorDependency"/> instances that represents the constructor
+    /// dependencies for the given <paramref name="constructor"/>.</returns>
+    public override IEnumerable<ConstructorDependency> Execute(ConstructorInfo constructor)
+    {
+        var constructorDependencies = base.Execute(constructor).ToArray();
+        foreach (var constructorDependency in constructorDependencies)
+        {
+            var injectAttribute =
+                (FromKeyedServicesAttribute)
+                constructorDependency.Parameter.GetCustomAttributes(typeof(FromKeyedServicesAttribute), true).FirstOrDefault();
+            if (injectAttribute != null)
+            {
+                constructorDependency.ServiceName = injectAttribute.Key.ToString();
+            }
+        }
+
+        return constructorDependencies;
+    }
+}
+
+/// <summary>
+/// A <see cref="IConstructorSelector"/> implementation that uses information 
+/// from the <see cref="InjectAttribute"/> to determine if a given service can be resolved.
+/// </summary>
+public class AnnotatedConstructorSelector : MostResolvableConstructorSelector
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AnnotatedConstructorSelector"/> class.
+    /// </summary>
+    /// <param name="canGetInstance">A function delegate that determines if a service type can be resolved.</param>
+    public AnnotatedConstructorSelector(Func<Type, string, bool> canGetInstance)
+        : base(canGetInstance)
+    {
+    }
+
+    /// <summary>
+    /// Gets the service name based on the given <paramref name="parameter"/>.
+    /// </summary>
+    /// <param name="parameter">The <see cref="ParameterInfo"/> for which to get the service name.</param>
+    /// <returns>The name of the service for the given <paramref name="parameter"/>.</returns>
+    protected override string GetServiceName(ParameterInfo parameter)
+    {
+        var injectAttribute =
+                  (FromKeyedServicesAttribute)
+                  parameter.GetCustomAttributes(typeof(FromKeyedServicesAttribute), true).FirstOrDefault();
+
+        return injectAttribute != null ? injectAttribute.Key.ToString() : base.GetServiceName(parameter);
     }
 }
 
