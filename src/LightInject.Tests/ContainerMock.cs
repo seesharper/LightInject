@@ -443,5 +443,15 @@ namespace LightInject.Tests
         {
             throw new NotImplementedException();
         }
+
+        public IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName, ILifetime lifetime)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

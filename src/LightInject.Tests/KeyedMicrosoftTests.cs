@@ -18,6 +18,7 @@ public class KeyedMicrosoftTests : TestBase
             options.AllowMultipleRegistrations = true;
             options.EnableCurrentScope = false;
             options.OptimizeForLargeObjectGraphs = true;
+            options.EnableOptionalArguments = true;
         })
         {
             AssemblyScanner = new NoOpAssemblyScanner()
@@ -364,6 +365,156 @@ public class KeyedMicrosoftTests : TestBase
         Assert.Equal("service2", svc.Service2.ToString());
     }
 
+
+    [Fact]
+    public void ResolveKeyedServiceWithKeyedParameter_MissingRegistration_SecondParameter()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+
+        serviceCollection.AddKeyedSingleton<IService, Service>("service1");
+        container.Register<IService, Service>("service1", new PerRootScopeLifetime(rootScope));
+        // We are missing the registration for "service2" here and OtherService requires it.
+
+        serviceCollection.AddSingleton<OtherService>();
+        container.Register<OtherService>(new PerRootScopeLifetime(rootScope));
+
+        // var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        Assert.Throws<InvalidOperationException>(() => rootScope.GetInstance<OtherService>());
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceWithKeyedParameter_MissingRegistration_FirstParameter()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+
+        // We are not registering "service1" and "service1" keyed IService services and OtherService requires them.
+
+        serviceCollection.AddSingleton<OtherService>();
+        container.Register<OtherService>(new PerRootScopeLifetime(rootScope));
+
+        // var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        Assert.Throws<InvalidOperationException>(() => rootScope.GetInstance<OtherService>());
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceWithKeyedParameter_MissingRegistrationButWithDefaults()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+
+        // We are not registering "service1" and "service1" keyed IService services and OtherServiceWithDefaultCtorArgs
+        // specifies them but has argument defaults if missing.
+
+        serviceCollection.AddSingleton<OtherServiceWithDefaultCtorArgs>();
+        container.Register<OtherServiceWithDefaultCtorArgs>(new PerRootScopeLifetime(rootScope));
+
+        //var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        Assert.NotNull(rootScope.GetInstance<OtherServiceWithDefaultCtorArgs>());
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceWithKeyedParameter_MissingRegistrationButWithUnkeyedService()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+
+        // We are not registering "service1" and "service1" keyed IService services and OtherService requires them,
+        // but we are registering an unkeyed IService service which should not be injected into OtherService.
+        serviceCollection.AddSingleton<IService, Service>();
+        container.Register<IService, Service>(new PerRootScopeLifetime(rootScope));
+
+
+        serviceCollection.AddSingleton<OtherService>();
+        container.Register<OtherService>(new PerRootScopeLifetime(rootScope));
+
+        // var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.NotNull(rootScope.GetInstance<IService>());
+        Assert.Throws<InvalidOperationException>(() => rootScope.GetInstance<OtherService>());
+    }
+
+    [Fact]
+    public void CreateServiceWithKeyedParameter()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton<IService, Service>();
+        serviceCollection.AddKeyedSingleton<IService, Service>("service1");
+        serviceCollection.AddKeyedSingleton<IService, Service>("service2");
+
+        container.Register<IService, Service>(new PerRootScopeLifetime(rootScope));
+        container.Register<IService, Service>("service1", new PerRootScopeLifetime(rootScope));
+        container.Register<IService, Service>("service2", new PerRootScopeLifetime(rootScope));
+
+        // var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<OtherService>());
+        // var svc = ActivatorUtilities.CreateInstance<OtherService>(provider);
+        // Assert.NotNull(svc);
+        // Assert.Equal("service1", svc.Service1.ToString());
+        // Assert.Equal("service2", svc.Service2.ToString());
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceSingletonFactory()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var service = new Service();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService>("service1", (sp, key) => service);
+        container.Register<IService>((factory) => service, "service1", new PerRootScopeLifetime(rootScope));
+
+        //var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        Assert.Same(service, rootScope.GetInstance<IService>("service1"));
+        Assert.Same(service, rootScope.GetInstance(typeof(IService), "service1"));
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceSingletonFactoryWithAnyKey()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, (sp, key) => new Service((string)key));
+        container.Register<IService>((factory, key) => new Service(key), KeyedService.AnyKey.ToString(), new PerRootScopeLifetime(rootScope));
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+
+        for (int i = 0; i < 3; i++)
+        {
+            var key = "service" + i;
+            var s1 = rootScope.GetInstance<IService>(key);
+            var s2 = rootScope.GetInstance<IService>(key);
+            Assert.Same(s1, s2);
+            Assert.Equal(key, s1.ToString());
+        }
+    }
+
+
     [Fact]
     public void Test()
     {
@@ -376,6 +527,21 @@ public class KeyedMicrosoftTests : TestBase
         var foo = rootScope.GetInstance<IFoo>("foo");
     }
 
+
+    internal class OtherServiceWithDefaultCtorArgs
+    {
+        public OtherServiceWithDefaultCtorArgs(
+            [FromKeyedServices("service1")] IService service1 = null,
+            [FromKeyedServices("service2")] IService service2 = null)
+        {
+            Service1 = service1;
+            Service2 = service2;
+        }
+
+        public IService Service1 { get; }
+
+        public IService Service2 { get; }
+    }
 
 
     internal interface IService { }

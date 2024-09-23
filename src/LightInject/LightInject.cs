@@ -366,6 +366,17 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName);
 
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
+        /// describes the dependencies of the service.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="factory">The lambdaExpression that describes the dependencies of the service. The requested service name is passed in as a parameter.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName);
+
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -376,6 +387,18 @@ namespace LightInject
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime);
+
+        /// <summary>
+        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
+        /// describes the dependencies of the service.
+        /// </summary>
+        /// <typeparam name="TService">The service type to register.</typeparam>
+        /// <param name="factory">The lambdaExpression that describes the dependencies of the service. The requested service name is passed in as a parameter.</param>
+        /// <param name="serviceName">The name of the service.</param>
+        /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
+        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
+        IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName, ILifetime lifetime);
+
 
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
@@ -2863,6 +2886,13 @@ namespace LightInject
         }
 
         /// <inheritdoc/>
+        public IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName, ILifetime lifetime)
+        {
+            RegisterServiceFromLambdaExpression<TService>(factory, lifetime, serviceName);
+            return this;
+        }
+
+        /// <inheritdoc/>
         public IServiceRegistry RegisterFallback(Func<Type, string, bool> predicate, Func<ServiceRequest, object> factory)
             => RegisterFallback(predicate, factory, DefaultLifetime);
 
@@ -3122,6 +3152,13 @@ namespace LightInject
 
         /// <inheritdoc/>
         public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName)
+        {
+            RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
+            return this;
+        }
+
+        /// <inheritdoc/>
+        public IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName)
         {
             RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
             return this;
@@ -4154,6 +4191,21 @@ namespace LightInject
             MethodInfo invokeMethod = funcType.GetTypeInfo().GetDeclaredMethod("Invoke");
             emitter.PushConstant(factoryDelegateIndex, funcType);
             var parameters = invokeMethod.GetParameters();
+
+            if (parameters.Length == 2 && parameters[1].ParameterType == typeof(string))
+            {
+                var serviceFactoryIndex = constants.Add(this);
+                emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
+                var scopeManagerIndex = CreateScopeManagerIndex();
+                emitter.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+                emitter.PushArgument(1);
+                emitter.Emit(OpCodes.Call, ServiceFactoryLoader.LoadServiceFactoryMethod);
+                emitter.Emit(OpCodes.Ldstr, serviceRegistration.ServiceName);
+                emitter.Call(invokeMethod);
+                return;
+            }
+
+
             if (parameters.Length == 1 && parameters[0].ParameterType == typeof(ServiceRequest))
             {
                 var createServiceRequestMethod = ServiceRequestHelper.CreateServiceRequestMethod.MakeGenericMethod(serviceRegistration.ServiceType);
