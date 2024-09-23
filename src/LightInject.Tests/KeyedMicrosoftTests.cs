@@ -514,6 +514,23 @@ public class KeyedMicrosoftTests : TestBase
         }
     }
 
+    [Fact]
+    public void ResolveKeyedServiceSingletonFactoryWithAnyKeyIgnoreWrongType()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedTransient<IService, ServiceWithIntKey>(KeyedService.AnyKey);
+        container.Register<IService, ServiceWithIntKey>(KeyedService.AnyKey.ToString());
+        //var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        Assert.NotNull(rootScope.GetInstance<IService>(87.ToString()));
+        Assert.ThrowsAny<InvalidOperationException>(() => rootScope.GetInstance<IService>(new object().ToString()));
+        Assert.ThrowsAny<InvalidOperationException>(() => rootScope.GetInstance(typeof(IService), new object().ToString()));
+    }
+
 
     [Fact]
     public void Test()
@@ -541,6 +558,13 @@ public class KeyedMicrosoftTests : TestBase
         public IService Service1 { get; }
 
         public IService Service2 { get; }
+    }
+
+    internal class ServiceWithIntKey : IService
+    {
+        private readonly int _id;
+
+        public ServiceWithIntKey([ServiceKey] int id) => _id = id;
     }
 
 

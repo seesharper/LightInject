@@ -90,6 +90,28 @@ namespace LightInject
         Warning,
     }
 
+    public interface IServiceKeyConverter
+    {
+        TServiceKey Convert<TServiceKey>(string serviceName);
+    }
+
+    public class ServiceKeyConverter : IServiceKeyConverter
+    {
+        public TServiceKey Convert<TServiceKey>(string serviceName)
+        {
+            try
+            {
+                return (TServiceKey)System.Convert.ChangeType(serviceName, typeof(TServiceKey));
+            }
+            catch (Exception)
+            {
+                string errorMessage = $"Unable to convert the service name '{serviceName}' to the type '{typeof(TServiceKey).Name}'.";
+                throw new InvalidOperationException(errorMessage);
+            }
+            
+        }
+    }
+
     /// <summary>
     /// Defines a set of methods used to register services into the service container.
     /// </summary>
@@ -2696,6 +2718,7 @@ namespace LightInject
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerLogicalCallContextScopeManagerProvider();
             AssemblyLoader = new AssemblyLoader();
+            ServiceKeyConverter = new ServiceKeyConverter();
         }
 
         /// <summary>
@@ -2789,6 +2812,12 @@ namespace LightInject
         /// for providing a service name for a given service during assembly scanning.
         /// </summary>
         public IServiceNameProvider ServiceNameProvider { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IServiceKeyConverter"/> that is responsible
+        /// for converting a service key from a string representation to a <see cref="ServiceKey"/> instance.
+        /// </summary>
+        public IServiceKeyConverter ServiceKeyConverter { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="ICompositionRootExecutor"/> that is responsible
@@ -4318,13 +4347,24 @@ namespace LightInject
             emitter.Call(propertyDependency.Property.SetMethod);
         }
 
+        private T ConvertServiceKey<T>(string serviceName)
+        {
+            return (T)System.Convert.ChangeType(serviceName, typeof(T));
+        }
+
+
         private Action<IEmitter> GetEmitMethodForDependency(Dependency dependency)
         {
             if (dependency.IsServiceKey)
             {
                 return emitter =>
                 {
+                    var openGenericConvertServiceKeyMethod = typeof(IServiceKeyConverter).GetTypeInfo().GetDeclaredMethod(nameof(IServiceKeyConverter.Convert));
+                    var closedGenericConvertServiceKeyMethod = openGenericConvertServiceKeyMethod.MakeGenericMethod(dependency.ServiceType);
+                    var serviceKeyConverterIndex = constants.Add(this.ServiceKeyConverter);
+                    emitter.PushConstant(serviceKeyConverterIndex, typeof(IServiceKeyConverter));
                     emitter.Emit(OpCodes.Ldstr, dependency.ConstructionInfo.ServiceName);
+                    emitter.Emit(OpCodes.Callvirt, closedGenericConvertServiceKeyMethod);
 
                     // emitter.Emit(OpCodes.Ldarg_0);
                     // emitter.Emit(OpCodes.Call, RuntimeArgumentsLoader.LoadServiceNameMethod);
@@ -5107,7 +5147,6 @@ namespace LightInject
             {
                 int instanceDelegateIndex = GetInstanceDelegateIndex(serviceRegistration, emitMethod);
                 var invokeMethod = typeof(GetInstanceDelegate).GetTypeInfo().GetDeclaredMethod("Invoke");
-                //Push the service key here?
                 emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
                 emitter.PushArgument(0);
                 PushScope(emitter);
