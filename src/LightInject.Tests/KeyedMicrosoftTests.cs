@@ -531,6 +531,103 @@ public class KeyedMicrosoftTests : TestBase
         Assert.ThrowsAny<InvalidOperationException>(() => rootScope.GetInstance(typeof(IService), new object().ToString()));
     }
 
+    [Fact]
+    public void ResolveKeyedServiceSingletonType()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService, Service>("service1");
+        container.Register<IService, Service>("service1", new PerRootScopeLifetime(rootScope));
+
+        // var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        Assert.Equal(typeof(Service), rootScope.GetInstance<IService>("service1")!.GetType());
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceTransientFactory()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedTransient<IService>("service1", (sp, key) => new Service(key as string));
+        container.Register<IService>((factory, key) => new Service(key as string), "service1", null);
+
+        //var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        var first = rootScope.GetInstance<IService>("service1");
+        var second = rootScope.GetInstance<IService>("service1");
+        Assert.NotSame(first, second);
+        Assert.Equal("service1", first.ToString());
+        Assert.Equal("service1", second.ToString());
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceTransientType()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedTransient<IService, Service>("service1");
+        container.Register<IService, Service>("service1");
+
+        //var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        var first = rootScope.GetInstance<IService>("service1");
+        var second = rootScope.GetInstance<IService>("service1");
+        Assert.NotSame(first, second);
+    }
+
+    [Fact]
+    public void ResolveKeyedServiceTransientTypeWithAnyKey()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedTransient<IService, Service>(KeyedService.AnyKey);
+        container.Register<IService, Service>(KeyedService.AnyKey.ToString());
+
+        // var provider = CreateServiceProvider(serviceCollection);
+
+        Assert.Null(rootScope.TryGetInstance<IService>());
+        var first = rootScope.GetInstance<IService>("service1");
+        var second = rootScope.GetInstance<IService>("service1");
+        Assert.NotSame(first, second);
+    }
+
+    [Fact]
+    public void ResolveKeyedSingletonFromInjectedServiceProvider()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService, Service>("key");
+        serviceCollection.AddSingleton<ServiceFactoryAccessor>();
+        container.RegisterInstance<IServiceFactory>(container);
+        container.Register<IService, Service>("key", new PerRootScopeLifetime(rootScope));
+        container.Register<ServiceFactoryAccessor>(new PerRootScopeLifetime(rootScope));
+
+
+        // var provider = CreateServiceProvider(serviceCollection);
+        var accessor = rootScope.GetInstance<ServiceFactoryAccessor>();
+
+        Assert.Null(accessor.ServiceFactory.TryGetInstance<IService>());
+
+        var service1 = accessor.ServiceFactory.GetInstance<IService>("key");
+        var service2 = accessor.ServiceFactory.GetInstance<IService>("key");
+
+        Assert.Same(service1, service2);
+    }
+
 
     [Fact]
     public void Test()
@@ -542,6 +639,16 @@ public class KeyedMicrosoftTests : TestBase
         container.Register<IBar, AnotherBar>("AnotherBar");
 
         var foo = rootScope.GetInstance<IFoo>("foo");
+    }
+
+    internal class ServiceFactoryAccessor
+    {
+        public ServiceFactoryAccessor(IServiceFactory serviceFactory)
+        {
+            ServiceFactory = serviceFactory;
+        }
+
+        public IServiceFactory ServiceFactory { get; }
     }
 
 
