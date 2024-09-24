@@ -8,6 +8,7 @@ using LightInject.SampleLibrary;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
+using static LightInject.Tests.KeyedMicrosoftTests;
 
 namespace LightInject.Tests;
 
@@ -15,11 +16,19 @@ public class MicrosoftTests : TestBase
 {
     internal override IServiceContainer CreateContainer()
     {
-        return new ServiceContainer(options =>
+       var container = new ServiceContainer(options =>
         {
             options.AllowMultipleRegistrations = true;
             options.EnableCurrentScope = false;
-        });
+            options.OptimizeForLargeObjectGraphs = false;
+            options.EnableOptionalArguments = true;
+        })
+        {
+            AssemblyScanner = new NoOpAssemblyScanner()
+        };
+        container.ConstructorDependencySelector = new AnnotatedConstructorDependencySelector();
+        container.ConstructorSelector = new AnnotatedConstructorSelector(container.CanGetInstance);
+        return container;
     }
 
     [Fact]

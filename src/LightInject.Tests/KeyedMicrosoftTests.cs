@@ -6,6 +6,7 @@ using LightInject.SampleLibrary;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
+using Xunit.Sdk;
 
 namespace LightInject.Tests;
 
@@ -17,7 +18,7 @@ public class KeyedMicrosoftTests : TestBase
         {
             options.AllowMultipleRegistrations = true;
             options.EnableCurrentScope = false;
-            options.OptimizeForLargeObjectGraphs = true;
+            options.OptimizeForLargeObjectGraphs = false;
             options.EnableOptionalArguments = true;
         })
         {
@@ -627,6 +628,136 @@ public class KeyedMicrosoftTests : TestBase
 
         Assert.Same(service1, service2);
     }
+
+    [Fact]
+    public void ResolveKeyedTransientFromInjectedServiceProvider()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedTransient<IService, Service>("key");
+        // serviceCollection.AddSingleton<ServiceProviderAccessor>();
+        container.RegisterInstance<IServiceFactory>(container);
+        container.Register<IService, Service>("key");
+        container.Register<ServiceFactoryAccessor>(new PerRootScopeLifetime(rootScope));
+
+        // var provider = CreateServiceProvider(serviceCollection);
+        var accessor = rootScope.GetInstance<ServiceFactoryAccessor>();
+
+        Assert.Null(accessor.ServiceFactory.TryGetInstance<IService>());
+
+        var service1 = accessor.ServiceFactory.GetInstance<IService>("key");
+        var service2 = accessor.ServiceFactory.GetInstance<IService>("key");
+
+        Assert.NotSame(service1, service2);
+    }
+
+    [Fact]
+    public void ResolveKeyedSingletonFromScopeServiceProvider()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedSingleton<IService, Service>("key");
+        container.Register<IService, Service>("key", new PerRootScopeLifetime(rootScope));
+
+        // var provider = CreateServiceProvider(serviceCollection);
+        // var scopeA = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+        // var scopeB = provider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+        var scopeA = rootScope.BeginScope();
+        var scopeB = rootScope.BeginScope();
+
+
+
+        Assert.Null(scopeA.TryGetInstance<IService>());
+        Assert.Null(scopeB.TryGetInstance<IService>());
+
+        var serviceA1 = scopeA.GetInstance<IService>("key");
+        var serviceA2 = scopeA.GetInstance<IService>("key");
+
+        var serviceB1 = scopeB.GetInstance<IService>("key");
+        var serviceB2 = scopeB.GetInstance<IService>("key");
+
+        Assert.Same(serviceA1, serviceA2);
+        Assert.Same(serviceB1, serviceB2);
+        Assert.Same(serviceA1, serviceB1);
+    }
+
+    [Fact]
+    public void ResolveKeyedScopedFromScopeServiceProvider()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedScoped<IService, Service>("key");
+        container.RegisterScoped<IService, Service>("key");
+
+        // var provider = CreateServiceProvider(serviceCollection);
+        var scopeA = rootScope.BeginScope();
+        var scopeB = rootScope.BeginScope();
+
+        Assert.Null(scopeA.TryGetInstance<IService>());
+        Assert.Null(scopeB.TryGetInstance<IService>());
+
+        var serviceA1 = scopeA.GetInstance<IService>("key");
+        var serviceA2 = scopeA.GetInstance<IService>("key");
+
+        var serviceB1 = scopeB.GetInstance<IService>("key");
+        var serviceB2 = scopeB.GetInstance<IService>("key");
+
+        Assert.Same(serviceA1, serviceA2);
+        Assert.Same(serviceB1, serviceB2);
+        Assert.NotSame(serviceA1, serviceB1);
+    }
+
+    [Fact]
+    public void ResolveKeyedTransientFromScopeServiceProvider()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddKeyedTransient<IService, Service>("key");
+        container.Register<IService, Service>("key");
+
+
+        // var provider = CreateServiceProvider(serviceCollection);
+        var scopeA = rootScope.BeginScope();
+        var scopeB = rootScope.BeginScope();
+
+        Assert.Null(scopeA.TryGetInstance<IService>());
+        Assert.Null(scopeB.TryGetInstance<IService>());
+
+        var serviceA1 = scopeA.GetInstance<IService>("key");
+        var serviceA2 = scopeA.GetInstance<IService>("key");
+
+        var serviceB1 = scopeB.GetInstance<IService>("key");
+        var serviceB2 = scopeB.GetInstance<IService>("key");
+
+        Assert.NotSame(serviceA1, serviceA2);
+        Assert.NotSame(serviceB1, serviceB2);
+        Assert.NotSame(serviceA1, serviceB1);
+    }
+
+    // [Fact]
+    // public void ResolveKeyedServiceThrowsIfNotSupported()
+    // {
+    //     var provider = new NonKeyedServiceProvider();
+    //     var serviceKey = new object();
+
+    //     Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService<IService>(serviceKey));
+    //     Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService(typeof(IService), serviceKey));
+    //     Assert.Throws<InvalidOperationException>(() => provider.GetKeyedServices<IService>(serviceKey));
+    //     Assert.Throws<InvalidOperationException>(() => provider.GetKeyedServices(typeof(IService), serviceKey));
+    //     Assert.Throws<InvalidOperationException>(() => provider.GetRequiredKeyedService<IService>(serviceKey));
+    //     Assert.Throws<InvalidOperationException>(() => provider.GetRequiredKeyedService(typeof(IService), serviceKey));
+    // }
 
 
     [Fact]
