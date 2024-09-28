@@ -36,6 +36,14 @@
     http://twitter.com/bernhardrichter
 ******************************************************************************/
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using LightInject;
+
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1126:PrefixCallsCorrectly", Justification = "Reviewed")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1101:PrefixLocalCallsWithThis", Justification = "No inheritance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:FileMayOnlyContainASingleClass", Justification = "Single source file deployment.")]
@@ -108,7 +116,7 @@ namespace LightInject
                 string errorMessage = $"Unable to convert the service name '{serviceName}' to the type '{typeof(TServiceKey).Name}'.";
                 throw new InvalidOperationException(errorMessage);
             }
-            
+
         }
     }
 
@@ -1272,6 +1280,21 @@ namespace LightInject
     /// </summary>
     public static class ServiceRegistryExtensions
     {
+        internal static void RegisterServiceFromLambdaExpression(this IServiceRegistry serviceRegistry, Delegate factory, ILifetime lifetime, Type serviceType, string serviceName, FactoryType factoryType)
+        {
+            var serviceRegistration = new ServiceRegistration
+            {
+                ServiceType = serviceType,
+                FactoryExpression = factory,
+                ServiceName = serviceName,
+                FactoryType = factoryType,
+                Lifetime = lifetime
+            };
+            serviceRegistry.Register(serviceRegistration);
+        }
+
+
+
         /// <summary>
         /// Registers the <paramref name="serviceType"/> using the non-generic <paramref name="factory"/> to resolve the instance.
         /// </summary>
@@ -1321,6 +1344,7 @@ namespace LightInject
                 ServiceType = serviceType,
                 ServiceName = serviceName,
                 Lifetime = lifetime,
+
             };
             return serviceRegistry.Register(serviceRegistration);
         }
@@ -1385,9 +1409,11 @@ namespace LightInject
         /// <param name="factory">The factory used to resolve the instance.</param>
         /// <param name="serviceName">The name the service to register.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
-        public static IServiceRegistry RegisterTransient(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory, object> factory, string serviceName) =>
-            serviceRegistry.Register(serviceType, factory, serviceName);
-
+        public static IServiceRegistry RegisterTransient(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory, object> factory, string serviceName)
+        {
+            RegisterServiceFromLambdaExpression(serviceRegistry, factory, null, serviceType, serviceName, FactoryType.Service);
+            return serviceRegistry;
+        }
         /// <summary>
         /// Registers a singleton service of type <typeparamref name="TService"/> with an implementing type of <typeparamref name="TImplementation"/>.
         /// </summary>
@@ -2910,14 +2936,14 @@ namespace LightInject
         /// <inheritdoc/>
         public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName, ILifetime lifetime)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, lifetime, serviceName);
+            this.RegisterServiceFromLambdaExpression(factory, lifetime, typeof(TService), serviceName, FactoryType.Service);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName, ILifetime lifetime)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, lifetime, serviceName);
+            this.RegisterServiceFromLambdaExpression(factory, lifetime, typeof(TService), serviceName, FactoryType.ServiceWithServiceKey);
             return this;
         }
 
@@ -2939,6 +2965,10 @@ namespace LightInject
         public IServiceRegistry Register(ServiceRegistration serviceRegistration)
         {
             serviceRegistration.ServiceName ??= string.Empty;
+            if (serviceRegistration.Lifetime == null)
+            {
+                serviceRegistration.Lifetime = DefaultLifetime;
+            }
             var services = GetAvailableServices(serviceRegistration.ServiceType);
             var sr = serviceRegistration;
             services.AddOrUpdate(
@@ -3175,21 +3205,21 @@ namespace LightInject
         /// <inheritdoc/>
         public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, ILifetime lifetime)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, lifetime, string.Empty);
+            this.RegisterServiceFromLambdaExpression(factory, lifetime, typeof(TService), string.Empty, FactoryType.Service);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), serviceName, FactoryType.Service);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), serviceName, FactoryType.Service);
             return this;
         }
 
@@ -3255,63 +3285,63 @@ namespace LightInject
         /// <inheritdoc/>
         public IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), string.Empty, FactoryType.Service);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<T, TService>(Func<IServiceFactory, T, TService> factory)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), string.Empty, FactoryType.ServiceWithRuntimeArguments);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<T, TService>(Func<IServiceFactory, T, TService> factory, string serviceName)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), serviceName, FactoryType.ServiceWithRuntimeArguments);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), string.Empty, FactoryType.ServiceWithRuntimeArguments);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<T1, T2, TService>(Func<IServiceFactory, T1, T2, TService> factory, string serviceName)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), serviceName, FactoryType.ServiceWithRuntimeArguments);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), string.Empty, FactoryType.ServiceWithRuntimeArguments);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<T1, T2, T3, TService>(Func<IServiceFactory, T1, T2, T3, TService> factory, string serviceName)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), serviceName, FactoryType.ServiceWithRuntimeArguments);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, string.Empty);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), string.Empty, FactoryType.ServiceWithRuntimeArguments);
             return this;
         }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<T1, T2, T3, T4, TService>(Func<IServiceFactory, T1, T2, T3, T4, TService> factory, string serviceName)
         {
-            RegisterServiceFromLambdaExpression<TService>(factory, null, serviceName);
+            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), serviceName, FactoryType.ServiceWithRuntimeArguments);
             return this;
         }
 
@@ -3332,7 +3362,7 @@ namespace LightInject
         /// <inheritdoc/>
         public IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifeTimeFactory)
         {
-            return RegisterOrdered2(serviceType, implementingTypes, lifeTimeFactory, i => i.ToString().PadLeft(3, '0'));
+            return RegisterOrdered(serviceType, implementingTypes, lifeTimeFactory, i => i.ToString().PadLeft(3, '0'));
         }
 
         /// <inheritdoc/>
@@ -3367,9 +3397,9 @@ namespace LightInject
                 registration.ImplementingType = implementingType;
                 registration.ServiceName = string.Empty;
                 registrations.Add(registration);
-                // Register(serviceType, implementingType, serviceNameFormatter(offset), lifeTimeFactory(implementingType));
+                Register(serviceType, implementingType, serviceNameFormatter(offset), lifeTimeFactory(implementingType));
             }
-            RegisterOrdered(serviceType, registrations.ToArray());
+            // RegisterOrdered(serviceType, registrations.ToArray());
 
             return this;
         }
@@ -4221,7 +4251,7 @@ namespace LightInject
             emitter.PushConstant(factoryDelegateIndex, funcType);
             var parameters = invokeMethod.GetParameters();
 
-            if (parameters.Length == 2 && parameters[1].ParameterType == typeof(string))
+            if (serviceRegistration.FactoryType == FactoryType.ServiceWithServiceKey)
             {
                 var serviceFactoryIndex = constants.Add(this);
                 emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
@@ -4583,6 +4613,7 @@ namespace LightInject
                 ServiceName = serviceName,
                 FactoryExpression = wildcardRegistration.FactoryExpression,
                 ImplementingType = wildcardRegistration.ImplementingType,
+                FactoryType = wildcardRegistration.FactoryType,
                 Lifetime = CloneLifeTime(wildcardRegistration.Lifetime) ?? DefaultLifetime,
                 IsCreatedFromWildcardService = true,
             };
@@ -5354,17 +5385,8 @@ namespace LightInject
             Register(serviceRegistration);
         }
 
-        private void RegisterServiceFromLambdaExpression<TService>(Delegate factory, ILifetime lifetime, string serviceName)
-        {
-            var serviceRegistration = new ServiceRegistration
-            {
-                ServiceType = typeof(TService),
-                FactoryExpression = factory,
-                ServiceName = serviceName,
-                Lifetime = lifetime ?? DefaultLifetime,
-            };
-            Register(serviceRegistration);
-        }
+
+
 
         private struct ClosedGenericCandidate
         {
@@ -6574,6 +6596,13 @@ namespace LightInject
         }
     }
 
+    public enum FactoryType
+    {
+        Service,
+        ServiceWithServiceKey,
+        ServiceWithRuntimeArguments
+    }
+
     /// <summary>
     /// Contains information about a registered service.
     /// </summary>
@@ -6594,11 +6623,19 @@ namespace LightInject
         /// </summary>
         public object Value { get; set; }
 
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the service is created from a wildcard registration.
+        /// </summary>
         internal bool IsCreatedFromWildcardService { get; set; }
 
-
-
+        /// <summary>
+        /// Gets or sets the service registration order.
+        /// </summary>
         public int RegistrationOrder { get; set; }
+
+        public FactoryType FactoryType { get; set; }
+
 
         /// <summary>
         /// Serves as a hash function for a particular type.

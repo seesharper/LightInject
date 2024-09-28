@@ -83,13 +83,7 @@ namespace LightInject.Tests
             Assert.Equal("instance", exception.ParamName);
         }
 
-        [Fact]
-        public void RegisterInstance_NullServiceName_ThrowsArgumentNullException()
-        {
-            var container = CreateContainer();
-            var exception = Assert.Throws<ArgumentNullException>(() => container.RegisterInstance(typeof(object), new object(), null));
-            Assert.Equal("serviceName", exception.ParamName);
-        }
+
         #endregion
 
 

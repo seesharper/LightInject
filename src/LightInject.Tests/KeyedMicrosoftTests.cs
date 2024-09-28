@@ -772,6 +772,17 @@ public class KeyedMicrosoftTests : TestBase
         var foo = rootScope.GetInstance<IFoo>("foo");
     }
 
+    // [Fact]
+    // public void AnotherTest()
+    // {
+    //     var serviceCollection = new ServiceCollection();
+    //     serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, (sp, key) => new Service((string)key));
+
+    //     Func<IServiceProvider, object ,IService> factory = (sp, key) => new ServiceWithIntKey((int)key);
+
+    //     factory(null, 32);
+    // }
+
     internal class ServiceFactoryAccessor
     {
         public ServiceFactoryAccessor(IServiceFactory serviceFactory)
