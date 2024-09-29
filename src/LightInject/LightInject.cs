@@ -7164,6 +7164,7 @@ namespace LightInject
         /// <param name="disposable">The <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/> object to register.</param>
         public void TrackInstance(object disposable)
         {
+            Console.WriteLine(disposable.GetType() + " " + disposable.ToString());
             if (disposable is Scope)
             {
                 return;
@@ -7194,6 +7195,8 @@ namespace LightInject
                     {
                         if (disposedObjects.Add(disposable))
                         {
+                            Console.WriteLine("Disposing " + disposable.GetType() + " " + disposable.ToString());
+
                             disposable.Dispose();
                         }
                     }
