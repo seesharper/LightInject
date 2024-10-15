@@ -22,6 +22,7 @@ public class MicrosoftTests : TestBase
              options.EnableCurrentScope = false;
              options.OptimizeForLargeObjectGraphs = false;
              options.EnableOptionalArguments = false;
+             options.EnableVariance = true;
          })
         {
             AssemblyScanner = new NoOpAssemblyScanner()
@@ -705,6 +706,35 @@ public class MicrosoftTests : TestBase
     }
 
     [Fact]
+    public void ResolvingEnumerableContainingOpenGenericServiceUsesCorrectSlot()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+       
+        // Arrange
+        // TestServiceCollection collection = new();
+        // collection.AddTransient<IFakeOpenGenericService<PocoClass>, FakeService>();
+        // collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+        // collection.AddSingleton<PocoClass>(); // needed for FakeOpenGenericService<>
+        // IServiceProvider provider = CreateServiceProvider(collection);
+
+        container.RegisterTransient<IFakeOpenGenericService<PocoClass>, FakeService>();
+        container.RegisterTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+        container.Register<PocoClass>(new RootScopeLifetime(rootScope));
+
+        // Act
+        IFakeOpenGenericService<PocoClass> service = rootScope.GetInstance<IFakeOpenGenericService<PocoClass>>();
+        IFakeOpenGenericService<PocoClass>[] services = rootScope.GetAllInstances<IFakeOpenGenericService<PocoClass>>().ToArray();
+
+        // Assert
+        Assert.IsType<FakeService>(service);
+        Assert.Equal(2, services.Length);
+        Assert.True(services.Any(s => s.GetType() == typeof(FakeService)));
+        Assert.True(services.Any(s => s.GetType() == typeof(FakeOpenGenericService<PocoClass>)));
+    }
+
+
+    [Fact]
     public void AttemptingToResolveNonexistentServiceReturnsNull()
     {
         // Arrange
@@ -860,7 +890,8 @@ public class MicrosoftTests : TestBase
         Assert.NotNull(enumerable[1]);
         Assert.NotNull(enumerable[2]);
 
-        // NOTE IS this important? Assert.Equal(instance, enumerable[2]);
+        Assert.Equal(instance, enumerable[2]);
+        // NOTE IS this important? 
         // Since we register the open generic service in flight, this comes last. 
         Assert.True(enumerable[0] is FakeService, string.Join(", ", enumerable.Select(e => e.GetType())));
         Assert.IsType<FakeService>(enumerable[0]);

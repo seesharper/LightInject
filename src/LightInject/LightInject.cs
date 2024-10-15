@@ -7,7 +7,6 @@
 #define USE_ASYNCDISPOSABLE    
 #endif
 
-
 /*********************************************************************************
     The MIT License (MIT)
 
@@ -38,6 +37,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -52,7 +52,7 @@ using LightInject;
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("MaintainabilityRules", "SA1403", Justification = "One source file")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("DocumentationRules", "SA1649", Justification = "One source file")]
-
+[assembly: DebuggerDisplay("{LightInject.TypeNameFormatter.GetHumanFriendlyTypeName(this)}", Target = typeof(Type))]
 namespace LightInject
 {
     using System;
@@ -2618,13 +2618,15 @@ namespace LightInject
 
     internal class EmitMethodInfo
     {
-        public EmitMethodInfo(Action<IEmitter> emitMethod, int registrationOrder, bool createdFromWildCardService)
+        public EmitMethodInfo(Type serviceType, Action<IEmitter> emitMethod, int registrationOrder, bool createdFromWildCardService)
         {
+            ServiceType = serviceType;
             EmitMethod = emitMethod;
             RegistrationOrder = registrationOrder;
             CreatedFromWildcardService = createdFromWildCardService;
         }
 
+        public Type ServiceType { get; }
         public Action<IEmitter> EmitMethod { get; private set; }
 
         public int RegistrationOrder { get; private set; }
@@ -2662,7 +2664,7 @@ namespace LightInject
 
         public override string ToString()
         {
-            return ServiceType.Name + " - " + ServiceName;
+            return ServiceType + " - " + ServiceName;
         }
     }
 
@@ -2762,6 +2764,7 @@ namespace LightInject
             o.VarianceFilter = options.VarianceFilter;
             o.EnableOptionalArguments = options.EnableOptionalArguments;
             o.OptimizeForLargeObjectGraphs = options.OptimizeForLargeObjectGraphs;
+            o.AllowMultipleRegistrations = options.AllowMultipleRegistrations;
         })
         {
         }
@@ -2970,6 +2973,8 @@ namespace LightInject
                 serviceRegistration.Lifetime = DefaultLifetime;
             }
             var services = GetAvailableServices(serviceRegistration.ServiceType);
+            registrationOrder++;
+            serviceRegistration.RegistrationOrder = registrationOrder;
             var sr = serviceRegistration;
             services.AddOrUpdate(
                 serviceRegistration.ServiceName,
@@ -2977,9 +2982,7 @@ namespace LightInject
                 (k, existing) => UpdateServiceRegistration(existing, sr));
             var serviceKey = new ServiceKey(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
             var registrationList = allRegistrations.GetOrAdd(serviceKey, t => new List<ServiceRegistration>());
-            registrationOrder++;
             registrationList.Add(serviceRegistration);
-            serviceRegistration.RegistrationOrder = registrationOrder;
             return this;
         }
 
@@ -3417,8 +3420,8 @@ namespace LightInject
             Action<IEmitter> emitAction = (emitter) => EmitEnumerable(emitters.ToArray(), serviceType, emitter);
 
             Type enumerableType = typeof(IEnumerable<>).MakeGenericType(serviceType);
-
-            RegisterEmitMethod(enumerableType, string.Empty, emitAction);
+            registrationOrder++;
+            RegisterEmitMethod(enumerableType, string.Empty, registrationOrder, emitAction);
             return this;
         }
 
@@ -3930,8 +3933,8 @@ namespace LightInject
             if (rule != null)
             {
                 emitMethod = CreateServiceEmitterBasedOnFactoryRule(rule, serviceType, serviceName);
-
-                RegisterEmitMethod(serviceType, serviceName, emitMethod);
+                registrationOrder++;
+                RegisterEmitMethod(serviceType, serviceName, registrationOrder, emitMethod);
             }
 
             return emitMethod;
@@ -4064,15 +4067,15 @@ namespace LightInject
         private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
             var emitMethod = ResolveEmitMethod(serviceRegistration);
-            RegisterEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName, emitMethod, serviceRegistration.IsCreatedFromWildcardService);
+            RegisterEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName, serviceRegistration.RegistrationOrder, emitMethod, serviceRegistration.IsCreatedFromWildcardService);
 
             return serviceRegistration;
         }
 
-        private void RegisterEmitMethod(Type serviceType, string serviceName, Action<IEmitter> emitMethod, bool createdFromWildcardService = false)
+        private void RegisterEmitMethod(Type serviceType, string serviceName, int registrationOrder, Action<IEmitter> emitMethod, bool createdFromWildcardService = false)
         {
-            registrationOrder++;
-            var emitMethodInfo = new EmitMethodInfo(emitMethod, registrationOrder, createdFromWildcardService);
+            // registrationOrder++;
+            var emitMethodInfo = new EmitMethodInfo(serviceType, emitMethod, registrationOrder, createdFromWildcardService);
             allEmitters.GetOrAdd(new ServiceKey(serviceType, serviceName), _ => new List<EmitMethodInfo>()).Add(emitMethodInfo);
 
             GetEmitMethods(serviceType).TryAdd(serviceName, emitMethod);
@@ -4090,7 +4093,7 @@ namespace LightInject
             Action<IEmitter> emitMethod = ResolveEmitMethod(newRegistration);
             var serviceEmitters = GetEmitMethods(newRegistration.ServiceType);
             registrationOrder++;
-            var emitMethodInfo = new EmitMethodInfo(emitMethod, registrationOrder, false);
+            var emitMethodInfo = new EmitMethodInfo(existingRegistration.ServiceType, emitMethod, registrationOrder, false);
             allEmitters.GetOrAdd(new ServiceKey(newRegistration.ServiceType, newRegistration.ServiceName), _ => new List<EmitMethodInfo>()).Add(emitMethodInfo);
             serviceEmitters[newRegistration.ServiceName] = emitMethod;
             return newRegistration;
@@ -4939,7 +4942,7 @@ namespace LightInject
                 }
 
 
-                var constructableOpenGenericServices = openGenericServiceRegistrations.Select(r => new { r.Lifetime, r.ServiceName, closedGenericImplementingType = GenericArgumentMapper.TryMakeGenericType(actualServiceType, r.ImplementingType) })
+                var constructableOpenGenericServices = openGenericServiceRegistrations.Select(r => new { r.RegistrationOrder, r.Lifetime, r.ServiceName, closedGenericImplementingType = GenericArgumentMapper.TryMakeGenericType(actualServiceType, r.ImplementingType) })
                 .Where(t => t.closedGenericImplementingType != null);
 
                 foreach (var constructableOpenGenericService in constructableOpenGenericServices)
@@ -4950,8 +4953,11 @@ namespace LightInject
                         ImplementingType = constructableOpenGenericService.closedGenericImplementingType,
                         ServiceName = constructableOpenGenericService.ServiceName,
                         Lifetime = CloneLifeTime(constructableOpenGenericService.Lifetime) ?? DefaultLifetime,
+                        RegistrationOrder = constructableOpenGenericService.RegistrationOrder,
                     };
-                    Register(serviceRegistration);
+                    //Register(serviceRegistration);
+                    AddServiceRegistration(serviceRegistration);
+
                 }
             }
 
@@ -4973,7 +4979,7 @@ namespace LightInject
                     else
                     {
                         var serviceKeys = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName == serviceName).ToList();
-                        emitMethods = serviceKeys.SelectMany(k => allEmitters[k]).Select(emi => emi.EmitMethod).ToList();
+                        emitMethods = serviceKeys.SelectMany(k => allEmitters[k]).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
 
                 }
@@ -9359,5 +9365,43 @@ but either way the scope has to be started with 'container.BeginScope()'";
 
         private static Type CreateEnumerableType(Type type) =>
             typeof(IEnumerable<>).MakeGenericType(type);
+    }
+
+    public static class TypeNameFormatter
+    {
+        public static string GetHumanFriendlyTypeName(Type type)
+        {
+            StringBuilder humanFriendlyName = new StringBuilder();
+            if (type.IsGenericType && !type.IsGenericTypeDefinition)
+            {
+
+                humanFriendlyName.Append(type.Name.Substring(0, type.Name.IndexOf('`')));
+                humanFriendlyName.Append('<');
+                foreach (Type argument in type.GenericTypeArguments)
+                {
+                    humanFriendlyName.Append(GetHumanFriendlyTypeName(argument));
+                    humanFriendlyName.Append(", ");
+                }
+                humanFriendlyName.Remove(humanFriendlyName.Length - 2, 2);
+                humanFriendlyName.Append('>');
+            }
+            else if (type.IsGenericTypeDefinition)
+            {
+                humanFriendlyName.Append(type.Name.Substring(0, type.Name.IndexOf('`')));
+                humanFriendlyName.Append('<');
+                foreach (Type parameter in type.GetGenericArguments())
+                {
+                    humanFriendlyName.Append(parameter.Name);
+                    humanFriendlyName.Append(", ");
+                }
+                humanFriendlyName.Remove(humanFriendlyName.Length - 2, 2);
+                humanFriendlyName.Append('>');
+            }
+            else
+            {
+                humanFriendlyName.Append(type.Name);
+            }
+            return humanFriendlyName.ToString();
+        }
     }
 }
