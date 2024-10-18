@@ -475,6 +475,23 @@ public class KeyedMicrosoftTests : TestBase
         // Assert.Equal("service2", svc.Service2.ToString());
     }
 
+
+
+    //  [Fact]
+    //     public void ResolveKeyedServiceSingletonFactory()
+    //     {
+    //         var service = new Service();
+    //         var serviceCollection = new ServiceCollection();
+    //         serviceCollection.AddKeyedSingleton<IService>("service1", (sp, key) => service);
+
+    //         var provider = CreateServiceProvider(serviceCollection);
+
+    //         Assert.Null(provider.GetService<IService>());
+    //         Assert.Same(service, provider.GetKeyedService<IService>("service1"));
+    //         Assert.Same(service, provider.GetKeyedService(typeof(IService), "service1"));
+    //     }
+
+
     [Fact]
     public void ResolveKeyedServiceSingletonFactory()
     {
@@ -484,7 +501,7 @@ public class KeyedMicrosoftTests : TestBase
         var service = new Service();
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddKeyedSingleton<IService>("service1", (sp, key) => service);
-        container.Register<IService>((factory) => service, "service1", new PerRootScopeLifetime(rootScope));
+        container.Register<IService>((factory, key) => service, "service1", new PerRootScopeLifetime(rootScope));
 
         //var provider = CreateServiceProvider(serviceCollection);
 
@@ -845,19 +862,22 @@ public class KeyedMicrosoftTests : TestBase
         public IService Service2 { get; }
     }
 
-    internal class NoOpAssemblyScanner : IAssemblyScanner
+
+}
+
+internal class NoOpAssemblyScanner : IAssemblyScanner
+{
+    public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
     {
-        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry, Func<ILifetime> lifetime, Func<Type, Type, bool> shouldRegister, Func<Type, Type, string> serviceNameProvider)
-        {
 
-        }
+    }
 
-        public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)
-        {
+    public void Scan(Assembly assembly, IServiceRegistry serviceRegistry)
+    {
 
-        }
     }
 }
+
 
 /// <summary>
 /// A <see cref="ConstructorDependencySelector"/> that looks for the <see cref="InjectAttribute"/> 

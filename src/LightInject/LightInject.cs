@@ -4993,8 +4993,29 @@ namespace LightInject
             }
             else
             {
-                // TODO Make tests with variance off. 
-                emitMethods = GetEmitMethods(actualServiceType).OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
+                if (options.AllowMultipleRegistrations)
+                {
+                    if (serviceName == "*")
+                    {
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                    }
+                    else
+                   if (serviceName.Length > 0)
+                    {
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && k.ServiceName == serviceName || k.ServiceName == "*").SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                    }
+                    else
+                    {
+                        var serviceKeys = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && k.ServiceName == serviceName).ToList();
+                        emitMethods = serviceKeys.SelectMany(k => allEmitters[k]).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                    }
+                }
+                else
+                {
+                    // TODO Make tests with variance off. 
+                    emitMethods = GetEmitMethods(actualServiceType).OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
+                }
+
             }
 
             if (dependencyStack.Count > 0 && emitMethods.Contains(dependencyStack.Peek()))
