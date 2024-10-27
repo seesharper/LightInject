@@ -4675,7 +4675,7 @@ namespace LightInject
             Type elementType = TypeHelper.GetElementType(serviceType);
             Type closedGenericReadOnlyCollectionType = typeof(ReadOnlyCollection<>).MakeGenericType(elementType);
             ConstructorInfo constructorInfo =
-                closedGenericReadOnlyCollectionType.GetTypeInfo().DeclaredConstructors.Single();
+                closedGenericReadOnlyCollectionType.GetTypeInfo().DeclaredConstructors.Where(c => c.GetParameters().Length == 1).Single();
 
             Action<IEmitter> listEmitMethod = CreateEmitMethodForListServiceRequest(serviceType, serviceName);
 
