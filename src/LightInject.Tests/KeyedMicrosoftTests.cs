@@ -762,6 +762,28 @@ public class KeyedMicrosoftTests : TestBase
         Assert.NotSame(serviceA1, serviceB1);
     }
 
+
+    [Fact]
+    public void ShouldHandleKeyedServiceWithEnumServiceKey()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        container.Register<IKeyedService, KeyedServiceWithEnumServiceKey>(Key.A.ToString(), new PerRootScopeLifetime(rootScope));
+        var instance = rootScope.GetInstance<IKeyedService>(Key.A.ToString());
+        Assert.Equal(Key.A, ((KeyedServiceWithEnumServiceKey)instance).ServiceKey);
+    }
+
+    [Fact]
+    public void ShouldHandleKeyedServiceWithIntServiceKey()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        container.Register<IKeyedService, KeyServiceWithIntServiceKey>("42", new PerRootScopeLifetime(rootScope));
+        var instance = rootScope.GetInstance<IKeyedService>("42");
+        Assert.Equal(42, ((KeyServiceWithIntServiceKey)instance).ServiceKey);
+    }
+
+
     // [Fact]
     // public void ResolveKeyedServiceThrowsIfNotSupported()
     // {
@@ -799,6 +821,38 @@ public class KeyedMicrosoftTests : TestBase
 
     //     factory(null, 32);
     // }
+
+
+    public interface IKeyedService
+    {
+    }
+
+    public enum Key
+    {
+        A,
+        B
+    }
+
+    public class KeyedServiceWithEnumServiceKey : IKeyedService
+    {
+        public KeyedServiceWithEnumServiceKey([ServiceKey] Key serviceKey)
+        {
+            ServiceKey = serviceKey;
+        }
+
+        public Key ServiceKey { get; }
+    }
+
+    public class KeyServiceWithIntServiceKey : IKeyedService
+    {
+        public KeyServiceWithIntServiceKey([ServiceKey] int serviceKey)
+        {
+            ServiceKey = serviceKey;
+        }
+
+        public int ServiceKey { get; }
+    }
+
 
     internal class ServiceFactoryAccessor
     {

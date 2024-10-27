@@ -4,13 +4,13 @@
 #endif
 
 #if NETCOREAPP3_1_OR_GREATER || NET5_0_OR_GREATER
-#define USE_ASYNCDISPOSABLE    
+#define USE_ASYNCDISPOSABLE
 #endif
 
 /*********************************************************************************
     The MIT License (MIT)
 
-    Copyright (c) 2023 bernhard.richter@gmail.com
+    Copyright (c) 2024 bernhard.richter@gmail.com
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 ******************************************************************************
-    LightInject version 6.6.4
+    LightInject version 7.0.0
     http://www.lightinject.net/
     http://twitter.com/bernhardrichter
 ******************************************************************************/
@@ -53,6 +53,7 @@ using LightInject;
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("MaintainabilityRules", "SA1403", Justification = "One source file")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("DocumentationRules", "SA1649", Justification = "One source file")]
 [assembly: DebuggerDisplay("{LightInject.TypeNameFormatter.GetHumanFriendlyTypeName(this)}", Target = typeof(Type))]
+
 namespace LightInject
 {
     using System;
@@ -98,26 +99,18 @@ namespace LightInject
         Warning,
     }
 
+    /// <summary>
+    /// Represents a class that is capable converting the service name to a service key of a given type.
+    /// </summary>
     public interface IServiceKeyConverter
     {
+        /// <summary>
+        /// Converts the <paramref name="serviceName"/> to a service key of type <typeparamref name="TServiceKey"/>.
+        /// </summary>
+        /// <typeparam name="TServiceKey">The type for which to convert the <paramref name="serviceName"/> into.</typeparam>
+        /// <param name="serviceName">The service name to be converted into <typeparamref name="TServiceKey"/>.</param>
+        /// <returns>The serviceName represented as <typeparamref name="TServiceKey"/>.</returns>
         TServiceKey Convert<TServiceKey>(string serviceName);
-    }
-
-    public class ServiceKeyConverter : IServiceKeyConverter
-    {
-        public TServiceKey Convert<TServiceKey>(string serviceName)
-        {
-            try
-            {
-                return (TServiceKey)System.Convert.ChangeType(serviceName, typeof(TServiceKey));
-            }
-            catch (Exception)
-            {
-                string errorMessage = $"Unable to convert the service name '{serviceName}' to the type '{typeof(TServiceKey).Name}'.";
-                throw new InvalidOperationException(errorMessage);
-            }
-
-        }
     }
 
     /// <summary>
@@ -396,7 +389,6 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         IServiceRegistry Register<TService>(Func<IServiceFactory, TService> factory, string serviceName);
 
-
         /// <summary>
         /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
         /// describes the dependencies of the service.
@@ -429,7 +421,6 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName, ILifetime lifetime);
 
-
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
         /// ensures that service instance ordering matches the ordering of the <paramref name="implementingTypes"/>.
@@ -439,8 +430,6 @@ namespace LightInject
         /// <param name="lifetimeFactory">The <see cref="ILifetime"/> factory that controls the lifetime of each entry in <paramref name="implementingTypes"/>.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         IServiceRegistry RegisterOrdered(Type serviceType, Type[] implementingTypes, Func<Type, ILifetime> lifetimeFactory);
-
-
 
         /// <summary>
         /// Registers the <paramref name="serviceType"/> with a set of <paramref name="implementingTypes"/> and
@@ -1107,10 +1096,6 @@ namespace LightInject
         /// <param name="arg">The String to be emitted.</param>
         void Emit(OpCode code, string arg);
 
-        void SetServiceKey(string serviceKey);
-
-        string GetServiceKey();
-
 #if USE_EXPRESSIONS
 
         /// <summary>
@@ -1223,9 +1208,7 @@ namespace LightInject
     /// </summary>
     public static class RuntimeArgumentsLoader
     {
-        public static MethodInfo LoadMethod = typeof(RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("Load");
-        public static MethodInfo LoadServiceNameMethod = typeof(RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("LoadServiceName");
-
+        internal static MethodInfo LoadMethod = typeof(RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("Load");
 
         /// <summary>
         /// Loads the runtime arguments onto the evaluation stack.
@@ -1240,16 +1223,6 @@ namespace LightInject
             }
 
             return arguments;
-        }
-
-        public static string LoadServiceName(object[] constants)
-        {
-            if (constants.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            return constants[constants.Length - 1] as string;
         }
     }
 
@@ -1280,21 +1253,6 @@ namespace LightInject
     /// </summary>
     public static class ServiceRegistryExtensions
     {
-        internal static void RegisterServiceFromLambdaExpression(this IServiceRegistry serviceRegistry, Delegate factory, ILifetime lifetime, Type serviceType, string serviceName, FactoryType factoryType)
-        {
-            var serviceRegistration = new ServiceRegistration
-            {
-                ServiceType = serviceType,
-                FactoryExpression = factory,
-                ServiceName = serviceName,
-                FactoryType = factoryType,
-                Lifetime = lifetime
-            };
-            serviceRegistry.Register(serviceRegistration);
-        }
-
-
-
         /// <summary>
         /// Registers the <paramref name="serviceType"/> using the non-generic <paramref name="factory"/> to resolve the instance.
         /// </summary>
@@ -1712,6 +1670,19 @@ namespace LightInject
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry Initialize<TService>(this IServiceRegistry serviceRegistry, Action<IServiceFactory, TService> processor)
             => serviceRegistry.Initialize(sr => sr.ServiceType == typeof(TService), (factory, instance) => processor(factory, (TService)instance));
+
+        internal static void RegisterServiceFromLambdaExpression(this IServiceRegistry serviceRegistry, Delegate factory, ILifetime lifetime, Type serviceType, string serviceName, FactoryType factoryType)
+        {
+            var serviceRegistration = new ServiceRegistration
+            {
+                ServiceType = serviceType,
+                FactoryExpression = factory,
+                ServiceName = serviceName,
+                FactoryType = factoryType,
+                Lifetime = lifetime,
+            };
+            serviceRegistry.Register(serviceRegistration);
+        }    
     }
 
     /// <summary>
@@ -2587,6 +2558,31 @@ namespace LightInject
 
 
         private static ContainerOptions CreateDefaultContainerOptions() => new ContainerOptions();
+    }
+
+    /// <summary>
+    /// A class that is capable converting the service name to a service key of a given type.
+    /// </summary>
+    public class ServiceKeyConverter : IServiceKeyConverter
+    {
+        /// <inheritdoc/>
+        public TServiceKey Convert<TServiceKey>(string serviceName)
+        {
+            try
+            {
+                if (typeof(TServiceKey).IsEnum)
+                {
+                    return (TServiceKey)Enum.Parse(typeof(TServiceKey), serviceName);
+                }
+
+                return (TServiceKey)System.Convert.ChangeType(serviceName, typeof(TServiceKey));
+            }
+            catch (Exception)
+            {
+                string errorMessage = $"Unable to convert the service name '{serviceName}' to the type '{typeof(TServiceKey).Name}'.";
+                throw new InvalidOperationException(errorMessage);
+            }
+        }
     }
 
     /// <summary>
@@ -5375,7 +5371,11 @@ namespace LightInject
                 var serviceEmitter = GetEmitMethod(serviceType, serviceName);
                 if (serviceEmitter == null && throwError)
                 {
-                    servicesToDelegatesIndex.Remove(new ServiceRegistration() { ServiceType = serviceType, ServiceName = serviceName });
+                    var key = servicesToDelegatesIndex.Keys.FirstOrDefault(k => k.ServiceType == serviceType && k.ServiceName == serviceName);
+                    if (key != null)
+                    {
+                        servicesToDelegatesIndex.Remove(key);
+                    }
                     throw new InvalidOperationException(
                         string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
                 }
@@ -5389,7 +5389,12 @@ namespace LightInject
                     catch (InvalidOperationException ex)
                     {
                         dependencyStack.Clear();
-                        servicesToDelegatesIndex.Remove(new ServiceRegistration() { ServiceType = serviceType, ServiceName = serviceName });
+                        var key = servicesToDelegatesIndex.Keys.FirstOrDefault(k => k.ServiceType == serviceType && k.ServiceName == serviceName);
+                        if (key != null)
+                        {
+                            servicesToDelegatesIndex.Remove(key);
+                        }
+
                         throw new InvalidOperationException(
                             string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName),
                             ex);
@@ -5738,6 +5743,8 @@ namespace LightInject
         {
             concurrentDictionary.TryRemove(key, out var lazy);
         }
+
+        public IEnumerable<TKey> Keys => concurrentDictionary.Keys;
     }
 
 #if USE_EXPRESSIONS
@@ -6661,8 +6668,10 @@ namespace LightInject
         /// </summary>
         public int RegistrationOrder { get; set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="FactoryType"/> that represents the type of factory used to create the service.
+        /// </summary>
         public FactoryType FactoryType { get; set; }
-
 
         /// <summary>
         /// Serves as a hash function for a particular type.
@@ -6690,7 +6699,7 @@ namespace LightInject
             }
 
             // Need to include ImplementingType, FactoryExpression and Lifetime in the comparison
-            var result = ServiceName == other.ServiceName && ServiceType == other.ServiceType;
+            var result = ServiceName == other.ServiceName && ServiceType == other.ServiceType && ImplementingType == other.ImplementingType;
             if (result && Lifetime != null && other.Lifetime != null)
             {
                 result = Lifetime.Equals(other.Lifetime);
@@ -6705,7 +6714,6 @@ namespace LightInject
             {
                 result = FactoryExpression.Equals(other.FactoryExpression);
             }
-
 
             return result;
         }
@@ -7191,7 +7199,6 @@ namespace LightInject
         /// <param name="disposable">The <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/> object to register.</param>
         public void TrackInstance(object disposable)
         {
-            Console.WriteLine(disposable.GetType() + " " + disposable.ToString());
             if (disposable is Scope)
             {
                 return;
@@ -7222,8 +7229,6 @@ namespace LightInject
                     {
                         if (disposedObjects.Add(disposable))
                         {
-                            Console.WriteLine("Disposing " + disposable.GetType() + " " + disposable.ToString());
-
                             disposable.Dispose();
                         }
                     }
