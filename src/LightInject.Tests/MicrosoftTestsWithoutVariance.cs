@@ -7,7 +7,7 @@ public class MicrosoftTestsWithoutVariance : MicrosoftTests
     {
         var container = new ServiceContainer(options =>
          {
-             options.AllowMultipleRegistrations = true;
+             options.EnableMicrosoftCompatibility = true;
              options.EnableCurrentScope = false;
              options.OptimizeForLargeObjectGraphs = false;
              options.EnableOptionalArguments = false;

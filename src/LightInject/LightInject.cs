@@ -100,6 +100,27 @@ namespace LightInject
     }
 
     /// <summary>
+    /// Describes the type of factory used to create a service.
+    /// </summary>
+    public enum FactoryType
+    {
+        /// <summary>
+        /// A regular factory.
+        /// </summary>
+        Service,
+
+        /// <summary>
+        /// A factory that creates a service with a service key.
+        /// </summary>
+        ServiceWithServiceKey,
+
+        /// <summary>
+        /// A factory that creates a service with runtime arguments.
+        /// </summary>
+        ServiceWithRuntimeArguments
+    }
+
+    /// <summary>
     /// Represents a class that is capable converting the service name to a service key of a given type.
     /// </summary>
     public interface IServiceKeyConverter
@@ -1295,17 +1316,7 @@ namespace LightInject
         /// <param name="lifetime">The <see cref="ILifetime"/> used to control the lifetime of the service.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry Register(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory, object> factory, string serviceName, ILifetime lifetime)
-        {
-            var serviceRegistration = new ServiceRegistration
-            {
-                FactoryExpression = factory,
-                ServiceType = serviceType,
-                ServiceName = serviceName,
-                Lifetime = lifetime,
-
-            };
-            return serviceRegistry.Register(serviceRegistration);
-        }
+            => serviceRegistry.RegisterServiceFromLambdaExpression(factory, lifetime, serviceType, serviceName, FactoryType.Service);
 
         /// <summary>
         /// Registers a singleton <paramref name="serviceType"/> using the non-generic <paramref name="factory"/> to resolve the instance.
@@ -1368,10 +1379,8 @@ namespace LightInject
         /// <param name="serviceName">The name the service to register.</param>
         /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
         public static IServiceRegistry RegisterTransient(this IServiceRegistry serviceRegistry, Type serviceType, Func<IServiceFactory, object> factory, string serviceName)
-        {
-            RegisterServiceFromLambdaExpression(serviceRegistry, factory, null, serviceType, serviceName, FactoryType.Service);
-            return serviceRegistry;
-        }
+            => serviceRegistry.RegisterServiceFromLambdaExpression(factory, null, serviceType, serviceName, FactoryType.Service);
+
         /// <summary>
         /// Registers a singleton service of type <typeparamref name="TService"/> with an implementing type of <typeparamref name="TImplementation"/>.
         /// </summary>
@@ -1671,7 +1680,7 @@ namespace LightInject
         public static IServiceRegistry Initialize<TService>(this IServiceRegistry serviceRegistry, Action<IServiceFactory, TService> processor)
             => serviceRegistry.Initialize(sr => sr.ServiceType == typeof(TService), (factory, instance) => processor(factory, (TService)instance));
 
-        internal static void RegisterServiceFromLambdaExpression(this IServiceRegistry serviceRegistry, Delegate factory, ILifetime lifetime, Type serviceType, string serviceName, FactoryType factoryType)
+        internal static IServiceRegistry RegisterServiceFromLambdaExpression(this IServiceRegistry serviceRegistry, Delegate factory, ILifetime lifetime, Type serviceType, string serviceName, FactoryType factoryType)
         {
             var serviceRegistration = new ServiceRegistration
             {
@@ -1682,7 +1691,8 @@ namespace LightInject
                 Lifetime = lifetime,
             };
             serviceRegistry.Register(serviceRegistration);
-        }    
+            return serviceRegistry;
+        }
     }
 
     /// <summary>
@@ -2483,7 +2493,7 @@ namespace LightInject
             EnableCurrentScope = true;
             EnableOptionalArguments = false;
             OptimizeForLargeObjectGraphs = false;
-            AllowMultipleRegistrations = false;
+            EnableMicrosoftCompatibility = false;
         }
 
         /// <summary>
@@ -2554,8 +2564,11 @@ namespace LightInject
         /// </remarks>
         public bool OptimizeForLargeObjectGraphs { get; set; }
 
-        public bool AllowMultipleRegistrations { get; set; }
-
+        /// <summary>
+        /// Gets or sets a value indicating whether to enable Microsoft compatibility.
+        /// This means that LightInject will operate in a way that is compatible with the Microsoft.Extensions.DependencyInjection.
+        /// </summary>
+        public bool EnableMicrosoftCompatibility { get; set; }
 
         private static ContainerOptions CreateDefaultContainerOptions() => new ContainerOptions();
     }
@@ -2610,58 +2623,6 @@ namespace LightInject
         /// Gets the log message for this entry.
         /// </summary>
         public string Message { get; private set; }
-    }
-
-    internal class EmitMethodInfo
-    {
-        public EmitMethodInfo(Type serviceType, Action<IEmitter> emitMethod, int registrationOrder, bool createdFromWildCardService)
-        {
-            ServiceType = serviceType;
-            EmitMethod = emitMethod;
-            RegistrationOrder = registrationOrder;
-            CreatedFromWildcardService = createdFromWildCardService;
-        }
-
-        public Type ServiceType { get; }
-        public Action<IEmitter> EmitMethod { get; private set; }
-
-        public int RegistrationOrder { get; private set; }
-
-        public bool CreatedFromWildcardService { get; private set; }
-    }
-
-    internal class ServiceKey
-    {
-        public ServiceKey(Type serviceType, string serviceName)
-        {
-            ServiceType = serviceType;
-            ServiceName = serviceName;
-        }
-
-        public string ServiceName { get; private set; } = string.Empty;
-
-        public Type ServiceType { get; private set; }
-
-        public override int GetHashCode()
-        {
-            return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();
-        }
-
-        public override bool Equals(object obj)
-        {
-            var other = obj as ServiceKey;
-            if (other == null)
-            {
-                return false;
-            }
-
-            return ServiceType == other.ServiceType && ServiceName == other.ServiceName;
-        }
-
-        public override string ToString()
-        {
-            return ServiceType + " - " + ServiceName;
-        }
     }
 
     /// <summary>
@@ -2760,7 +2721,7 @@ namespace LightInject
             o.VarianceFilter = options.VarianceFilter;
             o.EnableOptionalArguments = options.EnableOptionalArguments;
             o.OptimizeForLargeObjectGraphs = options.OptimizeForLargeObjectGraphs;
-            o.AllowMultipleRegistrations = options.AllowMultipleRegistrations;
+            o.EnableMicrosoftCompatibility = options.EnableMicrosoftCompatibility;
         })
         {
         }
@@ -3381,31 +3342,9 @@ namespace LightInject
             return this;
         }
 
-        public IServiceRegistry RegisterOrdered2(
-            Type serviceType,
-            Type[] implementingTypes,
-            Func<Type, ILifetime> lifeTimeFactory,
-            Func<int, string> serviceNameFormatter)
-        {
-            var offset = GetAvailableServices(serviceType).Count;
-            List<ServiceRegistration> registrations = new List<ServiceRegistration>();
-            foreach (var implementingType in implementingTypes)
-            {
-                var registration = new ServiceRegistration();
-                registration.ServiceType = serviceType;
-                registration.ImplementingType = implementingType;
-                registration.ServiceName = string.Empty;
-                registrations.Add(registration);
-                Register(serviceType, implementingType, serviceNameFormatter(offset), lifeTimeFactory(implementingType));
-            }
-            // RegisterOrdered(serviceType, registrations.ToArray());
-
-            return this;
-        }
-
+        /// <inheritdoc/>
         public IServiceRegistry RegisterOrdered(Type serviceType, ServiceRegistration[] serviceRegistrations)
         {
-
             List<Action<IEmitter>> emitters = new List<Action<IEmitter>>();
             foreach (var registration in serviceRegistrations)
             {
@@ -3968,7 +3907,7 @@ namespace LightInject
 
         private Action<IEmitter> GetRegisteredEmitMethod(Type serviceType, string serviceName)
         {
-            if (options.AllowMultipleRegistrations)
+            if (options.EnableMicrosoftCompatibility)
             {
                 return GetRegisteredEmitMethodWithMicrosoftCompatibility(serviceType, serviceName);
             }
@@ -3994,48 +3933,12 @@ namespace LightInject
                 return emitters.Last().EmitMethod;
             }
 
-
             if (emitters.Count == 0)
             {
                 return CreateEmitMethodForUnknownService(serviceType, serviceName);
             }
 
-
             return null;
-
-            //     if (serviceName != string.Empty)
-            //     {
-            //         emitters = allEmitters.GetOrAdd(new ServiceKey(serviceType, "*"), _ => new List<EmitMethodInfo>());
-            //         if (emitters.Count > 0)
-            //         {
-            //             return emitters.Last().EmitMethod;
-            //         }
-            //     }
-
-            //     if (emitters.Count == 0)
-            //     {
-            //         return CreateEmitMethodForUnknownService(serviceType, serviceName);
-            //     }
-            // }
-            // if (string.IsNullOrWhiteSpace(serviceName))
-            // {
-            //     if (emitters.Count == 1)
-            //     {
-            //         return emitters[0].EmitMethod;
-            //     }
-            //     else if (emitters.Count > 1)
-            //     {
-            //         return emitters.Last().EmitMethod;
-            //     }
-            //     else
-            //     {
-            //         return null;
-            //         // serviceName = string.Empty;
-            //     }
-            // }
-
-
-            // return null;
         }
 
         private Action<IEmitter> GetRegisteredEmitMethodWithoutMicrosoftCompatibility(Type serviceType, string serviceName)
@@ -4263,7 +4166,6 @@ namespace LightInject
                 return;
             }
 
-
             if (parameters.Length == 1 && parameters[0].ParameterType == typeof(ServiceRequest))
             {
                 var createServiceRequestMethod = ServiceRequestHelper.CreateServiceRequestMethod.MakeGenericMethod(serviceRegistration.ServiceType);
@@ -4376,12 +4278,6 @@ namespace LightInject
             emitter.Call(propertyDependency.Property.SetMethod);
         }
 
-        private T ConvertServiceKey<T>(string serviceName)
-        {
-            return (T)System.Convert.ChangeType(serviceName, typeof(T));
-        }
-
-
         private Action<IEmitter> GetEmitMethodForDependency(Dependency dependency)
         {
             if (dependency.IsServiceKey)
@@ -4399,7 +4295,6 @@ namespace LightInject
                     // emitter.Emit(OpCodes.Call, RuntimeArgumentsLoader.LoadServiceNameMethod);
                 };
             }
-
 
             if (dependency.FactoryExpression != null)
             {
@@ -4620,7 +4515,6 @@ namespace LightInject
             Register(serviceRegistration);
             return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
         }
-
 
         private Action<IEmitter> CreateEmitMethodForUnknownService(Type serviceType, string serviceName)
         {
@@ -4851,8 +4745,6 @@ namespace LightInject
             var openGenericServiceRegistrations =
                 GetOpenGenericServiceRegistrations(openGenericServiceType);
 
-            //var test = GetEmitMethod(openGenericServiceType, serviceName);
-
             Dictionary<string, ClosedGenericCandidate> candidates = new Dictionary<string, ClosedGenericCandidate>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var openGenericServiceRegistration in openGenericServiceRegistrations.Values)
@@ -4928,7 +4820,7 @@ namespace LightInject
             {
                 Type openGenericServiceType = actualServiceType.GetGenericTypeDefinition();
                 ICollection<ServiceRegistration> openGenericServiceRegistrations;
-                if (options.AllowMultipleRegistrations)
+                if (options.EnableMicrosoftCompatibility)
                 {
                     openGenericServiceRegistrations = allRegistrations.SelectMany(r => r.Value).Where(r => r.ServiceType == openGenericServiceType).ToList();
                 }
@@ -4936,7 +4828,6 @@ namespace LightInject
                 {
                     openGenericServiceRegistrations = GetOpenGenericServiceRegistrations(openGenericServiceType).Values;
                 }
-
 
                 var constructableOpenGenericServices = openGenericServiceRegistrations.Select(r => new { r.RegistrationOrder, r.Lifetime, r.ServiceName, closedGenericImplementingType = GenericArgumentMapper.TryMakeGenericType(actualServiceType, r.ImplementingType) })
                 .Where(t => t.closedGenericImplementingType != null);
@@ -4951,9 +4842,8 @@ namespace LightInject
                         Lifetime = CloneLifeTime(constructableOpenGenericService.Lifetime) ?? DefaultLifetime,
                         RegistrationOrder = constructableOpenGenericService.RegistrationOrder,
                     };
-                    //Register(serviceRegistration);
-                    AddServiceRegistration(serviceRegistration);
 
+                    AddServiceRegistration(serviceRegistration);
                 }
             }
 
@@ -4961,7 +4851,7 @@ namespace LightInject
 
             if (options.EnableVariance && options.VarianceFilter(serviceType))
             {
-                if (options.AllowMultipleRegistrations)
+                if (options.EnableMicrosoftCompatibility)
                 {
                     if (serviceName == "*")
                     {
@@ -4970,14 +4860,13 @@ namespace LightInject
                     else
                     if (serviceName.Length > 0)
                     {
-                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName == serviceName || k.ServiceName == "*").SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && (k.ServiceName == serviceName || k.ServiceName == "*")).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                     {
                         var serviceKeys = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName == serviceName).ToList();
                         emitMethods = serviceKeys.SelectMany(k => allEmitters[k]).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
-
                 }
                 else
                 {
@@ -4989,7 +4878,7 @@ namespace LightInject
             }
             else
             {
-                if (options.AllowMultipleRegistrations)
+                if (options.EnableMicrosoftCompatibility)
                 {
                     if (serviceName == "*")
                     {
@@ -4998,7 +4887,7 @@ namespace LightInject
                     else
                    if (serviceName.Length > 0)
                     {
-                        emitMethods = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && k.ServiceName == serviceName || k.ServiceName == "*").SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && (k.ServiceName == serviceName || k.ServiceName == "*")).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                     {
@@ -5008,10 +4897,8 @@ namespace LightInject
                 }
                 else
                 {
-                    // TODO Make tests with variance off. 
                     emitMethods = GetEmitMethods(actualServiceType).OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
                 }
-
             }
 
             if (dependencyStack.Count > 0 && emitMethods.Contains(dependencyStack.Peek()))
@@ -5029,15 +4916,16 @@ namespace LightInject
 
         private bool CanRedirectRequestForDefaultServiceToSingleNamedService(Type serviceType, string serviceName)
         {
-            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1 && options.AllowMultipleRegistrations == false;
+            return string.IsNullOrEmpty(serviceName) && GetEmitMethods(serviceType).Count == 1 && options.EnableMicrosoftCompatibility == false;
         }
 
         private bool CanUseWildcardRegistration(Type serviceType, string serviceName)
         {
-            if (string.IsNullOrWhiteSpace(serviceName) || !options.AllowMultipleRegistrations || serviceType.IsEnumerableOfT())
+            if (string.IsNullOrWhiteSpace(serviceName) || !options.EnableMicrosoftCompatibility || serviceType.IsEnumerableOfT())
             {
                 return false;
             }
+
             return allEmitters.Keys.Any(k => k.ServiceType == serviceType && k.ServiceName == "*");
         }
 
@@ -5148,7 +5036,6 @@ namespace LightInject
                 emitter.Emit(OpCodes.Call, closedGenericTrackInstanceMethod);
             }
 
-
             var processors = initializers.Items.Where(i => i.Predicate(serviceRegistration)).ToArray();
             if (processors.Length == 0)
             {
@@ -5176,7 +5063,6 @@ namespace LightInject
 
             emitter.Push(instanceVariable);
 
-
             bool IsNotServiceFactory(Type serviceType)
             {
                 return !typeof(IServiceFactory).GetTypeInfo().IsAssignableFrom(serviceType.GetTypeInfo());
@@ -5194,7 +5080,6 @@ namespace LightInject
             return servicesToDelegatesIndex.GetOrAdd(serviceRegistration, _ => CreateInstanceDelegateIndex(emitMethod));
         }
 
-
         private void EmitLifetime(ServiceRegistration serviceRegistration, Action<IEmitter> emitMethod, IEmitter emitter)
         {
             if (serviceRegistration.Lifetime == null)
@@ -5207,8 +5092,6 @@ namespace LightInject
                 emitter.Emit(OpCodes.Callvirt, invokeMethod);
                 return;
             }
-
-
 
             if (serviceRegistration.Lifetime is PerScopeLifetime)
             {
@@ -5376,6 +5259,7 @@ namespace LightInject
                     {
                         servicesToDelegatesIndex.Remove(key);
                     }
+
                     throw new InvalidOperationException(
                         string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
                 }
@@ -5416,9 +5300,6 @@ namespace LightInject
             };
             Register(serviceRegistration);
         }
-
-
-
 
         private struct ClosedGenericCandidate
         {
@@ -5708,6 +5589,11 @@ namespace LightInject
         }
 
         /// <summary>
+        /// Gets the keys in the dictionary.
+        /// </summary>
+        public IEnumerable<TKey> Keys => concurrentDictionary.Keys;
+
+        /// <summary>
         /// Adds a key/value pair to the <see cref="LazyConcurrentDictionary{TKey, TValue}"/>
         /// by using the specified function if the key does not already exist, or returns
         /// the existing value if the key exists.
@@ -5722,7 +5608,7 @@ namespace LightInject
         }
 
         /// <summary>
-        /// Determines if the dictionary contains an uninitialized value with the given <paramref name="key"/>. 
+        /// Determines if the dictionary contains an uninitialized value with the given <paramref name="key"/>.
         /// </summary>
         /// <param name="key">The key for which to check for an uninitialized value.</param>
         /// <returns>true if the dictionary contains an uninitialized value at the given <paramref name="key"/>.</returns>
@@ -5732,19 +5618,18 @@ namespace LightInject
             {
                 return !value.IsValueCreated;
             }
+
             return false;
         }
 
         /// <summary>
-        /// Removes an entry with the given <paramref name="key"/> if it exists it the dictionary. 
+        /// Removes an entry with the given <paramref name="key"/> if it exists it the dictionary.
         /// </summary>
         /// <param name="key">The key for which to remove an entry.</param>
         public void Remove(TKey key)
         {
             concurrentDictionary.TryRemove(key, out var lazy);
         }
-
-        public IEnumerable<TKey> Keys => concurrentDictionary.Keys;
     }
 
 #if USE_EXPRESSIONS
@@ -6357,7 +6242,7 @@ namespace LightInject
         {
             var test = parameterInfo.GetCustomAttributes().Any(a => a.GetType().Name == "ServiceKeyAttribute");
             var result = canGetInstance(parameterInfo.ParameterType, string.Empty) || canGetInstance(parameterInfo.ParameterType, GetServiceName(parameterInfo)) || (parameterInfo.HasDefaultValue && enableOptionalArguments) || parameterInfo.GetCustomAttributes().Any(a => a.GetType().Name == "ServiceKeyAttribute");
-            return result; ;
+            return result;
         }
     }
 
@@ -6475,6 +6360,7 @@ namespace LightInject
             {
                 constructorDependency.ConstructionInfo = constructionInfo;
             }
+
             foreach (var propertyDependency in constructionInfo.PropertyDependencies)
             {
                 propertyDependency.ConstructionInfo = constructionInfo;
@@ -6630,13 +6516,6 @@ namespace LightInject
         }
     }
 
-    public enum FactoryType
-    {
-        Service,
-        ServiceWithServiceKey,
-        ServiceWithRuntimeArguments
-    }
-
     /// <summary>
     /// Contains information about a registered service.
     /// </summary>
@@ -6656,13 +6535,7 @@ namespace LightInject
         /// Gets or sets the value that represents the instance of the service.
         /// </summary>
         public object Value { get; set; }
-
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the service is created from a wildcard registration.
-        /// </summary>
-        internal bool IsCreatedFromWildcardService { get; set; }
-
+        
         /// <summary>
         /// Gets or sets the service registration order.
         /// </summary>
@@ -6672,6 +6545,11 @@ namespace LightInject
         /// Gets or sets the <see cref="FactoryType"/> that represents the type of factory used to create the service.
         /// </summary>
         public FactoryType FactoryType { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the service is created from a wildcard registration.
+        /// </summary>
+        internal bool IsCreatedFromWildcardService { get; set; }
 
         /// <summary>
         /// Serves as a hash function for a particular type.
@@ -6704,12 +6582,13 @@ namespace LightInject
             {
                 result = Lifetime.Equals(other.Lifetime);
             }
+
             if (result && ImplementingType != null && other.ImplementingType != null)
             {
                 result = ImplementingType == other.ImplementingType;
             }
 
-            // Cannot compare delegates like this. 
+            // Cannot compare delegates like this.
             if (result && FactoryExpression != null && other.FactoryExpression != null)
             {
                 result = FactoryExpression.Equals(other.FactoryExpression);
@@ -9428,6 +9307,59 @@ but either way the scope has to be started with 'container.BeginScope()'";
                 humanFriendlyName.Append(type.Name);
             }
             return humanFriendlyName.ToString();
+        }
+    }
+
+     internal class EmitMethodInfo
+    {
+        public EmitMethodInfo(Type serviceType, Action<IEmitter> emitMethod, int registrationOrder, bool createdFromWildCardService)
+        {
+            ServiceType = serviceType;
+            EmitMethod = emitMethod;
+            RegistrationOrder = registrationOrder;
+            CreatedFromWildcardService = createdFromWildCardService;
+        }
+
+        public Type ServiceType { get; }
+
+        public Action<IEmitter> EmitMethod { get; private set; }
+
+        public int RegistrationOrder { get; private set; }
+
+        public bool CreatedFromWildcardService { get; private set; }
+    }
+
+    internal class ServiceKey
+    {
+        public ServiceKey(Type serviceType, string serviceName)
+        {
+            ServiceType = serviceType;
+            ServiceName = serviceName;
+        }
+
+        public string ServiceName { get; private set; } = string.Empty;
+
+        public Type ServiceType { get; private set; }
+
+        public override int GetHashCode()
+        {
+            return ServiceType.GetHashCode() ^ ServiceName.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as ServiceKey;
+            if (other == null)
+            {
+                return false;
+            }
+
+            return ServiceType == other.ServiceType && ServiceName == other.ServiceName;
+        }
+
+        public override string ToString()
+        {
+            return ServiceType + " - " + ServiceName;
         }
     }
 }

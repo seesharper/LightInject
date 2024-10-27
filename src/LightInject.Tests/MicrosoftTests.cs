@@ -18,7 +18,7 @@ public class MicrosoftTests : TestBase
     {
         var container = new ServiceContainer(options =>
          {
-             options.AllowMultipleRegistrations = true;
+             options.EnableMicrosoftCompatibility = true;
              options.EnableCurrentScope = false;
              options.OptimizeForLargeObjectGraphs = false;
              options.EnableOptionalArguments = false;
@@ -710,7 +710,7 @@ public class MicrosoftTests : TestBase
     {
         var container = CreateContainer();
         var rootScope = container.BeginScope();
-       
+
         // Arrange
         // TestServiceCollection collection = new();
         // collection.AddTransient<IFakeOpenGenericService<PocoClass>, FakeService>();
@@ -766,7 +766,7 @@ public class MicrosoftTests : TestBase
     {
         get
         {
-            var containerOptions = new ContainerOptions { EnableCurrentScope = false, AllowMultipleRegistrations = true };
+            var containerOptions = new ContainerOptions { EnableCurrentScope = false, EnableMicrosoftCompatibility = true };
 
             var fakeService = new FakeService();
             var multipleService = new FakeService();

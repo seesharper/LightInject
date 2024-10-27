@@ -6,7 +6,7 @@ public class KeyedMicrosoftTestsWithoutVariance : KeyedMicrosoftTests
     {
         var container = new ServiceContainer(options =>
          {
-             options.AllowMultipleRegistrations = true;
+             options.EnableMicrosoftCompatibility = true;
              options.EnableCurrentScope = false;
              options.OptimizeForLargeObjectGraphs = false;
              options.EnableOptionalArguments = true;

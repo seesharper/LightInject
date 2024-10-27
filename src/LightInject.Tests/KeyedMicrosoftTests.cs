@@ -16,7 +16,7 @@ public class KeyedMicrosoftTests : TestBase
     {
         var container = new ServiceContainer(options =>
         {
-            options.AllowMultipleRegistrations = true;
+            options.EnableMicrosoftCompatibility = true;
             options.EnableCurrentScope = false;
             options.OptimizeForLargeObjectGraphs = false;
             options.EnableOptionalArguments = true;
