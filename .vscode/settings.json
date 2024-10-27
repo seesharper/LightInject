@@ -5,7 +5,9 @@
   "cSpell.words": [
     "Callvirt",
     "Castclass",
+    "Cloneable",
     "Conv",
+    "decoratee",
     "Initobj",
     "Ldarg",
     "Ldelem",
@@ -15,6 +17,7 @@
     "Ldnull",
     "Ldstr",
     "MSIL",
+    "NETCOREAPP",
     "Newarr",
     "Newobj",
     "Stelem",

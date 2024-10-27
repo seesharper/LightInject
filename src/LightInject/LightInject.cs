@@ -52,7 +52,6 @@ using LightInject;
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("MaintainabilityRules", "SA1403", Justification = "One source file")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("DocumentationRules", "SA1649", Justification = "One source file")]
-[assembly: DebuggerDisplay("{LightInject.TypeNameFormatter.GetHumanFriendlyTypeName(this)}", Target = typeof(Type))]
 
 namespace LightInject
 {
@@ -117,7 +116,7 @@ namespace LightInject
         /// <summary>
         /// A factory that creates a service with runtime arguments.
         /// </summary>
-        ServiceWithRuntimeArguments
+        ServiceWithRuntimeArguments,
     }
 
     /// <summary>
@@ -951,7 +950,7 @@ namespace LightInject
     }
 
     /// <summary>
-    /// Represents a class that maps the generic arguments/parameters from a generic servicetype
+    /// Represents a class that maps the generic arguments/parameters from a generic service type
     /// to a open generic implementing type.
     /// </summary>
     public interface IGenericArgumentMapper
@@ -2670,6 +2669,7 @@ namespace LightInject
 
         private bool isLocked;
         private Type defaultLifetimeType;
+        private int registrationOrder = 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContainer"/> class.
@@ -2918,9 +2918,6 @@ namespace LightInject
             return this;
         }
 
-        private int registrationOrder = 0;
-
-
         /// <inheritdoc/>
         public IServiceRegistry Register(ServiceRegistration serviceRegistration)
         {
@@ -2929,6 +2926,7 @@ namespace LightInject
             {
                 serviceRegistration.Lifetime = DefaultLifetime;
             }
+
             var services = GetAvailableServices(serviceRegistration.ServiceType);
             registrationOrder++;
             serviceRegistration.RegistrationOrder = registrationOrder;
@@ -3360,7 +3358,6 @@ namespace LightInject
             return this;
         }
 
-
         /// <inheritdoc/>
         public void Compile(Func<ServiceRegistration, bool> predicate)
         {
@@ -3527,6 +3524,7 @@ namespace LightInject
                 disposableObjects.Add(perContainerDisposable);
                 perContainerDisposable.Dispose();
             }
+
             foreach (var disposed in disposedObjects)
             {
                 disposableObjects.Remove(disposed);
@@ -3962,7 +3960,6 @@ namespace LightInject
             return emitMethod ?? CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
-
         private ServiceRegistration AddServiceRegistration(ServiceRegistration serviceRegistration)
         {
             var emitMethod = ResolveEmitMethod(serviceRegistration);
@@ -3984,7 +3981,7 @@ namespace LightInject
         {
             if (isLocked)
             {
-                var message = $"Cannot overwrite existing serviceregistration {existingRegistration} after the first call to GetInstance.";
+                var message = $"Cannot overwrite existing service registration {existingRegistration} after the first call to GetInstance.";
                 log.Warning(message);
                 return existingRegistration;
             }
@@ -4290,9 +4287,6 @@ namespace LightInject
                     emitter.PushConstant(serviceKeyConverterIndex, typeof(IServiceKeyConverter));
                     emitter.Emit(OpCodes.Ldstr, dependency.ConstructionInfo.ServiceName);
                     emitter.Emit(OpCodes.Callvirt, closedGenericConvertServiceKeyMethod);
-
-                    // emitter.Emit(OpCodes.Ldarg_0);
-                    // emitter.Emit(OpCodes.Call, RuntimeArgumentsLoader.LoadServiceNameMethod);
                 };
             }
 
@@ -5100,7 +5094,7 @@ namespace LightInject
 
                 emitter.Emit(OpCodes.Call, ScopeLoader.ValidateScopeMethod.MakeGenericMethod(serviceRegistration.ServiceType.UnderlyingSystemType));
 
-                // Push the getinstance delegate
+                // Push the getInstance delegate
                 emitter.PushConstant(instanceDelegateIndex, typeof(GetInstanceDelegate));
 
                 emitter.PushArgument(0);
@@ -6535,7 +6529,7 @@ namespace LightInject
         /// Gets or sets the value that represents the instance of the service.
         /// </summary>
         public object Value { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the service registration order.
         /// </summary>
@@ -6711,6 +6705,9 @@ namespace LightInject
         /// </summary>
         public Delegate FactoryDelegate { get; set; }
 
+        /// <summary>
+        /// Gets or sets the service name the service that this <see cref="ConstructionInfo"/> represents.
+        /// </summary>
         public string ServiceName { get; set; }
     }
 
@@ -6745,12 +6742,14 @@ namespace LightInject
         public bool IsRequired { get; set; }
 
         /// <summary>
-        /// Gets or sets a bool value that indicates if this parameter represents the service key/name.
+        /// Gets or sets a value indicating whether this parameter represents the service key/name.
         /// </summary>
         public bool IsServiceKey { get; set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="ConstructionInfo"/> that represents the construction information.
+        /// </summary>
         public ConstructionInfo ConstructionInfo { get; set; }
-
 
         /// <summary>
         /// Returns textual information about the dependency.
@@ -7082,6 +7081,7 @@ namespace LightInject
             {
                 return;
             }
+
             lock (lockObject)
             {
                 if (disposableObjects == null)
@@ -7120,6 +7120,7 @@ namespace LightInject
 
             EndScope();
         }
+
 #if USE_ASYNCDISPOSABLE
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
@@ -7181,6 +7182,7 @@ namespace LightInject
                     {
                         continue;
                     }
+
                     if (objectToDispose is IAsyncDisposable asyncDisposable)
                     {
                         await asyncDisposable.DisposeAsync().ConfigureAwait(false);
@@ -7193,15 +7195,8 @@ namespace LightInject
             }
         }
 #endif
-        private void EndScope()
-        {
-            scopeManager?.EndScope(this);
-            var completedHandler = Completed;
-            completedHandler?.Invoke(this, new EventArgs());
-            IsDisposed = true;
-        }
 
-        /// <inheritdoc/>            
+        /// <inheritdoc/>
         public Scope BeginScope() => serviceFactory.BeginScope();
 
         /// <inheritdoc/>
@@ -7250,9 +7245,9 @@ namespace LightInject
                 if (createdInstance == null)
                 {
                     createdInstance = getInstanceDelegate(arguments, this);
-#if USE_ASYNCDISPOSABLE                    
+#if USE_ASYNCDISPOSABLE
                     if (createdInstance is IDisposable || createdInstance is IAsyncDisposable)
-#else                    
+#else
                     if (createdInstance is IDisposable)
 #endif
                     {
@@ -7264,6 +7259,14 @@ namespace LightInject
 
                 return createdInstance;
             }
+        }
+
+        private void EndScope()
+        {
+            scopeManager?.EndScope(this);
+            var completedHandler = Completed;
+            completedHandler?.Invoke(this, new EventArgs());
+            IsDisposed = true;
         }
 
         private class ReferenceEqualityComparer<T> : IEqualityComparer<T>
@@ -7551,7 +7554,7 @@ namespace LightInject
     }
 
     /// <summary>
-    /// A class that maps the generic arguments/parameters from a generic servicetype
+    /// A class that maps the generic arguments/parameters from a generic service type
     /// to a open generic implementing type.
     /// </summary>
     public class GenericArgumentMapper : IGenericArgumentMapper
@@ -7565,9 +7568,6 @@ namespace LightInject
         /// <returns>A <see cref="GenericMappingResult"/>.</returns>
         public GenericMappingResult Map(Type genericServiceType, Type openGenericImplementingType)
         {
-            // string[] genericParameterNames = GetGenericArgumentsOrParameters(genericServiceType).Select(t => t.Name).ToArray();
-
-
             string[] genericParameterNames =
                 openGenericImplementingType.GetTypeInfo().GenericTypeParameters.Select(t => t.Name).ToArray();
 
@@ -8452,8 +8452,6 @@ namespace LightInject
 
         private readonly List<Instruction> instructions = new List<Instruction>();
 
-        private string serviceKey;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Emitter"/> class.
         /// </summary>
@@ -8463,16 +8461,6 @@ namespace LightInject
         {
             this.generator = generator;
             this.parameterTypes = parameterTypes;
-        }
-
-        public void SetServiceKey(string serviceKey)
-        {
-            this.serviceKey = serviceKey;
-        }
-
-        public string GetServiceKey()
-        {
-            return serviceKey;
         }
 
         /// <inheritdoc/>
@@ -9272,45 +9260,7 @@ but either way the scope has to be started with 'container.BeginScope()'";
             typeof(IEnumerable<>).MakeGenericType(type);
     }
 
-    public static class TypeNameFormatter
-    {
-        public static string GetHumanFriendlyTypeName(Type type)
-        {
-            StringBuilder humanFriendlyName = new StringBuilder();
-            if (type.IsGenericType && !type.IsGenericTypeDefinition)
-            {
-
-                humanFriendlyName.Append(type.Name.Substring(0, type.Name.IndexOf('`')));
-                humanFriendlyName.Append('<');
-                foreach (Type argument in type.GenericTypeArguments)
-                {
-                    humanFriendlyName.Append(GetHumanFriendlyTypeName(argument));
-                    humanFriendlyName.Append(", ");
-                }
-                humanFriendlyName.Remove(humanFriendlyName.Length - 2, 2);
-                humanFriendlyName.Append('>');
-            }
-            else if (type.IsGenericTypeDefinition)
-            {
-                humanFriendlyName.Append(type.Name.Substring(0, type.Name.IndexOf('`')));
-                humanFriendlyName.Append('<');
-                foreach (Type parameter in type.GetGenericArguments())
-                {
-                    humanFriendlyName.Append(parameter.Name);
-                    humanFriendlyName.Append(", ");
-                }
-                humanFriendlyName.Remove(humanFriendlyName.Length - 2, 2);
-                humanFriendlyName.Append('>');
-            }
-            else
-            {
-                humanFriendlyName.Append(type.Name);
-            }
-            return humanFriendlyName.ToString();
-        }
-    }
-
-     internal class EmitMethodInfo
+    internal class EmitMethodInfo
     {
         public EmitMethodInfo(Type serviceType, Action<IEmitter> emitMethod, int registrationOrder, bool createdFromWildCardService)
         {
