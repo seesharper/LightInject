@@ -614,7 +614,7 @@ public class MicrosoftTests : TestBase
         Assert.Equal(2, allServices.Count);
         Assert.Same(poco, allServices[0].Value);
         Assert.Same(poco, allServices[1].Value);
-        Assert.Equal(1, constrainedServices.Count);
+        Assert.Single(constrainedServices);
         Assert.Same(singletonService, constrainedServices[0].Value);
     }
 
@@ -630,7 +630,7 @@ public class MicrosoftTests : TestBase
         // Act
         var constrainedServices = rootScope.GetAllInstances<IFakeOpenGenericService<IFakeSingletonService>>().ToList();
         // Assert
-        Assert.Equal(0, constrainedServices.Count);
+        Assert.Empty(constrainedServices);
     }
 
     [Fact]
@@ -655,7 +655,7 @@ public class MicrosoftTests : TestBase
         Assert.Equal(2, allServices.Count);
         Assert.Same(enumerableVal, allServices[0].Value);
         Assert.Same(enumerableVal, allServices[1].Value);
-        Assert.Equal(1, constrainedServices.Count);
+        Assert.Single(constrainedServices);        
         Assert.Same(singletonService, constrainedServices[0].Value);
     }
 
@@ -684,7 +684,7 @@ public class MicrosoftTests : TestBase
         Assert.Equal(2, allServices.Count);
         Assert.Same(classInheritingClassInheritingAbstractClass, allServices[0].Value);
         Assert.Same(classInheritingClassInheritingAbstractClass, allServices[1].Value);
-        Assert.Equal(1, constrainedServices.Count);
+        Assert.Single(constrainedServices);
         Assert.Same(poco, constrainedServices[0].Value);
     }
 
@@ -729,8 +729,8 @@ public class MicrosoftTests : TestBase
         // Assert
         Assert.IsType<FakeService>(service);
         Assert.Equal(2, services.Length);
-        Assert.True(services.Any(s => s.GetType() == typeof(FakeService)));
-        Assert.True(services.Any(s => s.GetType() == typeof(FakeOpenGenericService<PocoClass>)));
+        Assert.Contains(services, s => s.GetType() == typeof(FakeService));                
+        Assert.Contains(services, s => s.GetType() == typeof(FakeOpenGenericService<PocoClass>));
     }
 
 

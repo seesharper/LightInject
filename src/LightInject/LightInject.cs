@@ -3341,24 +3341,6 @@ namespace LightInject
         }
 
         /// <inheritdoc/>
-        public IServiceRegistry RegisterOrdered(Type serviceType, ServiceRegistration[] serviceRegistrations)
-        {
-            List<Action<IEmitter>> emitters = new List<Action<IEmitter>>();
-            foreach (var registration in serviceRegistrations)
-            {
-                var emitMethod = ResolveEmitMethod(registration);
-                emitters.Add(emitMethod);
-            }
-
-            Action<IEmitter> emitAction = (emitter) => EmitEnumerable(emitters.ToArray(), serviceType, emitter);
-
-            Type enumerableType = typeof(IEnumerable<>).MakeGenericType(serviceType);
-            registrationOrder++;
-            RegisterEmitMethod(enumerableType, string.Empty, registrationOrder, emitAction);
-            return this;
-        }
-
-        /// <inheritdoc/>
         public void Compile(Func<ServiceRegistration, bool> predicate)
         {
             var rootServices = AvailableServices.Where(predicate).ToArray();
@@ -7074,7 +7056,7 @@ namespace LightInject
         /// <summary>
         /// Registers the <paramref name="disposable"/> so that it is disposed when the scope is completed.
         /// </summary>
-        /// <param name="disposable">The <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/> object to register.</param>
+        /// <param name="disposable">The <see cref="IDisposable"/> to register.</param>
         public void TrackInstance(object disposable)
         {
             if (disposable is Scope)

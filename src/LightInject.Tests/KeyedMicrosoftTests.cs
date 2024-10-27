@@ -898,7 +898,7 @@ public class KeyedMicrosoftTests : TestBase
 
         public Service([ServiceKey] string id) => _id = id;
 
-        public override string? ToString() => _id;
+        public override string ToString() => _id;
     }
 
     internal class OtherService
