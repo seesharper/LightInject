@@ -3685,7 +3685,7 @@ namespace LightInject
 
         private static void PushRuntimeArguments(IEmitter emitter)
         {
-            MethodInfo loadMethod = typeof(RuntimeArgumentsLoader).GetTypeInfo().GetDeclaredMethod("Load");
+            MethodInfo loadMethod = RuntimeArgumentsLoader.LoadMethod;
             emitter.Emit(OpCodes.Ldarg_0);
             emitter.Emit(OpCodes.Call, loadMethod);
         }

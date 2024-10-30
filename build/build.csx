@@ -11,7 +11,7 @@ using static ReleaseManagement;
 [StepDescription("Runs the tests with test coverage")]
 Step testcoverage = () =>
 {
-    DotNet.TestWithCodeCoverage(Path.GetDirectoryName(BuildContext.TestProjects[0]), BuildContext.TestCoverageArtifactsFolder, BuildContext.CodeCoverageThreshold, "net7.0");
+    DotNet.TestWithCodeCoverage(Path.GetDirectoryName(BuildContext.TestProjects[0]), BuildContext.TestCoverageArtifactsFolder, BuildContext.CodeCoverageThreshold, "net8.0");
 };
 
 [StepDescription("Runs all the tests for all target frameworks")]
@@ -45,8 +45,8 @@ public static void Test()
 [StepDescription("Creates the NuGet packages")]
 Step pack = () =>
 {
-    // test();
-    // testcoverage();
+    test();
+    testcoverage();
     DotNet.Pack();
     NuGetUtils.CreateSourcePackage(BuildContext.RepositoryFolder, BuildContext.ProjectName, BuildContext.NuGetArtifactsFolder);
 };

@@ -3,7 +3,7 @@ namespace LightInject.Tests
     using System;
     using System.Reflection;
     using System.Reflection.Emit;
-
+    using LightInject.SampleLibrary;
     using Xunit;
 
 
@@ -677,6 +677,14 @@ namespace LightInject.Tests
             var instruction = new Instruction<int>(OpCodes.Ldarg, 1, null);
 
             Assert.Equal("ldarg 1", instruction.ToString(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void EmitMethodInfoShouldHaveServiceType()
+        {
+            var emitMethodInfo = new EmitMethodInfo(typeof(IFoo), (e) => { }, 0, false);
+            Assert.Equal(typeof(IFoo), emitMethodInfo.ServiceType);
+
         }
 
 #if !USE_EXPRESSIONS
