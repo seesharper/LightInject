@@ -138,7 +138,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_ValueTypeAsSingeton_ReturnsValue()
+        public void GetInstance_ValueTypeAsSingleton_ReturnsValue()
         {
             var container = CreateContainer();
             container.Register<int>(factory => 42, new PerContainerLifetime());
@@ -690,14 +690,7 @@ namespace LightInject.Tests
             var instance2 = factory();
             Assert.NotSame(instance1, instance2);
         }
-
-        //[Fact]
-        //public void GetInstance_Func_FailesWhenUnderlyingServiceIsMissing()
-        //{
-        //    var container = CreateContainer(new ContainerOptions(){EnableStrictDeferredResolution = true});
-        //    Assert.Throws<InvalidOperationException>(() => container.GetInstance<Func<IFoo>>());
-        //}
-
+        
         #endregion
         #region Func Factory
 
@@ -774,7 +767,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_Funcfactory_ReturnsInstanceWithDependencies()
+        public void GetInstance_FuncFactory_ReturnsInstanceWithDependencies()
         {
             var container = CreateContainer();
             container.Register<IBar>(c => new Bar());
@@ -784,7 +777,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_FuncFactoryWithReferenceTypeDepenedency_ReturnsInstanceWithDependencies()
+        public void GetInstance_FuncFactoryWithReferenceTypeDependency_ReturnsInstanceWithDependencies()
         {
             var container = CreateContainer();
             container.Register<IFoo>(c => new FooWithReferenceTypeDependency("SomeStringValue"));
@@ -793,7 +786,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_FuncFactoryWithValueTypeDepenedency_ReturnsInstanceWithDependencies()
+        public void GetInstance_FuncFactoryWithValueTypeDependency_ReturnsInstanceWithDependencies()
         {
             var container = CreateContainer();
             container.Register<IFoo>(c => new FooWithValueTypeDependency(42));
@@ -802,7 +795,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_FuncFactoryWithEnumDepenedency_ReturnsInstanceWithDependencies()
+        public void GetInstance_FuncFactoryWithEnumDependency_ReturnsInstanceWithDependencies()
         {
             var container = CreateContainer();
             container.Register<IFoo>(c => new FooWithEnumDependency(Encoding.UTF8));
@@ -1013,7 +1006,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_KnownOpenGenercEnumerable_ReturnsKnownEnumerable()
+        public void GetInstance_KnownOpenGenericEnumerable_ReturnsKnownEnumerable()
         {
             var container = CreateContainer();
             container.Register(typeof(IEnumerable<>), typeof(FooList<>));
@@ -1081,7 +1074,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_UsingFallBack_ProvidesServiceReuest()
+        public void GetInstance_UsingFallBack_ProvidesServiceRequest()
         {
             var container = CreateContainer();
             ServiceRequest serviceRequest = null;

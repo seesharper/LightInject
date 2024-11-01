@@ -3,6 +3,8 @@
   "coverage-gutters.xmlname": "./CoverageResult/coverage.opencover.xml",
   "omnisharp.path": "latest",
   "cSpell.words": [
+    "APIKEY",
+    "BUILDENVIRONMENT",
     "Callvirt",
     "Castclass",
     "Cloneable",

@@ -414,16 +414,6 @@ namespace LightInject
         /// describes the dependencies of the service.
         /// </summary>
         /// <typeparam name="TService">The service type to register.</typeparam>
-        /// <param name="factory">The lambdaExpression that describes the dependencies of the service. The requested service name is passed in as a parameter.</param>
-        /// <param name="serviceName">The name of the service.</param>
-        /// <returns>The <see cref="IServiceRegistry"/>, for chaining calls.</returns>
-        IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName);
-
-        /// <summary>
-        /// Registers the <typeparamref name="TService"/> with the <paramref name="factory"/> that
-        /// describes the dependencies of the service.
-        /// </summary>
-        /// <typeparam name="TService">The service type to register.</typeparam>
         /// <param name="factory">The lambdaExpression that describes the dependencies of the service.</param>
         /// <param name="serviceName">The name of the service.</param>
         /// <param name="lifetime">The <see cref="ILifetime"/> instance that controls the lifetime of the registered service.</param>
@@ -3174,12 +3164,12 @@ namespace LightInject
             return this;
         }
 
-        /// <inheritdoc/>
-        public IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName)
-        {
-            this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), serviceName, FactoryType.Service);
-            return this;
-        }
+        // /// <inheritdoc/>
+        // public IServiceRegistry Register<TService>(Func<IServiceFactory, string, TService> factory, string serviceName)
+        // {
+        //     this.RegisterServiceFromLambdaExpression(factory, null, typeof(TService), serviceName, FactoryType.Service);
+        //     return this;
+        // }
 
         /// <inheritdoc/>
         public IServiceRegistry Register<TService>()
@@ -3503,7 +3493,7 @@ namespace LightInject
             var perContainerDisposables = disposableObjects.AsEnumerable().Reverse();
             foreach (var perContainerDisposable in perContainerDisposables)
             {
-                disposableObjects.Add(perContainerDisposable);
+                disposedObjects.Add(perContainerDisposable);
                 perContainerDisposable.Dispose();
             }
 
@@ -3913,12 +3903,7 @@ namespace LightInject
                 return emitters.Last().EmitMethod;
             }
 
-            if (emitters.Count == 0)
-            {
-                return CreateEmitMethodForUnknownService(serviceType, serviceName);
-            }
-
-            return null;
+            return CreateEmitMethodForUnknownService(serviceType, serviceName);
         }
 
         private Action<IEmitter> GetRegisteredEmitMethodWithoutMicrosoftCompatibility(Type serviceType, string serviceName)
@@ -4476,7 +4461,12 @@ namespace LightInject
         private Action<IEmitter> CreateEmitMethodBasedOnWildcardService(Type serviceType, string serviceName)
         {
             var wildcardServices = allRegistrations.TryGetValue(new ServiceKey(serviceType, "*"), out var registrations) ? registrations : new List<ServiceRegistration>();
-            var wildcardRegistration = registrations.Last();
+            if (wildcardServices.Count == 0)
+            {
+                return null;
+            }
+
+            var wildcardRegistration = wildcardServices.Last();
             var serviceRegistration = new ServiceRegistration
             {
                 ServiceType = serviceType,
@@ -5230,12 +5220,6 @@ namespace LightInject
                 var serviceEmitter = GetEmitMethod(serviceType, serviceName);
                 if (serviceEmitter == null && throwError)
                 {
-                    var key = servicesToDelegatesIndex.Keys.FirstOrDefault(k => k.ServiceType == serviceType && k.ServiceName == serviceName);
-                    if (key != null)
-                    {
-                        servicesToDelegatesIndex.Remove(key);
-                    }
-
                     throw new InvalidOperationException(
                         string.Format("Unable to resolve type: {0}, service name: {1}", serviceType, serviceName));
                 }
@@ -9281,17 +9265,12 @@ but either way the scope has to be started with 'container.BeginScope()'";
         public override bool Equals(object obj)
         {
             var other = obj as ServiceKey;
-            if (other == null)
-            {
-                return false;
-            }
-
             return ServiceType == other.ServiceType && ServiceName == other.ServiceName;
         }
 
         public override string ToString()
         {
-            return ServiceType + " - " + ServiceName;
+            return $"{ServiceType} - {ServiceName}";
         }
     }
 }

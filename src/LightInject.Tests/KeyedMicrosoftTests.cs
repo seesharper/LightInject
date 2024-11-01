@@ -783,6 +783,16 @@ public class KeyedMicrosoftTests : TestBase
         Assert.Equal(42, ((KeyServiceWithIntServiceKey)instance).ServiceKey);
     }
 
+    [Fact]
+    public void ShouldHandleRequestingServiceAsAnyKeyWithoutAnyRegistrations()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        var instance = rootScope.TryGetInstance<IKeyedService>(KeyedService.AnyKey.ToString());
+        Assert.Null(instance);
+    }
+
+
 
     // [Fact]
     // public void ResolveKeyedServiceThrowsIfNotSupported()

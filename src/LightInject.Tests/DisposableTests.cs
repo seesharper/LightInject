@@ -37,7 +37,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void Dispose_Singeltons_DisposesInReverseOrderOfCreation()
+        public void Dispose_Singletons_DisposesInReverseOrderOfCreation()
         {
             var container = CreateContainer();
             container.Register<FakeDisposeCallback>(new PerContainerLifetime());
@@ -61,7 +61,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void Dispose_SingeltonWithFactory_DisposesInReverseOrderOfCreation()
+        public void Dispose_SingletonWithFactory_DisposesInReverseOrderOfCreation()
         {
             var container = CreateContainer();
             container.Register<FakeDisposeCallback>(new PerContainerLifetime());

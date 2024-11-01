@@ -103,7 +103,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void Push_Eigth_EmitsMostEffectiveInstruction()
+        public void Push_Eighth_EmitsMostEffectiveInstruction()
         {
             var emitter = CreateEmitter();
 
@@ -652,7 +652,7 @@ namespace LightInject.Tests
         {
             var emitter = new Emitter(null, new Type[] { });
 
-            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Call, "somestring"));
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Call, "SomeString"));
         }
 
         [Fact]
