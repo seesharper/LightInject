@@ -762,7 +762,7 @@ public class MicrosoftTests : TestBase
         Assert.Empty(services);
     }
 
-    public static TheoryData ServiceContainerPicksConstructorWithLongestMatchesData
+    public static TheoryData<IServiceRegistry,TypeWithSupersetConstructors> ServiceContainerPicksConstructorWithLongestMatchesData
     {
         get
         {

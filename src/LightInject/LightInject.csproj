@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;netstandard2.0;netcoreapp3.1;net462</TargetFrameworks>
-    <Version>6.6.4</Version>
+    <TargetFrameworks>net8.0;netstandard2.0;net462</TargetFrameworks>
+    <Version>7.0.0</Version>
     <Authors>Bernhard Richter</Authors>
     <PackageProjectUrl>https://www.lightinject.net</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
@@ -45,7 +45,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
