@@ -350,7 +350,7 @@ namespace LightInject.Tests
 
 
         [Fact]
-        public void GetInstance_SingletonInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        public void GetInstance_SingletonInjectedIntoTwoDifferentClasses_DoesNotReapplyDecorators()
         {
             BarDecorator.Instances = 0;
             var container = CreateContainer();
@@ -366,7 +366,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetAllInstances_SingletonInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        public void GetAllInstances_SingletonInjectedIntoTwoDifferentClasses_DoesNotReapplyDecorators()
         {
             BarDecorator.Instances = 0;
             var container = CreateContainer();
@@ -381,7 +381,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_PerScopeInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        public void GetInstance_PerScopeInjectedIntoTwoDifferentClasses_DoesNotReapplyDecorators()
         {
             BarDecorator.Instances = 0;
             var container = CreateContainer();
@@ -399,7 +399,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetAllInstances_PerScopeInjectecIntoTwoDifferentClasses_DoesNotReapplyDecorators()
+        public void GetAllInstances_PerScopeInjectedIntoTwoDifferentClasses_DoesNotReapplyDecorators()
         {
             BarDecorator.Instances = 0;
             var container = CreateContainer();
@@ -492,7 +492,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_ClassWithConstructorArgumentsAndLazyDecorator_CanCrTCreeateTarget()
+        public void GetInstance_ClassWithConstructorArgumentsAndLazyDecorator_CanCreateTarget()
         {
             var container = CreateContainer();
             container.Register<int, IFoo>((factory, i) => new FooWithValueTypeDependency(i));
@@ -599,7 +599,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void GetInstance_ServicaeAsFactoryAndDecoratorImplementingDisposableRegisteredAsSingleton_DisposesDecorator()
+        public void GetInstance_ServiceAsFactoryAndDecoratorImplementingDisposableRegisteredAsSingleton_DisposesDecorator()
         {
             var container = CreateContainer();
             container.Register<IFoo>(sf => new DisposableFoo(), new PerContainerLifetime());

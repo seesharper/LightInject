@@ -3,7 +3,7 @@ namespace LightInject.Tests
     using System;
     using System.Reflection;
     using System.Reflection.Emit;
-
+    using LightInject.SampleLibrary;
     using Xunit;
 
 
@@ -103,7 +103,7 @@ namespace LightInject.Tests
         }
 
         [Fact]
-        public void Push_Eigth_EmitsMostEffectiveInstruction()
+        public void Push_Eighth_EmitsMostEffectiveInstruction()
         {
             var emitter = CreateEmitter();
 
@@ -652,7 +652,7 @@ namespace LightInject.Tests
         {
             var emitter = new Emitter(null, new Type[] { });
 
-            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Call, "somestring"));
+            Assert.Throws<NotSupportedException>(() => emitter.Emit(OpCodes.Call, "SomeString"));
         }
 
         [Fact]
@@ -677,6 +677,14 @@ namespace LightInject.Tests
             var instruction = new Instruction<int>(OpCodes.Ldarg, 1, null);
 
             Assert.Equal("ldarg 1", instruction.ToString(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void EmitMethodInfoShouldHaveServiceType()
+        {
+            var emitMethodInfo = new EmitMethodInfo(typeof(IFoo), (e) => { }, 0, false);
+            Assert.Equal(typeof(IFoo), emitMethodInfo.ServiceType);
+
         }
 
 #if !USE_EXPRESSIONS

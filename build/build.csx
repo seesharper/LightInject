@@ -11,14 +11,13 @@ using static ReleaseManagement;
 [StepDescription("Runs the tests with test coverage")]
 Step testcoverage = () =>
 {
-    DotNet.TestWithCodeCoverage(Path.GetDirectoryName(BuildContext.TestProjects[0]), BuildContext.TestCoverageArtifactsFolder, BuildContext.CodeCoverageThreshold, "net7.0");
+    DotNet.TestWithCodeCoverage(Path.GetDirectoryName(BuildContext.TestProjects[0]), BuildContext.TestCoverageArtifactsFolder, BuildContext.CodeCoverageThreshold, "net8.0");
 };
 
 [StepDescription("Runs all the tests for all target frameworks")]
 Step test = () =>
 {
     Test();
-    // DotNet.Test();
 };
 
 public static void Test()

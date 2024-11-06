@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Diagnostics.Contracts;
+using System.Linq;
 using LightInject.SampleLibrary;
 using Xunit;
 
@@ -38,7 +39,7 @@ namespace LightInject.Tests
         public void ShouldOrderServicesWhenRegisteredAsOrdered()
         {
             var container = CreateContainer();
-            container.RegisterOrdered(typeof(IFoo), new[] {typeof(Foo1), typeof(Foo2), typeof(Foo3)},
+            container.RegisterOrdered(typeof(IFoo), new[] { typeof(Foo1), typeof(Foo2), typeof(Foo3) },
                 type => new PerContainerLifetime());
 
             var instances = container.GetAllInstances<IFoo>().ToArray();
@@ -47,6 +48,19 @@ namespace LightInject.Tests
             Assert.IsType<Foo2>(instances[1]);
             Assert.IsType<Foo3>(instances[2]);
         }
+
+        [Fact]
+        public void ShouldResolveLastService()
+        {
+            var container = CreateContainer();
+            var foo1 = new Foo();
+            var foo2 = new Foo();
+            container.RegisterInstance(foo1);
+            container.RegisterInstance(foo2);
+
+            var test = container.AvailableServices;
+        }
+
 
         [Fact]
         public void ShouldOrderOpenGenericServicesWhenRegisteredAsOrdered()
@@ -58,7 +72,7 @@ namespace LightInject.Tests
             var instances = container.GetAllInstances<IFoo<int>>().ToArray();
             Assert.IsType<Foo1<int>>(instances[0]);
             Assert.IsType<Foo2<int>>(instances[1]);
-            Assert.IsType<Foo3<int>>(instances[2]);            
+            Assert.IsType<Foo3<int>>(instances[2]);
         }
 
         [Fact]
@@ -66,7 +80,7 @@ namespace LightInject.Tests
         {
             var container = CreateContainer();
             container.RegisterOrdered(typeof(IFoo<>), new[] { typeof(Foo1<>), typeof(Foo2<>), typeof(Foo3<>) },
-                type => new PerContainerLifetime(), i => $"A{i.ToString().PadLeft(3,'0')}");
+                type => new PerContainerLifetime(), i => $"A{i.ToString().PadLeft(3, '0')}");
 
             var services = container.AvailableServices.Where(sr => sr.ServiceType == typeof(IFoo<>))
                 .OrderBy(sr => sr.ServiceName).ToArray();
@@ -89,5 +103,5 @@ namespace LightInject.Tests
     }
 
 
-  
+
 }

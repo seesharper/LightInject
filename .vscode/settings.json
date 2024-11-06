@@ -3,9 +3,13 @@
   "coverage-gutters.xmlname": "./CoverageResult/coverage.opencover.xml",
   "omnisharp.path": "latest",
   "cSpell.words": [
+    "APIKEY",
+    "BUILDENVIRONMENT",
     "Callvirt",
     "Castclass",
+    "Cloneable",
     "Conv",
+    "decoratee",
     "Initobj",
     "Ldarg",
     "Ldelem",
@@ -15,10 +19,12 @@
     "Ldnull",
     "Ldstr",
     "MSIL",
+    "NETCOREAPP",
     "Newarr",
     "Newobj",
     "Stelem",
     "Stloc",
+    "Unkeyed",
     "Xunit"
   ],
   "dotnet-test-explorer.testArguments": "-c release -f netcoreapp2.0"

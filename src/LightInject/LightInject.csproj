@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0;netstandard2.0;netcoreapp3.1;net462</TargetFrameworks>
+    <TargetFrameworks>net8.0;netstandard2.0;netcoreapp3.1;net462</TargetFrameworks>
     <Version>6.6.4</Version>
     <Authors>Bernhard Richter</Authors>
     <PackageProjectUrl>https://www.lightinject.net</PackageProjectUrl>
@@ -34,17 +34,17 @@
     </When>
   </Choose>
   <Choose>
-    <When Condition=" '$(TargetFramework)'=='net6.0' Or '$(TestTargetFramework)'=='net6.0'">
+    <When Condition=" '$(TargetFramework)'=='net8.0' Or '$(TestTargetFramework)'=='net8.0'">
       <PropertyGroup>
         <DefineConstants>USE_ASYNCDISPOSABLE</DefineConstants>
       </PropertyGroup>
     </When>
   </Choose>
   <ItemGroup>
-    <!-- <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference> -->
+    </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

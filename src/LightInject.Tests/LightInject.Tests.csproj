@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <NoWarn>$(NoWarn);CS0579</NoWarn>
-    <TestTargetFrameworks>net6.0;netstandard2.0</TestTargetFrameworks>
-    <TestTargetFramework>net6.0</TestTargetFramework>
+    <TestTargetFrameworks>net8.0;netstandard2.0</TestTargetFrameworks>
+    <TestTargetFramework>net8.0</TestTargetFramework>
   </PropertyGroup>
   <Choose>
     <When Condition=" '$(TestTargetFramework)'=='netstandard2.0' ">
@@ -13,7 +13,7 @@
       </PropertyGroup>
     </When>
   </Choose>
-  <PropertyGroup Condition=" '$(TestTargetFramework)'=='net6.0' ">
+  <PropertyGroup Condition=" '$(TestTargetFramework)'=='net8.0' ">
     <DefineConstants>USE_ASSEMBLY_VERIFICATION;USE_ASYNCDISPOSABLE</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TestTargetFramework)' == 'net46' OR '$(TestTargetFramework)' == 'netstandard2.0'">
@@ -32,6 +32,7 @@
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xUnit.Analyzers" Version="1.1.0" />
     <PackageReference Include="ILVerifier" Version="0.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Specification.Tests" Version="8.0.0-rc.1.23419.4" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

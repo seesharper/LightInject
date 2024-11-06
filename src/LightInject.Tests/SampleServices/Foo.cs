@@ -8,6 +8,7 @@ namespace LightInject.SampleLibrary
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Extensions.DependencyInjection;
 
     public interface IFooWithProperty
     {
@@ -143,7 +144,7 @@ namespace LightInject.SampleLibrary
 
     public class FooWithDependency : IFoo
     {
-        public FooWithDependency(IBar bar)
+        public FooWithDependency([FromKeyedServices("AnotherBar")] IBar bar)
         {
             Bar = bar;
         }
