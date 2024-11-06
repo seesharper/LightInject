@@ -1,4 +1,4 @@
-#load "nuget:Dotnet.Build, 0.16.1"
+#load "nuget:Dotnet.Build, 0.23.0"
 #load "nuget:github-changelog, 0.1.5"
 #load "nuget:dotnet-steps, 0.0.2"
 
