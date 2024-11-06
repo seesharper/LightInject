@@ -2,16 +2,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.5" />
-    <PackageReference Include="DryIoc" Version="5.4.0" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageReference Include="DryIoc" Version="5.4.3" />
     <PackageReference Include="Grace" Version="7.2.1" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-    <PackageReference Include="SimpleInjector" Version="5.4.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="SimpleInjector" Version="5.5.0" />
     <PackageReference Include="ImTools" Version="4.0.0" />
   </ItemGroup>
   <ItemGroup>
