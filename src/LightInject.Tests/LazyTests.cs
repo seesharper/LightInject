@@ -56,6 +56,43 @@ namespace LightInject.Tests
         }
 
         [Fact]
+        public void GetInstance_LazyForUnknownNamedService_ThrowsInvalidOperationException()
+        {
+            var container = CreateContainer();
+
+            container.Register<IFoo, Foo>();
+
+            var anotherLazyFoo = container.GetInstance<Lazy<IFoo>>("AnotherFoo");
+
+            Assert.Throws<InvalidOperationException>(() => anotherLazyFoo.Value);
+        }
+
+        [Fact]
+        public void GetInstance_LazyForUnknownNamedServiceWithFallback_ReturnsLazyThatResolvesNamedService()
+        {
+            var container = CreateContainer();
+
+            container.RegisterFallback((serviceType, serviceName) => serviceType == typeof(IFoo) && serviceName == "AnotherFoo", request => new Foo());
+
+            var anotherLazyFoo = container.GetInstance<Lazy<IFoo>>("AnotherFoo");
+
+            Assert.IsType<Foo>(anotherLazyFoo.Value);
+        }
+
+        [Fact]
+        public void GetInstance_LazyForKnownNamedService_ReturnsLazyThatResolvesNamedService()
+        {
+            var container = CreateContainer();
+
+            container.Register<IFoo, Foo>();
+            container.Register<IFoo, AnotherFoo>("AnotherFoo");
+
+            var anotherLazyFoo = container.GetInstance<Lazy<IFoo>>("AnotherFoo");
+
+            Assert.IsType<AnotherFoo>(anotherLazyFoo.Value);
+        }
+
+        [Fact]
         public void GetInstance_NamedService_ReturnsLazyThatResolvesNamedService()
         {
             var container = CreateContainer();

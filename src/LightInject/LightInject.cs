@@ -4488,7 +4488,7 @@ namespace LightInject
             }
             else if (serviceType.IsLazy())
             {
-                emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType);
+                emitter = CreateEmitMethodBasedOnLazyServiceRequest(serviceType, serviceName);
             }
             else if (serviceType.IsFuncWithParameters())
             {
@@ -4667,27 +4667,55 @@ namespace LightInject
             };
         }
 
-        private Action<IEmitter> CreateEmitMethodBasedOnLazyServiceRequest(Type serviceType)
+        private Action<IEmitter> CreateEmitMethodBasedOnLazyServiceRequest(Type serviceType, string serviceName)
         {
             var returnType = serviceType.GetTypeInfo().GenericTypeArguments.Last();
-            var createScopedLazyMethod = LazyHelper.CreateScopedLazyMethod.MakeGenericMethod(returnType);
-            return e =>
+
+            if (string.IsNullOrWhiteSpace(serviceName))
             {
-                e.PushConstant(constants.Add(this), typeof(ServiceContainer));
+                var createScopedLazyMethod = LazyHelper.CreateScopedLazyMethod.MakeGenericMethod(returnType);
+                return e =>
+                {
+                    e.PushConstant(constants.Add(this), typeof(ServiceContainer));
 
-                int scopeManagerIndex = CreateScopeManagerIndex();
+                    int scopeManagerIndex = CreateScopeManagerIndex();
 
-                // Push the scope into the stack
-                e.PushArgument(1);
+                    // Push the scope into the stack
+                    e.PushArgument(1);
 
-                // Push the scope manager into the stack.
-                e.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+                    // Push the scope manager into the stack.
+                    e.PushConstant(scopeManagerIndex, typeof(IScopeManager));
 
-                // Get the scope
-                e.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+                    // Get the scope
+                    e.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
 
-                e.Emit(OpCodes.Call, createScopedLazyMethod);
-            };
+                    e.Emit(OpCodes.Call, createScopedLazyMethod);
+                };
+            }
+            else
+            {
+                var createNamedScopedLazyMethod = LazyHelper.CreateNamedScopedLazyMethod.MakeGenericMethod(returnType);
+                return e =>
+                {
+                    e.PushConstant(constants.Add(this), typeof(ServiceContainer));
+
+                    int scopeManagerIndex = CreateScopeManagerIndex();
+
+                    // Push the scope into the stack
+                    e.PushArgument(1);
+
+                    // Push the scope manager into the stack.
+                    e.PushConstant(scopeManagerIndex, typeof(IScopeManager));
+
+                    // Get the scope
+                    e.Emit(OpCodes.Call, ScopeLoader.GetThisOrCurrentScopeMethod);
+
+                    // Push serviceName
+                    e.Emit(OpCodes.Ldstr, serviceName);
+
+                    e.Emit(OpCodes.Call, createNamedScopedLazyMethod);
+                };
+            }
         }
 
         private ThreadSafeDictionary<string, ServiceRegistration> GetOpenGenericServiceRegistrations(Type openGenericServiceType)
@@ -8959,16 +8987,22 @@ but either way the scope has to be started with 'container.BeginScope()'";
     {
         public static readonly MethodInfo CreateScopedLazyMethod;
 
+        public static readonly MethodInfo CreateNamedScopedLazyMethod;
+
         public static readonly MethodInfo CreateScopedLazyFromDelegateMethod;
 
         static LazyHelper()
         {
             CreateScopedLazyMethod = typeof(LazyHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedLazy");
+            CreateNamedScopedLazyMethod = typeof(LazyHelper).GetTypeInfo().GetDeclaredMethod("CreateNamedScopedLazy");
             CreateScopedLazyFromDelegateMethod = typeof(LazyHelper).GetTypeInfo().GetDeclaredMethod("CreateScopedLazyFromDelegate");
         }
 
         public static Lazy<T> CreateScopedLazy<T>(ServiceContainer serviceContainer, Scope scope)
             => new Lazy<T>(() => (T)serviceContainer.GetInstance(typeof(T), scope));
+
+        public static Lazy<T> CreateNamedScopedLazy<T>(ServiceContainer serviceContainer, Scope scope, string serviceName)
+            => new Lazy<T>(() => (T)serviceContainer.GetInstance(typeof(T), scope, serviceName));
 
         public static Lazy<T> CreateScopedLazyFromDelegate<T>(GetInstanceDelegate getInstanceDelegate, object[] constants, Scope scope)
             => new Lazy<T>(() => (T)getInstanceDelegate(constants, scope));
