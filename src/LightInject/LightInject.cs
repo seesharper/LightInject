@@ -5476,6 +5476,147 @@ namespace LightInject
     }
 
     /// <summary>
+    /// A scope manager that is none-static and pass the scope through 'state'
+    /// </summary>
+    internal class NonStaticServiceScopeRootManager : IScopeManager
+    {
+        public NonStaticServiceScopeRootManager(IServiceFactory serviceFactory)
+        {
+            ServiceFactory = serviceFactory;
+        }
+
+        public IServiceFactory ServiceFactory { get; }
+
+        [ThreadStatic]
+        private static Scope _scope;
+        public Scope CurrentScope { get => _scope; set => _scope = value; }
+
+
+        public Scope BeginScope()
+        {
+            var childScopeManager = new NonStaticServiceScopeManager(this, ServiceFactory);
+            var childScope = new Scope(childScopeManager, CurrentScope);
+            childScopeManager.CurrentScope = childScope;
+            return childScope;
+        }
+
+        public void EndScope(Scope scope)
+        {
+        }
+
+    }
+
+    /// <summary>
+    /// A scope manager that is none-static and pass the scope through 'state'
+    /// </summary>
+    internal class NonStaticServiceFactoryWrapper : IServiceFactory
+    {
+        private readonly IServiceFactory _serviceFactoryImplementation;
+        private readonly IScopeManager _scopeManager;
+
+        public NonStaticServiceFactoryWrapper(IServiceFactory serviceFactoryImplementation, IScopeManager scopeManager)
+        {
+            _serviceFactoryImplementation = serviceFactoryImplementation;
+            _scopeManager = scopeManager;
+        }
+
+        public Scope BeginScope()
+        {
+            return _scopeManager.BeginScope();
+        }
+
+        public object GetInstance(Type serviceType)
+        {
+            return _serviceFactoryImplementation.GetInstance(serviceType);
+        }
+
+        public object GetInstance(Type serviceType, object[] arguments)
+        {
+            return _serviceFactoryImplementation.GetInstance(serviceType, arguments);
+        }
+
+        public object GetInstance(Type serviceType, string serviceName, object[] arguments)
+        {
+            return _serviceFactoryImplementation.GetInstance(serviceType, serviceName, arguments);
+        }
+
+        public object GetInstance(Type serviceType, string serviceName)
+        {
+            return _serviceFactoryImplementation.GetInstance(serviceType, serviceName);
+        }
+
+        public object TryGetInstance(Type serviceType)
+        {
+            return _serviceFactoryImplementation.TryGetInstance(serviceType);
+        }
+
+        public object TryGetInstance(Type serviceType, string serviceName)
+        {
+            return _serviceFactoryImplementation.TryGetInstance(serviceType, serviceName);
+        }
+
+        public IEnumerable<object> GetAllInstances(Type serviceType)
+        {
+            return _serviceFactoryImplementation.GetAllInstances(serviceType);
+        }
+
+        public object Create(Type serviceType)
+        {
+            return _serviceFactoryImplementation.Create(serviceType);
+        }
+    }
+
+    /// <summary>
+    /// A scope manager that is none-static and pass the scope through 'state'
+    /// </summary>
+    internal class NonStaticServiceScopeManager : IScopeManager
+    {
+        private readonly NonStaticServiceScopeRootManager _root;
+        public NonStaticServiceScopeManager(NonStaticServiceScopeRootManager root, IServiceFactory serviceFactory)
+        {
+            _root = root;
+            ServiceFactory = new NonStaticServiceFactoryWrapper(root.ServiceFactory, this);
+        }
+
+        public IServiceFactory ServiceFactory { get; }
+
+        private Scope _currentScope;
+        public virtual Scope CurrentScope
+        {
+            get => _root.CurrentScope;
+            set => _root.CurrentScope = value;
+        }
+
+        public virtual Scope BeginScope()
+        {
+            var childScopeManager = new NonStaticServiceScopeManager(_root, ServiceFactory);
+            var childScope = new Scope(childScopeManager, _currentScope);
+            childScopeManager._currentScope = childScope;
+            _currentScope.ChildScope = childScope;
+            return childScope;
+        }
+
+        public void EndScope(Scope scope)
+        {
+            if (ReferenceEquals(_currentScope, scope))
+                scope.ParentScope.ChildScope = null;
+        }
+
+    }
+
+    /// <summary>
+    /// A scope manager that is none-static and pass the scope through 'state'
+    /// </summary>
+    public class NonStaticServiceScopeManagerProvider : IScopeManagerProvider
+    {
+        public IScopeManager GetScopeManager(IServiceFactory serviceFactory)
+        {
+            var ret = new NonStaticServiceScopeRootManager(serviceFactory);
+            return ret;
+        }
+    }
+
+    /// <summary>
     /// A <see cref="IScopeManagerProvider"/> that provides a <see cref="PerThreadScopeManager"/> per thread.
     /// </summary>
     public class PerThreadScopeManagerProvider : ScopeManagerProvider
