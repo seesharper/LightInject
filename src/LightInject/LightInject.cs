@@ -3480,17 +3480,20 @@ namespace LightInject
                 disposableLifetimeInstance.Dispose();
             }
 
-            List<IDisposable> disposedObjects = new List<IDisposable>();
-            var perContainerDisposables = disposableObjects.AsEnumerable().Reverse();
-            foreach (var perContainerDisposable in perContainerDisposables)
+            IDisposable[] snapshot;
+            lock (lockObject)
             {
-                disposedObjects.Add(perContainerDisposable);
-                perContainerDisposable.Dispose();
+                snapshot = disposableObjects.ToArray();
+                disposableObjects.Clear();
             }
 
-            foreach (var disposed in disposedObjects)
+            var seen = new HashSet<IDisposable>(DisposableObjectComparer.Default);
+            foreach (var disposable in snapshot.Reverse())
             {
-                disposableObjects.Remove(disposed);
+                if (seen.Add(disposable))
+                {
+                    disposable.Dispose();
+                }
             }
         }
 
@@ -3527,7 +3530,10 @@ namespace LightInject
         {
             if (instance is IDisposable disposable)
             {
-                container.disposableObjects.Add(disposable);
+                lock (container.lockObject)
+                {
+                    container.disposableObjects.Add(disposable);
+                }
             }
 
             return instance;
@@ -5437,6 +5443,15 @@ namespace LightInject
                     }
                 }
             }
+        }
+
+        private class DisposableObjectComparer : IEqualityComparer<IDisposable>
+        {
+            public static readonly DisposableObjectComparer Default = new DisposableObjectComparer();
+
+            public bool Equals(IDisposable x, IDisposable y) => ReferenceEquals(x, y);
+
+            public int GetHashCode(IDisposable obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
         }
     }
 
