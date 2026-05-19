@@ -184,6 +184,24 @@ namespace LightInject.Tests
         //}
 
         [Fact]
+        public void Dispose_SharedInstanceRegisteredUnderMultipleNames_IsDisposedOnce()
+        {
+            var container = CreateContainer();
+            var disposeCount = 0;
+            var shared = new ActionDisposable(() => disposeCount++);
+
+            container.Register<IFoo>(_ => shared, "first", new PerContainerLifetime());
+            container.Register<IFoo>(_ => shared, "second", new PerContainerLifetime());
+
+            container.GetInstance<IFoo>("first");
+            container.GetInstance<IFoo>("second");
+
+            container.Dispose();
+
+            Assert.Equal(1, disposeCount);
+        }
+
+        [Fact]
         public void Dispose_ConcurrentWithServiceCreation_DoesNotThrow()
         {
             var exceptions = new ConcurrentBag<Exception>();
