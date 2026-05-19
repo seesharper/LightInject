@@ -19,7 +19,7 @@ jobs:
         run: dotnet tool install --global dotnet-ilverify --version 8.0.0
 
       - name: Run build script
-        run: dotnet-script build/build.csx
+        run: dotnet-script build/build.csx --disable-isolated-load-context
         env: # Or as an environment variable
           GITHUB_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IS_SECURE_BUILDENVIRONMENT: ${{ secrets.IS_SECURE_BUILDENVIRONMENT }}
