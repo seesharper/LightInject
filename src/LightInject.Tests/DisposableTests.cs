@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using LightInject.SampleLibrary;
 using Xunit;
 namespace LightInject.Tests
@@ -180,6 +183,70 @@ namespace LightInject.Tests
 
         //}
 
+        [Fact]
+        public void Dispose_SharedInstanceRegisteredUnderMultipleNames_IsDisposedOnce()
+        {
+            var container = CreateContainer();
+            var disposeCount = 0;
+            var shared = new ActionDisposable(() => disposeCount++);
+
+            container.Register<IFoo>(_ => shared, "first", new PerContainerLifetime());
+            container.Register<IFoo>(_ => shared, "second", new PerContainerLifetime());
+
+            container.GetInstance<IFoo>("first");
+            container.GetInstance<IFoo>("second");
+
+            container.Dispose();
+
+            Assert.Equal(1, disposeCount);
+        }
+
+        [Fact]
+        public void Dispose_ConcurrentWithServiceCreation_DoesNotThrow()
+        {
+            var exceptions = new ConcurrentBag<Exception>();
+
+            for (int attempt = 0; attempt < 1000 && exceptions.IsEmpty; attempt++)
+            {
+                var container = new ServiceContainer();
+                for (int i = 0; i < 100; i++)
+                {
+                    int captured = i;
+                    container.Register<IFoo>(_ => new DisposableFoo(), $"s{captured}", new PerContainerLifetime());
+                }
+
+                using var barrier = new Barrier(3);
+
+                var task1 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    for (int i = 0; i < 50; i++)
+                    {
+                        try { container.GetInstance<IFoo>($"s{i}"); }
+                        catch (Exception ex) { exceptions.Add(ex); break; }
+                    }
+                });
+
+                var task2 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    for (int i = 50; i < 100; i++)
+                    {
+                        try { container.GetInstance<IFoo>($"s{i}"); }
+                        catch (Exception ex) { exceptions.Add(ex); break; }
+                    }
+                });
+
+                barrier.SignalAndWait();
+                try { container.Dispose(); }
+                catch (Exception ex) { exceptions.Add(ex); }
+
+                Task.WaitAll(task1, task2);
+            }
+
+            Assert.Empty(exceptions);
+        }
+
         private static IServiceContainer CreateContainer()
         {
             return new ServiceContainer();
@@ -316,6 +383,18 @@ namespace LightInject.Tests
                 SingleService = singleService;
                 MultipleServices = multipleServices;
             }
+        }
+
+        public class ActionDisposable : IFoo, IDisposable
+        {
+            private readonly Action onDispose;
+
+            public ActionDisposable(Action onDispose)
+            {
+                this.onDispose = onDispose;
+            }
+
+            public void Dispose() => onDispose();
         }
     }
 

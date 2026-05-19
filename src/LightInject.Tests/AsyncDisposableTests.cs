@@ -115,6 +115,59 @@ namespace LightInject.Tests
             Assert.Throws<InvalidOperationException>(() => scope.Dispose());
         }
 
+        [Fact]
+        public async Task DisposeAsync_DuplicateAsyncDisposable_IsDisposedOnce()
+        {
+            var container = CreateContainer();
+            var disposeCount = 0;
+            var instance = new AsyncDisposable(_ => disposeCount++);
+
+            await using (var scope = container.BeginScope())
+            {
+                scope.TrackInstance(instance);
+                scope.TrackInstance(instance);
+            }
+
+            Assert.Equal(1, disposeCount);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_DuplicateDisposable_IsDisposedOnce()
+        {
+            var container = CreateContainer();
+            var disposeCount = 0;
+            var instance = new Disposable(_ => disposeCount++);
+
+            await using (var scope = container.BeginScope())
+            {
+                scope.TrackInstance(instance);
+                scope.TrackInstance(instance);
+            }
+
+            Assert.Equal(1, disposeCount);
+        }
+
+        [Fact]
+        public async Task DisposeAsync_DuplicateAsyncDisposableWithSlowDisposable_IsDisposedOnce()
+        {
+            var container = CreateContainer();
+            var disposeCount = 0;
+            var instance = new AsyncDisposable(_ => disposeCount++);
+
+            await using (var scope = container.BeginScope())
+            {
+                // instance at index 0 and 1; SlowAsyncDisposable at index 2.
+                // DisposeAsync processes highest index first: SlowAsyncDisposable triggers
+                // the Await path, which then processes index 1 (disposes instance) and
+                // index 0 (duplicate — hits the continue branch in Await).
+                scope.TrackInstance(instance);
+                scope.TrackInstance(instance);
+                scope.TrackInstance(new SlowAsyncDisposable(_ => { }));
+            }
+
+            Assert.Equal(1, disposeCount);
+        }
+
         public class SlowAsyncDisposable : IAsyncDisposable
         {
             private readonly Action<object> onDisposed;
