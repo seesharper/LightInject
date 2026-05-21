@@ -210,10 +210,14 @@ public class KeyedMicrosoftTests : TestBase
         container.TryGetInstance<IService>("something-else");
         container.TryGetInstance<IService>("something-else-again");
 
-        // Return all services registered with a non null key, but not the one "created" with KeyedService.AnyKey
+        // Return all services registered with a non null key, but not the one "created" with KeyedService.AnyKey,
+        // nor the KeyedService.AnyKey registration
         var allServices = rootScope.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()).ToList();
-        Assert.Equal(5, allServices.Count);
-        Assert.Equal(new[] { service1, service2, service3, service4 }, allServices.Skip(1));
+        Assert.Equal(4, allServices.Count);
+        Assert.Equal(new[] { service1, service2, service3, service4 }, allServices);
+
+        var someKeyedServices = rootScope.GetInstance<IEnumerable<IService>>("service").ToList();
+        Assert.Equal(new[] { service2, service3, service4 }, someKeyedServices);
     }
 
     [Fact]
@@ -332,14 +336,9 @@ public class KeyedMicrosoftTests : TestBase
         container.Register<IFakeOpenGenericService<PocoClass>>(sf => service1, KeyedService.AnyKey.ToString(), new PerRootScopeLifetime(rootScope));
         container.Register<IFakeOpenGenericService<PocoClass>>(sf => service2, "some-key", new PerRootScopeLifetime(rootScope));
 
-        // container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(service1, KeyedService.AnyKey.ToString());
-        // container.RegisterInstance<IFakeOpenGenericService<PocoClass>>(service2, "some-key");
-
-
-        // var provider = CreateServiceProvider(serviceCollection);
+        // AnyKey registrations are not included when listing services by a specific key
         var services = rootScope.GetInstance<IEnumerable<IFakeOpenGenericService<PocoClass>>>("some-key").ToList();
-        // var services = provider.GetKeyedServices<IFakeOpenGenericService<PocoClass>>("some-key").ToList();
-        Assert.Equal(new[] { service1, service2 }, services);
+        Assert.Equal(new[] { service2 }, services);
     }
 
     [Fact]
@@ -692,6 +691,9 @@ public class KeyedMicrosoftTests : TestBase
         Assert.Null(scopeA.TryGetInstance<IService>());
         Assert.Null(scopeB.TryGetInstance<IService>());
 
+        Assert.ThrowsAny<Exception>(() => scopeA.GetInstance<IService>(KeyedService.AnyKey.ToString()));
+        Assert.ThrowsAny<Exception>(() => scopeB.GetInstance<IService>(KeyedService.AnyKey.ToString()));
+
         var serviceA1 = scopeA.GetInstance<IService>("key");
         var serviceA2 = scopeA.GetInstance<IService>("key");
 
@@ -720,6 +722,9 @@ public class KeyedMicrosoftTests : TestBase
 
         Assert.Null(scopeA.TryGetInstance<IService>());
         Assert.Null(scopeB.TryGetInstance<IService>());
+
+        Assert.ThrowsAny<Exception>(() => scopeA.GetInstance<IService>(KeyedService.AnyKey.ToString()));
+        Assert.ThrowsAny<Exception>(() => scopeB.GetInstance<IService>(KeyedService.AnyKey.ToString()));
 
         var serviceA1 = scopeA.GetInstance<IService>("key");
         var serviceA2 = scopeA.GetInstance<IService>("key");
@@ -821,17 +826,337 @@ public class KeyedMicrosoftTests : TestBase
         var foo = rootScope.GetInstance<IFoo>("foo");
     }
 
-    // [Fact]
-    // public void AnotherTest()
-    // {
-    //     var serviceCollection = new ServiceCollection();
-    //     serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, (sp, key) => new Service((string)key));
+    [Fact]
+    public void CombinationalRegistration()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
 
-    //     Func<IServiceProvider, object ,IService> factory = (sp, key) => new ServiceWithIntKey((int)key);
+        var keyedService1 = new Service();
+        var keyedService2 = new Service();
+        var nullkeyService1 = new Service();
+        var nullkeyService2 = new Service();
 
-    //     factory(null, 32);
-    // }
+        container.RegisterInstance<IService>(nullkeyService1, null);
+        container.RegisterInstance<IService>(nullkeyService2, null);
+        container.RegisterInstance<IService>(keyedService1, "keyedService");
+        container.RegisterInstance<IService>(keyedService2, "keyedService");
 
+        // Null key is treated as unkeyed - last registration wins for single resolution
+        Assert.Same(nullkeyService2, container.TryGetInstance<IService>());
+        Assert.Same(nullkeyService2, container.TryGetInstance<IService>(null));
+
+        // AnyKey returns only specifically-keyed services (not null/unkeyed)
+        Assert.Equal(
+            new[] { keyedService1, keyedService2 },
+            rootScope.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()));
+
+        // Specifically-keyed collection
+        Assert.Equal(
+            new[] { keyedService1, keyedService2 },
+            rootScope.GetInstance<IEnumerable<IService>>("keyedService"));
+
+        // Single keyed - last registration wins
+        Assert.Same(keyedService2, rootScope.GetInstance<IService>("keyedService"));
+    }
+
+    [Fact]
+    public void ResolveKeyedServicesAnyKeyConsistency()
+    {
+        var service = new Service("first-service");
+
+        // Container1: GetInstance(AnyKey single) before GetInstance<IEnumerable>(AnyKey)
+        {
+            var container1 = CreateContainer();
+            var rootScope1 = container1.BeginScope();
+            container1.RegisterInstance<IService>(service, "first-service");
+
+            Assert.Throws<InvalidOperationException>(() => rootScope1.GetInstance<IService>(KeyedService.AnyKey.ToString()));
+            Assert.Equal(new[] { service }, rootScope1.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()));
+        }
+
+        // Container2: GetInstance<IEnumerable>(AnyKey) before GetInstance(AnyKey single)
+        {
+            var container2 = CreateContainer();
+            var rootScope2 = container2.BeginScope();
+            container2.RegisterInstance<IService>(service, "first-service");
+
+            Assert.Equal(new[] { service }, rootScope2.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()));
+            Assert.Throws<InvalidOperationException>(() => rootScope2.GetInstance<IService>(KeyedService.AnyKey.ToString()));
+        }
+    }
+
+    [Fact]
+    public void ResolveKeyedServicesAnyKeyConsistencyWithAnyKeyRegistration()
+    {
+        var service = new Service("first-service");
+        var any = new Service("any");
+
+        // Container1: GetInstance<IEnumerable>(AnyKey) before single key resolution
+        {
+            var container1 = CreateContainer();
+            var rootScope1 = container1.BeginScope();
+            container1.RegisterInstance<IService>(service, "first-service");
+            container1.Register<IService>((factory, key) => any, KeyedService.AnyKey.ToString(), null);
+
+            // AnyKey enumeration returns only specifically-registered services
+            Assert.Equal(new[] { service }, rootScope1.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()));
+        }
+
+        // Container2: single resolution before GetInstance<IEnumerable>(AnyKey)
+        {
+            var container2 = CreateContainer();
+            var rootScope2 = container2.BeginScope();
+            container2.RegisterInstance<IService>(service, "first-service");
+            container2.Register<IService>((factory, key) => any, KeyedService.AnyKey.ToString(), null);
+
+            Assert.Equal(new[] { service }, rootScope2.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()));
+            // AnyKey registration acts as wildcard fallback for any unknown key
+            Assert.Same(any, rootScope2.GetInstance<IService>(new object().ToString()));
+        }
+    }
+
+    [Fact]
+    public void ResolveKeyedServicesAnyKeyOrdering()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var service1 = new Service();
+        var service2 = new Service();
+        var service3 = new Service();
+
+        container.RegisterInstance<IService>(service1, "A-service");
+        container.RegisterInstance<IService>(service2, "B-service");
+        container.RegisterInstance<IService>(service3, "A-service");
+
+        // The order should be in registration order, not grouped by key
+        Assert.Equal(
+            new[] { service1, service2, service3 },
+            rootScope.GetInstance<IEnumerable<IService>>(KeyedService.AnyKey.ToString()));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ResolveWithAnyKeyQuery_Constructor(bool anyKeyQueryBeforeSingletonQueries)
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        // Interweave different service types to check slot/ordering logic
+        container.Register<TestServiceA>(sf => new TestServiceA(), "key1", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceB>(sf => new TestServiceB(), "key1", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceA>(sf => new TestServiceA(), "key2", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceB>(sf => new TestServiceB(), "key2", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceA>(sf => new TestServiceA(), "key3", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceB>(sf => new TestServiceB(), "key3", new PerRootScopeLifetime(rootScope));
+
+        TestServiceA[] allInstancesA = null;
+        TestServiceB[] allInstancesB = null;
+
+        if (anyKeyQueryBeforeSingletonQueries)
+            DoAnyKeyQuery();
+
+        var serviceA1 = rootScope.GetInstance<TestServiceA>("key1");
+        var serviceB1 = rootScope.GetInstance<TestServiceB>("key1");
+        var serviceA2 = rootScope.GetInstance<TestServiceA>("key2");
+        var serviceB2 = rootScope.GetInstance<TestServiceB>("key2");
+        var serviceA3 = rootScope.GetInstance<TestServiceA>("key3");
+        var serviceB3 = rootScope.GetInstance<TestServiceB>("key3");
+
+        if (!anyKeyQueryBeforeSingletonQueries)
+            DoAnyKeyQuery();
+
+        Assert.Equal(new[] { serviceA1, serviceA2, serviceA3 }, allInstancesA);
+        Assert.Equal(new[] { serviceB1, serviceB2, serviceB3 }, allInstancesB);
+
+        void DoAnyKeyQuery()
+        {
+            allInstancesA = rootScope.GetInstance<IEnumerable<TestServiceA>>(KeyedService.AnyKey.ToString()).ToArray();
+            allInstancesB = rootScope.GetInstance<IEnumerable<TestServiceB>>(KeyedService.AnyKey.ToString()).ToArray();
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ResolveWithAnyKeyQuery_Constructor_Duplicates(bool anyKeyQueryBeforeSingletonQueries)
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        // Multiple registrations with the same key
+        container.Register<TestServiceA>(sf => new TestServiceA(), "key", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceB>(sf => new TestServiceB(), "key", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceA>(sf => new TestServiceA(), "key", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceB>(sf => new TestServiceB(), "key", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceA>(sf => new TestServiceA(), "key", new PerRootScopeLifetime(rootScope));
+        container.Register<TestServiceB>(sf => new TestServiceB(), "key", new PerRootScopeLifetime(rootScope));
+
+        TestServiceA[] allInstancesA = null;
+        TestServiceB[] allInstancesB = null;
+
+        if (anyKeyQueryBeforeSingletonQueries)
+            DoAnyKeyQuery();
+
+        // Single resolution returns last registered (singleton)
+        var serviceA = rootScope.GetInstance<TestServiceA>("key");
+        Assert.Same(serviceA, rootScope.GetInstance<TestServiceA>("key"));
+
+        var serviceB = rootScope.GetInstance<TestServiceB>("key");
+        Assert.Same(serviceB, rootScope.GetInstance<TestServiceB>("key"));
+
+        if (!anyKeyQueryBeforeSingletonQueries)
+            DoAnyKeyQuery();
+
+        // AnyKey enumeration returns all registrations
+        Assert.Equal(3, allInstancesA.Length);
+        Assert.Same(serviceA, allInstancesA[2]);
+        Assert.NotSame(serviceA, allInstancesA[1]);
+        Assert.NotSame(serviceA, allInstancesA[0]);
+        Assert.NotSame(allInstancesA[0], allInstancesA[1]);
+
+        Assert.Equal(3, allInstancesB.Length);
+        Assert.Same(serviceB, allInstancesB[2]);
+        Assert.NotSame(serviceB, allInstancesB[1]);
+        Assert.NotSame(serviceB, allInstancesB[0]);
+        Assert.NotSame(allInstancesB[0], allInstancesB[1]);
+
+        void DoAnyKeyQuery()
+        {
+            allInstancesA = rootScope.GetInstance<IEnumerable<TestServiceA>>(KeyedService.AnyKey.ToString()).ToArray();
+            allInstancesB = rootScope.GetInstance<IEnumerable<TestServiceB>>(KeyedService.AnyKey.ToString()).ToArray();
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ResolveWithAnyKeyQuery_InstanceProvided(bool anyKeyQueryBeforeSingletonQueries)
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceA1 = new TestServiceA();
+        var serviceA2 = new TestServiceA();
+        var serviceA3 = new TestServiceA();
+        var serviceB1 = new TestServiceB();
+        var serviceB2 = new TestServiceB();
+        var serviceB3 = new TestServiceB();
+
+        // Interweave to check slot/ordering logic
+        container.RegisterInstance<TestServiceA>(serviceA1, "key1");
+        container.RegisterInstance<TestServiceB>(serviceB1, "key1");
+        container.RegisterInstance<TestServiceA>(serviceA2, "key2");
+        container.RegisterInstance<TestServiceB>(serviceB2, "key2");
+        container.RegisterInstance<TestServiceA>(serviceA3, "key3");
+        container.RegisterInstance<TestServiceB>(serviceB3, "key3");
+
+        TestServiceA[] allInstancesA = null;
+        TestServiceB[] allInstancesB = null;
+
+        if (anyKeyQueryBeforeSingletonQueries)
+            DoAnyKeyQuery();
+
+        Assert.Same(serviceA1, rootScope.GetInstance<TestServiceA>("key1"));
+        Assert.Same(serviceA2, rootScope.GetInstance<TestServiceA>("key2"));
+        Assert.Same(serviceA3, rootScope.GetInstance<TestServiceA>("key3"));
+        Assert.Same(serviceB1, rootScope.GetInstance<TestServiceB>("key1"));
+        Assert.Same(serviceB2, rootScope.GetInstance<TestServiceB>("key2"));
+        Assert.Same(serviceB3, rootScope.GetInstance<TestServiceB>("key3"));
+
+        if (!anyKeyQueryBeforeSingletonQueries)
+            DoAnyKeyQuery();
+
+        Assert.Equal(new[] { serviceA1, serviceA2, serviceA3 }, allInstancesA);
+        Assert.Equal(new[] { serviceB1, serviceB2, serviceB3 }, allInstancesB);
+
+        void DoAnyKeyQuery()
+        {
+            allInstancesA = rootScope.GetInstance<IEnumerable<TestServiceA>>(KeyedService.AnyKey.ToString()).ToArray();
+            allInstancesB = rootScope.GetInstance<IEnumerable<TestServiceB>>(KeyedService.AnyKey.ToString()).ToArray();
+            Assert.Equal(allInstancesA, rootScope.GetInstance<IEnumerable<TestServiceA>>(KeyedService.AnyKey.ToString()));
+            Assert.Equal(allInstancesB, rootScope.GetInstance<IEnumerable<TestServiceB>>(KeyedService.AnyKey.ToString()));
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ResolveWithAnyKeyQuery_InstanceProvided_Duplicates(bool anyKeyQueryBeforeSingletonQueries)
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        var serviceA1 = new TestServiceA();
+        var serviceA2 = new TestServiceA();
+        var serviceA3 = new TestServiceA();
+        var serviceB1 = new TestServiceB();
+        var serviceB2 = new TestServiceB();
+        var serviceB3 = new TestServiceB();
+
+        // Multiple registrations with the same key, interleaved
+        container.RegisterInstance<TestServiceA>(serviceA1, "key");
+        container.RegisterInstance<TestServiceB>(serviceB1, "key");
+        container.RegisterInstance<TestServiceA>(serviceA2, "key");
+        container.RegisterInstance<TestServiceB>(serviceB2, "key");
+        container.RegisterInstance<TestServiceA>(serviceA3, "key");
+        container.RegisterInstance<TestServiceB>(serviceB3, "key");
+
+        TestServiceA[] allInstancesA = null;
+        TestServiceB[] allInstancesB = null;
+
+        if (anyKeyQueryBeforeSingletonQueries)
+            DoAnyKeyQuery();
+
+        // Single resolution returns the last registered for duplicates
+        Assert.Same(serviceA3, rootScope.GetInstance<TestServiceA>("key"));
+        Assert.Same(serviceB3, rootScope.GetInstance<TestServiceB>("key"));
+
+        if (!anyKeyQueryBeforeSingletonQueries)
+            DoAnyKeyQuery();
+
+        Assert.Equal(new[] { serviceA1, serviceA2, serviceA3 }, allInstancesA);
+        Assert.Equal(new[] { serviceB1, serviceB2, serviceB3 }, allInstancesB);
+
+        void DoAnyKeyQuery()
+        {
+            allInstancesA = rootScope.GetInstance<IEnumerable<TestServiceA>>(KeyedService.AnyKey.ToString()).ToArray();
+            allInstancesB = rootScope.GetInstance<IEnumerable<TestServiceB>>(KeyedService.AnyKey.ToString()).ToArray();
+            Assert.Equal(allInstancesA, rootScope.GetInstance<IEnumerable<TestServiceA>>(KeyedService.AnyKey.ToString()));
+            Assert.Equal(allInstancesB, rootScope.GetInstance<IEnumerable<TestServiceB>>(KeyedService.AnyKey.ToString()));
+        }
+    }
+
+    [Fact]
+    public void ResolveRequiredKeyedServiceThrowsIfNotFound()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+        var serviceKey = "non-existent-key";
+
+        Assert.Throws<InvalidOperationException>(() => rootScope.GetInstance<IService>(serviceKey));
+        Assert.Throws<InvalidOperationException>(() => rootScope.GetInstance(typeof(IService), serviceKey));
+    }
+
+    [Fact]
+    public void SimpleServiceKeyedResolution()
+    {
+        var container = CreateContainer();
+        var rootScope = container.BeginScope();
+
+        container.Register<ISimpleService, SimpleService>("simple");
+        container.Register<ISimpleService, AnotherSimpleService>("another");
+        container.Register<SimpleParentWithDynamicKeyedService>();
+        container.RegisterInstance<IServiceFactory>(container);
+
+        var sut = rootScope.GetInstance<SimpleParentWithDynamicKeyedService>();
+
+        var result = sut.GetService("simple");
+
+        Assert.True(result.GetType() == typeof(SimpleService));
+    }
 
     public interface IKeyedService
     {
@@ -926,6 +1251,27 @@ public class KeyedMicrosoftTests : TestBase
         public IService Service2 { get; }
     }
 
+    internal class TestServiceA { }
+
+    internal class TestServiceB { }
+
+    public interface ISimpleService { }
+
+    public class SimpleService : ISimpleService { }
+
+    public class AnotherSimpleService : ISimpleService { }
+
+    public class SimpleParentWithDynamicKeyedService
+    {
+        private readonly IServiceFactory _serviceFactory;
+
+        public SimpleParentWithDynamicKeyedService(IServiceFactory serviceFactory)
+        {
+            _serviceFactory = serviceFactory;
+        }
+
+        public ISimpleService GetService(string name) => _serviceFactory.GetInstance<ISimpleService>(name);
+    }
 
 }
 
