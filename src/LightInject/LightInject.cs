@@ -4846,12 +4846,12 @@ namespace LightInject
                 {
                     if (serviceName == "*")
                     {
-                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName.Length > 0 && k.ServiceName != "*").SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                     if (serviceName.Length > 0)
                     {
-                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && (k.ServiceName == serviceName || k.ServiceName == "*")).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType.IsAssignableFrom(k.ServiceType) && k.ServiceName == serviceName).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                     {
@@ -4873,12 +4873,12 @@ namespace LightInject
                 {
                     if (serviceName == "*")
                     {
-                        emitMethods = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && k.ServiceName.Length > 0).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && k.ServiceName.Length > 0 && k.ServiceName != "*").SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                    if (serviceName.Length > 0)
                     {
-                        emitMethods = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && (k.ServiceName == serviceName || k.ServiceName == "*")).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
+                        emitMethods = allEmitters.Keys.Where(k => actualServiceType == k.ServiceType && k.ServiceName == serviceName).SelectMany(k => allEmitters[k]).Where(emi => !emi.CreatedFromWildcardService).OrderBy(emi => emi.RegistrationOrder).Select(emi => emi.EmitMethod).ToList();
                     }
                     else
                     {
