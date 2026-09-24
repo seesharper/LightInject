@@ -2836,13 +2836,18 @@ namespace LightInject
         /// <inheritdoc/>
         public bool CanGetInstance(Type serviceType, string serviceName)
         {
-            if (serviceType.IsFuncRepresentingService() || serviceType.IsFuncRepresentingNamedService() || serviceType.IsFuncWithParameters() || serviceType.IsLazy())
+            // Resolving the emit method might register services (e.g. closed generics), so we need to
+            // synchronize with CreateDelegate that reads the same registrations.
+            lock (lockObject)
             {
-                var returnType = serviceType.GenericTypeArguments.Last();
-                return GetEmitMethod(returnType, serviceName) != null || availableServices.ContainsKey(serviceType);
-            }
+                if (serviceType.IsFuncRepresentingService() || serviceType.IsFuncRepresentingNamedService() || serviceType.IsFuncWithParameters() || serviceType.IsLazy())
+                {
+                    var returnType = serviceType.GenericTypeArguments.Last();
+                    return GetEmitMethod(returnType, serviceName) != null || availableServices.ContainsKey(serviceType);
+                }
 
-            return GetEmitMethod(serviceType, serviceName) != null;
+                return GetEmitMethod(serviceType, serviceName) != null;
+            }
         }
 
         /// <inheritdoc/>
