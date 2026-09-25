@@ -2620,6 +2620,7 @@ namespace LightInject
         private readonly ServiceRegistry<ServiceRegistration> availableServices = new ServiceRegistry<ServiceRegistration>();
         private readonly ConcurrentDictionary<ServiceKey, List<ServiceRegistration>> allRegistrations = new ConcurrentDictionary<ServiceKey, List<ServiceRegistration>>();
         private readonly ConcurrentDictionary<ServiceKey, List<EmitMethodInfo>> allEmitters = new ConcurrentDictionary<ServiceKey, List<EmitMethodInfo>>();
+        private readonly ConcurrentDictionary<Type, HashSet<int>> closedGenericRegistrationOrders = new ConcurrentDictionary<Type, HashSet<int>>();
 
         private readonly object lockObject = new object();
         private readonly ContainerOptions options;
@@ -4752,7 +4753,7 @@ namespace LightInject
                     // Ensure that we only add candidates that are assignable to the requested service type.
                     if (closedGenericServiceType.IsAssignableFrom(closedGenericImplementingTypeCandidate))
                     {
-                        candidates.Add(openGenericServiceRegistration.ServiceName, new ClosedGenericCandidate(closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime));
+                        candidates.Add(openGenericServiceRegistration.ServiceName, new ClosedGenericCandidate(closedGenericImplementingTypeCandidate, openGenericServiceRegistration.Lifetime, openGenericServiceRegistration.ServiceName, openGenericServiceRegistration.RegistrationOrder));
                     }
                 }
             }
@@ -4804,7 +4805,22 @@ namespace LightInject
                     Lifetime = CloneLifeTime(candidate.Lifetime) ?? DefaultLifetime,
                 };
                 Register(serviceRegistration);
+                if (string.Equals(serviceName, candidate.ServiceName, StringComparison.OrdinalIgnoreCase))
+                {
+                    TryMarkAsClosed(closedGenericServiceType, candidate.RegistrationOrder);
+                }
+
                 return GetEmitMethod(serviceRegistration.ServiceType, serviceRegistration.ServiceName);
+            }
+        }
+
+        // Ensures that an open generic registration is only closed once for a given closed generic service type.
+        private bool TryMarkAsClosed(Type closedGenericServiceType, int openGenericRegistrationOrder)
+        {
+            var registrationOrders = closedGenericRegistrationOrders.GetOrAdd(closedGenericServiceType, _ => new HashSet<int>());
+            lock (registrationOrders)
+            {
+                return registrationOrders.Add(openGenericRegistrationOrder);
             }
         }
 
@@ -4830,6 +4846,11 @@ namespace LightInject
 
                 foreach (var constructableOpenGenericService in constructableOpenGenericServices)
                 {
+                    if (!TryMarkAsClosed(actualServiceType, constructableOpenGenericService.RegistrationOrder))
+                    {
+                        continue;
+                    }
+
                     var serviceRegistration = new ServiceRegistration
                     {
                         ServiceType = actualServiceType,
@@ -5293,15 +5314,21 @@ namespace LightInject
 
         private struct ClosedGenericCandidate
         {
-            public ClosedGenericCandidate(Type closedGenericImplementingType, ILifetime lifetime)
+            public ClosedGenericCandidate(Type closedGenericImplementingType, ILifetime lifetime, string serviceName, int registrationOrder)
             {
                 ClosedGenericImplementingType = closedGenericImplementingType;
                 Lifetime = lifetime;
+                ServiceName = serviceName;
+                RegistrationOrder = registrationOrder;
             }
 
             public Type ClosedGenericImplementingType { get; }
 
             public ILifetime Lifetime { get; }
+
+            public string ServiceName { get; }
+
+            public int RegistrationOrder { get; }
         }
 
         private class Storage<T>
